@@ -1,0 +1,49 @@
+# Web Framework
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+
+# LangChain and RAG
+langchain==0.1.0
+langchain-community==0.0.10
+langchain-core==0.1.10
+
+# Vector Database and Embeddings
+faiss-cpu==1.7.4
+sentence-transformers==3.0.1
+huggingface-hub==0.24.6
+transformers==4.44.2
+
+# PDF Processing
+PyPDF2==3.0.1
+pdfplumber==0.10.0
+
+# Database (sqlite3 is built-in with Python)
+
+# Ollama Client
+ollama==0.1.7
+
+# Data Processing
+numpy==1.24.3
+pandas==2.0.3
+
+# HTTP Requests
+requests==2.31.0
+httpx==0.25.2
+
+# Environment Variables
+python-dotenv==1.0.0
+
+# Validation
+pydantic==2.5.0
+
+# Logging
+loguru==0.7.2
+
+# Testing
+pytest==7.4.3
+pytest-asyncio==0.21.1
+
+# Development
+black==23.11.0
+flake8==6.1.0
+
