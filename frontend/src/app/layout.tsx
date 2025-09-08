@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import 'github-markdown-css/github-markdown-light.css';
 import "./globals.css";
 
 const geistSans = Geist({
@@ -13,8 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Chatbot Tư Vấn Tuyển Sinh - Trường Đại học An ninh Nhân dân",
-  description: "Chatbot hỗ trợ tư vấn tuyển sinh, học phí, chương trình đào tạo của Trường Đại học An ninh Nhân dân",
+  title: "Trường Đại học An ninh Nhân dân - People's Security University",
+  description: "Trường Đại học An ninh Nhân dân - Cơ sở đào tạo cán bộ an ninh chất lượng cao, đáp ứng yêu cầu bảo vệ an ninh quốc gia trong tình hình mới",
+  keywords: "Trường Đại học An ninh Nhân dân, PSU, tuyển sinh, an ninh quốc gia, đào tạo cán bộ",
 };
 
 export default function RootLayout({

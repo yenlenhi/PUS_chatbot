@@ -1,301 +1,173 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
-import ConversationSidebar from './ConversationSidebar';
-import MessageList from './MessageList';
-import ChatInput from './ChatInput';
-import { Message, Conversation } from '@/types';
-import { generateUniqueId } from '@/utils/helpers';
-import { chatAPI } from '../services/api';
+import React, { useState, useRef, useEffect } from 'react';
+import { Send, Bot, User } from 'lucide-react';
+import type { Message } from '@/types/chat';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
-const DEBUG = process.env.NODE_ENV !== 'production';
+const ChatInterface = () => {
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: '1',
+      content: 'Xin chào! Tôi là chatbot tư vấn tuyển sinh của Trường Đại học An ninh Nhân dân. Tôi có thể giúp bạn tìm hiểu về các ngành đào tạo, điều kiện tuyển sinh, học phí và nhiều thông tin khác. Bạn cần hỗ trợ gì?',
+      sender: 'bot',
+      timestamp: new Date()
+    }
+  ]);
+  const [inputMessage, setInputMessage] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-const debugLog = (...args: any[]) => {
-  if (DEBUG) {
-    console.log(...args);
-  }
-};
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
 
-const ChatInterface: React.FC = () => {
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [isStreaming, setIsStreaming] = useState(false);
-  const streamingMessageRef = useRef<string>('');
-
-  // Initialize on first load
   useEffect(() => {
-    const savedConversations = localStorage.getItem('conversations');
-    if (savedConversations) {
-      try {
-        const parsed = JSON.parse(savedConversations);
-        setConversations(parsed);
-        
-        // Set current conversation to the most recent one
-        if (parsed.length > 0) {
-          setCurrentConversationId(parsed[0].id);
-        }
-      } catch (e) {
-        console.error('Failed to parse saved conversations', e);
-      }
-    } else {
-      // Create a new conversation if none exist
-      createNewConversation();
-    }
-  }, []);
+    scrollToBottom();
+  }, [messages]);
 
-  // Save conversations to localStorage whenever they change
-  useEffect(() => {
-    if (conversations.length > 0) {
-      localStorage.setItem('conversations', JSON.stringify(conversations));
-    }
-  }, [conversations]);
+  const handleSendMessage = async () => {
+    if (!inputMessage.trim()) return;
 
-  const createNewConversation = () => {
-    const newId = generateUniqueId();
-    const newConversation: Conversation = {
-      id: newId,
-      title: 'Cuộc hội thoại mới',
-      messages: [],
-      createdAt: new Date().toISOString(),
-    };
-    
-    setConversations([newConversation, ...conversations]);
-    setCurrentConversationId(newId);
-    return newId;
-  };
-
-  const deleteConversation = (id: string) => {
-    const updatedConversations = conversations.filter(conv => conv.id !== id);
-    setConversations(updatedConversations);
-    
-    if (currentConversationId === id) {
-      if (updatedConversations.length > 0) {
-        setCurrentConversationId(updatedConversations[0].id);
-      } else {
-        createNewConversation();
-      }
-    }
-    
-    if (updatedConversations.length === 0) {
-      localStorage.removeItem('conversations');
-    }
-  };
-
-  const updateConversationTitle = (id: string, title: string) => {
-    setConversations(conversations.map(conv => 
-      conv.id === id ? { ...conv, title } : conv
-    ));
-  };
-
-  const getCurrentConversation = () => {
-    return conversations.find(conv => conv.id === currentConversationId) || null;
-  };
-
-  const getConversationSummaries = () => {
-    return conversations.map(({ id, title, createdAt }) => ({ id, title, createdAt }));
-  };
-
-  const sendMessage = async (content: string) => {
-    if (!content.trim()) return;
-    
-    debugLog('Sending message:', content);
-    
-    let conversationId = currentConversationId;
-    
-    // If no current conversation, create a new one
-    if (!conversationId) {
-      conversationId = createNewConversation();
-    }
-    
-    // Add user message
     const userMessage: Message = {
-      id: generateUniqueId(),
-      role: 'user',
-      content,
-      timestamp: new Date().toISOString(),
+      id: Date.now().toString(),
+      content: inputMessage,
+      sender: 'user',
+      timestamp: new Date()
     };
-    
-    // Update conversation with user message
-    const updatedConversations = conversations.map(conv => {
-      if (conv.id === conversationId) {
-        return {
-          ...conv,
-          messages: [...conv.messages, userMessage],
-        };
-      }
-      return conv;
-    });
-    
-    setConversations(updatedConversations);
-    setIsLoading(true);
-    setError(null);
-    
-    // Tạo placeholder message cho bot
-    const botMessageId = generateUniqueId();
-    const botMessage: Message = {
-      id: botMessageId,
-      role: 'assistant',
-      content: '',
-      timestamp: new Date().toISOString(),
-      isStreaming: true, // Đánh dấu đang streaming
-    };
-    
-    // Thêm placeholder message vào conversation
-    setConversations(prevConversations => 
-      prevConversations.map(conv => {
-        if (conv.id === conversationId) {
-          return {
-            ...conv,
-            messages: [...conv.messages, botMessage],
-          };
-        }
-        return conv;
-      })
-    );
-    
+
+    setMessages(prev => [...prev, userMessage]);
+    setInputMessage('');
+    setIsTyping(true);
+
     try {
-      // Get conversation history for context
-      const currentConv = updatedConversations.find(c => c.id === conversationId);
-      const conversationHistory = currentConv ? currentConv.messages : [];
-      
-      // Bắt đầu streaming
-      setIsStreaming(true);
-      streamingMessageRef.current = '';
-      
-      // Gọi API với streaming
-      console.log('Starting streaming request');
-      const fullResponse = await chatAPI.sendMessageStream(
-        {
-          message: content,
-          conversation_history: conversationHistory.map(msg => ({
-            role: msg.role,
-            content: msg.content,
-          })),
-        },
-        (chunk) => {
-          console.log('Received chunk:', chunk);
-          // Cập nhật nội dung message khi nhận được chunk mới
-          if (chunk) {
-            streamingMessageRef.current += chunk;
-            
-            // Cập nhật message trong state
-            setConversations(prevConversations => 
-              prevConversations.map(conv => {
-                if (conv.id === conversationId) {
-                  return {
-                    ...conv,
-                    messages: conv.messages.map(msg => {
-                      if (msg.id === botMessageId) {
-                        return {
-                          ...msg,
-                          content: streamingMessageRef.current,
-                        };
-                      }
-                      return msg;
-                    }),
-                  };
-                }
-                return conv;
-              })
-            );
-          }
-        }
-      );
-      
-      console.log("Full response received:", fullResponse);
-      
-      // Khi streaming hoàn tất, cập nhật message cuối cùng
-      setConversations(prevConversations => 
-        prevConversations.map(conv => {
-          if (conv.id === conversationId) {
-            return {
-              ...conv,
-              messages: conv.messages.map(msg => {
-                if (msg.id === botMessageId) {
-                  return {
-                    ...msg,
-                    content: fullResponse.answer || streamingMessageRef.current || "Không nhận được câu trả lời",
-                    sources: fullResponse.sources ? fullResponse.sources.map(source => ({ title: source })) : [],
-                    confidence: fullResponse.confidence || 0,
-                    isStreaming: false,
-                  };
-                }
-                return msg;
-              }),
-            };
-          }
-          return conv;
-        })
-      );
-    } catch (err) {
-      console.error('Error sending message:', err);
-      setError(err instanceof Error ? err.message : 'Đã xảy ra lỗi khi gửi tin nhắn');
-      
-      // Cập nhật message với lỗi
-      setConversations(prevConversations => 
-        prevConversations.map(conv => {
-          if (conv.id === conversationId) {
-            return {
-              ...conv,
-              messages: conv.messages.map(msg => {
-                if (msg.id === botMessageId) {
-                  return {
-                    ...msg,
-                    content: 'Đã xảy ra lỗi khi nhận câu trả lời.',
-                    isStreaming: false,
-                    error: true,
-                  };
-                }
-                return msg;
-              }),
-            };
-          }
-          return conv;
-        })
-      );
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: inputMessage, conversation_id: 'web-chat' })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const botMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          content: data.response || 'Xin lỗi, tôi không thể trả lời câu hỏi này lúc này.',
+          sender: 'bot',
+          timestamp: new Date()
+        };
+        setMessages(prev => [...prev, botMessage]);
+      } else {
+        throw new Error('API call failed');
+      }
+    } catch (error) {
+      console.error('Error sending message:', error);
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        content: 'Xin lỗi, có lỗi xảy ra. Vui lòng thử lại sau.',
+        sender: 'bot',
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, errorMessage]);
     } finally {
-      setIsLoading(false);
-      setIsStreaming(false);
+      setIsTyping(false);
     }
   };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
+
+  const suggestedQuestions = [
+    "Các ngành đào tạo của trường có gì?",
+    "Điều kiện tuyển sinh năm 2025?",
+    "Học phí của trường như thế nào?",
+  ];
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      {/* Sidebar */}
-      <ConversationSidebar
-        conversations={getConversationSummaries()}
-        currentConversationId={currentConversationId}
-        onSelectConversation={setCurrentConversationId}
-        onNewConversation={createNewConversation}
-        onDeleteConversation={deleteConversation}
-      />
-      
-      {/* Main chat area */}
-      <div className="flex flex-col flex-1 overflow-hidden">
-        {/* Message list */}
-        <MessageList
-          messages={getCurrentConversation()?.messages || []}
-          isLoading={isLoading}
-          error={error}
-        />
-        
-        {/* Chat input */}
-        <ChatInput 
-          onSendMessage={sendMessage}
-          isLoading={isLoading}
-        />
+    <div className="w-full h-full bg-white rounded-lg shadow-lg flex flex-col border border-gray-200">
+      {/* Header */}
+      <div className="bg-red-600 text-white p-4 rounded-t-lg flex items-center justify-between">
+        <div className="flex items-center space-x-2">
+          <Bot className="w-5 h-5" />
+          <span className="font-semibold">Chatbot Tư Vấn</span>
+        </div>
+      </div>
+
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {messages.map((message) => (
+          <div key={message.id} className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+            <div className={`max-w-[80%] p-3 rounded-lg ${message.sender === 'user' ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-800'}`}>
+              <div className="flex items-start space-x-2">
+                {message.sender === 'bot' && <Bot className="w-4 h-4 mt-0.5 flex-shrink-0" />}
+                {message.sender === 'user' && <User className="w-4 h-4 mt-0.5 flex-shrink-0" />}
+                <div>
+                  <div className="text-sm markdown-body">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {message.content}
+                    </ReactMarkdown>
+                  </div>
+                  <p className={`text-xs mt-1 ${message.sender === 'user' ? 'text-red-200' : 'text-gray-500'}`}>
+                    {message.timestamp.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+
+        {isTyping && (
+          <div className="flex justify-start">
+            <div className="bg-gray-100 text-gray-800 p-3 rounded-lg max-w-[80%]">
+              <div className="flex items-center space-x-2">
+                <Bot className="w-4 h-4" />
+                <div className="flex space-x-1">
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {messages.length === 1 && (
+          <div className="space-y-2">
+            <p className="text-sm text-gray-600 font-medium">Câu hỏi gợi ý:</p>
+            {suggestedQuestions.map((question, index) => (
+              <button key={index} onClick={() => setInputMessage(question)} className="block w-full text-left p-2 text-sm bg-gray-50 hover:bg-gray-100 rounded border text-gray-700 transition-colors duration-200">
+                {question}
+              </button>
+            ))}
+          </div>
+        )}
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* Input */}
+      <div className="p-4 border-t border-gray-200">
+        <div className="flex space-x-2">
+          <textarea
+            value={inputMessage}
+            onChange={(e) => setInputMessage(e.target.value)}
+            onKeyPress={handleKeyPress}
+            placeholder="Nhập câu hỏi của bạn..."
+            className="flex-1 p-2 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+            rows={2}
+            disabled={isTyping}
+          />
+          <button onClick={handleSendMessage} disabled={!inputMessage.trim() || isTyping} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors duration-200 flex items-center justify-center">
+            <Send className="w-4 h-4" />
+          </button>
+        </div>
       </div>
     </div>
   );
 };
 
 export default ChatInterface;
-
-
-
-
-
-
 

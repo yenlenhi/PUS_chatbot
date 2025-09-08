@@ -113,26 +113,46 @@ class PDFProcessor:
             log.error(f"Error loading heading chunks: {e}")
             return []
     
-    # Existing methods from the original PDFProcessor
-    def process_all_pdfs(self):
+    def process_all_pdfs(self) -> List[DocumentChunk]:
         """Process all PDFs in the PDF directory"""
-        # Existing implementation...
-        pass
-    
-    def process_pdf_to_chunks(self, pdf_path):
-        """Process a PDF file to chunks"""
-        # Existing implementation...
-        pass
-    
-    def save_chunks_to_file(self, chunks):
-        """Save chunks to file"""
-        # Existing implementation...
-        pass
-    
-    def load_chunks_from_file(self):
-        """Load chunks from file"""
-        # Existing implementation...
-        pass
+        all_chunks = []
+        pdf_files = list(self.pdf_dir.glob("*.pdf"))
+
+        if not pdf_files:
+            log.warning(f"No PDF files found in {self.pdf_dir}")
+            return []
+
+        log.info(f"Found {len(pdf_files)} PDF files to process.")
+
+        for pdf_path in pdf_files:
+            chunks = self.process_pdf_with_headings(pdf_path)
+            all_chunks.extend(chunks)
+
+        return all_chunks
+
+    def save_chunks_to_file(self, chunks: List[DocumentChunk]):
+        """Save chunks to a JSON file"""
+        if not chunks:
+            log.warning("No chunks to save.")
+            return
+
+        try:
+            # Ensure processed directory exists
+            self.processed_dir.mkdir(parents=True, exist_ok=True)
+
+            # Define output file path
+            chunks_file = self.processed_dir / "heading_chunks.json"
+
+            # Convert chunks to dictionary format for JSON serialization
+            chunks_data = [chunk.dict() for chunk in chunks]
+
+            with open(chunks_file, 'w', encoding='utf-8') as f:
+                json.dump(chunks_data, f, ensure_ascii=False, indent=4)
+
+            log.info(f"Successfully saved {len(chunks)} chunks to {chunks_file}")
+
+        except Exception as e:
+            log.error(f"Error saving chunks to file: {e}")
 
 
 

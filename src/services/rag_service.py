@@ -6,10 +6,11 @@ import re
 from typing import List, Dict, Any, Optional, Tuple
 from src.services.embedding_service import EmbeddingService
 from src.services.database_service import DatabaseService
+from src.services import gemini_service
 from src.services.ollama_service import OllamaService
 from src.utils.logger import log
-from src.utils.vietnamese_text_formatter import format_vietnamese_text
-from config.settings import FAISS_INDEX_PATH, TOP_K_RESULTS, SIMILARITY_THRESHOLD
+
+from config.settings import FAISS_INDEX_PATH, TOP_K_RESULTS, SIMILARITY_THRESHOLD, LLM_PROVIDER
 import faiss
 import numpy as np
 from pathlib import Path
@@ -17,59 +18,59 @@ import pickle
 
 class RAGService:
     """Service for Retrieval-Augmented Generation"""
-    
+
     def __init__(self):
         """Initialize RAG service with all required components"""
         self.embedding_service = EmbeddingService()
         self.db_service = DatabaseService()
         self.ollama_service = OllamaService()
-        
+
         # Trực tiếp load FAISS index thay vì qua service
         self.index = None
         self.id_map = {}
         self.load_faiss_index()
-        
+
         # Conversation memory
         self.conversations = {}
-    
+
     def load_faiss_index(self):
         """Load FAISS index directly using faiss library"""
         try:
             index_file = str(Path(FAISS_INDEX_PATH)) + ".index"
             metadata_file = str(Path(FAISS_INDEX_PATH)) + ".metadata"
-            
+
             if not Path(index_file).exists() or not Path(metadata_file).exists():
                 log.warning(f"FAISS index files not found at {index_file}")
                 return False
-            
+
             # Load FAISS index directly
             self.index = faiss.read_index(index_file)
-            
+
             # Load metadata
             with open(metadata_file, 'rb') as f:
                 metadata = pickle.load(f)
-            
+
             self.id_map = metadata.get('id_map', {})
             log.info(f"FAISS index loaded successfully with {self.index.ntotal} vectors")
             return True
-            
+
         except Exception as e:
             log.error(f"Error loading FAISS index: {e}")
             return False
-    
+
     def retrieve_relevant_chunks(self, query: str, top_k: int = TOP_K_RESULTS) -> List[Dict[str, Any]]:
         """Retrieve relevant chunks using FAISS directly"""
         try:
             # Create query embedding
             query_embedding = self.embedding_service.create_embedding(query)
-            
+
             # Prepare query vector
             query_vector = np.array(query_embedding).reshape(1, -1).astype(np.float32)
             faiss.normalize_L2(query_vector)
-            
+
             # Search directly with FAISS
             distances, indices = self.index.search(query_vector, top_k * 2)
-            
+
             # Process results
             results = []
             for idx, distance in zip(indices[0], distances[0]):
@@ -89,10 +90,10 @@ class RAGService:
                                 'heading': chunk.get('heading', ''),
                                 'similarity_score': similarity_score
                             })
-            
+
             log.info(f"Search results for '{query}': {len(results)} results found")
             return results[:top_k]
-            
+
         except Exception as e:
             log.error(f"Error retrieving relevant chunks: {str(e)}")
             return []
@@ -100,10 +101,10 @@ class RAGService:
     def _extract_heading_from_content(self, content: str) -> Optional[str]:
         """
         Extract heading from chunk content
-        
+
         Args:
             content: Chunk content
-        
+
         Returns:
             Heading if found, None otherwise
         """
@@ -111,36 +112,36 @@ class RAGService:
         lines = content.strip().split('\n')
         if not lines:
             return None
-        
+
         first_line = lines[0].strip()
-        
+
         # Check if first line matches heading pattern
         heading_patterns = [
             r'^\s*(\d+)\.\s+(.+)$',
             r'^\s*(\d+\.\d+)\.\s+(.+)$',
             r'^\s*(\d+\.\d+\.\d+)\.\s+(.+)$'
         ]
-        
+
         for pattern in heading_patterns:
             match = re.match(pattern, first_line)
             if match:
                 return first_line
-        
+
         return None
-    
+
     def create_context(self, chunks: List[Dict[str, Any]]) -> str:
         """
         Create context string from retrieved chunks
-        
+
         Args:
             chunks: List of chunk dictionaries
-        
+
         Returns:
             Formatted context string
         """
         if not chunks:
             return "Không tìm thấy thông tin liên quan trong tài liệu."
-        
+
         context_parts = []
         for i, chunk in enumerate(chunks, 1):
             source = chunk.get('source_file', 'Unknown')
@@ -148,17 +149,17 @@ class RAGService:
             content = chunk.get('content', '')
             score = chunk.get('similarity_score', 0)
             heading = chunk.get('heading', '')
-            
+
             # Format the context part
             if heading:
                 context_part = f"[Tài liệu {i}: {source}, Trang {page}, Mục: {heading}, Độ liên quan: {score:.3f}]\n{content}\n"
             else:
                 context_part = f"[Tài liệu {i}: {source}, Trang {page}, Độ liên quan: {score:.3f}]\n{content}\n"
-            
+
             context_parts.append(context_part)
-        
+
         return "\n".join(context_parts)
-    
+
     def create_system_prompt(self) -> str:
         """
         Create system prompt for the chatbot
@@ -166,22 +167,21 @@ class RAGService:
         Returns:
             System prompt string
         """
-        return """Bạn là trợ lý AI tư vấn tuyển sinh Trường Đại học An ninh Nhân dân.
+        return """Bạn là một trợ lý AI chuyên gia tư vấn tuyển sinh cho Trường Đại học An ninh Nhân dân.
 
-NHIỆM VỤ: Trả lời câu hỏi về tuyển sinh dựa CHÍNH XÁC trên tài liệu được cung cấp.
+**NHIỆM VỤ CỐT LÕI:** Nhiệm vụ của bạn là trả lời câu hỏi của người dùng một cách chính xác và trung thực, CHỈ DỰA TRÊN thông tin được cung cấp trong mục "THÔNG TIN TÀI LIỆU".
 
-QUY TẮC BẮT BUỘC:
-1. CHỈ sử dụng thông tin từ tài liệu được cung cấp
-2. KHÔNG tạo ra thông tin không có trong tài liệu
-3. KHÔNG lặp lại nội dung
-4. Trả lời ngắn gọn, rõ ràng bằng tiếng Việt
-5. Nếu không có thông tin, nói "Thông tin này không có trong tài liệu"
+**QUY TẮC VÀNG (BẮT BUỘC TUÂN THỦ):**
+1.  **BÁM SÁT SỰ THẬT:** Chỉ sử dụng thông tin có trong "THÔNG TIN TÀI LIỆU". Tuyệt đối không được sử dụng kiến thức bên ngoài hoặc tự suy diễn.
+2.  **XỬ LÝ KHI KHÔNG CÓ THÔNG TIN:** Nếu thông tin trong tài liệu không đủ để trả lời câu hỏi, hoặc hoàn toàn không liên quan, bạn BẮT BUỘC phải trả lời là: "Thông tin về [chủ đề câu hỏi] không được đề cập trong các tài liệu tuyển sinh hiện có."
+3.  **KHÔNG BỊA ĐẶT:** Nếu bạn không chắc chắn, hãy tuân thủ Quy tắc 2. Thà nói không biết còn hơn là cung cấp thông tin sai lệch.
+4.  **TRẢ LỜI CHI TIẾT VÀ TỔNG HỢP:** Hãy tổng hợp thông tin từ tất cả các tài liệu liên quan để đưa ra một câu trả lời đầy đủ, chi tiết và mạch lạc. Trích xuất và kết hợp các ý chính để trả lời toàn diện cho câu hỏi của người dùng.
 
-ĐỊNH DẠNG TRẢ LỜI:
-- Trả lời trực tiếp câu hỏi
-- Liệt kê thông tin theo từng mục nếu có nhiều điểm
-- Kết thúc ngay khi đã trả lời đầy đủ"""
-    
+**ĐỊNH DẠNG TRẢ LỜI (SỬ DỤNG MARKDOWN):**
+*   **Luôn dùng Markdown:** Sử dụng định dạng Markdown để trình bày câu trả lời một cách rõ ràng.
+*   **In đậm:** Dùng dấu `**` để **in đậm** các tiêu đề, các điểm chính hoặc các thuật ngữ quan trọng (ví dụ: `**Đối tượng ưu tiên:**`).
+*   **Danh sách:** Bắt đầu mỗi mục trong danh sách bằng một dấu gạch ngang và một khoảng trắng (`- `). Điều này sẽ tạo ra các danh sách có gạch đầu dòng rõ ràng."""
+
     def create_user_prompt(self, query: str, context: str) -> str:
         """
         Create user prompt with query and context
@@ -201,21 +201,21 @@ THÔNG TIN TÀI LIỆU:
 CÂU HỎI: {query}
 
 Trả lời:"""
-    
+
     def generate_answer(
-        self, 
-        query: str, 
+        self,
+        query: str,
         conversation_id: Optional[str] = None,
         conversation_history: Optional[List[dict]] = None
     ) -> Dict[str, Any]:
         """
         Generate answer using RAG approach
-        
+
         Args:
             query: User query
             conversation_id: Optional conversation ID
             conversation_history: Optional conversation history
-        
+
         Returns:
             Dictionary with answer, sources, confidence, and conversation_id
         """
@@ -226,7 +226,7 @@ Trả lời:"""
                 self.conversations[conversation_id] = []
             elif conversation_id not in self.conversations:
                 self.conversations[conversation_id] = []
-            
+
             # Use conversation history if provided
             if conversation_history and not self.conversations[conversation_id]:
                 # Convert conversation history to internal format
@@ -238,20 +238,20 @@ Trả lời:"""
                                 'role': message['role'],
                                 'content': message['content']
                             })
-        
+
             # Retrieve relevant chunks
             relevant_chunks = self.retrieve_relevant_chunks(query)
-            
+
             # Create formatted context from chunks
             context = self.create_context(relevant_chunks)
-            
+
             # Get source documents
             sources = []
             for chunk in relevant_chunks:
                 source = chunk.get("source_file", "")
                 if source and source not in sources:
                     sources.append(source)
-            
+
             # Create system prompt and user prompt
             system_prompt = self.create_system_prompt()
             user_prompt = self.create_user_prompt(query, context)
@@ -259,17 +259,29 @@ Trả lời:"""
             # Log context and prompts for debugging
             log.info(f"Context created with {len(relevant_chunks)} chunks")
             log.debug(f"System prompt: {system_prompt[:200]}...")
+            log.debug(f"Full context sent to LLM:\n{context}")
             log.debug(f"User prompt: {user_prompt[:200]}...")
 
-            # Generate answer using Ollama
-            log.info("Calling Ollama service to generate response...")
-            answer = self.ollama_service.generate_response(
-                prompt=user_prompt,
-                system_prompt=system_prompt,
-                temperature=0.7
-            )
+            # Generate answer using the configured LLM provider
+            answer = None
+            if LLM_PROVIDER.lower() == "gemini":
+                log.info("Calling Gemini service to generate response...")
+                # Gemini API works best with a single, consolidated prompt
+                full_prompt = f"{system_prompt}\n\n{user_prompt}"
+                answer = gemini_service.generate_response(prompt=full_prompt)
 
-            log.info(f"Ollama response received: {answer is not None}")
+            elif LLM_PROVIDER.lower() == "ollama":
+                log.info("Calling Ollama service to generate response...")
+                answer = self.ollama_service.generate_response(
+                    prompt=user_prompt,
+                    system_prompt=system_prompt,
+                    temperature=0.7
+                )
+            else:
+                log.error(f"Unsupported LLM_PROVIDER configured: {LLM_PROVIDER}")
+                answer = "Lỗi: Nhà cung cấp LLM không được cấu hình đúng."
+
+            log.info(f"LLM response received: {answer is not None}")
             if answer:
                 log.debug(f"Answer preview: {answer[:100]}...")
 
@@ -282,38 +294,35 @@ Trả lời:"""
                 confidence = 0.0
                 log.warning("No relevant chunks found, confidence set to 0")
 
-            # Handle case where Ollama returns None
+            # Handle case where LLM provider returns None or empty
             if answer is None:
-                log.error("Ollama returned None response")
+                log.error("LLM provider returned None response")
                 answer = "Xin lỗi, tôi không thể trả lời câu hỏi này lúc này. Vui lòng thử lại sau."
                 confidence = 0.0
             elif not answer.strip():
-                log.error("Ollama returned empty response")
+                log.error("LLM provider returned empty response")
                 answer = "Xin lỗi, tôi không thể trả lời câu hỏi này lúc này. Vui lòng thử lại sau."
                 confidence = 0.0
             else:
-                log.info(f"Raw answer from Ollama: {repr(answer)}")
-                # Format Vietnamese text for proper spelling and grammar
-                formatted_answer = format_vietnamese_text(answer)
-                log.info(f"Formatted answer: {repr(formatted_answer)}")
-                answer = formatted_answer
-                log.info("Answer formatted successfully")
-            
+                log.info(f"Raw answer from LLM: {repr(answer)}")
+                # The answer is already in Markdown, no need for extra formatting
+                log.info(f"Using raw answer from LLM: {repr(answer)}")
+
             # Update conversation history
             self.conversations[conversation_id].append({"role": "user", "content": query})
             self.conversations[conversation_id].append({"role": "assistant", "content": answer})
-            
+
             # Limit conversation history
             if len(self.conversations[conversation_id]) > 10:
                 self.conversations[conversation_id] = self.conversations[conversation_id][-10:]
-            
+
             return {
                 "answer": answer,
                 "sources": sources,
                 "confidence": confidence,
                 "conversation_id": conversation_id
             }
-        
+
         except Exception as e:
             log.error(f"Error generating answer: {e}")
             return {
@@ -322,23 +331,23 @@ Trả lời:"""
                 "confidence": 0.0,
                 "conversation_id": conversation_id or str(uuid.uuid4())
             }
-    
+
     def get_conversation_history(self, conversation_id: str) -> List[Dict[str, Any]]:
         """
         Get conversation history
-        
+
         Args:
             conversation_id: Conversation ID
-            
+
         Returns:
             List of conversation exchanges
         """
         return self.conversations.get(conversation_id, [])
-    
+
     def check_system_health(self) -> Dict[str, Any]:
         """
         Check health of all RAG components
-        
+
         Returns:
             Health status dictionary
         """
@@ -346,11 +355,11 @@ Trả lời:"""
             'overall_status': 'healthy',
             'components': {}
         }
-        
+
         # Check Ollama
         ollama_health = self.ollama_service.check_health()
         health_status['components']['ollama'] = ollama_health
-        
+
         # Check FAISS index
         try:
             if self.index is not None:
@@ -371,7 +380,7 @@ Trả lời:"""
                 'status': 'unhealthy',
                 'error': str(e)
             }
-        
+
         # Check database
         try:
             db_stats = self.db_service.get_database_stats()
@@ -384,7 +393,7 @@ Trả lời:"""
                 'status': 'unhealthy',
                 'error': str(e)
             }
-        
+
         # Check embedding service
         try:
             embedding_dim = self.embedding_service.get_embedding_dimension()
@@ -397,12 +406,12 @@ Trả lời:"""
                 'status': 'unhealthy',
                 'error': str(e)
             }
-        
+
         # Determine overall status
         component_statuses = [comp.get('status', 'unknown') for comp in health_status['components'].values()]
         if any(status == 'unhealthy' for status in component_statuses):
             health_status['overall_status'] = 'unhealthy'
         elif any(status == 'unknown' for status in component_statuses):
             health_status['overall_status'] = 'degraded'
-        
+
         return health_status

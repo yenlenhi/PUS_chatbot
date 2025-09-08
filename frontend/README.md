@@ -1,33 +1,25 @@
-# Frontend Chatbot Tư Vấn Tuyển Sinh
+# Website Trường Đại học An ninh Nhân dân
 
-Frontend Next.js cho hệ thống chatbot tư vấn tuyển sinh của Trường Đại học An ninh Nhân dân.
+Website chính thức của Trường Đại học An ninh Nhân dân được xây dựng bằng Next.js 15 và Tailwind CSS.
 
-## Tính năng
+## Tính năng chính
 
-### 🤖 Chat Interface
-- Giao diện chat thân thiện và dễ sử dụng
-- Hiển thị tin nhắn với avatar và timestamp
-- Typing indicator khi bot đang trả lời
-- Hiển thị độ tin cậy và nguồn tham khảo của câu trả lời
+- **Responsive Design**: Tương thích với mọi thiết bị (desktop, tablet, mobile)
+- **Header với Logo**: Logo trường và tên bằng tiếng Việt/Anh
+- **Navigation Menu**: Menu điều hướng với các mục chính
+- **Banner Slideshow**: Hiển thị tin tức và sự kiện quan trọng
+- **News Section**: Khu vực tin tức với sidebar
+- **Quick Stats**: Thống kê nhanh về trường
+- **Footer**: Thông tin liên hệ và liên kết
+- **Chatbot AI**: Nút chat floating với AI tư vấn tuyển sinh 24/7
 
-### 💬 Conversation Management
-- Lưu trữ lịch sử cuộc hội thoại trong localStorage
-- Sidebar hiển thị danh sách cuộc hội thoại
-- Tạo cuộc hội thoại mới
-- Xóa cuộc hội thoại không cần thiết
-- Tự động tạo tiêu đề cho cuộc hội thoại
-
-### 📱 Responsive Design
-- Tối ưu cho cả desktop và mobile
-- Sidebar có thể thu gọn trên mobile
-- Auto-resize textarea
-- Smooth animations và transitions
-
-### 🎯 User Experience
-- Câu hỏi mẫu cho người dùng mới
-- Placeholder suggestions
-- Error handling với thông báo rõ ràng
-- Loading states và feedback
+### 🤖 Tính năng Chatbot
+- Giao diện chat thân thiện, dễ sử dụng
+- Nút floating luôn hiển thị ở góc phải màn hình
+- Tích hợp AI để trả lời câu hỏi về tuyển sinh
+- Câu hỏi gợi ý cho người dùng mới
+- Responsive trên mọi thiết bị
+- Kết nối với backend RAG system
 
 ## Công nghệ sử dụng
 

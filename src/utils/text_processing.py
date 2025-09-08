@@ -17,8 +17,8 @@ def clean_text(text: str) -> str:
     Returns:
         Cleaned and formatted text
     """
-    # Remove extra whitespace
-    text = re.sub(r'\s+', ' ', text)
+    # Replace multiple spaces/tabs with single space, but preserve newlines
+    text = re.sub(r'[ \t]+', ' ', text)
 
     # Remove special characters but keep Vietnamese characters
     text = re.sub(r'[^\w\s\u00C0-\u024F\u1E00-\u1EFF.,!?;:()\-]', '', text)

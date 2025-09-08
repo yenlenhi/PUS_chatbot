@@ -1,6 +1,11 @@
 """
 Main FastAPI application for University Chatbot
 """
+from dotenv import load_dotenv
+
+# Load environment variables from .env file at the very beginning
+load_dotenv()
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -44,17 +49,17 @@ app.add_middleware(
 async def log_requests(request: Request, call_next):
     """Log all requests"""
     start_time = time.time()
-    
+
     # Log request
     log.info(f"Request: {request.method} {request.url}")
-    
+
     # Process request
     response = await call_next(request)
-    
+
     # Log response
     process_time = time.time() - start_time
     log.info(f"Response: {response.status_code} - {process_time:.3f}s")
-    
+
     return response
 
 
