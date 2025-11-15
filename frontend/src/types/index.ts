@@ -5,12 +5,16 @@ export interface Message {
   timestamp: string;
   sources?: Source[];
   confidence?: number;
+  sender?: 'user' | 'bot'; // For backward compatibility
 }
 
 export interface Source {
   title: string;
+  filename: string;
+  page?: number;
   url?: string;
   content?: string;
+  confidence?: number;
 }
 
 export interface Conversation {

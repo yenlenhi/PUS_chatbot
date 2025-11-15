@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  # PostgreSQL with pgvector extension
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: uni_bot_postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-uni_bot_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-uni_bot_password}
+      POSTGRES_DB: ${POSTGRES_DB:-uni_bot_db}
+      POSTGRES_INITDB_ARGS: "-c shared_preload_libraries=vector"
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      # Persist data
+      - postgres_data:/var/lib/postgresql/data
+      # Initialize database with schema
+      - ./scripts/init_postgres.sql:/docker-entrypoint-initdb.d/01-init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-uni_bot_user}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - uni_bot_network
+    restart: unless-stopped
+
+  # Optional: pgAdmin for database management
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: uni_bot_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@example.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
+    depends_on:
+      - postgres
+    networks:
+      - uni_bot_network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  uni_bot_network:
+    driver: bridge
+

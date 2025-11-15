@@ -3,8 +3,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User } from 'lucide-react';
 import type { Message } from '@/types/chat';
+import type { Source } from '@/types';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import SourceSection from './SourceSection';
 
 const ChatInterface = () => {
   const [messages, setMessages] = useState<Message[]>([
@@ -50,11 +52,21 @@ const ChatInterface = () => {
 
       if (response.ok) {
         const data = await response.json();
+
+        // Convert string sources to Source objects
+        const sources: Source[] = (data.sources || []).map((source: string) => ({
+          title: source,
+          filename: source,
+          confidence: data.confidence
+        }));
+
         const botMessage: Message = {
           id: (Date.now() + 1).toString(),
-          content: data.response || 'Xin lỗi, tôi không thể trả lời câu hỏi này lúc này.',
+          content: data.response || data.answer || 'Xin lỗi, tôi không thể trả lời câu hỏi này lúc này.',
           sender: 'bot',
-          timestamp: new Date()
+          timestamp: new Date(),
+          sources: sources,
+          confidence: data.confidence
         };
         setMessages(prev => [...prev, botMessage]);
       } else {
@@ -81,6 +93,43 @@ const ChatInterface = () => {
     }
   };
 
+  const handleDownloadSource = async (source: Source) => {
+    try {
+      // Create a download link for the PDF file
+      // In a real implementation, this would call an API to get the file
+      console.log('Downloading source:', source.filename);
+
+      // For now, show a message that this feature is coming soon
+      alert(`Tính năng tải xuống "${source.filename}" sẽ được cập nhật sớm. Vui lòng liên hệ phòng tuyển sinh để nhận tài liệu.`);
+    } catch (error) {
+      console.error('Error downloading source:', error);
+      alert('Có lỗi xảy ra khi tải xuống tài liệu. Vui lòng thử lại sau.');
+    }
+  };
+
+  const handleViewSourceDetails = (source: Source) => {
+    try {
+      // Show detailed information about the source
+      const details = `
+Thông tin chi tiết về nguồn tham khảo:
+
+📄 Tên tài liệu: ${source.title}
+📁 File: ${source.filename}
+${source.page ? `[object Object]source.page}` : ''}
+${source.confidence ? `⭐ Độ tin cậy: ${Math.round(source.confidence * 100)}%` : ''}
+
+${source.content ? `📝 Nội dung liên quan:\n${source.content.substring(0, 300)}...` : ''}
+
+Để có thông tin đầy đủ, vui lòng liên hệ phòng tuyển sinh của trường.
+      `.trim();
+
+      alert(details);
+    } catch (error) {
+      console.error('Error viewing source details:', error);
+      alert('Có lỗi xảy ra khi xem chi tiết. Vui lòng thử lại sau.');
+    }
+  };
+
   const suggestedQuestions = [
     "Các ngành đào tạo của trường có gì?",
     "Điều kiện tuyển sinh năm 2025?",
@@ -98,20 +147,32 @@ const ChatInterface = () => {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-6 space-y-6">
         {messages.map((message) => (
           <div key={message.id} className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-[80%] p-3 rounded-lg ${message.sender === 'user' ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-800'}`}>
-              <div className="flex items-start space-x-2">
-                {message.sender === 'bot' && <Bot className="w-4 h-4 mt-0.5 flex-shrink-0" />}
-                {message.sender === 'user' && <User className="w-4 h-4 mt-0.5 flex-shrink-0" />}
-                <div>
-                  <div className="text-sm markdown-body">
+            <div className={`max-w-[85%] p-4 rounded-lg shadow-sm ${message.sender === 'user' ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-800'}`}>
+              <div className="flex items-start space-x-3">
+                {message.sender === 'bot' && <Bot className="w-5 h-5 mt-0.5 flex-shrink-0" />}
+                {message.sender === 'user' && <User className="w-5 h-5 mt-0.5 flex-shrink-0" />}
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm markdown-body leading-relaxed">
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>
                       {message.content}
                     </ReactMarkdown>
                   </div>
-                  <p className={`text-xs mt-1 ${message.sender === 'user' ? 'text-red-200' : 'text-gray-500'}`}>
+
+                  {/* Sources Section - only for bot messages */}
+                  {message.sender === 'bot' && message.sources && message.sources.length > 0 && (
+                    <SourceSection
+                      sources={message.sources}
+                      confidence={message.confidence}
+                      onDownloadSource={handleDownloadSource}
+                      onViewSourceDetails={handleViewSourceDetails}
+                      className="mt-3"
+                    />
+                  )}
+
+                  <p className={`text-xs mt-2 ${message.sender === 'user' ? 'text-red-200' : 'text-gray-500'}`}>
                     {message.timestamp.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
                   </p>
                 </div>
@@ -122,9 +183,9 @@ const ChatInterface = () => {
 
         {isTyping && (
           <div className="flex justify-start">
-            <div className="bg-gray-100 text-gray-800 p-3 rounded-lg max-w-[80%]">
-              <div className="flex items-center space-x-2">
-                <Bot className="w-4 h-4" />
+            <div className="bg-gray-100 text-gray-800 p-4 rounded-lg max-w-[85%] shadow-sm">
+              <div className="flex items-center space-x-3">
+                <Bot className="w-5 h-5" />
                 <div className="flex space-x-1">
                   <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
                   <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
@@ -136,10 +197,10 @@ const ChatInterface = () => {
         )}
 
         {messages.length === 1 && (
-          <div className="space-y-2">
+          <div className="space-y-3 px-2">
             <p className="text-sm text-gray-600 font-medium">Câu hỏi gợi ý:</p>
             {suggestedQuestions.map((question, index) => (
-              <button key={index} onClick={() => setInputMessage(question)} className="block w-full text-left p-2 text-sm bg-gray-50 hover:bg-gray-100 rounded border text-gray-700 transition-colors duration-200">
+              <button key={index} onClick={() => setInputMessage(question)} className="block w-full text-left p-3 text-sm bg-gray-50 hover:bg-gray-100 rounded-lg border text-gray-700 transition-colors duration-200 shadow-sm">
                 {question}
               </button>
             ))}
@@ -149,19 +210,19 @@ const ChatInterface = () => {
       </div>
 
       {/* Input */}
-      <div className="p-4 border-t border-gray-200">
-        <div className="flex space-x-2">
+      <div className="p-6 border-t border-gray-200 bg-gray-50">
+        <div className="flex space-x-3">
           <textarea
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="Nhập câu hỏi của bạn..."
-            className="flex-1 p-2 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
-            rows={2}
+            className="flex-1 p-3 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm leading-relaxed"
+            rows={3}
             disabled={isTyping}
           />
-          <button onClick={handleSendMessage} disabled={!inputMessage.trim() || isTyping} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors duration-200 flex items-center justify-center">
-            <Send className="w-4 h-4" />
+          <button onClick={handleSendMessage} disabled={!inputMessage.trim() || isTyping} className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors duration-200 flex items-center justify-center shadow-sm">
+            <Send className="w-5 h-5" />
           </button>
         </div>
       </div>

@@ -1,6 +1,7 @@
 """
 Configuration settings for the University Chatbot
 """
+
 import os
 from pathlib import Path
 
@@ -13,6 +14,7 @@ load_dotenv()
 BASE_DIR = Path(__file__).parent.parent
 DATA_DIR = BASE_DIR / "data"
 PDF_DIR = DATA_DIR / "pdfs"
+NEW_PDF_DIR = DATA_DIR / "new_pdf"  # PDF scan directory
 PROCESSED_DIR = DATA_DIR / "processed"
 EMBEDDINGS_DIR = DATA_DIR / "embeddings"
 
@@ -26,18 +28,47 @@ LLM_PROVIDER = os.getenv("LLM_PROVIDER", "ollama")  # "ollama" or "gemini"
 
 # Gemini Configuration
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-GEMINI_API_URL = os.getenv("GEMINI_API_URL", "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent")
+GEMINI_API_URL = os.getenv(
+    "GEMINI_API_URL",
+    "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent",
+)
+# Enable/disable Gemini question normalization
+ENABLE_GEMINI_NORMALIZATION = (
+    os.getenv("ENABLE_GEMINI_NORMALIZATION", "true").lower() == "true"
+)
 
 # Ollama Configuration
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3") # Changed from myaniu/qwen2.5-1m for testing
+OLLAMA_MODEL = os.getenv(
+    "OLLAMA_MODEL", "llama3"
+)  # Changed from myaniu/qwen2.5-1m for testing
 
-# Database Configuration
+# ============================================
+# PostgreSQL Configuration (NEW)
+# ============================================
+POSTGRES_USER = os.getenv("POSTGRES_USER", "uni_bot_user")
+POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "uni_bot_password")
+POSTGRES_DB = os.getenv("POSTGRES_DB", "uni_bot_db")
+POSTGRES_HOST = os.getenv("POSTGRES_HOST", "localhost")
+POSTGRES_PORT = int(os.getenv("POSTGRES_PORT", "5432"))
+
+# PostgreSQL Connection String
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}",
+)
+
+# ============================================
+# Legacy Database Configuration (SQLite - for backward compatibility)
+# ============================================
 DATABASE_PATH = os.getenv("DATABASE_PATH", str(EMBEDDINGS_DIR / "chatbot.db"))
 FAISS_INDEX_PATH = os.getenv("FAISS_INDEX_PATH", str(EMBEDDINGS_DIR / "faiss_index"))
 
 # Embedding Model Configuration
-EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "keepitreal/vietnamese-sbert")
+EMBEDDING_MODEL = os.getenv(
+    "EMBEDDING_MODEL", "bkai-foundation-models/vietnamese-embedding-v1"
+)
+BM25_INDEX_PATH = os.getenv("BM25_INDEX_PATH", str(EMBEDDINGS_DIR / "bm25_index.pkl"))
 
 # API Configuration
 API_HOST = os.getenv("API_HOST", "0.0.0.0")
@@ -51,9 +82,31 @@ LOG_FILE = os.getenv("LOG_FILE", "logs/chatbot.log")
 # RAG Configuration
 CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", "500"))
 CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", "50"))
-TOP_K_RESULTS = int(os.getenv("TOP_K_RESULTS", "5"))
+TOP_K_RESULTS = int(os.getenv("TOP_K_RESULTS", "15"))
 # Set a stricter threshold to filter out irrelevant results
-SIMILARITY_THRESHOLD = float(os.getenv("SIMILARITY_THRESHOLD", "0.5"))
+SIMILARITY_THRESHOLD = float(os.getenv("SIMILARITY_THRESHOLD", "0.35"))
+
+# ============================================
+# Hybrid Retrieval Configuration (NEW)
+# ============================================
+# Weight for dense retrieval (0-1), sparse gets (1 - DENSE_WEIGHT)
+DENSE_WEIGHT = float(os.getenv("DENSE_WEIGHT", "0.7"))
+# Minimum similarity score for dense retrieval
+DENSE_SIMILARITY_THRESHOLD = float(os.getenv("DENSE_SIMILARITY_THRESHOLD", "0.35"))
+# Minimum BM25 score for sparse retrieval
+SPARSE_SIMILARITY_THRESHOLD = float(os.getenv("SPARSE_SIMILARITY_THRESHOLD", "0.1"))
+
+# ============================================
+# Ingestion Service Configuration (NEW)
+# ============================================
+# Directory to watch for new PDFs
+PDF_WATCH_DIR = os.getenv("PDF_WATCH_DIR", str(PDF_DIR))
+# Directory for processed PDFs
+PROCESSED_PDF_DIR = os.getenv("PROCESSED_PDF_DIR", str(PROCESSED_DIR))
+# Interval to check for new PDFs (in seconds)
+INGESTION_CHECK_INTERVAL = int(os.getenv("INGESTION_CHECK_INTERVAL", "60"))
+# Enable automatic ingestion on startup
+AUTO_INGEST_ON_STARTUP = os.getenv("AUTO_INGEST_ON_STARTUP", "true").lower() == "true"
 
 # Rate Limiting
 RATE_LIMIT_REQUESTS = int(os.getenv("RATE_LIMIT_REQUESTS", "100"))

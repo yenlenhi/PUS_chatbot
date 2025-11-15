@@ -139,6 +139,46 @@ body {
 .markdown-body {
   background-color: transparent !important;
   color: inherit !important;
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
+}
+
+/* Enhanced chat message styling */
+.markdown-body p {
+  margin-bottom: 0.75rem !important;
+  line-height: 1.6 !important;
+}
+
+.markdown-body h1, .markdown-body h2, .markdown-body h3, .markdown-body h4, .markdown-body h5, .markdown-body h6 {
+  margin-top: 1rem !important;
+  margin-bottom: 0.5rem !important;
+  font-weight: 600 !important;
+}
+
+.markdown-body strong {
+  font-weight: 600 !important;
+}
+
+.markdown-body code {
+  background-color: rgba(0, 0, 0, 0.1) !important;
+  padding: 0.125rem 0.25rem !important;
+  border-radius: 0.25rem !important;
+  font-size: 0.875em !important;
+}
+
+.markdown-body pre {
+  background-color: rgba(0, 0, 0, 0.05) !important;
+  padding: 1rem !important;
+  border-radius: 0.5rem !important;
+  overflow-x: auto !important;
+  margin: 0.75rem 0 !important;
+}
+
+.markdown-body blockquote {
+  border-left: 4px solid #e5e7eb !important;
+  padding-left: 1rem !important;
+  margin: 0.75rem 0 !important;
+  font-style: italic !important;
 }
 
 

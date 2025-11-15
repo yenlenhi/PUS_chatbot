@@ -2,10 +2,10 @@
 __pycache__/
 *.py[cod]
 *$py.class
-
+data
 # C extensions
 *.so
-
+data/new_pdf
 # Distribution / packaging
 .Python
 build/
@@ -283,3 +283,5 @@ frontend/out/
 # Package files
 *.tgz
 *.tar.gz
+
+memory-bank
