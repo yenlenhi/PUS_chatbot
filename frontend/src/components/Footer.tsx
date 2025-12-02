@@ -1,5 +1,6 @@
 import React from 'react';
-import { MapPin, Phone, Mail, Globe, Facebook, Youtube } from 'lucide-react';
+import Link from 'next/link';
+import { MapPin, Phone, Mail, Globe, Facebook, Youtube, MessageCircle, Settings } from 'lucide-react';
 
 const Footer = () => {
   return (
@@ -32,29 +33,35 @@ const Footer = () => {
             <h4 className="text-lg font-semibold mb-4 text-yellow-400">Liên kết nhanh</h4>
             <ul className="space-y-2">
               <li>
-                <a href="/gioi-thieu" className="text-gray-300 hover:text-white transition-colors duration-200">
+                <Link href="/gioi-thieu" className="text-gray-300 hover:text-white transition-colors duration-200">
                   Giới thiệu
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="/dao-tao" className="text-gray-300 hover:text-white transition-colors duration-200">
+                <Link href="/dao-tao" className="text-gray-300 hover:text-white transition-colors duration-200">
                   Đào tạo
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="/tuyen-sinh" className="text-gray-300 hover:text-white transition-colors duration-200">
+                <Link href="/tuyen-sinh" className="text-gray-300 hover:text-white transition-colors duration-200">
                   Tuyển sinh
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="/nghien-cuu" className="text-gray-300 hover:text-white transition-colors duration-200">
+                <Link href="/nghien-cuu" className="text-gray-300 hover:text-white transition-colors duration-200">
                   Nghiên cứu khoa học
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="/tin-tuc" className="text-gray-300 hover:text-white transition-colors duration-200">
+                <Link href="/tin-tuc" className="text-gray-300 hover:text-white transition-colors duration-200">
                   Tin tức
-                </a>
+                </Link>
+              </li>
+              <li>
+                <Link href="/chat-bot" className="text-yellow-400 hover:text-yellow-300 transition-colors duration-200 flex items-center gap-2">
+                  <MessageCircle className="w-4 h-4" />
+                  Hỏi đáp AI
+                </Link>
               </li>
             </ul>
           </div>
@@ -111,16 +118,20 @@ const Footer = () => {
             <p className="text-gray-400 text-sm">
               © 2025 Trường Đại học An ninh Nhân dân. Tất cả quyền được bảo lưu.
             </p>
-            <div className="flex space-x-6 mt-4 md:mt-0">
-              <a href="/privacy" className="text-gray-400 hover:text-white text-sm transition-colors duration-200">
+            <div className="flex flex-wrap justify-center gap-4 md:gap-6 mt-4 md:mt-0">
+              <Link href="/privacy" className="text-gray-400 hover:text-white text-sm transition-colors duration-200">
                 Chính sách bảo mật
-              </a>
-              <a href="/terms" className="text-gray-400 hover:text-white text-sm transition-colors duration-200">
+              </Link>
+              <Link href="/terms" className="text-gray-400 hover:text-white text-sm transition-colors duration-200">
                 Điều khoản sử dụng
-              </a>
-              <a href="/sitemap" className="text-gray-400 hover:text-white text-sm transition-colors duration-200">
+              </Link>
+              <Link href="/sitemap" className="text-gray-400 hover:text-white text-sm transition-colors duration-200">
                 Sơ đồ trang web
-              </a>
+              </Link>
+              <Link href="/admin" className="text-gray-500 hover:text-gray-300 text-sm transition-colors duration-200 flex items-center gap-1">
+                <Settings className="w-3 h-3" />
+                Admin
+              </Link>
             </div>
           </div>
         </div>

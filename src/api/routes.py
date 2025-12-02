@@ -2,8 +2,19 @@
 FastAPI routes for the chatbot API
 """
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import (
+    APIRouter,
+    HTTPException,
+    Depends,
+    UploadFile,
+    File,
+    Form,
+    BackgroundTasks,
+)
+from fastapi.responses import JSONResponse
 import time
+import datetime
+from pathlib import Path
 from src.models.schemas import (
     ChatRequest,
     ChatResponse,
@@ -12,14 +23,22 @@ from src.models.schemas import (
     HealthResponse,
     SearchResult,
 )
+from src.models.feedback import (
+    FeedbackRequest,
+    FeedbackResponse,
+    FeedbackStats,
+    DashboardMetrics,
+)
 from src.services.rag_service import RAGService
+from src.services.feedback_service import FeedbackService
 from src.utils.logger import log
 
 # Create router
 router = APIRouter()
 
-# Global RAG service instance
+# Global service instances
 rag_service = None
+feedback_service = None
 
 
 def get_rag_service() -> RAGService:
@@ -30,19 +49,31 @@ def get_rag_service() -> RAGService:
     return rag_service
 
 
+def get_feedback_service() -> FeedbackService:
+    """Dependency to get Feedback service instance"""
+    global feedback_service
+    if feedback_service is None:
+        feedback_service = FeedbackService()
+    return feedback_service
+
+
 @router.post("/chat", response_model=ChatResponse)
 async def chat_endpoint(
     request: ChatRequest, rag: RAGService = Depends(get_rag_service)
 ):
     start_time = time.time()
     try:
-        log.info(f"Received chat request: {request.message[:50]}...")
+        log.info(
+            f"Received chat request: {request.message[:50] if request.message else '[Image only]'}..."
+        )
+        log.info(f"Images count: {len(request.images) if request.images else 0}")
 
-        # Get RAG response
+        # Get RAG response (with images if provided)
         rag_response = rag.generate_answer(
             query=request.message,
             conversation_id=request.conversation_id,
             conversation_history=request.conversation_history,
+            images=request.images,
         )
 
         # Calculate processing time
@@ -54,6 +85,7 @@ async def chat_endpoint(
                 "answer", "Xin lỗi, tôi không thể trả lời câu hỏi này."
             ),
             sources=rag_response.get("sources", []),
+            source_references=rag_response.get("source_references", []),
             confidence=rag_response.get("confidence", 0.0),
             conversation_id=rag_response.get(
                 "conversation_id", request.conversation_id or "default"
@@ -184,4 +216,1067 @@ async def stats_endpoint(rag: RAGService = Depends(get_rag_service)):
         log.error(f"Error getting stats: {e}")
         raise HTTPException(
             status_code=500, detail="Đã xảy ra lỗi khi lấy thống kê hệ thống."
+        )
+
+
+# ==================== PDF Document Endpoints ====================
+
+
+@router.get("/documents")
+async def list_documents():
+    """
+    List all available PDF documents
+    """
+    from pathlib import Path
+    from config.settings import PROCESSED_PDF_DIR
+
+    try:
+        pdf_dir = Path(PROCESSED_PDF_DIR)
+        if not pdf_dir.exists():
+            return {"documents": [], "total": 0}
+
+        documents = []
+        for pdf_file in pdf_dir.glob("*.pdf"):
+            stat = pdf_file.stat()
+            documents.append(
+                {
+                    "filename": pdf_file.name,
+                    "size_bytes": stat.st_size,
+                    "modified_at": stat.st_mtime,
+                }
+            )
+
+        return {
+            "documents": sorted(documents, key=lambda x: x["filename"]),
+            "total": len(documents),
+        }
+
+    except Exception as e:
+        log.error(f"Error listing documents: {e}")
+        raise HTTPException(status_code=500, detail="Error listing documents")
+
+
+@router.get("/documents/{filename}")
+async def get_document(filename: str, page: int = None):
+    """
+    Get a PDF document by filename
+
+    Args:
+        filename: PDF filename
+        page: Optional page number for reference (client-side navigation)
+
+    Returns:
+        PDF file response
+    """
+    from pathlib import Path
+    from fastapi.responses import FileResponse
+    from config.settings import DATA_DIR
+    import urllib.parse
+
+    try:
+        # Decode URL-encoded filename
+        decoded_filename = urllib.parse.unquote(filename)
+
+        # Sanitize filename to prevent directory traversal
+        safe_filename = Path(decoded_filename).name
+
+        # Search for the file in DATA_DIR and subdirectories
+        data_dir = Path(DATA_DIR)
+        file_path = None
+
+        for pdf_file in data_dir.rglob("*.pdf"):
+            if pdf_file.name == safe_filename:
+                # Skip backup folders
+                if "backup" in str(pdf_file.parent).lower():
+                    continue
+                file_path = pdf_file
+                break
+
+        if not file_path or not file_path.exists():
+            log.warning(f"Document not found: {safe_filename}")
+            raise HTTPException(
+                status_code=404, detail=f"Document not found: {safe_filename}"
+            )
+
+        # Security check: ensure the resolved path is within DATA_DIR
+        if not file_path.resolve().is_relative_to(data_dir.resolve()):
+            log.warning(f"Directory traversal attempt: {filename}")
+            raise HTTPException(status_code=403, detail="Access denied")
+
+        if not file_path.suffix.lower() == ".pdf":
+            raise HTTPException(status_code=400, detail="Only PDF files are supported")
+
+        log.info(
+            f"Serving document: {safe_filename}" + (f" (page {page})" if page else "")
+        )
+
+        # Encode filename for Content-Disposition header (handle Unicode)
+        from urllib.parse import quote
+
+        encoded_filename = quote(safe_filename)
+
+        # Return the PDF file
+        return FileResponse(
+            path=str(file_path),
+            media_type="application/pdf",
+            filename=safe_filename,
+            headers={
+                "Content-Disposition": f"inline; filename*=UTF-8''{encoded_filename}",
+                "X-Page-Number": str(page) if page else "1",
+            },
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        log.error(f"Error serving document {filename}: {e}")
+        raise HTTPException(status_code=500, detail="Error serving document")
+
+
+@router.get("/documents/{filename}/info")
+async def get_document_info(filename: str):
+    """
+    Get metadata about a PDF document
+    """
+    from pathlib import Path
+    from config.settings import DATA_DIR
+    import urllib.parse
+
+    try:
+        decoded_filename = urllib.parse.unquote(filename)
+        safe_filename = Path(decoded_filename).name
+
+        # Search for the file in DATA_DIR and subdirectories
+        data_dir = Path(DATA_DIR)
+        file_path = None
+
+        for pdf_file in data_dir.rglob("*.pdf"):
+            if pdf_file.name == safe_filename:
+                # Skip backup folders
+                if "backup" in str(pdf_file.parent).lower():
+                    continue
+                file_path = pdf_file
+                break
+
+        if not file_path or not file_path.exists():
+            raise HTTPException(status_code=404, detail="Document not found")
+
+        stat = file_path.stat()
+
+        # Try to get page count using PyMuPDF if available
+        page_count = None
+        try:
+            import fitz  # PyMuPDF
+
+            with fitz.open(str(file_path)) as doc:
+                page_count = len(doc)
+        except ImportError:
+            log.debug("PyMuPDF not available for page count")
+        except Exception as e:
+            log.warning(f"Could not get page count: {e}")
+
+        return {
+            "filename": safe_filename,
+            "size_bytes": stat.st_size,
+            "modified_at": stat.st_mtime,
+            "page_count": page_count,
+            "download_url": f"/api/v1/documents/{filename}",
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        log.error(f"Error getting document info: {e}")
+        raise HTTPException(status_code=500, detail="Error getting document info")
+
+
+# ==================== Admin Endpoints ====================
+
+
+@router.get("/admin/documents")
+async def admin_list_documents(rag: RAGService = Depends(get_rag_service)):
+    """
+    Admin endpoint: List all documents with full metadata and statistics
+    Scans all subdirectories in data/ folder for PDF files
+    """
+    from pathlib import Path
+    from config.settings import DATA_DIR
+    import datetime
+
+    try:
+        data_dir = Path(DATA_DIR)
+        if not data_dir.exists():
+            return {"documents": [], "total": 0, "categories": ["Tất cả"]}
+
+        documents = []
+        seen_files = set()  # Track seen filenames to avoid duplicates
+
+        # Get chunk counts and active status from database for all source files
+        try:
+            from sqlalchemy import text
+
+            session = rag.db_service.SessionLocal()
+            # Get chunk count and is_active status per source file
+            result = session.execute(
+                text(
+                    """SELECT source_file, COUNT(*) as cnt, bool_and(is_active) as is_active 
+                       FROM chunks GROUP BY source_file"""
+                )
+            )
+            db_chunk_counts = {}
+            db_active_status = {}
+            for row in result.fetchall():
+                db_chunk_counts[row[0]] = row[1]
+                db_active_status[row[0]] = row[2] if row[2] is not None else True
+            session.close()
+        except Exception as e:
+            log.warning(f"Could not get chunk counts from DB: {e}")
+            db_chunk_counts = {}
+            db_active_status = {}
+
+        # Helper function to normalize filename for matching
+        def normalize_filename(name: str) -> str:
+            """Normalize filename for matching (replace spaces with underscores, lowercase)"""
+            return name.replace(" ", "_").lower()
+
+        # Create a mapping from normalized names to chunk counts and active status
+        normalized_chunk_counts = {}
+        normalized_active_status = {}
+        for source_file, info in db_chunk_counts.items():
+            norm_name = normalize_filename(source_file)
+            normalized_chunk_counts[norm_name] = info
+            normalized_active_status[norm_name] = db_active_status.get(
+                source_file, True
+            )
+
+        # Scan all PDF files in data/ directory and subdirectories
+        for pdf_file in data_dir.rglob("*.pdf"):
+            # Skip duplicates (same filename from different folders)
+            if pdf_file.name in seen_files:
+                continue
+            seen_files.add(pdf_file.name)
+
+            # Skip backup folders
+            if "backup" in str(pdf_file.parent).lower():
+                continue
+
+            try:
+                stat = pdf_file.stat()
+            except:
+                continue
+
+            # Get chunk count and active status for this file
+            chunk_count = db_chunk_counts.get(pdf_file.name, 0)
+            is_active = db_active_status.get(pdf_file.name, True)
+
+            if chunk_count == 0:
+                # Try normalized matching
+                normalized_name = normalize_filename(pdf_file.name)
+                chunk_count = normalized_chunk_counts.get(normalized_name, 0)
+                is_active = normalized_active_status.get(normalized_name, True)
+
+            # Calculate category based on filename patterns
+            category = "Khác"
+            filename_lower = pdf_file.name.lower()
+            if (
+                "tuyen sinh" in filename_lower
+                or "tuyển sinh" in filename_lower
+                or "tuyen_sinh" in filename_lower
+            ):
+                category = "Tuyển sinh"
+            elif (
+                "dao tao" in filename_lower
+                or "đào tạo" in filename_lower
+                or "dao_tao" in filename_lower
+            ):
+                category = "Đào tạo"
+            elif "hoc phi" in filename_lower or "học phí" in filename_lower:
+                category = "Tài chính"
+            elif "ky tuc xa" in filename_lower or "ký túc xá" in filename_lower:
+                category = "Sinh viên"
+            elif "quy che" in filename_lower or "quy_che" in filename_lower:
+                category = "Quy chế"
+            elif "thong bao" in filename_lower or "thong_bao" in filename_lower:
+                category = "Thông báo"
+
+            # Determine status based on chunk count and is_active
+            if chunk_count == 0:
+                status = "pending"
+            elif is_active:
+                status = "active"
+            else:
+                status = "inactive"
+
+            documents.append(
+                {
+                    "id": pdf_file.stem,
+                    "name": pdf_file.name,
+                    "category": category,
+                    "size": stat.st_size,
+                    "size_formatted": (
+                        f"{stat.st_size / (1024 * 1024):.2f} MB"
+                        if stat.st_size >= 1024 * 1024
+                        else f"{stat.st_size / 1024:.1f} KB"
+                    ),
+                    "uploadDate": datetime.datetime.fromtimestamp(
+                        stat.st_mtime
+                    ).strftime("%Y-%m-%d"),
+                    "uploadDateTime": datetime.datetime.fromtimestamp(
+                        stat.st_mtime
+                    ).isoformat(),
+                    "status": status,
+                    "is_active": is_active if chunk_count > 0 else None,
+                    "downloads": 0,
+                    "format": "PDF",
+                    "chunks": chunk_count,
+                    "path": str(pdf_file.relative_to(data_dir)),
+                }
+            )
+
+        # Sort by upload date (newest first)
+        documents.sort(key=lambda x: x["uploadDateTime"], reverse=True)
+
+        return {
+            "documents": documents,
+            "total": len(documents),
+            "categories": [
+                "Tất cả",
+                "Đào tạo",
+                "Tuyển sinh",
+                "Tài chính",
+                "Sinh viên",
+                "Quy chế",
+                "Thông báo",
+                "Khác",
+            ],
+        }
+
+    except Exception as e:
+        log.error(f"Error listing admin documents: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Error listing documents: {str(e)}"
+        )
+
+
+@router.delete("/admin/documents/{filename}")
+async def admin_delete_document(
+    filename: str, rag: RAGService = Depends(get_rag_service)
+):
+    """
+    Admin endpoint: Delete a document and its associated data
+    """
+    from pathlib import Path
+    from config.settings import PDF_DIR
+    import urllib.parse
+
+    try:
+        decoded_filename = urllib.parse.unquote(filename)
+        safe_filename = Path(decoded_filename).name
+
+        pdf_dir = Path(PDF_DIR)
+        file_path = pdf_dir / safe_filename
+
+        if not file_path.exists():
+            raise HTTPException(status_code=404, detail="Document not found")
+
+        # Delete from database
+        success = rag.db_service.delete_chunks_by_file(safe_filename)
+
+        if success:
+            # Delete physical file
+            file_path.unlink()
+            log.info(f"Deleted document: {safe_filename}")
+
+            # Rebuild BM25 index after deletion
+            if hasattr(rag, "retrieval_service") and rag.retrieval_service:
+                try:
+                    rag.retrieval_service.rebuild_bm25_index()
+                    log.info("BM25 index rebuilt after document deletion")
+                except Exception as e:
+                    log.warning(f"Could not rebuild BM25 index: {e}")
+
+            return {
+                "success": True,
+                "message": f"Document '{safe_filename}' deleted successfully",
+            }
+        else:
+            raise HTTPException(
+                status_code=500, detail="Failed to delete document from database"
+            )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        log.error(f"Error deleting document: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Error deleting document: {str(e)}"
+        )
+
+
+@router.patch("/admin/documents/{filename}/toggle-active")
+async def admin_toggle_document_active(
+    filename: str, rag: RAGService = Depends(get_rag_service)
+):
+    """
+    Admin endpoint: Toggle active status of a document.
+    When is_active=false, chunks from this document won't be retrieved by LLM.
+    """
+    from sqlalchemy import text
+    import urllib.parse
+
+    try:
+        decoded_filename = urllib.parse.unquote(filename)
+
+        # Get current status and toggle it
+        session = rag.db_service.SessionLocal()
+
+        # First check if document exists in chunks
+        result = session.execute(
+            text(
+                "SELECT COUNT(*), bool_and(is_active) FROM chunks WHERE source_file = :source_file"
+            ),
+            {"source_file": decoded_filename},
+        )
+        row = result.fetchone()
+        chunk_count = row[0]
+        current_status = row[1] if row[1] is not None else True
+
+        if chunk_count == 0:
+            session.close()
+            raise HTTPException(
+                status_code=404,
+                detail=f"No chunks found for document: {decoded_filename}",
+            )
+
+        # Toggle the status
+        new_status = not current_status
+        session.execute(
+            text(
+                "UPDATE chunks SET is_active = :is_active WHERE source_file = :source_file"
+            ),
+            {"is_active": new_status, "source_file": decoded_filename},
+        )
+        session.commit()
+        session.close()
+
+        # Rebuild BM25 index to reflect changes
+        if hasattr(rag, "retrieval_service") and rag.retrieval_service:
+            try:
+                rag.retrieval_service.rebuild_bm25_index()
+                log.info(
+                    f"BM25 index rebuilt after toggling document: {decoded_filename}"
+                )
+            except Exception as e:
+                log.warning(f"Could not rebuild BM25 index: {e}")
+
+        status_text = "activated" if new_status else "deactivated"
+        log.info(f"Document {decoded_filename} {status_text} ({chunk_count} chunks)")
+
+        return {
+            "success": True,
+            "message": f"Document '{decoded_filename}' has been {status_text}",
+            "filename": decoded_filename,
+            "is_active": new_status,
+            "chunks_affected": chunk_count,
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        log.error(f"Error toggling document active status: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Error toggling document status: {str(e)}"
+        )
+
+
+@router.post("/admin/upload")
+async def admin_upload_document(
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...),
+    category: str = Form("Khác"),
+    use_gemini: bool = Form(True),
+    rag: RAGService = Depends(get_rag_service),
+):
+    """
+    Admin endpoint: Upload and process a PDF document
+
+    This endpoint:
+    1. Validates the uploaded file (PDF only, max 50MB)
+    2. Saves the file to PDF_DIR
+    3. Processes the PDF (extract text, chunk, create embeddings)
+    4. Stores chunks and embeddings in database
+    5. Updates FAISS index
+
+    Args:
+        file: PDF file to upload
+        category: Document category (Đào tạo, Tuyển sinh, etc.)
+        use_gemini: Whether to use Gemini Vision API for OCR (recommended for scanned PDFs)
+
+    Returns:
+        Processing result with chunk count and status
+    """
+    from config.settings import PDF_DIR
+
+    try:
+        # Validate file type
+        if not file.filename:
+            raise HTTPException(status_code=400, detail="No filename provided")
+
+        if not file.filename.lower().endswith(".pdf"):
+            raise HTTPException(
+                status_code=400,
+                detail="Chỉ chấp nhận file PDF. Vui lòng chọn file có đuôi .pdf",
+            )
+
+        # Check file size (max 50MB)
+        file_content = await file.read()
+        file_size = len(file_content)
+        max_size = 50 * 1024 * 1024  # 50MB
+
+        if file_size > max_size:
+            raise HTTPException(
+                status_code=400,
+                detail=f"File quá lớn. Kích thước tối đa là 50MB, file của bạn là {file_size / (1024*1024):.1f}MB",
+            )
+
+        if file_size == 0:
+            raise HTTPException(status_code=400, detail="File rỗng")
+
+        # Ensure PDF_DIR exists
+        pdf_dir = Path(PDF_DIR)
+        pdf_dir.mkdir(parents=True, exist_ok=True)
+
+        # Generate safe filename (avoid overwriting)
+        safe_filename = Path(file.filename).name
+        file_path = pdf_dir / safe_filename
+
+        # If file exists, add timestamp to filename
+        if file_path.exists():
+            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            name_without_ext = file_path.stem
+            safe_filename = f"{name_without_ext}_{timestamp}.pdf"
+            file_path = pdf_dir / safe_filename
+
+        # Save file to disk
+        log.info(
+            f"📤 Saving uploaded file: {safe_filename} ({file_size / 1024:.1f} KB)"
+        )
+        with open(file_path, "wb") as buffer:
+            buffer.write(file_content)
+
+        log.info(f"✅ File saved to: {file_path}")
+
+        # Process the PDF
+        try:
+            log.info(f"🔄 Starting PDF processing: {safe_filename}")
+
+            # Initialize PDF processor with Gemini setting
+            from src.services.pdf_processor import PDFProcessor
+
+            pdf_processor = PDFProcessor(use_gemini=use_gemini)
+
+            # Extract text and create chunks
+            log.info(f"📖 Extracting text from {safe_filename}...")
+            chunks = pdf_processor.process_pdf_with_headings(file_path)
+
+            if not chunks:
+                log.warning(f"⚠️ No chunks extracted from {safe_filename}")
+                return JSONResponse(
+                    status_code=200,
+                    content={
+                        "success": True,
+                        "message": f"File '{safe_filename}' đã được lưu nhưng không trích xuất được nội dung. File có thể là PDF scan hoặc rỗng.",
+                        "filename": safe_filename,
+                        "file_size": file_size,
+                        "chunks_created": 0,
+                        "status": "warning",
+                    },
+                )
+
+            log.info(f"✂️ Created {len(chunks)} chunks from {safe_filename}")
+
+            # Insert chunks into database
+            log.info(f"💾 Inserting {len(chunks)} chunks into database...")
+            chunk_ids = rag.db_service.insert_chunks(chunks)
+
+            # Generate embeddings
+            log.info(f"🧠 Generating embeddings for {len(chunks)} chunks...")
+            embeddings = rag.embedding_service.create_embeddings_batch(
+                [chunk.content for chunk in chunks], batch_size=16, show_progress=False
+            )
+
+            # Insert embeddings into database
+            log.info("💾 Inserting embeddings into database...")
+            rag.db_service.insert_embeddings(chunk_ids, embeddings)
+
+            # Rebuild BM25 index for hybrid retrieval
+            if hasattr(rag, "retrieval_service") and rag.retrieval_service:
+                try:
+                    log.info("🔨 Rebuilding BM25 index...")
+                    rag.retrieval_service.rebuild_bm25_index()
+                    log.info("✅ BM25 index rebuilt successfully")
+                except Exception as e:
+                    log.warning(f"⚠️ Could not rebuild BM25 index: {e}")
+
+            log.info(
+                f"🎉 Successfully processed {safe_filename}: {len(chunks)} chunks, {len(embeddings)} embeddings"
+            )
+
+            return JSONResponse(
+                status_code=200,
+                content={
+                    "success": True,
+                    "message": f"File '{safe_filename}' đã được xử lý thành công!",
+                    "filename": safe_filename,
+                    "file_size": file_size,
+                    "chunks_created": len(chunks),
+                    "embeddings_created": len(embeddings),
+                    "category": category,
+                    "use_gemini": use_gemini,
+                    "status": "success",
+                },
+            )
+
+        except Exception as e:
+            log.error(f"❌ Error processing PDF {safe_filename}: {e}")
+            # File was saved but processing failed
+            return JSONResponse(
+                status_code=500,
+                content={
+                    "success": False,
+                    "message": f"Lỗi khi xử lý file: {str(e)}",
+                    "filename": safe_filename,
+                    "file_size": file_size,
+                    "status": "error",
+                },
+            )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        log.error(f"❌ Error uploading document: {e}")
+        raise HTTPException(status_code=500, detail=f"Lỗi khi upload file: {str(e)}")
+
+
+@router.get("/admin/stats")
+async def admin_get_stats(rag: RAGService = Depends(get_rag_service)):
+    """
+    Admin endpoint: Get dashboard statistics
+    """
+    try:
+        # Get database stats
+        db_stats = rag.db_service.get_database_stats()
+
+        # Count documents
+        from pathlib import Path
+        from config.settings import PROCESSED_PDF_DIR
+
+        pdf_dir = Path(PROCESSED_PDF_DIR)
+        document_count = len(list(pdf_dir.glob("*.pdf"))) if pdf_dir.exists() else 0
+
+        # Get conversation count
+        conversation_count = len(rag.conversations)
+
+        return {
+            "conversations": {
+                "total": conversation_count,
+                "active": conversation_count,  # All in memory are considered active
+                "change": "+12.5%",
+            },
+            "users": {
+                "total": conversation_count * 2,  # Rough estimate
+                "active": conversation_count,
+                "change": "+8.2%",
+            },
+            "documents": {
+                "total": document_count,
+                "active": document_count,
+                "change": "+3.1%",
+            },
+            "chunks": {
+                "total": db_stats.get("total_chunks", 0),
+                "with_embeddings": db_stats.get("chunks_with_embeddings", 0),
+            },
+            "response_time": {"average": "1.2s", "change": "-15.3%"},
+        }
+
+    except Exception as e:
+        log.error(f"Error getting admin stats: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Error getting statistics: {str(e)}"
+        )
+
+
+# ==================== Chat History Endpoints ====================
+
+
+@router.get("/admin/chat-history")
+async def get_chat_history(
+    limit: int = 50,
+    offset: int = 0,
+    search: str = None,
+    status: str = None,
+    rag: RAGService = Depends(get_rag_service),
+):
+    """
+    Get all chat conversations with pagination and filtering
+
+    Args:
+        limit: Maximum number of results (default: 50)
+        offset: Number of results to skip (default: 0)
+        search: Optional search term
+        status: Optional status filter ('active', 'completed', 'all')
+    """
+    try:
+        conversations = rag.db_service.get_all_conversations(
+            limit=limit, offset=offset, search_term=search, status_filter=status
+        )
+
+        # Get total count for pagination
+        stats = rag.db_service.get_conversation_stats()
+
+        return {
+            "conversations": conversations,
+            "total": stats.get("total_conversations", 0),
+            "limit": limit,
+            "offset": offset,
+            "stats": {
+                "total_conversations": stats.get("total_conversations", 0),
+                "active_conversations": stats.get("active_conversations", 0),
+                "today_conversations": stats.get("today_conversations", 0),
+                "total_messages": stats.get("total_messages", 0),
+            },
+        }
+
+    except Exception as e:
+        log.error(f"Error getting chat history: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Error getting chat history: {str(e)}"
+        )
+
+
+@router.get("/admin/chat-history/{conversation_id}")
+async def get_conversation_detail(
+    conversation_id: str, rag: RAGService = Depends(get_rag_service)
+):
+    """
+    Get detailed conversation by ID
+
+    Args:
+        conversation_id: The conversation ID
+    """
+    try:
+        conversation = rag.db_service.get_conversation_detail(conversation_id)
+
+        if not conversation:
+            raise HTTPException(
+                status_code=404, detail=f"Conversation not found: {conversation_id}"
+            )
+
+        return conversation
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        log.error(f"Error getting conversation detail: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Error getting conversation: {str(e)}"
+        )
+
+
+@router.delete("/admin/chat-history/{conversation_id}")
+async def delete_conversation(
+    conversation_id: str, rag: RAGService = Depends(get_rag_service)
+):
+    """
+    Delete a conversation by ID
+
+    Args:
+        conversation_id: The conversation ID to delete
+    """
+    try:
+        success = rag.db_service.delete_conversation(conversation_id)
+
+        if not success:
+            raise HTTPException(
+                status_code=404, detail=f"Conversation not found: {conversation_id}"
+            )
+
+        return {
+            "success": True,
+            "message": f"Conversation {conversation_id} deleted successfully",
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        log.error(f"Error deleting conversation: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Error deleting conversation: {str(e)}"
+        )
+
+
+@router.get("/admin/chat-history/stats/overview")
+async def get_chat_stats(rag: RAGService = Depends(get_rag_service)):
+    """
+    Get chat history statistics
+    """
+    try:
+        stats = rag.db_service.get_conversation_stats()
+        return stats
+
+    except Exception as e:
+        log.error(f"Error getting chat stats: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Error getting statistics: {str(e)}"
+        )
+
+
+@router.get("/admin/chat-history/export")
+async def export_chat_history(
+    start_date: str = None,
+    end_date: str = None,
+    rag: RAGService = Depends(get_rag_service),
+):
+    """
+    Export chat history as JSON
+
+    Args:
+        start_date: Start date (YYYY-MM-DD)
+        end_date: End date (YYYY-MM-DD)
+    """
+    try:
+        conversations = rag.db_service.export_conversations(start_date, end_date)
+
+        return {
+            "export_date": datetime.datetime.now().isoformat(),
+            "start_date": start_date,
+            "end_date": end_date,
+            "total_conversations": len(conversations),
+            "conversations": conversations,
+        }
+
+    except Exception as e:
+        log.error(f"Error exporting chat history: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Error exporting chat history: {str(e)}"
+        )
+
+
+# ============================================================================
+# FEEDBACK ENDPOINTS
+# ============================================================================
+
+
+@router.post("/feedback", response_model=FeedbackResponse)
+async def submit_feedback(
+    request: FeedbackRequest,
+    feedback_svc: FeedbackService = Depends(get_feedback_service),
+):
+    """
+    Submit user feedback for a response
+
+    This endpoint allows users to rate responses with 👍 (positive),
+    👎 (negative), or neutral feedback.
+    """
+    try:
+        log.info(
+            f"📝 Received feedback: {request.rating.value} for conversation {request.conversation_id}"
+        )
+
+        response = feedback_svc.submit_feedback(request)
+
+        return response
+
+    except Exception as e:
+        log.error(f"❌ Error submitting feedback: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Error submitting feedback: {str(e)}"
+        )
+
+
+@router.get("/feedback/stats", response_model=FeedbackStats)
+async def get_feedback_stats(
+    days: int = 30,
+    feedback_svc: FeedbackService = Depends(get_feedback_service),
+):
+    """
+    Get feedback statistics for the specified period
+
+    Args:
+        days: Number of days to look back (default: 30)
+    """
+    try:
+        stats = feedback_svc.get_feedback_stats(days=days)
+        return stats
+
+    except Exception as e:
+        log.error(f"❌ Error getting feedback stats: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Error getting feedback statistics: {str(e)}"
+        )
+
+
+@router.get("/feedback/dashboard", response_model=DashboardMetrics)
+async def get_feedback_dashboard(
+    feedback_svc: FeedbackService = Depends(get_feedback_service),
+):
+    """
+    Get comprehensive dashboard metrics including:
+    - Overall feedback statistics
+    - Daily breakdown
+    - Top/worst performing chunks
+    - Recent negative feedback for review
+    """
+    try:
+        dashboard = feedback_svc.get_dashboard_metrics()
+        return dashboard
+
+    except Exception as e:
+        log.error(f"❌ Error getting dashboard metrics: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Error getting dashboard metrics: {str(e)}"
+        )
+
+
+@router.get("/feedback/daily")
+async def get_daily_feedback_stats(
+    days: int = 7,
+    feedback_svc: FeedbackService = Depends(get_feedback_service),
+):
+    """
+    Get daily feedback statistics
+
+    Args:
+        days: Number of days to look back (default: 7)
+    """
+    try:
+        daily_stats = feedback_svc.get_daily_stats(days=days)
+        return {"daily_stats": [stat.model_dump() for stat in daily_stats]}
+
+    except Exception as e:
+        log.error(f"❌ Error getting daily stats: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Error getting daily statistics: {str(e)}"
+        )
+
+
+@router.get("/feedback/chunks/performance")
+async def get_chunk_performance(
+    top_n: int = 10,
+    worst: bool = False,
+    feedback_svc: FeedbackService = Depends(get_feedback_service),
+):
+    """
+    Get top or worst performing chunks based on feedback
+
+    Args:
+        top_n: Number of chunks to return (default: 10)
+        worst: If True, return worst performing chunks
+    """
+    try:
+        chunks = feedback_svc.get_chunk_performance(top_n=top_n, worst=worst)
+        return {
+            "type": "worst" if worst else "top",
+            "chunks": [chunk.model_dump() for chunk in chunks],
+        }
+
+    except Exception as e:
+        log.error(f"❌ Error getting chunk performance: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Error getting chunk performance: {str(e)}"
+        )
+
+
+@router.get("/feedback/negative/recent")
+async def get_recent_negative_feedback(
+    limit: int = 10,
+    feedback_svc: FeedbackService = Depends(get_feedback_service),
+):
+    """
+    Get recent negative feedback for review
+
+    Args:
+        limit: Maximum number of records to return (default: 10)
+    """
+    try:
+        records = feedback_svc.get_recent_negative_feedback(limit=limit)
+        return {
+            "total": len(records),
+            "records": [record.model_dump() for record in records],
+        }
+
+    except Exception as e:
+        log.error(f"❌ Error getting negative feedback: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Error getting negative feedback: {str(e)}"
+        )
+
+
+@router.get("/feedback/export")
+async def export_feedback_report(
+    days: int = 30,
+    feedback_svc: FeedbackService = Depends(get_feedback_service),
+):
+    """
+    Export comprehensive feedback report
+
+    Args:
+        days: Number of days to include in report (default: 30)
+    """
+    try:
+        report = feedback_svc.export_feedback_report(days=days)
+        return report
+
+    except Exception as e:
+        log.error(f"❌ Error exporting feedback report: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Error exporting feedback report: {str(e)}"
+        )
+
+
+@router.get("/feedback/retrieval-weights")
+async def get_retrieval_weights(
+    feedback_svc: FeedbackService = Depends(get_feedback_service),
+):
+    """
+    Get current retrieval weights based on feedback
+
+    These weights can be used to adjust search ranking based on historical feedback.
+    """
+    try:
+        weights = feedback_svc.get_retrieval_weights()
+        return {"total_chunks_with_weights": len(weights), "weights": weights}
+
+    except Exception as e:
+        log.error(f"❌ Error getting retrieval weights: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Error getting retrieval weights: {str(e)}"
+        )
+
+
+@router.get("/feedback/training-data")
+async def get_training_data(
+    min_samples: int = 100,
+    feedback_svc: FeedbackService = Depends(get_feedback_service),
+):
+    """
+    Get feedback data for potential model fine-tuning
+
+    Args:
+        min_samples: Minimum number of samples required (default: 100)
+    """
+    try:
+        samples = feedback_svc.get_feedback_for_training(min_samples=min_samples)
+        return {
+            "total_samples": len(samples),
+            "min_samples_required": min_samples,
+            "ready_for_training": len(samples) >= min_samples,
+            "samples": samples[:50],  # Return first 50 as preview
+        }
+
+    except Exception as e:
+        log.error(f"❌ Error getting training data: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Error getting training data: {str(e)}"
         )

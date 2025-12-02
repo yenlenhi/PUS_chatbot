@@ -1,5 +1,5 @@
 import Layout from '@/components/Layout';
-import { Calendar, FileText, Users, AlertCircle } from 'lucide-react';
+import { Calendar, AlertCircle } from 'lucide-react';
 
 export default function TuyenSinh() {
   const admissionPrograms = [

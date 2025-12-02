@@ -1,8 +1,15 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Search, Menu, X } from 'lucide-react';
+import Link from 'next/link';
+import { Search, Menu, X, MessageCircle, Settings } from 'lucide-react';
 import { MENU_ITEMS } from '@/data/constants';
+
+interface MenuItem {
+  title: string;
+  href: string;
+  highlight?: boolean;
+}
 
 const Navigation = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -14,15 +21,28 @@ const Navigation = () => {
         <div className="flex items-center justify-between h-14">
           {/* Desktop Menu */}
           <div className="hidden lg:flex items-center space-x-1">
-            {MENU_ITEMS.map((item, index) => (
-              <a
+            {(MENU_ITEMS as MenuItem[]).map((item, index) => (
+              <Link
                 key={index}
                 href={item.href}
-                className="px-3 py-2 text-white text-sm font-medium hover:bg-green-600 transition-colors duration-200 rounded"
+                className={`px-3 py-2 text-sm font-medium transition-colors duration-200 rounded flex items-center gap-1 ${
+                  item.highlight 
+                    ? 'bg-yellow-500 text-red-800 hover:bg-yellow-400' 
+                    : 'text-white hover:bg-green-600'
+                }`}
               >
+                {item.highlight && <MessageCircle className="w-4 h-4" />}
                 {item.title}
-              </a>
+              </Link>
             ))}
+            {/* Admin Link - ẩn trên desktop, chỉ hiện icon */}
+            <Link
+              href="/admin"
+              className="px-2 py-2 text-white/70 hover:text-white hover:bg-green-600 transition-colors duration-200 rounded ml-2"
+              title="Quản trị viên"
+            >
+              <Settings className="w-4 h-4" />
+            </Link>
           </div>
 
           {/* Search Box */}
@@ -54,16 +74,30 @@ const Navigation = () => {
         {isMenuOpen && (
           <div className="lg:hidden bg-green-800 border-t border-green-600">
             <div className="px-2 pt-2 pb-3 space-y-1">
-              {MENU_ITEMS.map((item, index) => (
-                <a
+              {(MENU_ITEMS as MenuItem[]).map((item, index) => (
+                <Link
                   key={index}
                   href={item.href}
-                  className="block px-3 py-2 text-white text-sm font-medium hover:bg-green-600 transition-colors duration-200 rounded"
+                  className={`flex items-center gap-2 px-3 py-2 text-sm font-medium transition-colors duration-200 rounded ${
+                    item.highlight 
+                      ? 'bg-yellow-500 text-red-800' 
+                      : 'text-white hover:bg-green-600'
+                  }`}
                   onClick={() => setIsMenuOpen(false)}
                 >
+                  {item.highlight && <MessageCircle className="w-4 h-4" />}
                   {item.title}
-                </a>
+                </Link>
               ))}
+              {/* Admin Link for mobile */}
+              <Link
+                href="/admin"
+                className="flex items-center gap-2 px-3 py-2 text-white/70 text-sm font-medium hover:bg-green-600 transition-colors duration-200 rounded border-t border-green-600 mt-2 pt-3"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <Settings className="w-4 h-4" />
+                Quản trị viên
+              </Link>
             </div>
           </div>
         )}

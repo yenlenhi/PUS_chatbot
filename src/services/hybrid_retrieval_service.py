@@ -2,7 +2,7 @@
 Hybrid Retrieval Service combining dense (vector) and sparse (BM25) search
 """
 
-from typing import List, Dict, Tuple, Optional
+from typing import List, Dict, Tuple
 import numpy as np
 from rank_bm25 import BM25Okapi
 from sqlalchemy import text
@@ -34,15 +34,15 @@ class HybridRetrievalService:
         self._build_bm25_index()
 
     def _build_bm25_index(self):
-        """Build BM25 index from all chunks"""
+        """Build BM25 index from active chunks only"""
         try:
             log.info("🔨 Building BM25 index...")
 
-            # Get all chunks
-            chunks = self.db_service.get_all_chunks()
+            # Get only active chunks for BM25 indexing
+            chunks = self.db_service.get_all_chunks(active_only=True)
 
             if not chunks:
-                log.warning("⚠️ No chunks found for BM25 indexing")
+                log.warning("⚠️ No active chunks found for BM25 indexing")
                 return
 
             # Prepare corpus for BM25
@@ -62,7 +62,7 @@ class HybridRetrievalService:
             # Build BM25 index
             self.bm25_index = BM25Okapi(corpus)
 
-            log.info(f"✅ BM25 index built with {len(corpus)} documents")
+            log.info(f"✅ BM25 index built with {len(corpus)} active documents")
 
         except Exception as e:
             log.error(f"❌ Error building BM25 index: {e}")
@@ -84,20 +84,26 @@ class HybridRetrievalService:
         try:
             session = self.db_service.SessionLocal()
 
-            # Convert embedding to list for SQL
+            # Convert embedding to string format for pgvector
             embedding_list = query_embedding.tolist()
+            embedding_str = "[" + ",".join(str(x) for x in embedding_list) + "]"
 
-            # Use pgvector cosine similarity
+            # Use pgvector cosine similarity with CAST instead of :: to avoid SQLAlchemy parsing issues
+            # Only retrieve chunks that are active (is_active = true)
             result = session.execute(
-                text("""
-                SELECT chunk_id, 1 - (embedding <=> :query_embedding) as similarity
-                FROM embeddings
-                WHERE 1 - (embedding <=> :query_embedding) > :threshold
+                text(
+                    """
+                SELECT e.chunk_id, 1 - (e.embedding <=> CAST(:query_embedding AS vector)) as similarity
+                FROM embeddings e
+                JOIN chunks c ON e.chunk_id = c.id
+                WHERE c.is_active = true 
+                  AND 1 - (e.embedding <=> CAST(:query_embedding AS vector)) > :threshold
                 ORDER BY similarity DESC
                 LIMIT :top_k
-            """),
+            """
+                ),
                 {
-                    "query_embedding": embedding_list,
+                    "query_embedding": embedding_str,
                     "threshold": DENSE_SIMILARITY_THRESHOLD,
                     "top_k": top_k,
                 },
@@ -113,7 +119,9 @@ class HybridRetrievalService:
         finally:
             session.close()
 
-    def _sparse_search(self, query: str, top_k: int = TOP_K_RESULTS) -> List[Tuple[int, float]]:
+    def _sparse_search(
+        self, query: str, top_k: int = TOP_K_RESULTS
+    ) -> List[Tuple[int, float]]:
         """
         Perform sparse BM25 search
 
@@ -251,4 +259,3 @@ class HybridRetrievalService:
             "dense_threshold": DENSE_SIMILARITY_THRESHOLD,
             "sparse_threshold": SPARSE_SIMILARITY_THRESHOLD,
         }
-

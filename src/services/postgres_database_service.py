@@ -121,7 +121,7 @@ class PostgresDatabaseService:
                         """
                     CREATE TABLE IF NOT EXISTS conversations (
                         id SERIAL PRIMARY KEY,
-                        conversation_id VARCHAR(255) UNIQUE NOT NULL,
+                        conversation_id VARCHAR(255) NOT NULL,
                         user_message TEXT NOT NULL,
                         assistant_response TEXT NOT NULL,
                         sources TEXT,
@@ -286,18 +286,27 @@ class PostgresDatabaseService:
         finally:
             session.close()
 
-    def get_all_chunks(self) -> List[Dict[str, Any]]:
-        """Retrieve all chunks from the database"""
+    def get_all_chunks(self, active_only: bool = False) -> List[Dict[str, Any]]:
+        """Retrieve all chunks from the database
+
+        Args:
+            active_only: If True, only return active chunks (is_active=true)
+        """
         try:
             session = self.SessionLocal()
-            result = session.execute(
-                text(
-                    """
-                SELECT id, content, source_file, page_number, heading_text
-                FROM chunks ORDER BY id
-            """
-                )
-            )
+
+            if active_only:
+                query = """
+                    SELECT id, content, source_file, page_number, heading_text
+                    FROM chunks WHERE is_active = true ORDER BY id
+                """
+            else:
+                query = """
+                    SELECT id, content, source_file, page_number, heading_text
+                    FROM chunks ORDER BY id
+                """
+
+            result = session.execute(text(query))
             rows = result.fetchall()
             return [
                 {
@@ -483,6 +492,452 @@ class PostgresDatabaseService:
         except Exception as e:
             log.error(f"❌ Error getting database stats: {e}")
             raise
+        finally:
+            session.close()
+
+    # ==================== Chat History Methods ====================
+
+    def save_conversation(
+        self,
+        conversation_id: str,
+        user_message: str,
+        assistant_response: str,
+        sources: List[str] = None,
+        confidence: float = 0.0,
+        processing_time: float = 0.0,
+    ) -> int:
+        """
+        Save a conversation turn to database
+
+        Args:
+            conversation_id: Unique conversation ID
+            user_message: User's message
+            assistant_response: Assistant's response
+            sources: List of source documents
+            confidence: Confidence score
+            processing_time: Processing time in seconds
+
+        Returns:
+            ID of inserted conversation record
+        """
+        try:
+            session = self.SessionLocal()
+            import json
+
+            sources_json = json.dumps(sources or [], ensure_ascii=False)
+
+            result = session.execute(
+                text(
+                    """
+                INSERT INTO conversations 
+                (conversation_id, user_message, assistant_response, sources, confidence, processing_time)
+                VALUES (:conversation_id, :user_message, :assistant_response, :sources, :confidence, :processing_time)
+                RETURNING id
+            """
+                ),
+                {
+                    "conversation_id": conversation_id,
+                    "user_message": user_message,
+                    "assistant_response": assistant_response,
+                    "sources": sources_json,
+                    "confidence": confidence,
+                    "processing_time": processing_time,
+                },
+            )
+
+            record_id = result.scalar()
+            session.commit()
+            log.debug(f"✅ Saved conversation turn: {conversation_id}")
+            return record_id
+
+        except Exception as e:
+            session.rollback()
+            log.error(f"❌ Error saving conversation: {e}")
+            return -1
+        finally:
+            session.close()
+
+    def get_all_conversations(
+        self,
+        limit: int = 100,
+        offset: int = 0,
+        search_term: str = None,
+        status_filter: str = None,
+    ) -> List[Dict[str, Any]]:
+        """
+        Get all conversations with pagination and filtering
+
+        Args:
+            limit: Maximum number of results
+            offset: Number of results to skip
+            search_term: Optional search term for filtering
+            status_filter: Optional status filter ('active', 'completed', 'all')
+
+        Returns:
+            List of conversation summaries
+        """
+        try:
+            session = self.SessionLocal()
+
+            # Build query with optional filters
+            query = """
+                WITH conversation_stats AS (
+                    SELECT 
+                        conversation_id,
+                        COUNT(*) as message_count,
+                        MIN(created_at) as first_message,
+                        MAX(created_at) as last_message,
+                        AVG(confidence) as avg_confidence,
+                        SUM(processing_time) as total_processing_time
+                    FROM conversations
+                    GROUP BY conversation_id
+                )
+                SELECT 
+                    cs.conversation_id,
+                    cs.message_count,
+                    cs.first_message,
+                    cs.last_message,
+                    cs.avg_confidence,
+                    cs.total_processing_time,
+                    (SELECT user_message FROM conversations 
+                     WHERE conversation_id = cs.conversation_id 
+                     ORDER BY created_at ASC LIMIT 1) as first_query
+                FROM conversation_stats cs
+            """
+
+            params = {"limit": limit, "offset": offset}
+
+            if search_term:
+                query += """
+                    WHERE cs.conversation_id IN (
+                        SELECT DISTINCT conversation_id FROM conversations
+                        WHERE user_message ILIKE :search_term 
+                           OR assistant_response ILIKE :search_term
+                    )
+                """
+                params["search_term"] = f"%{search_term}%"
+
+            query += " ORDER BY cs.last_message DESC LIMIT :limit OFFSET :offset"
+
+            result = session.execute(text(query), params)
+            rows = result.fetchall()
+
+            conversations = []
+            for row in rows:
+                # Determine status based on last activity
+                from datetime import datetime
+
+                last_message = row[3]
+                is_active = (
+                    datetime.now() - last_message
+                ).total_seconds() < 1800  # 30 minutes
+
+                if status_filter and status_filter != "all":
+                    if status_filter == "active" and not is_active:
+                        continue
+                    if status_filter == "completed" and is_active:
+                        continue
+
+                conversations.append(
+                    {
+                        "id": row[0],
+                        "conversation_id": row[0],
+                        "message_count": row[1],
+                        "first_message": row[2].isoformat() if row[2] else None,
+                        "last_message": row[3].isoformat() if row[3] else None,
+                        "avg_confidence": round(row[4], 2) if row[4] else 0,
+                        "total_processing_time": round(row[5], 2) if row[5] else 0,
+                        "first_query": (
+                            row[6][:100] + "..."
+                            if row[6] and len(row[6]) > 100
+                            else row[6]
+                        ),
+                        "status": "active" if is_active else "completed",
+                    }
+                )
+
+            return conversations
+
+        except Exception as e:
+            log.error(f"❌ Error getting conversations: {e}")
+            return []
+        finally:
+            session.close()
+
+    def get_conversation_detail(self, conversation_id: str) -> Dict[str, Any]:
+        """
+        Get detailed conversation history
+
+        Args:
+            conversation_id: Conversation ID
+
+        Returns:
+            Dictionary with conversation details and messages
+        """
+        try:
+            session = self.SessionLocal()
+            import json
+
+            result = session.execute(
+                text(
+                    """
+                SELECT id, user_message, assistant_response, sources, 
+                       confidence, processing_time, created_at
+                FROM conversations
+                WHERE conversation_id = :conversation_id
+                ORDER BY created_at ASC
+            """
+                ),
+                {"conversation_id": conversation_id},
+            )
+
+            rows = result.fetchall()
+            if not rows:
+                return None
+
+            messages = []
+            total_processing_time = 0
+            avg_confidence = 0
+
+            for row in rows:
+                sources = []
+                if row[3]:
+                    try:
+                        sources = json.loads(row[3])
+                    except:
+                        sources = []
+
+                messages.append(
+                    {
+                        "id": row[0],
+                        "user_message": row[1],
+                        "assistant_response": row[2],
+                        "sources": sources,
+                        "confidence": row[4],
+                        "processing_time": row[5],
+                        "timestamp": row[6].isoformat() if row[6] else None,
+                    }
+                )
+                total_processing_time += row[5] or 0
+                avg_confidence += row[4] or 0
+
+            if messages:
+                avg_confidence = avg_confidence / len(messages)
+
+            return {
+                "conversation_id": conversation_id,
+                "message_count": len(messages),
+                "messages": messages,
+                "total_processing_time": round(total_processing_time, 2),
+                "avg_confidence": round(avg_confidence, 2),
+                "first_message": messages[0]["timestamp"] if messages else None,
+                "last_message": messages[-1]["timestamp"] if messages else None,
+            }
+
+        except Exception as e:
+            log.error(f"❌ Error getting conversation detail: {e}")
+            return None
+        finally:
+            session.close()
+
+    def delete_conversation(self, conversation_id: str) -> bool:
+        """
+        Delete a conversation and all its messages
+
+        Args:
+            conversation_id: Conversation ID to delete
+
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            session = self.SessionLocal()
+
+            result = session.execute(
+                text(
+                    "DELETE FROM conversations WHERE conversation_id = :conversation_id"
+                ),
+                {"conversation_id": conversation_id},
+            )
+
+            session.commit()
+            deleted_count = result.rowcount
+            log.info(
+                f"✅ Deleted conversation: {conversation_id} ({deleted_count} messages)"
+            )
+            return deleted_count > 0
+
+        except Exception as e:
+            session.rollback()
+            log.error(f"❌ Error deleting conversation: {e}")
+            return False
+        finally:
+            session.close()
+
+    def get_conversation_stats(self) -> Dict[str, Any]:
+        """
+        Get chat history statistics
+
+        Returns:
+            Dictionary with various statistics
+        """
+        try:
+            session = self.SessionLocal()
+
+            # Total conversations
+            total_conversations = session.execute(
+                text("SELECT COUNT(DISTINCT conversation_id) FROM conversations")
+            ).scalar()
+
+            # Total messages
+            total_messages = session.execute(
+                text("SELECT COUNT(*) FROM conversations")
+            ).scalar()
+
+            # Today's conversations
+            today_conversations = session.execute(
+                text(
+                    """
+                SELECT COUNT(DISTINCT conversation_id) FROM conversations
+                WHERE DATE(created_at) = CURRENT_DATE
+            """
+                )
+            ).scalar()
+
+            # Average confidence
+            avg_confidence = session.execute(
+                text("SELECT AVG(confidence) FROM conversations")
+            ).scalar()
+
+            # Average processing time
+            avg_processing_time = session.execute(
+                text("SELECT AVG(processing_time) FROM conversations")
+            ).scalar()
+
+            # Popular topics (based on first message keywords)
+            popular_topics = session.execute(
+                text(
+                    """
+                SELECT 
+                    CASE 
+                        WHEN user_message ILIKE '%tuyển sinh%' THEN 'Tuyển sinh'
+                        WHEN user_message ILIKE '%học phí%' OR user_message ILIKE '%chi phí%' THEN 'Học phí'
+                        WHEN user_message ILIKE '%đào tạo%' OR user_message ILIKE '%chương trình%' THEN 'Đào tạo'
+                        WHEN user_message ILIKE '%ký túc xá%' OR user_message ILIKE '%nội trú%' THEN 'Ký túc xá'
+                        WHEN user_message ILIKE '%việc làm%' OR user_message ILIKE '%nghề nghiệp%' THEN 'Việc làm'
+                        ELSE 'Khác'
+                    END as topic,
+                    COUNT(*) as count
+                FROM conversations
+                GROUP BY topic
+                ORDER BY count DESC
+                LIMIT 5
+            """
+                )
+            ).fetchall()
+
+            # Active conversations (last 30 minutes)
+            active_conversations = session.execute(
+                text(
+                    """
+                SELECT COUNT(DISTINCT conversation_id) FROM conversations
+                WHERE created_at > NOW() - INTERVAL '30 minutes'
+            """
+                )
+            ).scalar()
+
+            return {
+                "total_conversations": total_conversations or 0,
+                "total_messages": total_messages or 0,
+                "today_conversations": today_conversations or 0,
+                "active_conversations": active_conversations or 0,
+                "avg_confidence": round(avg_confidence or 0, 2),
+                "avg_processing_time": round(avg_processing_time or 0, 2),
+                "popular_topics": [
+                    {"topic": row[0], "count": row[1]} for row in popular_topics
+                ],
+            }
+
+        except Exception as e:
+            log.error(f"❌ Error getting conversation stats: {e}")
+            return {
+                "total_conversations": 0,
+                "total_messages": 0,
+                "today_conversations": 0,
+                "active_conversations": 0,
+                "avg_confidence": 0,
+                "avg_processing_time": 0,
+                "popular_topics": [],
+            }
+        finally:
+            session.close()
+
+    def export_conversations(
+        self, start_date: str = None, end_date: str = None
+    ) -> List[Dict[str, Any]]:
+        """
+        Export conversations for a date range
+
+        Args:
+            start_date: Start date (YYYY-MM-DD)
+            end_date: End date (YYYY-MM-DD)
+
+        Returns:
+            List of all conversations with messages
+        """
+        try:
+            session = self.SessionLocal()
+            import json
+
+            query = """
+                SELECT conversation_id, user_message, assistant_response, 
+                       sources, confidence, processing_time, created_at
+                FROM conversations
+            """
+            params = {}
+
+            if start_date and end_date:
+                query += " WHERE DATE(created_at) BETWEEN :start_date AND :end_date"
+                params["start_date"] = start_date
+                params["end_date"] = end_date
+
+            query += " ORDER BY conversation_id, created_at"
+
+            result = session.execute(text(query), params)
+            rows = result.fetchall()
+
+            conversations = {}
+            for row in rows:
+                conv_id = row[0]
+                if conv_id not in conversations:
+                    conversations[conv_id] = {
+                        "conversation_id": conv_id,
+                        "messages": [],
+                    }
+
+                sources = []
+                if row[3]:
+                    try:
+                        sources = json.loads(row[3])
+                    except:
+                        sources = []
+
+                conversations[conv_id]["messages"].append(
+                    {
+                        "user_message": row[1],
+                        "assistant_response": row[2],
+                        "sources": sources,
+                        "confidence": row[4],
+                        "processing_time": row[5],
+                        "timestamp": row[6].isoformat() if row[6] else None,
+                    }
+                )
+
+            return list(conversations.values())
+
+        except Exception as e:
+            log.error(f"❌ Error exporting conversations: {e}")
+            return []
         finally:
             session.close()
 

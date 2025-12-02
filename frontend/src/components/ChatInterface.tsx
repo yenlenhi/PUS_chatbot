@@ -7,8 +7,10 @@ import type { Source } from '@/types';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import SourceSection from './SourceSection';
+import FeedbackButtons from './FeedbackButtons';
 
 const ChatInterface = () => {
+  const [conversationId] = useState(() => `web-chat-${Date.now()}`);
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -32,6 +34,8 @@ const ChatInterface = () => {
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
 
+    const currentQuery = inputMessage; // Store query before clearing
+
     const userMessage: Message = {
       id: Date.now().toString(),
       content: inputMessage,
@@ -47,7 +51,7 @@ const ChatInterface = () => {
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: inputMessage, conversation_id: 'web-chat' })
+        body: JSON.stringify({ message: currentQuery, conversation_id: conversationId })
       });
 
       if (response.ok) {
@@ -60,13 +64,20 @@ const ChatInterface = () => {
           confidence: data.confidence
         }));
 
+        // Extract chunk IDs from source_references if available
+        const chunkIds: number[] = (data.source_references || [])
+          .map((ref: { chunk_id: string }) => parseInt(ref.chunk_id, 10))
+          .filter((id: number) => !isNaN(id));
+
         const botMessage: Message = {
           id: (Date.now() + 1).toString(),
           content: data.response || data.answer || 'Xin lỗi, tôi không thể trả lời câu hỏi này lúc này.',
           sender: 'bot',
           timestamp: new Date(),
           sources: sources,
-          confidence: data.confidence
+          confidence: data.confidence,
+          userQuery: currentQuery, // Store original query for feedback
+          chunkIds: chunkIds // Store chunk IDs for feedback
         };
         setMessages(prev => [...prev, botMessage]);
       } else {
@@ -175,6 +186,18 @@ ${source.content ? `📝 Nội dung liên quan:\n${source.content.substring(0, 3
                   <p className={`text-xs mt-2 ${message.sender === 'user' ? 'text-red-200' : 'text-gray-500'}`}>
                     {message.timestamp.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
                   </p>
+
+                  {/* Feedback Buttons - only for bot messages (except welcome message) */}
+                  {message.sender === 'bot' && message.id !== '1' && (
+                    <FeedbackButtons
+                      conversationId={conversationId}
+                      messageId={message.id}
+                      query={message.userQuery || ''}
+                      answer={message.content}
+                      chunkIds={message.chunkIds}
+                      className="mt-3 pt-3 border-t border-gray-200"
+                    />
+                  )}
                 </div>
               </div>
             </div>

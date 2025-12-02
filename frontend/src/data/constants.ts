@@ -22,8 +22,8 @@ export const MENU_ITEMS = [
   { title: 'ĐÀO TẠO', href: '/dao-tao' },
   { title: 'TIN TỨC', href: '/tin-tuc' },
   { title: 'NGHIÊN CỨU KHOA HỌC', href: '/nghien-cuu' },
-  { title: 'XÂY DỰNG LỰC LƯỢNG', href: '/xay-dung-luc-luong' },
   { title: 'KÊNH TUYỂN SINH', href: '/tuyen-sinh' },
+  { title: 'HỎI ĐÁP AI', href: '/chat-bot', highlight: true },
   { title: 'LIÊN HỆ', href: '/lien-he' },
 ];
 

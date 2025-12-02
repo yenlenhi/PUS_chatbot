@@ -19,6 +19,7 @@ PROCESSED_DIR = DATA_DIR / "processed"
 EMBEDDINGS_DIR = DATA_DIR / "embeddings"
 
 # Ensure directories exist
+PDF_DIR.mkdir(parents=True, exist_ok=True)
 PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
 EMBEDDINGS_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -30,7 +31,7 @@ LLM_PROVIDER = os.getenv("LLM_PROVIDER", "ollama")  # "ollama" or "gemini"
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 GEMINI_API_URL = os.getenv(
     "GEMINI_API_URL",
-    "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent",
+    "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",
 )
 # Enable/disable Gemini question normalization
 ENABLE_GEMINI_NORMALIZATION = (
@@ -57,6 +58,23 @@ DATABASE_URL = os.getenv(
     "DATABASE_URL",
     f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}",
 )
+
+# ============================================
+# Redis Configuration (NEW)
+# ============================================
+REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
+REDIS_PORT = int(os.getenv("REDIS_PORT", "6379"))
+REDIS_DB = int(os.getenv("REDIS_DB", "0"))
+REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", None)  # None if no password
+REDIS_DECODE_RESPONSES = os.getenv("REDIS_DECODE_RESPONSES", "false").lower() == "true"
+
+# Redis Cache Configuration
+REDIS_CACHE_TTL = int(os.getenv("REDIS_CACHE_TTL", "86400"))  # 24 hours default
+REDIS_CACHE_PREFIX = os.getenv("REDIS_CACHE_PREFIX", "unibot:")
+REDIS_EMBEDDING_PREFIX = os.getenv("REDIS_EMBEDDING_PREFIX", "emb:")
+
+# Enable/disable Redis caching
+ENABLE_REDIS_CACHE = os.getenv("ENABLE_REDIS_CACHE", "true").lower() == "true"
 
 # ============================================
 # Legacy Database Configuration (SQLite - for backward compatibility)

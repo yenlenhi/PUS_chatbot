@@ -2,15 +2,6 @@ import React from 'react';
 import { Calendar, ArrowRight } from 'lucide-react';
 import { MAIN_NEWS, SIDEBAR_NEWS } from '@/data/constants';
 
-interface NewsItem {
-  id: number;
-  title: string;
-  excerpt?: string;
-  date: string;
-  image?: string;
-  category: string;
-}
-
 const NewsSection = () => {
   const mainNews = MAIN_NEWS;
   const sidebarNews = SIDEBAR_NEWS;

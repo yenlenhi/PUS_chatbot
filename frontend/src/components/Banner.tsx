@@ -1,25 +1,18 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
+import { ChevronLeft, ChevronRight, MessageCircle } from 'lucide-react';
 import { BANNER_SLIDES } from '@/data/constants';
-
-interface BannerSlide {
-  id: number;
-  title: string;
-  subtitle: string;
-  description: string;
-  image: string;
-}
 
 const Banner = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
 
   const slides = BANNER_SLIDES;
 
-  const nextSlide = () => {
+  const nextSlide = useCallback(() => {
     setCurrentSlide((prev) => (prev + 1) % slides.length);
-  };
+  }, [slides.length]);
 
   const prevSlide = () => {
     setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
@@ -29,7 +22,7 @@ const Banner = () => {
   useEffect(() => {
     const timer = setInterval(nextSlide, 5000);
     return () => clearInterval(timer);
-  }, []);
+  }, [nextSlide]);
 
   return (
     <div className="relative w-full h-96 bg-gradient-to-r from-red-600 to-red-700 overflow-hidden">
@@ -48,13 +41,20 @@ const Banner = () => {
               <p className="text-lg text-yellow-100">
                 {slides[currentSlide].description}
               </p>
-              <div className="flex space-x-4 mt-6">
-                <button className="bg-yellow-500 hover:bg-yellow-400 text-red-800 font-bold py-2 px-6 rounded-lg transition-colors duration-200">
+              <div className="flex flex-wrap gap-3 mt-6">
+                <Link 
+                  href="/tuyen-sinh"
+                  className="bg-yellow-500 hover:bg-yellow-400 text-red-800 font-bold py-2 px-6 rounded-lg transition-colors duration-200"
+                >
                   Xem chi tiết
-                </button>
-                <button className="border-2 border-white text-white hover:bg-white hover:text-red-700 font-bold py-2 px-6 rounded-lg transition-colors duration-200">
-                  Tìm hiểu thêm
-                </button>
+                </Link>
+                <Link 
+                  href="/chat-bot"
+                  className="flex items-center gap-2 border-2 border-white text-white hover:bg-white hover:text-red-700 font-bold py-2 px-6 rounded-lg transition-colors duration-200"
+                >
+                  <MessageCircle className="w-5 h-5" />
+                  Hỏi đáp AI
+                </Link>
               </div>
             </div>
 

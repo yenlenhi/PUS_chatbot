@@ -22,6 +22,9 @@ sqlmodel==0.0.14
 # Keyword Search
 rank-bm25==0.2.2
 
+# Redis Cache (NEW - for Adaptive Retrieval Layer)
+redis==5.0.1
+
 # PDF Processing
 PyPDF2==3.0.1
 pdfplumber==0.10.0

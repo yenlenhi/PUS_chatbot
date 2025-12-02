@@ -1,4 +1,5 @@
-import { ChatRequest, ChatResponse, SearchRequest, SearchResponse, HealthResponse } from '@/types/api';
+import { ChatRequest, ChatResponse, SearchRequest, SearchResponse, HealthResponse, ChatHistoryResponse, ConversationDetail, ChatHistoryStats, ChatHistoryExport, Document, DocumentListResponse, UploadResponse, DeleteDocumentResponse, ToggleActiveResponse } from '@/types/api';
+import { Message } from '@/types';
 
 // API Base URL - có thể config từ environment variables
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -10,14 +11,19 @@ const apiCall = async <T>(endpoint: string, options: RequestInit = {}): Promise<
   console.log(`API Request: ${options.method || 'GET'} ${url}`);
 
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+    
     const response = await fetch(url, {
-      timeout: 30000,
+      signal: controller.signal,
       headers: {
         'Content-Type': 'application/json',
         ...options.headers,
       },
       ...options,
     });
+    
+    clearTimeout(timeoutId);
 
     console.log(`API Response: ${response.status} ${url}`);
 
@@ -126,7 +132,7 @@ export const chatAPI = {
                     onChunk(data);
                     fullResponse.answer += data;
                   }
-                } catch (e) {
+                } catch {
                   console.log("Not JSON, treating as text chunk:", data);
                   // Nếu không phải JSON, coi như là một phần của câu trả lời
                   onChunk(data);
@@ -194,7 +200,7 @@ export const chatAPI = {
       role: 'assistant',
       content: response.answer,
       timestamp: new Date().toISOString(),
-      sources: response.sources.map(source => ({ title: source })),
+      sources: response.sources.map(source => ({ title: source, filename: source })),
       confidence: response.confidence
     };
   },
@@ -213,8 +219,118 @@ export const chatAPI = {
   },
 
   // Get conversation history
-  getConversation: async (conversationId: string): Promise<any> => {
+  getConversation: async (conversationId: string): Promise<unknown> => {
     return apiCall(`/api/v1/conversation/${conversationId}`);
+  },
+};
+
+// ==================== Chat History API ====================
+
+export const chatHistoryAPI = {
+  // Get all conversations with pagination
+  getConversations: async (
+    limit: number = 50,
+    offset: number = 0,
+    search?: string,
+    status?: string
+  ): Promise<ChatHistoryResponse> => {
+    const params = new URLSearchParams();
+    params.append('limit', limit.toString());
+    params.append('offset', offset.toString());
+    if (search) params.append('search', search);
+    if (status && status !== 'all') params.append('status', status);
+    
+    return apiCall<ChatHistoryResponse>(`/api/v1/admin/chat-history?${params.toString()}`);
+  },
+
+  // Get conversation detail
+  getConversationDetail: async (conversationId: string): Promise<ConversationDetail> => {
+    return apiCall<ConversationDetail>(`/api/v1/admin/chat-history/${encodeURIComponent(conversationId)}`);
+  },
+
+  // Delete conversation
+  deleteConversation: async (conversationId: string): Promise<{ success: boolean; message: string }> => {
+    return apiCall(`/api/v1/admin/chat-history/${encodeURIComponent(conversationId)}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // Get chat statistics
+  getStats: async (): Promise<ChatHistoryStats> => {
+    return apiCall<ChatHistoryStats>('/api/v1/admin/chat-history/stats/overview');
+  },
+
+  // Export conversations
+  exportConversations: async (startDate?: string, endDate?: string): Promise<ChatHistoryExport> => {
+    const params = new URLSearchParams();
+    if (startDate) params.append('start_date', startDate);
+    if (endDate) params.append('end_date', endDate);
+    
+    const queryString = params.toString();
+    return apiCall<ChatHistoryExport>(`/api/v1/admin/chat-history/export${queryString ? `?${queryString}` : ''}`);
+  },
+};
+
+// ==================== Documents API ====================
+
+export const documentsAPI = {
+  // Get all documents
+  getDocuments: async (): Promise<DocumentListResponse> => {
+    return apiCall<DocumentListResponse>('/api/v1/admin/documents');
+  },
+
+  // Upload a new document
+  uploadDocument: async (
+    file: File,
+    category: string = 'Khác',
+    useGemini: boolean = true,
+    onProgress?: (progress: number) => void
+  ): Promise<UploadResponse> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('category', category);
+    formData.append('use_gemini', String(useGemini));
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/admin/upload`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || `Upload failed with status ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Upload error:', error);
+      throw error;
+    }
+  },
+
+  // Delete a document
+  deleteDocument: async (filename: string): Promise<DeleteDocumentResponse> => {
+    return apiCall<DeleteDocumentResponse>(`/api/v1/admin/documents/${encodeURIComponent(filename)}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // Toggle document active status
+  toggleActive: async (filename: string): Promise<ToggleActiveResponse> => {
+    return apiCall<ToggleActiveResponse>(`/api/v1/admin/documents/${encodeURIComponent(filename)}/toggle-active`, {
+      method: 'PATCH',
+    });
+  },
+
+  // Get document info
+  getDocumentInfo: async (filename: string) => {
+    return apiCall(`/api/v1/documents/${encodeURIComponent(filename)}/info`);
+  },
+
+  // Download document URL
+  getDownloadUrl: (filename: string): string => {
+    return `${API_BASE_URL}/api/v1/documents/${encodeURIComponent(filename)}`;
   },
 };
 

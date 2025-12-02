@@ -30,7 +30,7 @@ pip install PyMuPDF>=1.23.0 Pillow>=10.0.0
 Thêm vào file `.env`:
 ```env
 GEMINI_API_KEY=your_gemini_api_key_here
-GEMINI_API_URL=https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent
+GEMINI_API_URL=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent
 ```
 
 Để lấy API key:

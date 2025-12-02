@@ -28,7 +28,7 @@ const SourceSection: React.FC<SourceSectionProps> = ({
   }
 
   // Convert string sources to Source objects if needed
-  const normalizedSources: Source[] = sources.map((source, index) => {
+  const normalizedSources: Source[] = sources.map((source) => {
     if (typeof source === 'string') {
       return {
         title: source,

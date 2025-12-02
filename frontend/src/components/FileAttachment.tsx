@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { FileText, Download, ExternalLink } from 'lucide-react';
+import { FileText, ExternalLink } from 'lucide-react';
 import type { Source } from '@/types';
 
 interface FileAttachmentProps {
