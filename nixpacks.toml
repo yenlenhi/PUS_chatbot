@@ -2,14 +2,14 @@
 providers = ["python"]
 
 [phases.setup]
-nixPkgs = ["python311", "gcc", "postgresql"]
+nixPkgs = ["python311", "gcc", "postgresql", "coreutils"]
 
 [phases.install]
 cmds = [
   "python -m venv /opt/venv",
   ". /opt/venv/bin/activate && pip install --upgrade pip setuptools wheel",
   ". /opt/venv/bin/activate && pip install -r requirements.txt",
-  "mkdir -p /app/data/pdfs /app/data/processed /app/data/embeddings /app/logs"
+  "python -c \"import os; [os.makedirs(d, exist_ok=True) for d in ['/app/data/pdfs', '/app/data/processed', '/app/data/embeddings', '/app/logs']]\""
 ]
 
 [start]
