@@ -222,8 +222,8 @@ data/embeddings/
 logs/
 *.log
 
-# Model files
-models/
+# Model files (AI/ML models only, not Python modules)
+/models/
 *.bin
 *.safetensors
 *.onnx
