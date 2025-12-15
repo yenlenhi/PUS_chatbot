@@ -5,13 +5,13 @@ providers = ["node"]
 nixPkgs = ["nodejs_20"]
 
 [phases.install]
-cmds = ["npm ci"]
+cmds = ["cd /app/frontend && npm ci"]
 
 [phases.build]
-cmds = ["npm run build"]
+cmds = ["cd /app/frontend && npm run build"]
 
 [start]
-cmd = "npm run start -- -p ${PORT:-3000}"
+cmd = "cd /app/frontend && npm run start -- -p ${PORT:-3000}"
 
 [variables]
 NODE_ENV = "production"
