@@ -8,7 +8,7 @@ interface ImagePayload {
 
 export async function POST(request: NextRequest) {
   try {
-    const { message, conversation_id, images } = await request.json();
+    const { message, conversation_id, images, language } = await request.json();
 
     if (!message && (!images || images.length === 0)) {
       return NextResponse.json(
@@ -22,6 +22,7 @@ export async function POST(request: NextRequest) {
 
     console.log(`Calling backend: ${backendUrl}/api/v1/chat`);
     console.log(`Images count: ${images?.length || 0}`);
+    console.log(`Language: ${language || 'vi'}`);
 
     const response = await fetch(`${backendUrl}/api/v1/chat`, {
       method: 'POST',
@@ -31,6 +32,7 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify({
         message: message || '',
         conversation_id: conversation_id || 'web-chat',
+        language: language || 'vi',  // Pass language preference to backend
         images: images?.map((img: ImagePayload) => ({
           base64: img.base64,
           mime_type: img.mimeType,

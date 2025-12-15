@@ -14,6 +14,7 @@ from src.services.pdf_processor import PDFProcessor
 from src.services import gemini_service
 from src.services.gemini_service import normalize_question
 from src.services.memory_service import ConversationMemoryService
+from src.services.attachment_service import AttachmentService
 from sentence_transformers import CrossEncoder
 from src.services.ollama_service import OllamaService
 from src.utils.logger import log
@@ -28,7 +29,7 @@ from config.settings import (
 class RAGService:
     """Service for Retrieval-Augmented Generation"""
 
-    def __init__(self):
+    def __init__(self, analytics_service=None):
         """Initialize RAG service with PostgreSQL + Hybrid Retrieval"""
         self.embedding_service = EmbeddingService()
         self.db_service = PostgresDatabaseService()
@@ -36,11 +37,25 @@ class RAGService:
             self.db_service, self.embedding_service
         )
         self.pdf_processor = PDFProcessor()
+
+        # Import analytics service lazily to avoid circular imports
+        if analytics_service is None:
+            try:
+                from src.services.analytics_service import AnalyticsService
+
+                analytics_service = AnalyticsService(self.db_service)
+            except Exception as e:
+                log.warning(f"Could not initialize analytics service: {e}")
+                analytics_service = None
+
+        self.analytics_service = analytics_service
+
         self.ingestion_service = IngestionService(
             self.db_service,
             self.embedding_service,
             self.pdf_processor,
             self.retrieval_service,
+            analytics_service,  # Pass analytics service for document tracking
         )
         self.ollama_service = OllamaService()
 
@@ -48,6 +63,9 @@ class RAGService:
         self.memory_service = ConversationMemoryService(
             self.db_service, self.embedding_service
         )
+
+        # Initialize Attachment Service
+        self.attachment_service = AttachmentService(self.db_service)
 
         # Conversation memory (in-memory cache, backed by persistent storage)
         self.conversations = {}
@@ -427,6 +445,7 @@ class RAGService:
         query: str,
         images: List[Any],
         conversation_id: Optional[str] = None,
+        language: str = "vi",  # Add language parameter
     ) -> Dict[str, Any]:
         """
         Generate answer for image-based queries using Gemini Vision.
@@ -435,19 +454,35 @@ class RAGService:
             query: User's question about the image(s)
             images: List of ImageInput objects with base64 encoded images
             conversation_id: Optional conversation ID
+            language: Response language - 'vi' for Vietnamese (default) or 'en' for English
 
         Returns:
             Dictionary with answer, confidence, and conversation_id
         """
         try:
-            log.info(f"Processing vision query with {len(images)} images")
+            log.info(
+                f"Processing vision query with {len(images)} images, language={language}"
+            )
 
             # Create conversation ID if needed
             if not conversation_id:
                 conversation_id = str(uuid.uuid4())
 
-            # Build the vision prompt
-            vision_prompt = f"""Bạn là một trợ lý AI chuyên hỗ trợ về Trường Đại học An ninh Nhân dân.
+            # Build the vision prompt based on language
+            if language == "en":
+                vision_prompt = f"""You are an AI assistant specializing in supporting information about People's Security University (PSU).
+Please analyze the provided image(s) and answer the user's question in ENGLISH.
+
+User's question: {query if query else "Please describe the content of this image."}
+
+Instructions:
+- Analyze the image content carefully
+- Respond ENTIRELY in ENGLISH
+- If the image contains documents or text (which may be in Vietnamese), translate and explain the content in English
+- If it's a data table, summarize the important information in English
+- Provide a detailed, easy-to-understand answer in English"""
+            else:
+                vision_prompt = f"""Bạn là một trợ lý AI chuyên hỗ trợ về Trường Đại học An ninh Nhân dân.
 Hãy phân tích hình ảnh được cung cấp và trả lời câu hỏi của người dùng.
 
 Câu hỏi của người dùng: {query if query else "Hãy mô tả nội dung trong hình ảnh này."}
@@ -482,8 +517,13 @@ Hướng dẫn:
                     continue
 
             if not image_parts:
+                error_msg = (
+                    "Sorry, unable to process the image. Please try again with a different format (PNG, JPG, WebP)."
+                    if language == "en"
+                    else "Xin lỗi, không thể xử lý hình ảnh. Vui lòng thử lại với định dạng ảnh khác (PNG, JPG, WebP)."
+                )
                 return {
-                    "answer": "Xin lỗi, không thể xử lý hình ảnh. Vui lòng thử lại với định dạng ảnh khác (PNG, JPG, WebP).",
+                    "answer": error_msg,
                     "sources": [],
                     "source_references": [],
                     "confidence": 0.0,
@@ -496,7 +536,11 @@ Hướng dẫn:
             )
 
             if not answer:
-                answer = "Xin lỗi, tôi không thể phân tích hình ảnh này. Vui lòng thử lại hoặc mô tả thêm về nội dung bạn muốn hỏi."
+                answer = (
+                    "Sorry, I couldn't analyze this image. Please try again or describe more about what you want to ask."
+                    if language == "en"
+                    else "Xin lỗi, tôi không thể phân tích hình ảnh này. Vui lòng thử lại hoặc mô tả thêm về nội dung bạn muốn hỏi."
+                )
             else:
                 # Add engagement prompt
                 answer = self._add_engagement_prompt(answer)
@@ -579,111 +623,104 @@ Hướng dẫn:
 
         return "\n\n".join(context_parts)
 
-    def create_system_prompt(self) -> str:
+    def create_system_prompt(self, language: str = "vi") -> str:
         """
         Create system prompt for the chatbot
+
+        Args:
+            language: Response language - 'vi' for Vietnamese (default) or 'en' for English
 
         Returns:
             System prompt string
         """
-        return """Bạn là một trợ lý AI chuyên hỗ trợ sinh viên, cán bộ, chiến sĩ và người quan tâm về **Trường Đại học An ninh Nhân dân (ANND)**.
+        # Language-specific instructions
+        if language == "en":
+            language_instruction = """
+**IMPORTANT - RESPONSE LANGUAGE: ENGLISH**
+You MUST respond ENTIRELY in ENGLISH. This is a strict requirement from the user who has selected English as their preferred language.
+- Translate ALL content to English, including explanations, instructions, and summaries.
+- You may keep Vietnamese proper nouns (names of schools, documents, regulations) in their original form when necessary.
+- All headings, bullet points, and explanations must be in English.
+"""
+        else:
+            language_instruction = """
+**NGÔN NGỮ TRẢ LỜI: TIẾNG VIỆT**
+Bạn PHẢI trả lời hoàn toàn bằng TIẾNG VIỆT.
+"""
+
+        return f"""{language_instruction}
+
+Bạn là một trợ lý AI chuyên hỗ trợ sinh viên, cán bộ, chiến sĩ và người quan tâm về **Trường Đại học An ninh Nhân dân (ANND)** / **People's Security University (PSU)**.
 
 **Phạm vi chuyên môn chính của bạn gồm 5 nhóm nội dung:**
-1. **Tư vấn thông tin tuyển sinh**  
+1. **Tư vấn thông tin tuyển sinh / Admission Information**  
    - Điều kiện, chỉ tiêu, phương thức, hồ sơ, lịch trình, phân vùng tuyển sinh...
-2. **Quy chế quản lý học viên**  
+2. **Quy chế quản lý học viên / Student Management Regulations**  
    - Quyền và nghĩa vụ, chế độ chính sách, khen thưởng – kỷ luật, sinh hoạt, rèn luyện...
-3. **Quy chế đào tạo các trình độ**  
+3. **Quy chế đào tạo các trình độ / Training Regulations**  
    - Ngành/chuyên ngành, chương trình đào tạo, học chế, học lại, thôi học, tốt nghiệp...
-4. **Quy định về thi, kiểm tra, đánh giá**  
+4. **Quy định về thi, kiểm tra, đánh giá / Examination and Assessment Rules**  
    - Hình thức thi/kiểm tra, thang điểm, điều kiện dự thi, phúc khảo, bảo lưu...
-5. **Quy định về kiểm định và bảo đảm chất lượng đào tạo**  
+5. **Quy định về kiểm định và bảo đảm chất lượng đào tạo / Quality Assurance**  
    - Tiêu chuẩn, quy trình, hoạt động bảo đảm và nâng cao chất lượng đào tạo...
 
 ---
 
-### 1. Phong cách & ngôn ngữ trả lời
+### 1. Phong cách & ngôn ngữ trả lời / Response Style & Language
 
-- **Luôn dùng cùng ngôn ngữ với câu hỏi của người dùng:**
-  - Nếu câu hỏi chủ yếu bằng **tiếng Việt** → trả lời hoàn toàn bằng **tiếng Việt**.
-  - Nếu câu hỏi chủ yếu bằng **tiếng Anh** → trả lời hoàn toàn bằng **tiếng Anh** (có thể giữ nguyên tên riêng, tên văn bản bằng tiếng Việt nếu cần).
-- Văn phong:
-  - **Thân thiện, dễ hiểu nhưng vẫn trang trọng, đúng tính chất cơ quan CAND.**
-  - Hạn chế lặp lại nguyên văn cả đoạn dài như "đọc lại công văn"; thay vào đó **tóm tắt, gạch đầu dòng, chia mục rõ ràng**.
+{"- **ALWAYS respond in ENGLISH** as the user has selected English language preference." if language == "en" else "- **LUÔN trả lời bằng TIẾNG VIỆT** vì người dùng đã chọn ngôn ngữ Tiếng Việt."}
+- Văn phong / Style:
+  - **Thân thiện, dễ hiểu nhưng vẫn trang trọng / Friendly but formal**
+  - Hạn chế lặp lại nguyên văn; **tóm tắt, gạch đầu dòng, chia mục rõ ràng / Use summaries and bullet points**
 
 ---
 
-### 2. Cách trình bày một câu trả lời
+### 2. Cách trình bày một câu trả lời / Answer Structure
 
-Mỗi câu trả lời, khi có đủ thông tin, nên tuân theo cấu trúc sau:
+1. **Phần mở đầu – TÓM TẮT NHANH / Opening - Quick Summary (3–5 lines)**  
+   - Vấn đề đang được hỏi / The topic being asked
+   - Đối tượng áp dụng / Who this applies to
+   - Mốc thời gian hoặc ý chính / Key dates or main points
 
-1. **Phần mở đầu – TÓM TẮT NHANH (3–5 dòng hoặc 3–5 gạch đầu dòng)**  
-   - Nêu ngắn gọn:
-     - Câu hỏi/đề tài đang nói về vấn đề gì  
-     - Đối tượng áp dụng (thí sinh nào, học viên nào, cán bộ nào…)  
-     - Những mốc thời gian hoặc ý chính cần đặc biệt lưu ý  
+2. **Phần nội dung chi tiết – TRÌNH BÀY CÓ CẤU TRÚC / Detailed Content**  
+   - Sử dụng tiêu đề, gạch đầu dòng rõ ràng / Use clear headings and bullets
 
-2. **Phần nội dung chi tiết – TRÌNH BÀY CÓ CẤU TRÚC**  
-   - Sử dụng tiêu đề, gạch đầu dòng rõ ràng, ví dụ (khi phù hợp):
-     - **1. Thông tin chung**  
-     - **2. Đối tượng và điều kiện**  
-     - **3. Quy trình, hồ sơ và mốc thời gian**  
-     - **4. Tiêu chí xét chọn / xử lý / xếp loại**  
-     - **5. Lưu ý quan trọng & khuyến nghị**  
-   - Khi trả lời về tuyển sinh/thông báo, **ưu tiên liệt kê mốc thời gian, chỉ tiêu, mã ngành, điều kiện** một cách rõ ràng.
-
-3. **KẾT THÚC câu trả lời bằng câu nhắc về tài liệu tham khảo (BẮT BUỘC)**  
-   - **LUÔN LUÔN** kết thúc câu trả lời bằng một câu nhắc rằng hệ thống đã hiển thị tài liệu tham khảo bên dưới.
-   - Câu kết thúc mẫu (chọn 1 trong các mẫu sau, tùy ngôn ngữ):
-     - Tiếng Việt: "📄 **Tài liệu tham khảo:** Thông tin chi tiết và toàn văn văn bản, bạn có thể xem thêm ở phần tài liệu/thông báo kèm theo mà hệ thống đã hiển thị bên dưới."
-     - Tiếng Anh: "📄 **Reference Documents:** For full details and original documents, please refer to the attachments displayed below by the system."
-   - Không cần chèn đường dẫn hoặc ký hiệu trích dẫn phức tạp vì **hệ thống sẽ tự động hiển thị tài liệu tham khảo**.
-   - **KHÔNG** kết thúc bằng câu "Bạn còn có thắc mắc gì khác không?" mà PHẢI kết thúc bằng câu nhắc về tài liệu tham khảo.
+3. **KẾT THÚC bằng câu nhắc về tài liệu tham khảo / End with reference reminder (REQUIRED)**  
+   {"- English: '📄 **Reference Documents:** For full details and original documents, please refer to the attachments displayed below by the system.'" if language == "en" else "- Tiếng Việt: '📄 **Tài liệu tham khảo:** Thông tin chi tiết và toàn văn văn bản, bạn có thể xem thêm ở phần tài liệu/thông báo kèm theo mà hệ thống đã hiển thị bên dưới.'"}
 
 ---
 
-### 3. Ưu tiên tài liệu chính thức
+### 3. Ưu tiên tài liệu chính thức / Prioritize Official Documents
 
-- **Luôn ưu tiên thông tin trong phần "THÔNG TIN TÀI LIỆU"** mà hệ thống cung cấp (thông báo, quy chế, hướng dẫn...).  
-- Không cần ghi mã hiệu văn bản trừ khi người dùng hỏi rõ.  
-- Có thể diễn đạt lại, tóm tắt, sắp xếp lại để người dùng dễ hiểu hơn, nhưng **không được tự ý thay đổi nội dung, bản chất quy định**.
-
----
-
-### 4. Khi thiếu hoặc không có thông tin trong tài liệu
-
-Khi câu trả lời không tìm được thông tin phù hợp trong tài liệu:
-
-1. **Bắt buộc** mở đầu phần trả lời bằng câu (theo đúng ngôn ngữ câu hỏi):
-   - Nếu trả lời bằng tiếng Việt:  
-     > "**Thông tin này chưa có trong tài liệu của trường, tuy nhiên tôi có thể cung cấp cho bạn một số thông tin tham khảo chung như sau:**"
-   - Nếu trả lời bằng tiếng Anh:  
-     > "**This information is not explicitly available in the provided university documents, however I can share some general reference information as follows:**"
-2. Sau đó:
-   - Dựa trên **kiến thức chung về giáo dục đại học, quy định tuyển sinh, quy chế đào tạo…** để giải thích một cách hợp lý, thận trọng.
-   - Khuyến khích người dùng **liên hệ trực tiếp** với phòng/đơn vị chức năng (Phòng Đào tạo, Phòng Tổ chức cán bộ, Phòng Quản lý học viên, Công an địa phương…) để xác nhận thông tin chính thức.
+- **Luôn ưu tiên thông tin trong phần "THÔNG TIN TÀI LIỆU"** / Always prioritize information from the provided documents.
+- {"Translate and explain Vietnamese documents in English for the user." if language == "en" else "Có thể diễn đạt lại, tóm tắt để người dùng dễ hiểu hơn."}
 
 ---
 
-### 5. Yêu cầu định dạng (Markdown)
+### 4. Khi thiếu thông tin / When Information is Missing
 
-- **Tiêu đề chính:** dùng `**Tiêu đề**`
-- **Danh sách:** dùng `- ` hoặc `1. ` để liệt kê
-- **Thông tin quan trọng:** dùng `**Lưu ý quan trọng:**`, `**Chú ý:**` hoặc bôi đậm các ý cần nhớ
-- Có thể dùng bảng đơn giản (markdown table) khi cần so sánh, đối chiếu
-- **Không chèn trích dẫn nguồn dạng [1], [2]...** vì hệ thống sẽ hiển thị tài liệu tham khảo riêng.
+{"1. Start with: '**This information is not explicitly available in the provided university documents, however I can share some general reference information as follows:**'" if language == "en" else "1. Mở đầu bằng: '**Thông tin này chưa có trong tài liệu của trường, tuy nhiên tôi có thể cung cấp cho bạn một số thông tin tham khảo chung như sau:**'"}
+2. {"Provide general knowledge and recommend contacting the relevant department." if language == "en" else "Dựa trên kiến thức chung và khuyến khích liên hệ đơn vị chức năng."}
 
 ---
 
-### 6. Yêu cầu chung quan trọng
+### 5. Yêu cầu định dạng / Formatting (Markdown)
 
-- Luôn cố gắng cung cấp **câu trả lời đầy đủ, chi tiết và hữu ích nhất có thể** dựa trên tài liệu được cung cấp.
-- Khi có nhiều đoạn tài liệu liên quan, hãy **tổng hợp, hệ thống hóa** chứ không chỉ chép lại từng đoạn rời rạc.
-- **Tuyệt đối không trả lời theo kiểu "thông tin có hạn"** nếu thực tế tài liệu đã cung cấp đầy đủ thông tin.
-- Luôn coi người dùng là thí sinh/học viên/cán bộ đang cần hướng dẫn thực tế → ưu tiên **các bước thực hiện cụ thể, mốc thời gian, nơi liên hệ** khi phù hợp."""
+- **Tiêu đề chính / Main headings:** dùng `**Tiêu đề**`
+- **Danh sách / Lists:** dùng `- ` hoặc `1. `
+- **Thông tin quan trọng / Important info:** dùng `**Lưu ý quan trọng:**` hoặc `**Important:**`
+- **Không chèn trích dẫn nguồn dạng [1], [2]...** / No citation numbers needed
+
+---
+
+### 6. Yêu cầu chung quan trọng / Important General Requirements
+
+- Luôn cung cấp **câu trả lời đầy đủ, chi tiết và hữu ích nhất** / Always provide complete, detailed, and helpful answers.
+- **Tổng hợp, hệ thống hóa** thông tin / Synthesize and organize information.
+- **{"REMEMBER: ALL responses must be in ENGLISH" if language == "en" else "NHỚ: Tất cả câu trả lời phải bằng TIẾNG VIỆT"}**"""
 
     def create_user_prompt(
-        self, query: str, context: str, memory_context: str = ""
+        self, query: str, context: str, memory_context: str = "", language: str = "vi"
     ) -> str:
         """
         Create user prompt with query, context, and memory
@@ -692,6 +729,7 @@ Khi câu trả lời không tìm được thông tin phù hợp trong tài liệ
             query: User query
             context: Retrieved context from documents
             memory_context: Conversation memory context (optional)
+            language: Response language - 'vi' for Vietnamese (default) or 'en' for English
 
         Returns:
             Formatted user prompt
@@ -699,58 +737,45 @@ Khi câu trả lời không tìm được thông tin phù hợp trong tài liệ
         memory_section = ""
         if memory_context:
             memory_section = f"""
-NGỮ CẢNH HỘI THOẠI TRƯỚC:
+NGỮ CẢNH HỘI THOẠI TRƯỚC / PREVIOUS CONVERSATION CONTEXT:
 {memory_context}
 
 """
 
+        # Language-specific instructions
+        if language == "en":
+            lang_instruction = """**LANGUAGE REQUIREMENT: ENGLISH**
+You MUST respond ENTIRELY in ENGLISH. The user has selected English as their preferred language.
+- Translate ALL content to English, including explanations, instructions, and summaries.
+- You may keep Vietnamese proper nouns (names of schools, documents, regulations) in their original form when necessary.
+- All headings, bullet points, and explanations MUST be in English."""
+            ending_note = "📄 **Reference Documents:** For full details and original documents, please refer to the attachments displayed below by the system."
+        else:
+            lang_instruction = """**YÊU CẦU VỀ NGÔN NGỮ: TIẾNG VIỆT**
+Bạn PHẢI trả lời hoàn toàn bằng TIẾNG VIỆT. Người dùng đã chọn Tiếng Việt làm ngôn ngữ ưa thích."""
+            ending_note = "📄 **Tài liệu tham khảo:** Thông tin chi tiết và toàn văn văn bản, bạn có thể xem thêm ở phần tài liệu/thông báo kèm theo mà hệ thống đã hiển thị bên dưới."
+
         return f"""Dựa trên thông tin tài liệu sau đây, hãy trả lời câu hỏi của người dùng một cách **CHI TIẾT, TOÀN DIỆN và CHÍNH XÁC** nhất có thể.
 
-**YÊU CẦU VỀ NGÔN NGỮ:**
-- Ngôn ngữ trả lời **phải trùng với ngôn ngữ chính của câu hỏi**:
-  - Nếu câu hỏi chủ yếu bằng **tiếng Việt** → trả lời hoàn toàn bằng **tiếng Việt**.
-  - Nếu câu hỏi chủ yếu bằng **tiếng Anh** → trả lời hoàn toàn bằng **tiếng Anh** (trừ tên riêng/tên văn bản bắt buộc giữ nguyên).
-- Nếu tài liệu tham khảo là tiếng Việt nhưng câu hỏi bằng tiếng Anh, hãy **tóm tắt và giải thích nội dung bằng tiếng Anh**, chỉ trích một số cụm/tên tiếng Việt khi thật sự cần.
+{lang_instruction}
 
-{memory_section}THÔNG TIN TÀI LIỆU (các thông báo/quy chế/tài liệu chính thức đã được hệ thống cung cấp kèm theo để tham khảo chi tiết):
+{memory_section}THÔNG TIN TÀI LIỆU / DOCUMENT INFORMATION (các thông báo/quy chế/tài liệu chính thức):
 {context}
 
-CÂU HỎI CỦA NGƯỜI DÙNG:
+CÂU HỎI CỦA NGƯỜI DÙNG / USER QUESTION:
 {query}
 
-**HƯỚNG DẪN TRẢ LỜI:**
-- Hãy coi phần "THÔNG TIN TÀI LIỆU" là **tài liệu tham khảo chính thức** (thông báo, quy định, hướng dẫn...).
-- **BẮT ĐẦU** câu trả lời bằng một đoạn **TÓM TẮT NGẮN (3–5 câu hoặc 3–5 gạch đầu dòng)**, trong đó nêu rõ:
-  - Vấn đề/chủ đề mà người dùng đang hỏi
-  - Đối tượng áp dụng (thí sinh/học viên/cán bộ nào)
-  - Một vài mốc thời gian hoặc ý chính quan trọng nhất (nếu có)
-- Sau phần tóm tắt, trình bày **CHI TIẾT, CÓ CẤU TRÚC**, có thể sử dụng các mục gợi ý (tùy tình huống):
-  - 1. Thông tin chung  
-  - 2. Đối tượng và điều kiện  
-  - 3. Quy trình, hồ sơ và mốc thời gian  
-  - 4. Tiêu chí xét chọn / thi / đánh giá / xếp loại  
-  - 5. Lưu ý quan trọng và khuyến nghị thực tế  
-- Khi có nhiều đoạn tài liệu liên quan, hãy **tổng hợp, hệ thống hóa lại cho dễ hiểu**, không chỉ chép y nguyên từng đoạn rời rạc.
-- Luôn cố gắng nêu rõ:
-  - Cần chuẩn bị những gì (hồ sơ, điều kiện, tiêu chuẩn…)  
-  - Các bước thực hiện (đăng ký ở đâu, qua đơn vị nào, mốc thời gian…)  
-  - Các trường hợp **không đủ điều kiện / bị loại / không được xét** (nếu trong tài liệu có quy định).
-- **BẮT BUỘC KẾT THÚC** câu trả lời bằng một câu nhắc về tài liệu tham khảo (chọn 1 mẫu phù hợp):
-  - Tiếng Việt: "📄 **Tài liệu tham khảo:** Thông tin chi tiết và toàn văn văn bản, bạn có thể xem thêm ở phần tài liệu/thông báo kèm theo mà hệ thống đã hiển thị bên dưới."
-  - Tiếng Anh: "📄 **Reference Documents:** For full details and original documents, please refer to the attachments displayed below by the system."
-- **KHÔNG** kết thúc bằng câu "Bạn còn có thắc mắc gì khác không?" mà PHẢI kết thúc bằng câu nhắc về tài liệu tham khảo.
-- **Không cần chèn trích dẫn nguồn dạng [1], [2]...** vì hệ thống sẽ tự động hiển thị danh sách tài liệu tham khảo / đoạn trích tương ứng.
-- Nếu thông tin cần trả lời **không xuất hiện rõ trong tài liệu**:
-  - Làm theo đúng hướng dẫn ở System Prompt:  
-    - Mở đầu bằng câu "Thông tin này chưa có trong tài liệu của trường, tuy nhiên..." (hoặc bản tiếng Anh tương đương)  
-    - Sau đó đưa ra câu trả lời tham khảo dựa trên kiến thức chung, và khuyến khích người dùng liên hệ phòng/đơn vị chức năng để xác nhận.
-- Trình bày câu trả lời bằng **Markdown**, sử dụng:
-  - Tiêu đề in đậm cho các mục lớn  
-  - Gạch đầu dòng để liệt kê  
-  - Bôi đậm các **Lưu ý quan trọng**, **Mốc thời gian**, **Chỉ tiêu**, **Mã ngành** khi có.
-- Luôn hướng tới việc tạo ra một câu trả lời **rõ ràng, có hệ thống, dễ tra cứu lại**, giúp người dùng có thể dựa vào đó để thực hiện các bước tiếp theo trong thực tế.
+**HƯỚNG DẪN TRẢ LỜI / RESPONSE GUIDELINES:**
+- {"Respond ENTIRELY in ENGLISH." if language == "en" else "Trả lời hoàn toàn bằng TIẾNG VIỆT."}
+- **BẮT ĐẦU / START** với **TÓM TẮT NGẮN / BRIEF SUMMARY (3–5 points)**
+- Sau đó trình bày **CHI TIẾT, CÓ CẤU TRÚC / DETAILED & STRUCTURED**
+- **BẮT BUỘC KẾT THÚC / MUST END** với: "{ending_note}"
+- **KHÔNG** kết thúc bằng câu hỏi khác / Do NOT end with another question
+- Trình bày bằng **Markdown** với tiêu đề, gạch đầu dòng / Use Markdown formatting
 
-Trả lời:"""
+{"**IMPORTANT: ALL text must be in ENGLISH (except proper nouns).**" if language == "en" else ""}
+
+Trả lời / Response:"""
 
     def _rewrite_query_with_history(
         self, query: str, history: List[Dict[str, str]]
@@ -811,6 +836,7 @@ Trả lời:"""
         conversation_id: Optional[str] = None,
         conversation_history: Optional[List[dict]] = None,
         images: Optional[List[Any]] = None,
+        language: str = "vi",  # Add language parameter
     ) -> Dict[str, Any]:
         """
         Generate answer using RAG approach
@@ -820,6 +846,7 @@ Trả lời:"""
             conversation_id: Optional conversation ID
             conversation_history: Optional conversation history
             images: Optional list of images for vision analysis
+            language: Response language - 'vi' for Vietnamese (default) or 'en' for English
 
         Returns:
             Dictionary with answer, sources, confidence, and conversation_id
@@ -831,6 +858,7 @@ Trả lời:"""
                     query=query,
                     images=images,
                     conversation_id=conversation_id,
+                    language=language,  # Pass language to vision handler
                 )
 
             # Create new conversation if needed
@@ -944,8 +972,10 @@ Trả lời:"""
                 source_references.append(source_ref)
 
             # Create system prompt and user prompt with memory context
-            system_prompt = self.create_system_prompt()
-            user_prompt = self.create_user_prompt(query, context, memory_context)
+            system_prompt = self.create_system_prompt(language=language)
+            user_prompt = self.create_user_prompt(
+                query, context, memory_context, language=language
+            )
 
             # Log context and prompts for debugging
             log.info(f"Context created with {len(relevant_chunks)} chunks")
@@ -1073,10 +1103,89 @@ Trả lời:"""
             if chart_data:
                 log.info(f"📊 Generated {len(chart_data)} chart(s) for visualization")
 
+            # Get attachments using hybrid approach: chunk linking + keyword matching
+            attachments = []
+            try:
+                log.info("🔍 Starting attachment retrieval...")
+                attachment_ids_found = set()
+
+                # Strategy 1: Get attachments linked to retrieved chunks
+                if relevant_chunks:
+                    log.info(
+                        f"Strategy 1: Checking {len(relevant_chunks)} chunks for linked attachments"
+                    )
+                    chunk_ids = [
+                        chunk.get("id") for chunk in relevant_chunks if chunk.get("id")
+                    ]
+                    if chunk_ids:
+                        chunk_attachments = (
+                            self.attachment_service.get_attachments_by_chunk_ids(
+                                chunk_ids
+                            )
+                        )
+                        for att in chunk_attachments:
+                            attachment_ids_found.add(att.id)
+                            attachments.append(
+                                {
+                                    "file_name": att.file_name,
+                                    "file_type": att.file_type,
+                                    "download_url": att.download_url,
+                                    "description": att.description,
+                                    "file_size": att.file_size,
+                                }
+                            )
+
+                # Strategy 2: Search attachments by keywords from query
+                from src.services.smart_attachment_matcher import SmartAttachmentMatcher
+
+                query_keywords = SmartAttachmentMatcher.extract_keywords_from_query(
+                    query
+                )
+                log.info(f"Strategy 2: Extracted keywords from query: {query_keywords}")
+                if query_keywords:
+                    keyword_attachments = self.attachment_service.search_attachments(
+                        keywords=query_keywords
+                    )
+                    log.info(
+                        f"Strategy 2: Found {len(keyword_attachments)} attachments by keyword search"
+                    )
+
+                    # Score and filter keyword-matched attachments
+                    for att in keyword_attachments:
+                        if att.id not in attachment_ids_found:
+                            # Calculate relevance score
+                            score = SmartAttachmentMatcher.score_attachment_relevance(
+                                att.keywords or [], query_keywords
+                            )
+
+                            # Only include if relevance score is high enough
+                            if score > 0.3:  # Threshold
+                                attachment_ids_found.add(att.id)
+                                attachments.append(
+                                    {
+                                        "file_name": att.file_name,
+                                        "file_type": att.file_type,
+                                        "download_url": att.download_url,
+                                        "description": att.description,
+                                        "file_size": att.file_size,
+                                    }
+                                )
+                                log.info(
+                                    f"📎 Found keyword-matched attachment: {att.file_name} (score: {score:.2f})"
+                                )
+
+                if attachments:
+                    log.info(
+                        f"📎 Found {len(attachments)} attachment(s) for this response"
+                    )
+            except Exception as att_error:
+                log.warning(f"Could not retrieve attachments: {att_error}")
+
             return {
                 "answer": answer,
                 "sources": sources,
                 "source_references": source_references,
+                "attachments": attachments,
                 "confidence": confidence,
                 "conversation_id": conversation_id,
                 "normalization_applied": normalization_applied,
@@ -1092,6 +1201,7 @@ Trả lời:"""
                 "answer": "Xin lỗi, tôi không thể trả lời câu hỏi này. Vui lòng thử lại sau.",
                 "sources": [],
                 "source_references": [],
+                "attachments": [],
                 "confidence": 0.0,
                 "conversation_id": conversation_id or str(uuid.uuid4()),
                 "chart_data": [],

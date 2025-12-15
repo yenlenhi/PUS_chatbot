@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -11,7 +11,18 @@ const AdminLoginPage = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isChecking, setIsChecking] = useState(true);
   const router = useRouter();
+
+  // Check if already authenticated
+  useEffect(() => {
+    const auth = sessionStorage.getItem('isAdminAuthenticated');
+    if (auth === 'true') {
+      router.push('/admin/dashboard');
+    } else {
+      setIsChecking(false);
+    }
+  }, [router]);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,6 +42,18 @@ const AdminLoginPage = () => {
       setIsLoading(false);
     }
   };
+
+  // Show loading while checking auth
+  if (isChecking) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-blue-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin w-8 h-8 border-4 border-red-600 border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p className="text-gray-600">Đang kiểm tra...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-blue-50 flex items-center justify-center p-4">

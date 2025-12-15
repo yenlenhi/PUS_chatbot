@@ -1,155 +1,661 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
-import { Users, MessageSquare, FileText, TrendingUp, Activity, Clock } from 'lucide-react';
+import {
+  Users,
+  MessageSquare,
+  FileText,
+  TrendingUp,
+  Activity,
+  Clock,
+  BarChart3,
+  PieChart,
+  Target,
+  Zap,
+  ThumbsUp,
+  ThumbsDown,
+  HelpCircle,
+  FolderOpen,
+  Lightbulb,
+  Award,
+  Loader2,
+  RefreshCw,
+} from 'lucide-react';
+import {
+  TimeRangeFilter,
+  MetricCard,
+  InsightsSection,
+  FunnelChart,
+  ContentGapCard,
+  QualityScoreCard,
+} from '@/components/admin/analytics';
+import InteractiveLineChart from '@/components/admin/analytics/InteractiveLineChart';
+import InteractiveBarChart from '@/components/admin/analytics/InteractiveBarChart';
+import InteractivePieChart from '@/components/admin/analytics/InteractivePieChart';
+import { analyticsAPI, formatNumber, formatBytes, formatCurrency, formatDuration } from '@/services/analytics';
+import { useLanguage } from '@/i18n/LanguageContext';
+import {
+  AnalyticsFilter,
+  DashboardOverview,
+  SystemInsights,
+  UserInsights,
+  ChatInsights,
+  DocumentInsights,
+  BusinessInsights,
+} from '@/types/analytics';
 
 const DashboardPage = () => {
-  const stats = [
-    {
-      title: 'Tổng số cuộc hội thoại',
-      value: '1,234',
-      change: '+12.5%',
-      icon: MessageSquare,
-      color: 'bg-blue-500',
-      trend: 'up'
-    },
-    {
-      title: 'Người dùng hoạt động',
-      value: '856',
-      change: '+8.2%',
-      icon: Users,
-      color: 'bg-green-500',
-      trend: 'up'
-    },
-    {
-      title: 'Tài liệu hệ thống',
-      value: '342',
-      change: '+3.1%',
-      icon: FileText,
-      color: 'bg-purple-500',
-      trend: 'up'
-    },
-    {
-      title: 'Thời gian phản hồi TB',
-      value: '1.2s',
-      change: '-15.3%',
-      icon: Clock,
-      color: 'bg-yellow-500',
-      trend: 'down'
+  const { t } = useLanguage();
+  const [filter, setFilter] = useState<AnalyticsFilter>({ timeRange: 'L7D' });
+  const [activeTab, setActiveTab] = useState<'system' | 'users' | 'chat' | 'documents' | 'business'>('system');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Data states
+  const [overview, setOverview] = useState<DashboardOverview | null>(null);
+  const [systemInsights, setSystemInsights] = useState<SystemInsights | null>(null);
+  const [userInsights, setUserInsights] = useState<UserInsights | null>(null);
+  const [chatInsights, setChatInsights] = useState<ChatInsights | null>(null);
+  const [documentInsights, setDocumentInsights] = useState<DocumentInsights | null>(null);
+  const [businessInsights, setBusinessInsights] = useState<BusinessInsights | null>(null);
+
+  const fetchAllData = useCallback(async () => {
+    try {
+      const [overviewData, systemData, userData, chatData, docData, businessData] = await Promise.all([
+        analyticsAPI.getOverview(),
+        analyticsAPI.getSystemInsights(filter),
+        analyticsAPI.getUserInsights(filter),
+        analyticsAPI.getChatInsights(filter),
+        analyticsAPI.getDocumentInsights(filter),
+        analyticsAPI.getBusinessInsights(filter),
+      ]);
+
+      setOverview(overviewData);
+      setSystemInsights(systemData);
+      setUserInsights(userData);
+      setChatInsights(chatData);
+      setDocumentInsights(docData);
+      setBusinessInsights(businessData);
+    } catch (error) {
+      console.error('Error fetching analytics data:', error);
     }
+  }, [filter]);
+
+  useEffect(() => {
+    const loadData = async () => {
+      setIsLoading(true);
+      await fetchAllData();
+      setIsLoading(false);
+    };
+    loadData();
+  }, [fetchAllData]);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await fetchAllData();
+    setIsRefreshing(false);
+  };
+
+  const handleFilterChange = (newFilter: AnalyticsFilter) => {
+    setFilter(newFilter);
+  };
+
+  const tabs = [
+    { id: 'system', label: t('systemMetrics'), icon: Activity },
+    { id: 'users', label: t('userMetrics'), icon: Users },
+    { id: 'chat', label: t('chatMetrics'), icon: MessageSquare },
+    { id: 'documents', label: t('documentMetrics'), icon: FileText },
+    { id: 'business', label: t('businessMetrics'), icon: Lightbulb },
   ];
 
-  const recentActivities = [
-    { time: '10 phút trước', action: 'Người dùng mới đặt câu hỏi về tuyển sinh', type: 'chat' },
-    { time: '25 phút trước', action: 'Tài liệu "Quy chế đào tạo 2024" được cập nhật', type: 'document' },
-    { time: '1 giờ trước', action: '5 cuộc hội thoại mới được khởi tạo', type: 'chat' },
-    { time: '2 giờ trước', action: 'Hệ thống backup dữ liệu thành công', type: 'system' },
-    { time: '3 giờ trước', action: 'Người dùng tìm kiếm thông tin về học phí', type: 'chat' }
-  ];
-
-  const popularQuestions = [
-    { question: 'Điều kiện tuyển sinh năm 2025?', count: 156 },
-    { question: 'Học phí của trường như thế nào?', count: 142 },
-    { question: 'Các ngành đào tạo của trường?', count: 128 },
-    { question: 'Thông tin về ký túc xá?', count: 98 },
-    { question: 'Cơ hội việc làm sau tốt nghiệp?', count: 87 }
-  ];
+  if (isLoading) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <Loader2 className="w-10 h-10 animate-spin text-red-600 mx-auto mb-4" />
+            <p className="text-gray-600">{t('loading')}</p>
+          </div>
+        </div>
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout>
       <div className="space-y-6">
-        {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {stats.map((stat, index) => {
-            const Icon = stat.icon;
-            return (
-              <div key={index} className="bg-white rounded-xl shadow-md border border-gray-200 p-6 hover:shadow-lg transition-shadow">
-                <div className="flex items-center justify-between mb-4">
-                  <div className={`${stat.color} p-3 rounded-lg`}>
-                    <Icon className="w-6 h-6 text-white" />
-                  </div>
-                  <span className={`text-sm font-medium ${stat.trend === 'up' ? 'text-green-600' : 'text-red-600'}`}>
-                    {stat.change}
-                  </span>
-                </div>
-                <h3 className="text-gray-600 text-sm mb-1">{stat.title}</h3>
-                <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Charts Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Activity Chart */}
-          <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-gray-900">Hoạt động theo giờ</h3>
-              <Activity className="w-5 h-5 text-gray-400" />
-            </div>
-            <div className="space-y-4">
-              {[
-                { hour: '08:00', value: 65 },
-                { hour: '10:00', value: 85 },
-                { hour: '12:00', value: 45 },
-                { hour: '14:00', value: 75 },
-                { hour: '16:00', value: 90 },
-                { hour: '18:00', value: 55 }
-              ].map((item, index) => (
-                <div key={index} className="flex items-center space-x-3">
-                  <span className="text-sm text-gray-600 w-16">{item.hour}</span>
-                  <div className="flex-1 bg-gray-200 rounded-full h-3">
-                    <div
-                      className="bg-gradient-to-r from-red-500 to-red-600 h-3 rounded-full transition-all duration-500"
-                      style={{ width: `${item.value}%` }}
-                    />
-                  </div>
-                  <span className="text-sm font-medium text-gray-900 w-12">{item.value}%</span>
-                </div>
-              ))}
-            </div>
+        {/* Header with Filter */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Dashboard Analytics</h1>
+            <p className="text-gray-600">Theo dõi và phân tích hiệu suất hệ thống</p>
           </div>
-
-          {/* Popular Questions */}
-          <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-gray-900">Câu hỏi phổ biến</h3>
-              <TrendingUp className="w-5 h-5 text-gray-400" />
-            </div>
-            <div className="space-y-4">
-              {popularQuestions.map((item, index) => (
-                <div key={index} className="flex items-start space-x-3 pb-3 border-b border-gray-100 last:border-0">
-                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-red-100 text-red-600 flex items-center justify-center text-xs font-bold">
-                    {index + 1}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-gray-900 line-clamp-2">{item.question}</p>
-                    <p className="text-xs text-gray-500 mt-1">{item.count} lượt hỏi</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+              title="Làm mới dữ liệu"
+            >
+              <RefreshCw className={`w-5 h-5 ${isRefreshing ? 'animate-spin' : ''}`} />
+            </button>
+            <TimeRangeFilter value={filter.timeRange} onChange={handleFilterChange} />
           </div>
         </div>
 
-        {/* Recent Activities */}
-        <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-6">Hoạt động gần đây</h3>
-          <div className="space-y-4">
-            {recentActivities.map((activity, index) => (
-              <div key={index} className="flex items-start space-x-4 p-3 hover:bg-gray-50 rounded-lg transition-colors">
-                <div className={`flex-shrink-0 w-2 h-2 rounded-full mt-2 ${
-                  activity.type === 'chat' ? 'bg-blue-500' :
-                  activity.type === 'document' ? 'bg-green-500' : 'bg-gray-500'
-                }`} />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-gray-900">{activity.action}</p>
-                  <p className="text-xs text-gray-500 mt-1">{activity.time}</p>
-                </div>
-              </div>
-            ))}
+        {/* Overview Stats */}
+        {overview && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <MetricCard
+              title="Tổng số cuộc hội thoại"
+              value={formatNumber(overview.total_conversations)}
+              change={overview.conversations_change}
+              icon={MessageSquare}
+              iconColor="bg-blue-500"
+              subtitle={`Hôm nay: ${overview.today_conversations}`}
+            />
+            <MetricCard
+              title="Người dùng"
+              value={formatNumber(overview.total_users)}
+              change={overview.users_change}
+              icon={Users}
+              iconColor="bg-green-500"
+              subtitle={`Mới hôm nay: ${overview.today_new_users}`}
+            />
+            <MetricCard
+              title="Tài liệu hệ thống"
+              value={formatNumber(overview.total_documents)}
+              change={overview.documents_change}
+              icon={FileText}
+              iconColor="bg-purple-500"
+            />
+            <MetricCard
+              title="Thời gian phản hồi TB"
+              value={`${(overview.avg_response_time_ms / 1000).toFixed(1)}s`}
+              change={overview.response_time_change}
+              icon={Clock}
+              iconColor="bg-yellow-500"
+              trend={overview.response_time_change < 0 ? 'up' : 'down'}
+            />
           </div>
+        )}
+
+        {/* Tabs */}
+        <div className="border-b border-gray-200">
+          <nav className="flex space-x-4 overflow-x-auto pb-px">
+            {tabs.map((tab) => {
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id as typeof activeTab)}
+                  className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                    activeTab === tab.id
+                      ? 'border-red-600 text-red-600'
+                      : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
+                  }`}
+                >
+                  <Icon className="w-4 h-4" />
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
+          </nav>
+        </div>
+
+        {/* Tab Content */}
+        <div className="space-y-6">
+          {/* System Insights */}
+          {activeTab === 'system' && systemInsights && (
+            <>
+              {/* Token Usage */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <InsightsSection title="Token Usage theo ngày" icon={Zap}>
+                  <div className="grid grid-cols-2 gap-3 mb-4">
+                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-3.5 border border-blue-200">
+                      <p className="text-xs text-blue-600 font-medium mb-1">Tổng tokens</p>
+                      <p className="text-xl font-bold text-blue-700">
+                        {formatNumber(systemInsights.total_tokens)}
+                      </p>
+                    </div>
+                    <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-3.5 border border-green-200">
+                      <p className="text-xs text-green-600 font-medium mb-1">Chi phí ước tính</p>
+                      <p className="text-xl font-bold text-green-700">
+                        {formatCurrency(systemInsights.total_estimated_cost)}
+                      </p>
+                    </div>
+                  </div>
+                  <InteractiveLineChart
+                    data={systemInsights.token_usage_daily.map((d) => ({
+                      date: d.date.slice(5),
+                      value: d.total_tokens,
+                    }))}
+                    title="Token Usage Daily"
+                    color="#3b82f6"
+                    height={300}
+                    showBrush={true}
+                  />
+                </InsightsSection>
+
+                <InsightsSection title="Token Usage theo giờ (24h)" icon={Clock}>
+                  <InteractiveBarChart
+                    data={systemInsights.token_usage_hourly.map((d) => ({
+                      label: `${d.hour}h`,
+                      value: d.total_tokens,
+                    }))}
+                    title="Hourly Distribution"
+                    color="#8b5cf6"
+                    height={280}
+                  />
+                </InsightsSection>
+              </div>
+
+              {/* Access Metrics */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <InsightsSection title="Lượt truy cập theo ngày" icon={TrendingUp}>
+                  <div className="grid grid-cols-2 gap-3 mb-4">
+                    <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-3.5 border border-purple-200">
+                      <p className="text-xs text-purple-600 font-medium mb-1">Tổng requests</p>
+                      <p className="text-xl font-bold text-purple-700">
+                        {formatNumber(systemInsights.total_requests)}
+                      </p>
+                    </div>
+                    <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-lg p-3.5 border border-red-200">
+                      <p className="text-xs text-red-600 font-medium mb-1">Bị chặn</p>
+                      <p className="text-xl font-bold text-red-700">
+                        {formatNumber(systemInsights.total_blocked)}
+                      </p>
+                    </div>
+                  </div>
+                  <InteractiveLineChart
+                    data={systemInsights.access_daily.map((d) => ({
+                      date: d.date.slice(5),
+                      value: d.total_requests,
+                    }))}
+                    title="Daily Access"
+                    color="#9333ea"
+                    height={300}
+                    showBrush={true}
+                  />
+                </InsightsSection>
+
+                <InsightsSection title="Lượt truy cập theo giờ (24h)" icon={Activity}>
+                  <InteractiveBarChart
+                    data={systemInsights.access_hourly.map((d) => ({
+                      label: `${d.hour}h`,
+                      value: d.total_requests,
+                    }))}
+                    title="Hourly Distribution"
+                    color="#8b5cf6"
+                    height={280}
+                  />
+                </InsightsSection>
+              </div>
+            </>
+          )}
+
+          {/* User Insights */}
+          {activeTab === 'users' && userInsights && (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <MetricCard
+                  title="Unique Users"
+                  value={formatNumber(userInsights.total_unique_users)}
+                  icon={Users}
+                  iconColor="bg-blue-500"
+                />
+                <MetricCard
+                  title="New Users (YTD)"
+                  value={formatNumber(userInsights.new_users_ytd)}
+                  icon={Users}
+                  iconColor="bg-green-500"
+                />
+                <MetricCard
+                  title="Retain Users (YTD)"
+                  value={formatNumber(userInsights.retain_users_ytd)}
+                  icon={Users}
+                  iconColor="bg-purple-500"
+                />
+                <MetricCard
+                  title="Retention Rate"
+                  value={`${((userInsights.retain_users_ytd / (userInsights.new_users_ytd + userInsights.retain_users_ytd)) * 100).toFixed(1)}%`}
+                  icon={Target}
+                  iconColor="bg-orange-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <InsightsSection title="Unique Users theo ngày" icon={Users}>
+                  <InteractiveLineChart
+                    data={userInsights.daily_users.map((d) => ({
+                      date: d.date.slice(5),
+                      value: d.unique_users,
+                    }))}
+                    title="Daily Unique Users"
+                    color="#3b82f6"
+                    height={300}
+                    showBrush={true}
+                  />
+                </InsightsSection>
+
+                <InsightsSection title="Tần suất quay lại" icon={RefreshCw}>
+                  <InteractivePieChart
+                    data={userInsights.return_frequency.map((d, i) => ({
+                      label: d.frequency,
+                      value: d.user_count,
+                      color: ['#dc2626', '#f97316', '#eab308', '#22c55e'][i % 4],
+                    }))}
+                    title="Return Frequency"
+                    size={320}
+                    innerRadius={70}
+                  />
+                </InsightsSection>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <InsightsSection title="User Segmentation" icon={PieChart}>
+                  <div className="space-y-4">
+                    {userInsights.user_segments.map((segment, index) => (
+                      <div key={index}>
+                        <div className="flex justify-between mb-1">
+                          <span className="text-sm text-gray-700">{segment.segment}</span>
+                          <span className="text-sm font-medium">{segment.user_count} users ({segment.percentage}%)</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div
+                            className="bg-red-500 h-2 rounded-full transition-all duration-500"
+                            style={{ width: `${segment.percentage}%` }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </InsightsSection>
+
+                <InsightsSection title="User Funnel" icon={Target}>
+                  <FunnelChart data={userInsights.funnel} />
+                </InsightsSection>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <InsightsSection title="Chủ đề quan tâm" icon={BarChart3}>
+                  <InteractiveBarChart
+                    data={userInsights.topics.map((t) => ({
+                      label: t.topic,
+                      value: t.query_count,
+                    }))}
+                    title="Popular Topics"
+                    color="#f59e0b"
+                    height={300}
+                    horizontal={true}
+                  />
+                </InsightsSection>
+
+                <InsightsSection title="Câu hỏi phổ biến" icon={HelpCircle}>
+                  <div className="space-y-3">
+                    {userInsights.popular_questions.slice(0, 5).map((q, index) => (
+                      <div key={index} className="flex items-start space-x-3 pb-3 border-b border-gray-100 last:border-0">
+                        <div className="flex-shrink-0 w-6 h-6 rounded-full bg-red-100 text-red-600 flex items-center justify-center text-xs font-bold">
+                          {index + 1}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-gray-900 line-clamp-2">{q.question}</p>
+                          <p className="text-xs text-gray-500 mt-1">{q.count} lượt hỏi</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </InsightsSection>
+              </div>
+            </>
+          )}
+
+          {/* Chat Insights */}
+          {activeTab === 'chat' && chatInsights && (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <MetricCard
+                  title="Tổng tin nhắn"
+                  value={formatNumber(chatInsights.total_user_messages)}
+                  icon={MessageSquare}
+                  iconColor="bg-blue-500"
+                />
+                <MetricCard
+                  title="Tỷ lệ hài lòng"
+                  value={`${chatInsights.like_rate.toFixed(1)}%`}
+                  icon={ThumbsUp}
+                  iconColor="bg-green-500"
+                />
+                <MetricCard
+                  title="Tỷ lệ không hài lòng"
+                  value={`${chatInsights.dislike_rate.toFixed(1)}%`}
+                  icon={ThumbsDown}
+                  iconColor="bg-red-500"
+                />
+                <MetricCard
+                  title="Tin nhắn/hội thoại"
+                  value={chatInsights.avg_messages_per_conversation.toFixed(1)}
+                  icon={BarChart3}
+                  iconColor="bg-purple-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <InsightsSection title="Tin nhắn theo ngày" icon={MessageSquare}>
+                  <InteractiveLineChart
+                    data={chatInsights.daily_metrics.map((d) => ({
+                      date: d.date.slice(5),
+                      value: d.user_messages,
+                    }))}
+                    title="Daily Messages"
+                    color="#10b981"
+                    height={300}
+                    showBrush={true}
+                  />
+                </InsightsSection>
+
+                <InsightsSection title="Feedback theo ngày" icon={ThumbsUp}>
+                  <div className="space-y-4">
+                    {chatInsights.daily_metrics.slice(-5).map((d, index) => (
+                      <div key={index} className="flex items-center space-x-4">
+                        <span className="text-sm text-gray-600 w-16">{d.date.slice(5)}</span>
+                        <div className="flex-1 flex items-center space-x-2">
+                          <div className="flex-1 bg-gray-200 rounded-full h-4 overflow-hidden flex">
+                            <div
+                              className="bg-green-500 h-4"
+                              style={{ width: `${(d.likes / (d.likes + d.dislikes || 1)) * 100}%` }}
+                            />
+                            <div
+                              className="bg-red-500 h-4"
+                              style={{ width: `${(d.dislikes / (d.likes + d.dislikes || 1)) * 100}%` }}
+                            />
+                          </div>
+                        </div>
+                        <span className="text-xs text-gray-500 w-16">
+                          {d.likes} / {d.dislikes}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </InsightsSection>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <InsightsSection title="Câu hỏi chưa trả lời được" icon={HelpCircle}>
+                  <div className="space-y-3">
+                    {chatInsights.unanswered_questions.map((q, index) => (
+                      <div key={index} className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                        <p className="text-sm text-gray-900">{q.question}</p>
+                        <p className="text-xs text-orange-600 mt-1">{q.count} lần xuất hiện</p>
+                      </div>
+                    ))}
+                  </div>
+                </InsightsSection>
+
+                <InsightsSection title="Câu trả lời cần cải thiện" icon={ThumbsDown}>
+                  <div className="space-y-3">
+                    {chatInsights.low_rated_responses.map((r, index) => (
+                      <div key={index} className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                        <p className="text-sm font-medium text-gray-900">{r.query}</p>
+                        <p className="text-xs text-gray-600 mt-1 line-clamp-2">{r.answer}</p>
+                        <p className="text-xs text-red-600 mt-1">{r.dislike_count} không thích</p>
+                      </div>
+                    ))}
+                  </div>
+                </InsightsSection>
+              </div>
+            </>
+          )}
+
+          {/* Document Insights */}
+          {activeTab === 'documents' && documentInsights && (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <MetricCard
+                  title="Tổng tài liệu"
+                  value={formatNumber(documentInsights.total_documents)}
+                  icon={FileText}
+                  iconColor="bg-blue-500"
+                />
+                <MetricCard
+                  title="Dung lượng"
+                  value={formatBytes(documentInsights.total_size_bytes)}
+                  icon={FolderOpen}
+                  iconColor="bg-purple-500"
+                />
+                <MetricCard
+                  title="Đang hoạt động"
+                  value={formatNumber(documentInsights.active_documents)}
+                  icon={FileText}
+                  iconColor="bg-green-500"
+                />
+                <MetricCard
+                  title="Không hoạt động"
+                  value={formatNumber(documentInsights.inactive_documents)}
+                  icon={FileText}
+                  iconColor="bg-gray-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <InsightsSection title="Tài liệu theo danh mục" icon={PieChart}>
+                  <InteractivePieChart
+                    data={documentInsights.category_stats.map((c, i) => ({
+                      label: c.category,
+                      value: c.document_count,
+                      color: ['#dc2626', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#8b5cf6'][i % 6],
+                    }))}
+                    title="Documents by Category"
+                    size={320}
+                    innerRadius={70}
+                  />
+                </InsightsSection>
+
+                <InsightsSection title="Dung lượng theo danh mục" icon={BarChart3}>
+                  <InteractiveBarChart
+                    data={documentInsights.category_stats.map((c) => ({
+                      label: c.category,
+                      value: c.total_size_bytes / 1048576, // Convert to MB
+                    }))}
+                    title="Storage by Category (MB)"
+                    color="#06b6d4"
+                    height={300}
+                    horizontal={true}
+                  />
+                  <p className="text-xs text-gray-500 mt-2">Đơn vị: MB</p>
+                </InsightsSection>
+              </div>
+
+              <InsightsSection title="Top tài liệu được truy xuất" icon={TrendingUp}>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full">
+                    <thead>
+                      <tr className="border-b border-gray-200">
+                        <th className="text-left py-2 text-sm font-medium text-gray-600">Tài liệu</th>
+                        <th className="text-right py-2 text-sm font-medium text-gray-600">Lượt truy xuất</th>
+                        <th className="text-right py-2 text-sm font-medium text-gray-600">👍</th>
+                        <th className="text-right py-2 text-sm font-medium text-gray-600">👎</th>
+                        <th className="text-right py-2 text-sm font-medium text-gray-600">Điểm</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {documentInsights.top_retrieved_documents.map((doc, index) => (
+                        <tr key={index} className="border-b border-gray-100 hover:bg-gray-50">
+                          <td className="py-3 text-sm text-gray-900">{doc.filename}</td>
+                          <td className="py-3 text-sm text-gray-600 text-right">{doc.retrieval_count}</td>
+                          <td className="py-3 text-sm text-green-600 text-right">{doc.positive_feedback}</td>
+                          <td className="py-3 text-sm text-red-600 text-right">{doc.negative_feedback}</td>
+                          <td className="py-3 text-right">
+                            <span className={`px-2 py-1 rounded text-xs font-medium ${
+                              doc.effectiveness_score >= 0.8 ? 'bg-green-100 text-green-700' :
+                              doc.effectiveness_score >= 0.6 ? 'bg-yellow-100 text-yellow-700' :
+                              'bg-red-100 text-red-700'
+                            }`}>
+                              {(doc.effectiveness_score * 100).toFixed(0)}%
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </InsightsSection>
+
+              <InsightsSection title="Xu hướng tài liệu" icon={TrendingUp}>
+                <InteractiveLineChart
+                  data={documentInsights.growth_trend.map((d) => ({
+                    date: d.month.slice(5),
+                    value: d.total_documents,
+                  }))}
+                  title="Document Growth"
+                  color="#8b5cf6"
+                  height={300}
+                  showBrush={true}
+                />
+              </InsightsSection>
+            </>
+          )}
+
+          {/* Business Insights */}
+          {activeTab === 'business' && businessInsights && (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <MetricCard
+                  title="Giờ tiết kiệm được"
+                  value={`${businessInsights.estimated_hours_saved.toFixed(1)}h`}
+                  icon={Clock}
+                  iconColor="bg-green-500"
+                  subtitle="Ước tính dựa trên số câu hỏi được xử lý"
+                />
+                <MetricCard
+                  title="Câu hỏi đã xử lý"
+                  value={formatNumber(businessInsights.estimated_queries_handled)}
+                  icon={MessageSquare}
+                  iconColor="bg-blue-500"
+                />
+                <MetricCard
+                  title="Thời gian phản hồi TB"
+                  value={formatDuration(businessInsights.avg_response_time_seconds)}
+                  icon={Zap}
+                  iconColor="bg-yellow-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <InsightsSection title="Điểm chất lượng" icon={Award}>
+                  <QualityScoreCard
+                    overallScore={businessInsights.overall_quality_score}
+                    breakdown={businessInsights.quality_breakdown}
+                  />
+                </InsightsSection>
+
+                <InsightsSection title="Content Gap Analysis" icon={Lightbulb}>
+                  <ContentGapCard gaps={businessInsights.content_gaps} />
+                </InsightsSection>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </AdminLayout>

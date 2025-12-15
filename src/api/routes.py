@@ -10,11 +10,14 @@ from fastapi import (
     File,
     Form,
     BackgroundTasks,
+    Query,
+    Request,
 )
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 import time
 import datetime
 from pathlib import Path
+from typing import Optional, List
 from src.models.schemas import (
     ChatRequest,
     ChatResponse,
@@ -22,6 +25,7 @@ from src.models.schemas import (
     SearchResponse,
     HealthResponse,
     SearchResult,
+    DocumentAttachment,
 )
 from src.models.feedback import (
     FeedbackRequest,
@@ -29,8 +33,20 @@ from src.models.feedback import (
     FeedbackStats,
     DashboardMetrics,
 )
+from src.models.analytics import (
+    TimeRange,
+    SystemInsights,
+    UserInsights,
+    ChatInsights,
+    DocumentInsights,
+    BusinessInsights,
+    DashboardOverview,
+)
 from src.services.rag_service import RAGService
 from src.services.feedback_service import FeedbackService
+from src.services.analytics_service import AnalyticsService
+from src.services.attachment_service import AttachmentService
+from src.services.postgres_database_service import PostgresDatabaseService
 from src.utils.logger import log
 
 # Create router
@@ -39,6 +55,15 @@ router = APIRouter()
 # Global service instances
 rag_service = None
 feedback_service = None
+analytics_service = None
+attachment_service = None
+
+# Cache for suggested questions (simple in-memory cache)
+_suggested_questions_cache = {
+    "questions": None,
+    "timestamp": None,
+    "ttl": 3600,  # 1 hour in seconds
+}
 
 
 def get_rag_service() -> RAGService:
@@ -57,9 +82,30 @@ def get_feedback_service() -> FeedbackService:
     return feedback_service
 
 
+def get_analytics_service() -> AnalyticsService:
+    """Dependency to get Analytics service instance"""
+    global analytics_service
+    if analytics_service is None:
+        analytics_service = AnalyticsService()
+    return analytics_service
+
+
+def get_attachment_service() -> AttachmentService:
+    """Dependency to get Attachment service instance"""
+    global attachment_service
+    if attachment_service is None:
+        db_service = PostgresDatabaseService()
+        attachment_service = AttachmentService(db_service)
+    return attachment_service
+
+
 @router.post("/chat", response_model=ChatResponse)
 async def chat_endpoint(
-    request: ChatRequest, rag: RAGService = Depends(get_rag_service)
+    request: ChatRequest,
+    fastapi_request: Request,
+    background_tasks: BackgroundTasks,
+    rag: RAGService = Depends(get_rag_service),
+    analytics: AnalyticsService = Depends(get_analytics_service),
 ):
     start_time = time.time()
     try:
@@ -74,10 +120,12 @@ async def chat_endpoint(
             conversation_id=request.conversation_id,
             conversation_history=request.conversation_history,
             images=request.images,
+            language=request.language or "vi",  # Pass language preference
         )
 
         # Calculate processing time
         processing_time = round(time.time() - start_time, 2)
+        processing_time_ms = processing_time * 1000
 
         # Create response object
         response = ChatResponse(
@@ -94,6 +142,55 @@ async def chat_endpoint(
             normalization_applied=rag_response.get("normalization_applied", False),
             original_query=rag_response.get("original_query"),
             normalized_query=rag_response.get("normalized_query"),
+        )
+
+        # Track analytics in background (non-blocking)
+        session_id = request.conversation_id or rag_response.get(
+            "conversation_id", "default"
+        )
+        ip_address = fastapi_request.client.host if fastapi_request.client else None
+        user_agent = fastapi_request.headers.get("user-agent", "")
+
+        # Get retrieved documents and scores from rag_response
+        retrieved_docs = rag_response.get("sources", [])
+        relevance_scores = rag_response.get("relevance_scores", [])
+        if not relevance_scores and retrieved_docs:
+            # Default scores if not provided
+            relevance_scores = [rag_response.get("confidence", 0.5)] * len(
+                retrieved_docs
+            )
+
+        # Estimate token counts (rough estimation based on text length)
+        input_tokens = len(request.message.split()) * 2 if request.message else 0
+        output_tokens = len(response.answer.split()) * 2 if response.answer else 0
+
+        # Schedule background tracking
+        background_tasks.add_task(
+            analytics.track_chat_interaction,
+            session_id=session_id,
+            conversation_id=response.conversation_id,
+            query=request.message or "",
+            response=response.answer,
+            confidence=response.confidence,
+            retrieved_documents=retrieved_docs,
+            relevance_scores=relevance_scores,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            response_time_ms=processing_time_ms,
+            ip_address=ip_address,
+            user_agent=user_agent,
+        )
+
+        # Log access
+        background_tasks.add_task(
+            analytics.log_access,
+            session_id=session_id,
+            ip_address=ip_address,
+            user_agent=user_agent,
+            endpoint="/api/v1/chat",
+            method="POST",
+            status_code=200,
+            response_time_ms=processing_time_ms,
         )
 
         log.info(f"Chat request processed in {processing_time:.2f} seconds")
@@ -1071,7 +1168,9 @@ async def export_chat_history(
 @router.post("/feedback", response_model=FeedbackResponse)
 async def submit_feedback(
     request: FeedbackRequest,
+    background_tasks: BackgroundTasks,
     feedback_svc: FeedbackService = Depends(get_feedback_service),
+    analytics: AnalyticsService = Depends(get_analytics_service),
 ):
     """
     Submit user feedback for a response
@@ -1085,6 +1184,15 @@ async def submit_feedback(
         )
 
         response = feedback_svc.submit_feedback(request)
+
+        # Track user feedback in analytics (background)
+        is_positive = request.rating.value == "positive"
+        session_id = request.conversation_id or "unknown"
+        background_tasks.add_task(
+            analytics.update_user_feedback,
+            session_id=session_id,
+            is_positive=is_positive,
+        )
 
         return response
 
@@ -1280,3 +1388,495 @@ async def get_training_data(
         raise HTTPException(
             status_code=500, detail=f"Error getting training data: {str(e)}"
         )
+
+
+# ============================================================================
+# ANALYTICS ENDPOINTS - Dashboard Insights
+# ============================================================================
+
+
+@router.get("/analytics/overview", response_model=DashboardOverview)
+async def get_analytics_overview(
+    analytics_svc: AnalyticsService = Depends(get_analytics_service),
+):
+    """
+    Get dashboard overview with key metrics
+
+    Returns quick stats for total conversations, messages, documents, users,
+    along with percentage changes and today's activity.
+    """
+    try:
+        overview = analytics_svc.get_dashboard_overview()
+        return overview
+
+    except Exception as e:
+        log.error(f"❌ Error getting analytics overview: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Error getting analytics overview: {str(e)}"
+        )
+
+
+@router.get("/analytics/system", response_model=SystemInsights)
+async def get_system_insights(
+    time_range: TimeRange = Query(
+        TimeRange.LAST_7_DAYS, description="Time range filter"
+    ),
+    start_date: Optional[str] = Query(
+        None, description="Start date for custom range (YYYY-MM-DD)"
+    ),
+    end_date: Optional[str] = Query(
+        None, description="End date for custom range (YYYY-MM-DD)"
+    ),
+    analytics_svc: AnalyticsService = Depends(get_analytics_service),
+):
+    """
+    Get system insights including:
+    - Token usage (daily/hourly)
+    - Estimated cost consumption
+    - System access metrics (daily/hourly)
+    - Blocked access count
+    """
+    try:
+        insights = analytics_svc.get_system_insights(
+            time_range=time_range,
+            start_date=start_date,
+            end_date=end_date,
+        )
+        return insights
+
+    except Exception as e:
+        log.error(f"❌ Error getting system insights: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Error getting system insights: {str(e)}"
+        )
+
+
+@router.get("/analytics/users", response_model=UserInsights)
+async def get_user_insights(
+    time_range: TimeRange = Query(
+        TimeRange.LAST_7_DAYS, description="Time range filter"
+    ),
+    start_date: Optional[str] = Query(
+        None, description="Start date for custom range (YYYY-MM-DD)"
+    ),
+    end_date: Optional[str] = Query(
+        None, description="End date for custom range (YYYY-MM-DD)"
+    ),
+    analytics_svc: AnalyticsService = Depends(get_analytics_service),
+):
+    """
+    Get user insights including:
+    - Daily unique users
+    - Return frequency
+    - User segmentation by question count
+    - New vs Retain users
+    - Topics of interest
+    - Popular questions
+    - User funnel
+    """
+    try:
+        insights = analytics_svc.get_user_insights(
+            time_range=time_range,
+            start_date=start_date,
+            end_date=end_date,
+        )
+        return insights
+
+    except Exception as e:
+        log.error(f"❌ Error getting user insights: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Error getting user insights: {str(e)}"
+        )
+
+
+@router.get("/analytics/chat", response_model=ChatInsights)
+async def get_chat_insights(
+    time_range: TimeRange = Query(
+        TimeRange.LAST_7_DAYS, description="Time range filter"
+    ),
+    start_date: Optional[str] = Query(
+        None, description="Start date for custom range (YYYY-MM-DD)"
+    ),
+    end_date: Optional[str] = Query(
+        None, description="End date for custom range (YYYY-MM-DD)"
+    ),
+    analytics_svc: AnalyticsService = Depends(get_analytics_service),
+):
+    """
+    Get chat insights including:
+    - Total user messages and AI responses
+    - Like/dislike rates
+    - Average messages per conversation
+    - Average conversation duration
+    - Top unanswered questions
+    - Low-rated responses for improvement
+    """
+    try:
+        insights = analytics_svc.get_chat_insights(
+            time_range=time_range,
+            start_date=start_date,
+            end_date=end_date,
+        )
+        return insights
+
+    except Exception as e:
+        log.error(f"❌ Error getting chat insights: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Error getting chat insights: {str(e)}"
+        )
+
+
+@router.get("/analytics/documents", response_model=DocumentInsights)
+async def get_document_insights(
+    time_range: TimeRange = Query(
+        TimeRange.LAST_7_DAYS, description="Time range filter"
+    ),
+    start_date: Optional[str] = Query(
+        None, description="Start date for custom range (YYYY-MM-DD)"
+    ),
+    end_date: Optional[str] = Query(
+        None, description="End date for custom range (YYYY-MM-DD)"
+    ),
+    category: Optional[str] = Query(None, description="Filter by category"),
+    analytics_svc: AnalyticsService = Depends(get_analytics_service),
+):
+    """
+    Get document insights including:
+    - Total documents and size
+    - Active/inactive document counts
+    - Statistics by category
+    - Top retrieved documents
+    - Document growth trend
+    """
+    try:
+        insights = analytics_svc.get_document_insights(
+            time_range=time_range,
+            start_date=start_date,
+            end_date=end_date,
+            category=category,
+        )
+        return insights
+
+    except Exception as e:
+        log.error(f"❌ Error getting document insights: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Error getting document insights: {str(e)}"
+        )
+
+
+@router.get("/analytics/business", response_model=BusinessInsights)
+async def get_business_insights(
+    time_range: TimeRange = Query(
+        TimeRange.LAST_7_DAYS, description="Time range filter"
+    ),
+    start_date: Optional[str] = Query(
+        None, description="Start date for custom range (YYYY-MM-DD)"
+    ),
+    end_date: Optional[str] = Query(
+        None, description="End date for custom range (YYYY-MM-DD)"
+    ),
+    analytics_svc: AnalyticsService = Depends(get_analytics_service),
+):
+    """
+    Get business insights including:
+    - Estimated hours saved
+    - Content gap analysis
+    - Quality score breakdown
+    """
+    try:
+        insights = analytics_svc.get_business_insights(
+            time_range=time_range,
+            start_date=start_date,
+            end_date=end_date,
+        )
+        return insights
+
+    except Exception as e:
+        log.error(f"❌ Error getting business insights: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Error getting business insights: {str(e)}"
+        )
+
+
+@router.get("/analytics/suggested-questions")
+async def get_suggested_questions(
+    limit: int = Query(5, ge=1, le=10, description="Number of questions to return"),
+    force_refresh: bool = Query(False, description="Force refresh cache"),
+    analytics_svc: AnalyticsService = Depends(get_analytics_service),
+):
+    """
+    Get suggested questions based on trending topics
+
+    This endpoint analyzes trending topics from the last 24 hours
+    and returns popular questions from those topics.
+
+    Results are cached for 1 hour to improve performance.
+
+    - **limit**: Number of questions to return (1-10, default: 5)
+    - **force_refresh**: Force refresh the cache (default: false)
+
+    Returns a list of suggested questions with:
+    - question: The question text
+    - count: How many times it was asked
+    - last_asked: When it was last asked
+    """
+    try:
+        current_time = time.time()
+        cache = _suggested_questions_cache
+
+        # Check if cache is valid
+        cache_valid = (
+            not force_refresh
+            and cache["questions"] is not None
+            and cache["timestamp"] is not None
+            and (current_time - cache["timestamp"]) < cache["ttl"]
+        )
+
+        if cache_valid:
+            # Return cached results
+            log.info("📦 Returning cached suggested questions")
+            cached_questions = cache["questions"]
+            # Limit the cached results if needed
+            limited_questions = cached_questions[:limit]
+            return {
+                "success": True,
+                "questions": limited_questions,
+                "count": len(limited_questions),
+                "cached": True,
+                "cache_age_seconds": int(current_time - cache["timestamp"]),
+            }
+
+        # Fetch fresh data
+        log.info("🔄 Fetching fresh suggested questions (cache miss or expired)")
+        questions = analytics_svc.get_suggested_questions(
+            limit=10
+        )  # Fetch more for caching
+        questions_data = [q.model_dump() for q in questions]
+
+        # Update cache
+        cache["questions"] = questions_data
+        cache["timestamp"] = current_time
+
+        # Return limited results
+        limited_questions = questions_data[:limit]
+        return {
+            "success": True,
+            "questions": limited_questions,
+            "count": len(limited_questions),
+            "cached": False,
+            "cache_age_seconds": 0,
+        }
+
+    except Exception as e:
+        log.error(f"❌ Error getting suggested questions: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Error getting suggested questions: {str(e)}"
+        )
+
+
+# ==================== ATTACHMENT ENDPOINTS ====================
+
+
+@router.post("/attachments/upload", response_model=DocumentAttachment)
+async def upload_attachment(
+    file: UploadFile = File(...),
+    description: Optional[str] = Form(None),
+    keywords: Optional[str] = Form(None),
+    chunk_ids: Optional[str] = Form(None),
+    attachment_svc: AttachmentService = Depends(get_attachment_service),
+):
+    """
+    Upload a new attachment (form, template, etc.)
+
+    - **file**: File to upload (doc, docx, xlsx, xls, pdf)
+    - **description**: Description of the file
+    - **keywords**: Comma-separated keywords for searching
+    - **chunk_ids**: Comma-separated chunk IDs to link this attachment to
+    """
+    try:
+        # Validate file type
+        allowed_extensions = [".doc", ".docx", ".xlsx", ".xls", ".pdf"]
+        file_ext = Path(file.filename).suffix.lower()
+        if file_ext not in allowed_extensions:
+            raise HTTPException(
+                status_code=400,
+                detail=f"File type not allowed. Allowed types: {', '.join(allowed_extensions)}",
+            )
+
+        # Validate file size (max 10MB)
+        max_size = 10 * 1024 * 1024  # 10MB
+        file_content = await file.read()
+        if len(file_content) > max_size:
+            raise HTTPException(status_code=400, detail="File size exceeds 10MB limit")
+
+        # Save file
+        file_path = Path("data/forms") / file.filename
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+
+        with open(file_path, "wb") as f:
+            f.write(file_content)
+
+        # Parse keywords
+        keywords_list = []
+        if keywords:
+            keywords_list = [k.strip() for k in keywords.split(",") if k.strip()]
+
+        # Create attachment record
+        attachment_id = attachment_svc.create_attachment(
+            file_name=file.filename,
+            file_type=file_ext[1:],  # Remove the dot
+            file_path=str(file_path),
+            file_size=len(file_content),
+            description=description,
+            keywords=keywords_list,
+        )
+
+        # Link to chunks if provided
+        if chunk_ids:
+            chunk_id_list = [
+                int(cid.strip()) for cid in chunk_ids.split(",") if cid.strip()
+            ]
+            if chunk_id_list:
+                attachment_svc.link_attachment_to_chunks(attachment_id, chunk_id_list)
+
+        # Get the created attachment
+        attachment = attachment_svc.get_attachment_by_id(attachment_id)
+        if not attachment:
+            raise HTTPException(status_code=500, detail="Failed to retrieve attachment")
+
+        log.info(f"✅ Uploaded attachment: {file.filename} (ID: {attachment_id})")
+        return attachment
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        log.error(f"❌ Error uploading attachment: {e}")
+        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+
+
+@router.get("/attachments/download/{attachment_id}")
+async def download_attachment(
+    attachment_id: int,
+    attachment_svc: AttachmentService = Depends(get_attachment_service),
+):
+    """
+    Download an attachment by ID
+
+    - **attachment_id**: ID of the attachment to download
+    """
+    try:
+        attachment = attachment_svc.get_attachment_by_id(attachment_id)
+        if not attachment:
+            raise HTTPException(status_code=404, detail="Attachment not found")
+
+        file_path = Path(attachment.file_path)
+        if not file_path.exists():
+            raise HTTPException(status_code=404, detail="File not found on disk")
+
+        return FileResponse(
+            path=str(file_path),
+            filename=attachment.file_name,
+            media_type="application/octet-stream",
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        log.error(f"❌ Error downloading attachment: {e}")
+        raise HTTPException(status_code=500, detail=f"Download failed: {str(e)}")
+
+
+@router.get("/attachments", response_model=List[DocumentAttachment])
+async def list_attachments(
+    keywords: Optional[str] = Query(None, description="Comma-separated keywords"),
+    file_name: Optional[str] = Query(None, description="File name to search"),
+    attachment_svc: AttachmentService = Depends(get_attachment_service),
+):
+    """
+    List all attachments or search by keywords/file name
+
+    - **keywords**: Comma-separated keywords to search
+    - **file_name**: File name to search (partial match)
+    """
+    try:
+        if keywords or file_name:
+            keywords_list = (
+                [k.strip() for k in keywords.split(",") if k.strip()]
+                if keywords
+                else None
+            )
+            attachments = attachment_svc.search_attachments(
+                keywords=keywords_list, file_name=file_name
+            )
+        else:
+            attachments = attachment_svc.get_all_attachments()
+
+        return attachments
+
+    except Exception as e:
+        log.error(f"❌ Error listing attachments: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to list attachments: {str(e)}"
+        )
+
+
+@router.delete("/attachments/{attachment_id}")
+async def delete_attachment(
+    attachment_id: int,
+    attachment_svc: AttachmentService = Depends(get_attachment_service),
+):
+    """
+    Delete an attachment (soft delete)
+
+    - **attachment_id**: ID of the attachment to delete
+    """
+    try:
+        success = attachment_svc.delete_attachment(attachment_id)
+        if not success:
+            raise HTTPException(status_code=404, detail="Attachment not found")
+
+        return {"success": True, "message": "Attachment deleted successfully"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        log.error(f"❌ Error deleting attachment: {e}")
+        raise HTTPException(status_code=500, detail=f"Delete failed: {str(e)}")
+
+
+@router.post("/attachments/{attachment_id}/link-chunks")
+async def link_attachment_to_chunks(
+    attachment_id: int,
+    chunk_ids: List[int],
+    relevance_score: float = 1.0,
+    attachment_svc: AttachmentService = Depends(get_attachment_service),
+):
+    """
+    Link an attachment to multiple chunks
+
+    - **attachment_id**: ID of the attachment
+    - **chunk_ids**: List of chunk IDs to link
+    - **relevance_score**: Relevance score (0-1)
+    """
+    try:
+        # Verify attachment exists
+        attachment = attachment_svc.get_attachment_by_id(attachment_id)
+        if not attachment:
+            raise HTTPException(status_code=404, detail="Attachment not found")
+
+        attachment_svc.link_attachment_to_chunks(
+            attachment_id, chunk_ids, relevance_score
+        )
+
+        return {
+            "success": True,
+            "message": f"Linked attachment to {len(chunk_ids)} chunks",
+            "attachment_id": attachment_id,
+            "chunk_ids": chunk_ids,
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        log.error(f"❌ Error linking attachment to chunks: {e}")
+        raise HTTPException(status_code=500, detail=f"Link failed: {str(e)}")

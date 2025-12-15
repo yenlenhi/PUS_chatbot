@@ -1,6 +1,6 @@
 import Layout from '@/components/Layout';
 import Banner from '@/components/Banner';
-import NewsSection from '@/components/NewsSection';
+import NewsSectionLive from '@/components/NewsSectionLive';
 import QuickStats from '@/components/QuickStats';
 
 export default function Home() {
@@ -8,7 +8,7 @@ export default function Home() {
     <Layout>
       <Banner />
       <QuickStats />
-      <NewsSection />
+      <NewsSectionLive />
     </Layout>
   );
 }

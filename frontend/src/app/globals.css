@@ -181,6 +181,46 @@ body {
   font-style: italic !important;
 }
 
+/* Modal animations */
+@keyframes modal-appear {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-modal-appear {
+  animation: modal-appear 0.2s ease-out;
+}
+
+/* Fade-in animation */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-in {
+  animation: fade-in 0.3s ease-out;
+}
+
+.fade-in {
+  animation-name: fade-in;
+}
+
+.duration-300 {
+  animation-duration: 0.3s;
+}
+
 
 
 

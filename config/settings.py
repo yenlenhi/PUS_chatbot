@@ -10,9 +10,17 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-# Base paths
+# Base paths - Support Railway Volume mount
 BASE_DIR = Path(__file__).parent.parent
-DATA_DIR = BASE_DIR / "data"
+
+# Railway Volume: Mount tại /data, fallback về local data/ folder
+# Set RAILWAY_VOLUME_MOUNT=/data trong Railway environment
+VOLUME_MOUNT = os.getenv("RAILWAY_VOLUME_MOUNT", "")
+if VOLUME_MOUNT:
+    DATA_DIR = Path(VOLUME_MOUNT)
+else:
+    DATA_DIR = BASE_DIR / "data"
+
 PDF_DIR = DATA_DIR / "pdfs"
 NEW_PDF_DIR = DATA_DIR / "new_pdf"  # PDF scan directory
 PROCESSED_DIR = DATA_DIR / "processed"
@@ -20,6 +28,7 @@ EMBEDDINGS_DIR = DATA_DIR / "embeddings"
 
 # Ensure directories exist
 PDF_DIR.mkdir(parents=True, exist_ok=True)
+NEW_PDF_DIR.mkdir(parents=True, exist_ok=True)
 PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
 EMBEDDINGS_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -33,6 +42,8 @@ GEMINI_API_URL = os.getenv(
     "GEMINI_API_URL",
     "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",
 )
+GEMINI_MAX_OUTPUT_TOKENS = int(os.getenv("GEMINI_MAX_OUTPUT_TOKENS", "8192"))
+GEMINI_TEMPERATURE = float(os.getenv("GEMINI_TEMPERATURE", "0.7"))
 # Enable/disable Gemini question normalization
 ENABLE_GEMINI_NORMALIZATION = (
     os.getenv("ENABLE_GEMINI_NORMALIZATION", "true").lower() == "true"
@@ -129,6 +140,30 @@ AUTO_INGEST_ON_STARTUP = os.getenv("AUTO_INGEST_ON_STARTUP", "true").lower() == 
 # Rate Limiting
 RATE_LIMIT_REQUESTS = int(os.getenv("RATE_LIMIT_REQUESTS", "100"))
 RATE_LIMIT_WINDOW = int(os.getenv("RATE_LIMIT_WINDOW", "60"))
+
+# ============================================
+# Security Configuration (NEW)
+# ============================================
+# JWT Authentication
+JWT_SECRET_KEY = os.getenv(
+    "JWT_SECRET_KEY",
+    "your-secret-key-change-this-in-production-use-openssl-rand-hex-32",
+)
+JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
+
+# HTTPS Configuration
+HTTPS_ONLY = os.getenv("HTTPS_ONLY", "false").lower() == "true"
+TLS_MIN_VERSION = os.getenv("TLS_MIN_VERSION", "1.2")
+
+# Checksum Verification
+ENABLE_CHECKSUM_VERIFICATION = (
+    os.getenv("ENABLE_CHECKSUM_VERIFICATION", "false").lower() == "true"
+)
+CHECKSUM_ALGORITHM = os.getenv("CHECKSUM_ALGORITHM", "sha256")  # md5 or sha256
+
+# CORS Configuration
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "*").split(",")
 
 # Create logs directory
 Path(LOG_FILE).parent.mkdir(parents=True, exist_ok=True)

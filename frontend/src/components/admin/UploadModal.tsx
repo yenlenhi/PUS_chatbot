@@ -221,32 +221,38 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onUploadSucc
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
-      {/* Backdrop */}
+      {/* Backdrop - Improved with blur and gradient */}
       <div 
-        className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
+        className="fixed inset-0 bg-gradient-to-br from-gray-900/80 via-gray-800/70 to-gray-900/80 backdrop-blur-sm transition-all duration-300"
         onClick={handleClose}
       />
 
       {/* Modal */}
       <div className="flex min-h-full items-center justify-center p-4">
-        <div className="relative bg-white rounded-xl shadow-2xl max-w-lg w-full transform transition-all">
-          {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-200">
-            <h2 className="text-xl font-semibold text-gray-900">
-              Upload Tài liệu PDF
-            </h2>
+        <div className="relative bg-white rounded-2xl shadow-2xl max-w-lg w-full transform transition-all animate-modal-appear">
+          {/* Header - Enhanced with gradient */}
+          <div className="flex items-center justify-between p-6 border-b border-gray-100 bg-gradient-to-r from-red-50 to-orange-50">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-red-100 rounded-lg">
+                <FileText className="w-5 h-5 text-red-600" />
+              </div>
+              <h2 className="text-xl font-semibold text-gray-900">
+                Upload Tài liệu PDF
+              </h2>
+            </div>
             <button
               onClick={handleClose}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-white rounded-lg transition-all shadow-sm"
               disabled={isProcessing}
+              title="Đóng"
             >
-              <X className="w-5 h-5 text-gray-500" />
+              <X className="w-5 h-5 text-gray-500 hover:text-gray-700" />
             </button>
           </div>
 
           {/* Content */}
           <div className="p-6 space-y-6">
-            {/* Drop Zone */}
+            {/* Drop Zone - Enhanced with better visuals */}
             <div
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
@@ -254,12 +260,12 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onUploadSucc
               onClick={() => !isProcessing && fileInputRef.current?.click()}
               className={`
                 border-2 border-dashed rounded-xl p-8 text-center cursor-pointer
-                transition-all duration-200
+                transition-all duration-300 ease-in-out
                 ${isDragging 
-                  ? 'border-red-500 bg-red-50' 
+                  ? 'border-red-500 bg-gradient-to-br from-red-50 to-orange-50 scale-[1.02] shadow-lg' 
                   : selectedFile 
-                    ? 'border-green-500 bg-green-50' 
-                    : 'border-gray-300 hover:border-red-400 hover:bg-gray-50'
+                    ? 'border-green-500 bg-gradient-to-br from-green-50 to-emerald-50 shadow-md' 
+                    : 'border-gray-300 hover:border-red-400 hover:bg-gradient-to-br hover:from-gray-50 hover:to-red-50/30 hover:shadow-md'
                 }
                 ${isProcessing ? 'cursor-not-allowed opacity-60' : ''}
               `}
@@ -274,10 +280,12 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onUploadSucc
               />
 
               {selectedFile ? (
-                <div className="flex flex-col items-center">
-                  <File className="w-12 h-12 text-green-600 mb-3" />
-                  <p className="text-sm font-medium text-gray-900">{selectedFile.name}</p>
-                  <p className="text-xs text-gray-500 mt-1">
+                <div className="flex flex-col items-center animate-in fade-in duration-300">
+                  <div className="p-3 bg-green-100 rounded-full mb-3">
+                    <File className="w-10 h-10 text-green-600" />
+                  </div>
+                  <p className="text-sm font-semibold text-gray-900">{selectedFile.name}</p>
+                  <p className="text-xs text-gray-500 mt-1 font-medium">
                     {formatFileSize(selectedFile.size)}
                   </p>
                   {!isProcessing && (
@@ -286,7 +294,7 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onUploadSucc
                         e.stopPropagation();
                         setSelectedFile(null);
                       }}
-                      className="mt-2 text-xs text-red-600 hover:text-red-800"
+                      className="mt-3 px-3 py-1.5 text-xs font-medium text-red-600 hover:text-white bg-white hover:bg-red-600 border border-red-200 hover:border-red-600 rounded-lg transition-all duration-200"
                     >
                       Chọn file khác
                     </button>
@@ -294,29 +302,31 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onUploadSucc
                 </div>
               ) : (
                 <div className="flex flex-col items-center">
-                  <Upload className="w-12 h-12 text-gray-400 mb-3" />
-                  <p className="text-sm font-medium text-gray-700">
+                  <div className="p-4 bg-gray-100 rounded-full mb-4">
+                    <Upload className="w-10 h-10 text-gray-400" />
+                  </div>
+                  <p className="text-sm font-semibold text-gray-700 mb-1">
                     Kéo thả file PDF vào đây
                   </p>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-500">
                     hoặc click để chọn file (tối đa 50MB)
                   </p>
                 </div>
               )}
             </div>
 
-            {/* Options */}
+            {/* Options - Enhanced with better styling */}
             <div className="space-y-4">
               {/* Category */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Danh mục
                 </label>
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
                   disabled={isProcessing}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-900 disabled:bg-gray-100"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 text-gray-900 disabled:bg-gray-100 disabled:cursor-not-allowed font-medium shadow-sm transition-all"
                 >
                   {CATEGORIES.map((cat) => (
                     <option key={cat.value} value={cat.value}>
@@ -326,13 +336,13 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onUploadSucc
                 </select>
               </div>
 
-              {/* Use Gemini Toggle */}
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              {/* Use Gemini Toggle - Enhanced */}
+              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-100">
                 <div>
-                  <p className="text-sm font-medium text-gray-700">
+                  <p className="text-sm font-semibold text-gray-800">
                     Sử dụng Gemini OCR
                   </p>
-                  <p className="text-xs text-gray-500 mt-0.5">
+                  <p className="text-xs text-gray-600 mt-0.5">
                     Khuyến nghị cho PDF scan/ảnh (xử lý lâu hơn)
                   </p>
                 </div>
@@ -340,49 +350,54 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onUploadSucc
                   onClick={() => !isProcessing && setUseGemini(!useGemini)}
                   disabled={isProcessing}
                   className={`
-                    relative w-12 h-6 rounded-full transition-colors
-                    ${useGemini ? 'bg-red-600' : 'bg-gray-300'}
-                    ${isProcessing ? 'cursor-not-allowed' : 'cursor-pointer'}
+                    relative w-14 h-7 rounded-full transition-all duration-300
+                    ${useGemini ? 'bg-red-600 shadow-md' : 'bg-gray-300'}
+                    ${isProcessing ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:shadow-lg'}
                   `}
                 >
                   <span
                     className={`
-                      absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow
-                      transition-transform duration-200
-                      ${useGemini ? 'translate-x-6' : 'translate-x-0'}
+                      absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow-md
+                      transition-transform duration-300 ease-in-out
+                      ${useGemini ? 'translate-x-7' : 'translate-x-0'}
                     `}
                   />
                 </button>
               </div>
             </div>
 
-            {/* Progress Bar */}
+            {/* Progress Bar - Enhanced */}
             {isProcessing && (
-              <div className="space-y-2">
+              <div className="space-y-3 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-100">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-700">{uploadState.message}</span>
-                  <span className="text-gray-500">{uploadState.progress}%</span>
+                  <span className="text-gray-800 font-medium flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin text-red-600" />
+                    {uploadState.message}
+                  </span>
+                  <span className="text-red-600 font-bold">{uploadState.progress}%</span>
                 </div>
-                <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div className="w-full h-2.5 bg-gray-200 rounded-full overflow-hidden shadow-inner">
                   <div
-                    className="h-full bg-red-600 transition-all duration-300 ease-out"
+                    className="h-full bg-gradient-to-r from-red-500 to-red-600 transition-all duration-300 ease-out shadow-sm"
                     style={{ width: `${uploadState.progress}%` }}
                   />
                 </div>
               </div>
             )}
 
-            {/* Status Messages */}
+            {/* Status Messages - Enhanced */}
             {uploadState.status === 'success' && (
-              <div className="flex items-start p-4 bg-green-50 rounded-lg">
-                <CheckCircle className="w-5 h-5 text-green-600 mr-3 flex-shrink-0 mt-0.5" />
+              <div className="flex items-start p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200 shadow-sm animate-in fade-in duration-300">
+                <div className="p-1 bg-green-100 rounded-full mr-3 flex-shrink-0">
+                  <CheckCircle className="w-5 h-5 text-green-600" />
+                </div>
                 <div>
-                  <p className="text-sm font-medium text-green-800">
+                  <p className="text-sm font-semibold text-green-800">
                     {uploadState.message}
                   </p>
                   {uploadState.result && (
-                    <p className="text-xs text-green-600 mt-1">
-                      Đã tạo {uploadState.result.chunks_created} chunks và {uploadState.result.embeddings_created} embeddings
+                    <p className="text-xs text-green-700 mt-1.5 font-medium">
+                      ✓ Đã tạo {uploadState.result.chunks_created} chunks và {uploadState.result.embeddings_created} embeddings
                     </p>
                   )}
                 </div>
@@ -390,19 +405,21 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onUploadSucc
             )}
 
             {uploadState.status === 'error' && (
-              <div className="flex items-start p-4 bg-red-50 rounded-lg">
-                <AlertCircle className="w-5 h-5 text-red-600 mr-3 flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-red-800">{uploadState.message}</p>
+              <div className="flex items-start p-4 bg-gradient-to-r from-red-50 to-orange-50 rounded-lg border border-red-200 shadow-sm animate-in fade-in duration-300">
+                <div className="p-1 bg-red-100 rounded-full mr-3 flex-shrink-0">
+                  <AlertCircle className="w-5 h-5 text-red-600" />
+                </div>
+                <p className="text-sm font-medium text-red-800">{uploadState.message}</p>
               </div>
             )}
           </div>
 
-          {/* Footer */}
-          <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200">
+          {/* Footer - Enhanced with better styling */}
+          <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-100 bg-gray-50/50">
             <button
               onClick={handleClose}
               disabled={isProcessing}
-              className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
+              className="px-5 py-2.5 text-gray-700 font-medium hover:bg-white border border-gray-200 hover:border-gray-300 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
             >
               Hủy
             </button>
@@ -410,11 +427,11 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onUploadSucc
               onClick={handleUpload}
               disabled={!selectedFile || isProcessing}
               className={`
-                px-6 py-2 rounded-lg font-medium transition-all
+                px-6 py-2.5 rounded-lg font-semibold transition-all
                 flex items-center gap-2
                 ${!selectedFile || isProcessing
                   ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  : 'bg-red-600 hover:bg-red-700 text-white shadow-sm hover:shadow'
+                  : 'bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white shadow-md hover:shadow-lg transform hover:scale-[1.02]'
                 }
               `}
             >

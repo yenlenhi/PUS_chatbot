@@ -1,6 +1,7 @@
 """
 Main FastAPI application for University Chatbot
 """
+
 from dotenv import load_dotenv
 
 # Load environment variables from .env file at the very beginning
@@ -13,9 +14,17 @@ from fastapi.exceptions import RequestValidationError
 import time
 import uvicorn
 from src.api.routes import router
+from src.api.auth_routes import auth_router
+from src.api.thammuu_routes import router as thammuu_router
+from src.middleware.https_middleware import (
+    HTTPSRedirectMiddleware,
+    SecurityHeadersMiddleware,
+)
+from src.middleware.checksum_middleware import ChecksumMiddleware
 from src.utils.logger import log
-from config.settings import API_HOST, API_PORT, API_RELOAD
+from config.settings import API_HOST, API_PORT, API_RELOAD, ALLOWED_ORIGINS
 from contextlib import asynccontextmanager
+
 
 # Create FastAPI app
 @asynccontextmanager
@@ -27,17 +36,23 @@ async def lifespan(app: FastAPI):
     # Shutdown logic
     log.info("Shutting down University Chatbot API...")
 
+
 app = FastAPI(
     title="University Chatbot API",
     description="API for university information chatbot with RAG capabilities",
     version="1.0.0",
-    lifespan=lifespan
+    lifespan=lifespan,
 )
+
+# Add Security Middleware
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(HTTPSRedirectMiddleware)
+app.add_middleware(ChecksumMiddleware)
 
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, specify exact origins
+    allow_origins=ALLOWED_ORIGINS,  # Configure in settings
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -70,10 +85,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     log.warning(f"Validation error: {exc}")
     return JSONResponse(
         status_code=422,
-        content={
-            "detail": "Dữ liệu đầu vào không hợp lệ",
-            "errors": exc.errors()
-        }
+        content={"detail": "Dữ liệu đầu vào không hợp lệ", "errors": exc.errors()},
     )
 
 
@@ -83,14 +95,14 @@ async def general_exception_handler(request: Request, exc: Exception):
     log.error(f"Unhandled exception: {exc}")
     return JSONResponse(
         status_code=500,
-        content={
-            "detail": "Đã xảy ra lỗi hệ thống. Vui lòng thử lại sau."
-        }
+        content={"detail": "Đã xảy ra lỗi hệ thống. Vui lòng thử lại sau."},
     )
 
 
 # Include routes
+app.include_router(auth_router, prefix="/api/v1")
 app.include_router(router, prefix="/api/v1")
+app.include_router(thammuu_router, prefix="/api/v1")
 
 
 # Root endpoint
@@ -101,17 +113,27 @@ async def root():
         "message": "University Chatbot API",
         "version": "1.0.0",
         "docs": "/docs",
-        "health": "/api/v1/health"
+        "health": "/health",
+    }
+
+
+# Health check endpoint (for Railway)
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for Railway deployment"""
+    return {
+        "status": "healthy",
+        "service": "University Chatbot API",
+        "version": "1.0.0",
     }
 
 
 if __name__ == "__main__":
-    # Run the application
-    uvicorn.run(
-        "main:app",
-        host=API_HOST,
-        port=API_PORT,
-        reload=API_RELOAD,
-        log_level="info"
-    )
+    import os
 
+    # Support Railway PORT environment variable
+    port = int(os.environ.get("PORT", API_PORT))
+    host = os.environ.get("HOST", API_HOST)
+
+    # Run the application
+    uvicorn.run("main:app", host=host, port=port, reload=API_RELOAD, log_level="info")

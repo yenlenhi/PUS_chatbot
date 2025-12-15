@@ -28,6 +28,15 @@ export interface UploadedImage {
   file?: File; // Optional, only present client-side
 }
 
+// File attachment (forms, templates, etc.)
+export interface FileAttachment {
+  file_name: string;
+  file_type: string;
+  download_url: string;
+  description?: string;
+  file_size?: number;
+}
+
 export interface Message {
   id: string;
   role: 'user' | 'assistant';
@@ -35,6 +44,7 @@ export interface Message {
   timestamp: string | Date;
   sources?: Source[];
   sourceReferences?: SourceReference[];
+  attachments?: FileAttachment[]; // File attachments
   confidence?: number;
   sender?: 'user' | 'bot'; // For backward compatibility
   userQuery?: string; // Original user query (for feedback)

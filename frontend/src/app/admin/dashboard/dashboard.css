@@ -1,0 +1,67 @@
+/* 
+ * Custom CSS for Admin Dashboard Charts
+ * Optimized for better UI/UX
+ */
+
+/* Chart Container Improvements */
+.chart-container {
+  @apply relative w-full;
+  min-height: 160px;
+  max-height: 240px;
+}
+
+/* Stat Card Improvements */
+.stat-card {
+  @apply rounded-lg p-3.5 border transition-all duration-200;
+}
+
+.stat-card:hover {
+  @apply shadow-md transform scale-[1.02];
+}
+
+.stat-card-label {
+  @apply text-xs font-medium mb-1;
+}
+
+.stat-card-value {
+  @apply text-xl font-bold;
+}
+
+/* Chart Responsive */
+@media (max-width: 768px) {
+  .chart-container {
+    min-height: 140px;
+    max-height: 200px;
+  }
+  
+  .stat-card-value {
+    @apply text-lg;
+  }
+}
+
+/* Smooth Animations */
+.chart-animate {
+  animation: fadeInUp 0.4s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Grid Improvements */
+.dashboard-grid {
+  @apply grid gap-4;
+}
+
+@media (min-width: 1024px) {
+  .dashboard-grid {
+    @apply gap-6;
+  }
+}

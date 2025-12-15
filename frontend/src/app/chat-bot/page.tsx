@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { Send, User, FolderOpen, Book, Copy, Check, RefreshCw, Volume2, VolumeX, Pause, Play, X, ImagePlus, Home, ArrowLeft } from 'lucide-react';
+import { Send, User, FolderOpen, Book, Copy, Check, RefreshCw, Volume2, VolumeX, Pause, Play, X, ImagePlus, Home, ArrowLeft, ZoomIn, ZoomOut, RotateCw, Download, Maximize2, Compass } from 'lucide-react';
 import type { Message, SourceReference, ChartData, ImageData, UploadedImage } from '@/types';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -16,12 +16,171 @@ import FeedbackButtons from '@/components/FeedbackButtons';
 import VoiceInputButton from '@/components/VoiceInputButton';
 import ChartRenderer from '@/components/ChartRenderer';
 import ImageRenderer from '@/components/ImageRenderer';
+import GuidedFlow from '@/components/GuidedFlow';
 import { UploadedImage as UploadedImageType } from '@/components/ImageUpload';
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 import { useSpeechSynthesis } from '@/hooks/useSpeechSynthesis';
 
+// Image Modal Component for viewing images in detail
+interface ImageModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  imageSrc: string;
+  imageAlt?: string;
+}
+
+const ImageModal: React.FC<ImageModalProps> = ({ isOpen, onClose, imageSrc, imageAlt = 'Image' }) => {
+  const [scale, setScale] = useState(1);
+  const [rotation, setRotation] = useState(0);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+
+  useEffect(() => {
+    if (isOpen) {
+      setScale(1);
+      setRotation(0);
+      setPosition({ x: 0, y: 0 });
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!isOpen) return;
+      if (e.key === 'Escape') onClose();
+      if (e.key === '+' || e.key === '=') setScale(s => Math.min(s + 0.25, 5));
+      if (e.key === '-') setScale(s => Math.max(s - 0.25, 0.25));
+      if (e.key === 'r') setRotation(r => (r + 90) % 360);
+      if (e.key === '0') { setScale(1); setRotation(0); setPosition({ x: 0, y: 0 }); }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
+  const handleWheel = (e: React.WheelEvent) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -0.1 : 0.1;
+    setScale(s => Math.min(Math.max(s + delta, 0.25), 5));
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (scale > 1) {
+      setIsDragging(true);
+      setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y });
+    }
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (isDragging) {
+      setPosition({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y });
+    }
+  };
+
+  const handleMouseUp = () => setIsDragging(false);
+
+  const handleDownload = () => {
+    const link = document.createElement('a');
+    link.href = imageSrc;
+    link.download = `image-${Date.now()}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div 
+      className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm flex items-center justify-center"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      {/* Control Bar */}
+      <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-white/10 backdrop-blur-md rounded-full px-4 py-2 flex items-center gap-3 z-10">
+        <button
+          onClick={() => setScale(s => Math.max(s - 0.25, 0.25))}
+          className="p-2 rounded-full hover:bg-white/20 text-white transition-colors"
+          title="Thu nhỏ (-)"
+        >
+          <ZoomOut className="w-5 h-5" />
+        </button>
+        <span className="text-white text-sm min-w-[60px] text-center font-medium">
+          {Math.round(scale * 100)}%
+        </span>
+        <button
+          onClick={() => setScale(s => Math.min(s + 0.25, 5))}
+          className="p-2 rounded-full hover:bg-white/20 text-white transition-colors"
+          title="Phóng to (+)"
+        >
+          <ZoomIn className="w-5 h-5" />
+        </button>
+        <div className="w-px h-6 bg-white/30" />
+        <button
+          onClick={() => setRotation(r => (r + 90) % 360)}
+          className="p-2 rounded-full hover:bg-white/20 text-white transition-colors"
+          title="Xoay (R)"
+        >
+          <RotateCw className="w-5 h-5" />
+        </button>
+        <button
+          onClick={() => { setScale(1); setRotation(0); setPosition({ x: 0, y: 0 }); }}
+          className="p-2 rounded-full hover:bg-white/20 text-white transition-colors"
+          title="Đặt lại (0)"
+        >
+          <Maximize2 className="w-5 h-5" />
+        </button>
+        <div className="w-px h-6 bg-white/30" />
+        <button
+          onClick={handleDownload}
+          className="p-2 rounded-full hover:bg-white/20 text-white transition-colors"
+          title="Tải xuống"
+        >
+          <Download className="w-5 h-5" />
+        </button>
+      </div>
+
+      {/* Close Button */}
+      <button
+        onClick={onClose}
+        className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors z-10"
+        title="Đóng (Esc)"
+      >
+        <X className="w-6 h-6" />
+      </button>
+
+      {/* Image Container */}
+      <div 
+        className="relative overflow-hidden w-full h-full flex items-center justify-center"
+        onWheel={handleWheel}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+        style={{ cursor: scale > 1 ? (isDragging ? 'grabbing' : 'grab') : 'default' }}
+      >
+        <img
+          src={imageSrc}
+          alt={imageAlt}
+          className="max-w-[90vw] max-h-[85vh] object-contain select-none transition-transform duration-200"
+          style={{
+            transform: `translate(${position.x}px, ${position.y}px) scale(${scale}) rotate(${rotation}deg)`,
+          }}
+          draggable={false}
+        />
+      </div>
+
+      {/* Keyboard Shortcuts Hint */}
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/60 text-xs">
+        <span className="bg-white/10 px-2 py-1 rounded">Cuộn chuột</span> zoom • 
+        <span className="bg-white/10 px-2 py-1 rounded mx-1">R</span> xoay • 
+        <span className="bg-white/10 px-2 py-1 rounded">Esc</span> đóng • 
+        <span className="bg-white/10 px-2 py-1 rounded ml-1">Kéo</span> di chuyển khi phóng to
+      </div>
+    </div>
+  );
+};
+
 // Custom hook for typewriter effect
-const useTypewriter = (text: string, speed: number = 20, enabled: boolean = true) => {
+const useTypewriter = (text: string, speed: number = 5, enabled: boolean = true) => {
   const [displayedText, setDisplayedText] = useState('');
   const [isComplete, setIsComplete] = useState(false);
 
@@ -94,8 +253,9 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   copiedId,
   copiedQAId
 }) => {
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const shouldAnimate = message.sender === 'bot' && isLatest && message.id !== '1';
-  const { displayedText, isComplete } = useTypewriter(message.content, 15, shouldAnimate);
+  const { displayedText, isComplete } = useTypewriter(message.content, 5, shouldAnimate);
   
   const contentToShow = shouldAnimate ? displayedText : message.content;
   const isCopied = copiedId === message.id;
@@ -105,59 +265,76 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   // User message with separate avatar
   if (message.sender === 'user') {
     return (
-      <div className="flex justify-end items-start gap-3">
-        {/* Message content */}
-        <div className="max-w-[75%] md:max-w-[70%]">
-          {/* Uploaded images - shown above text */}
-          {message.uploadedImages && message.uploadedImages.length > 0 && (
-            <div className="mb-2 flex flex-wrap gap-2 justify-end">
-              {message.uploadedImages.map((img, idx) => (
-                <div 
-                  key={img.id || idx} 
-                  className="relative w-24 h-24 rounded-xl overflow-hidden shadow-lg border-2 border-white"
-                >
-                  <img
-                    src={img.preview || img.base64}
-                    alt={`Uploaded ${idx + 1}`}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              ))}
+      <>
+        <div className="flex justify-end items-start gap-3">
+          {/* Message content */}
+          <div className="max-w-[75%] md:max-w-[70%]">
+            {/* Uploaded images - shown above text */}
+            {message.uploadedImages && message.uploadedImages.length > 0 && (
+              <div className="mb-2 flex flex-wrap gap-2 justify-end">
+                {message.uploadedImages.map((img, idx) => (
+                  <div 
+                    key={img.id || idx} 
+                    className="relative group cursor-pointer"
+                    onClick={() => setSelectedImage(img.preview || img.base64 || '')}
+                  >
+                    <div className="w-28 h-28 rounded-xl overflow-hidden shadow-lg border-2 border-white hover:border-blue-400 transition-all duration-200 hover:shadow-xl">
+                      <img
+                        src={img.preview || img.base64}
+                        alt={`Uploaded ${idx + 1}`}
+                        className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
+                      />
+                    </div>
+                    {/* Zoom overlay */}
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 rounded-xl transition-all duration-200 flex items-center justify-center">
+                      <ZoomIn className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 drop-shadow-lg" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            {/* Text bubble */}
+            {message.content && (
+              <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-2xl rounded-tr-sm px-4 py-3 shadow-lg shadow-blue-500/20">
+                <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+              </div>
+            )}
+            
+            {/* Footer: time and copy button */}
+            <div className="flex items-center justify-end gap-2 mt-1.5 px-1">
+              <span className="text-xs text-gray-400">
+                {(message.timestamp instanceof Date ? message.timestamp : new Date(message.timestamp)).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+              </span>
+              <button
+                onClick={() => onCopy(message.content)}
+                className={`flex items-center gap-1 px-2 py-0.5 text-xs rounded-md transition-all duration-200 ${
+                  isCopied 
+                    ? 'bg-green-100 text-green-600' 
+                    : 'bg-gray-100 hover:bg-gray-200 text-gray-500'
+                }`}
+                title="Sao chép"
+              >
+                {isCopied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                <span>{isCopied ? 'Đã chép' : 'Sao chép'}</span>
+              </button>
             </div>
-          )}
+          </div>
           
-          {/* Text bubble */}
-          {message.content && (
-            <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-2xl rounded-tr-sm px-4 py-3 shadow-lg shadow-blue-500/20">
-              <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
-            </div>
-          )}
-          
-          {/* Footer: time and copy button */}
-          <div className="flex items-center justify-end gap-2 mt-1.5 px-1">
-            <span className="text-xs text-gray-400">
-              {(message.timestamp instanceof Date ? message.timestamp : new Date(message.timestamp)).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
-            </span>
-            <button
-              onClick={() => onCopy(message.content)}
-              className={`flex items-center gap-1 px-2 py-0.5 text-xs rounded-md transition-all duration-200 ${
-                isCopied 
-                  ? 'bg-green-100 text-green-600' 
-                  : 'bg-gray-100 hover:bg-gray-200 text-gray-500'
-              }`}
-              title="Sao chép"
-            >
-              {isCopied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-              <span>{isCopied ? 'Đã chép' : 'Sao chép'}</span>
-            </button>
+          {/* User Avatar - separate */}
+          <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
+            <User className="w-5 h-5 text-white" />
           </div>
         </div>
-        
-        {/* User Avatar - separate */}
-        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
-          <User className="w-5 h-5 text-white" />
-        </div>
-      </div>
+
+        {/* Image Modal for User Messages */}
+        <ImageModal
+          isOpen={!!selectedImage}
+          onClose={() => setSelectedImage(null)}
+          imageSrc={selectedImage || ''}
+          imageAlt="Uploaded image"
+        />
+      </>
     );
   }
 
@@ -244,6 +421,42 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
         {/* Images */}
         {message.images && message.images.length > 0 && isComplete && (
           <ImageRenderer images={message.images} />
+        )}
+
+        {/* File Attachments */}
+        {message.attachments && message.attachments.length > 0 && isComplete && (
+          <div className="mt-3 space-y-2">
+            {message.attachments.map((attachment, idx) => (
+              <a
+                key={idx}
+                href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}${attachment.download_url}`}
+                download
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 rounded-lg border border-blue-200 hover:border-blue-300 transition-all duration-200 group"
+              >
+                <div className="flex-shrink-0 w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                  <FolderOpen className="w-5 h-5 text-white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-blue-900 group-hover:text-blue-700 truncate">
+                    {attachment.file_name}
+                  </p>
+                  {attachment.description && (
+                    <p className="text-xs text-blue-600 mt-0.5 truncate">
+                      {attachment.description}
+                    </p>
+                  )}
+                  {attachment.file_size && (
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      {(attachment.file_size / 1024).toFixed(1)} KB
+                    </p>
+                  )}
+                </div>
+                <Download className="w-4 h-4 text-blue-600 group-hover:text-blue-700 flex-shrink-0" />
+              </a>
+            ))}
+          </div>
         )}
 
         {/* Source indicator */}
@@ -343,6 +556,19 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
             </>
           )}
         </div>
+
+        {/* Feedback Buttons - Like/Dislike */}
+        {message.id !== '1' && isComplete && message.userQuery && (
+          <div className="mt-3 pt-3 border-t border-gray-100">
+            <FeedbackButtons
+              conversationId={conversationId}
+              messageId={message.id}
+              query={message.userQuery}
+              answer={message.content}
+              chunkIds={message.sourceReferences?.map((ref, idx) => idx) || []}
+            />
+          </div>
+        )}
       </div>
     </div>
   );
@@ -350,6 +576,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
 
 const ChatBotPage = () => {
   const [conversationId] = useState(() => `web-chat-${Date.now()}`);
+  const [language, setLanguage] = useState<'vi' | 'en'>('vi'); // Language toggle state
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -365,6 +592,7 @@ const ChatBotPage = () => {
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const [copiedQAMessageId, setCopiedQAMessageId] = useState<string | null>(null);
   const [uploadedImages, setUploadedImages] = useState<UploadedImageType[]>([]);
+  const [previewImage, setPreviewImage] = useState<string | null>(null); // For image preview modal
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Document sidebar state
@@ -374,11 +602,14 @@ const ChatBotPage = () => {
   // Document repository state
   const [repositoryOpen, setRepositoryOpen] = useState(false);
 
+  // Guided Flow state
+  const [guidedFlowOpen, setGuidedFlowOpen] = useState(false);
+
   // PDF Viewer state
   const [pdfViewerOpen, setPdfViewerOpen] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState<{ filename: string; page?: number } | null>(null);
 
-  // Speech Recognition (Voice to Text)
+  // Speech Recognition (Voice to Text) - dynamic language based on toggle
   const {
     transcript,
     isListening,
@@ -387,7 +618,7 @@ const ChatBotPage = () => {
     startListening,
     stopListening,
     resetTranscript
-  } = useSpeechRecognition({ lang: 'vi-VN' });
+  } = useSpeechRecognition({ lang: language === 'vi' ? 'vi-VN' : 'en-US' });
 
   // Speech Synthesis (Text to Voice)
   const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
@@ -507,6 +738,7 @@ const ChatBotPage = () => {
         body: JSON.stringify({ 
           message: currentQuery, 
           conversation_id: conversationId,
+          language: language, // Send language preference to backend
           images: currentImages.map(img => ({
             base64: img.base64,
             mimeType: img.mimeType,
@@ -543,6 +775,7 @@ const ChatBotPage = () => {
           sender: 'bot',
           timestamp: new Date(),
           sourceReferences: sourceReferences,
+          attachments: data.attachments || [], // File attachments from backend
           confidence: data.confidence,
           userQuery: currentQuery, // Store for feedback
           chunkIds: chunkIds, // Store for feedback
@@ -578,13 +811,63 @@ const ChatBotPage = () => {
     }
   };
 
-  const suggestedQuestions = [
-    "Các ngành đào tạo của trường có gì?",
-    "Điều kiện tuyển sinh năm 2025?",
-    "Học phí của trường như thế nào?",
-    "Thông tin về ký túc xá?",
-    "Cơ hội việc làm sau khi tốt nghiệp?"
+  // Suggested questions from API (trending topics)
+  const [suggestedQuestions, setSuggestedQuestions] = useState<string[]>([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+
+  // Fallback suggested questions
+  const fallbackQuestions = language === 'vi' ? [
+    "Điều kiện tuyển sinh và các phương thức xét tuyển của trường?",
+    "Quy chế đào tạo theo tín chỉ là gì?",
+    "Quy định về thi, kiểm tra và đánh giá kết quả học tập?",
+    "Các quy định về quản lý và chế độ chính sách học viên?",
+    "Tiêu chuẩn và quy trình bảo đảm chất lượng đào tạo?"
+  ] : [
+    "What are the admission requirements and methods?",
+    "What is the credit-based training regulation?",
+    "What are the examination and assessment regulations?",
+    "What are the student management regulations and policies?",
+    "What are the quality assurance standards and processes?"
   ];
+
+  // Fetch suggested questions from API
+  useEffect(() => {
+    const fetchSuggestedQuestions = async () => {
+      setLoadingSuggestions(true);
+      try {
+        const response = await fetch('/api/analytics/suggested-questions?limit=5');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.questions && data.questions.length > 0) {
+            // Extract question text from API response
+            const questions = data.questions.map((q: { question: string }) => q.question);
+            setSuggestedQuestions(questions);
+          } else {
+            // Use fallback if API returns empty
+            setSuggestedQuestions(fallbackQuestions);
+          }
+        } else {
+          // Use fallback on error
+          setSuggestedQuestions(fallbackQuestions);
+        }
+      } catch (error) {
+        console.error('Error fetching suggested questions:', error);
+        // Use fallback on error
+        setSuggestedQuestions(fallbackQuestions);
+      } finally {
+        setLoadingSuggestions(false);
+      }
+    };
+
+    fetchSuggestedQuestions();
+  }, []); // Fetch once on mount
+
+  // Update fallback questions when language changes (if using fallback)
+  useEffect(() => {
+    if (suggestedQuestions.length === 0 && !loadingSuggestions) {
+      setSuggestedQuestions(fallbackQuestions);
+    }
+  }, [language]); // eslint-disable-line react-hooks/exhaustive-deps
 
 
 
@@ -625,19 +908,53 @@ const ChatBotPage = () => {
 
             {/* Header Actions */}
             <div className="flex items-center gap-2">
+              {/* Language Toggle */}
+              <div className="flex items-center bg-gray-100 rounded-lg p-1">
+                <button
+                  onClick={() => setLanguage('vi')}
+                  className={`px-2.5 py-1.5 text-xs font-semibold rounded-md transition-all duration-200 ${
+                    language === 'vi'
+                      ? 'bg-red-600 text-white shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                  title="Tiếng Việt"
+                >
+                  VI
+                </button>
+                <button
+                  onClick={() => setLanguage('en')}
+                  className={`px-2.5 py-1.5 text-xs font-semibold rounded-md transition-all duration-200 ${
+                    language === 'en'
+                      ? 'bg-blue-600 text-white shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                  title="English"
+                >
+                  EN
+                </button>
+              </div>
+              {/* Guided Flow Button */}
+              <button
+                onClick={() => setGuidedFlowOpen(true)}
+                className="flex items-center gap-2 px-3 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg transition-colors text-sm font-medium"
+                title={language === 'vi' ? 'Hướng dẫn thủ tục' : 'Procedure Guide'}
+              >
+                <Compass className="w-4 h-4" />
+                <span className="hidden sm:inline">{language === 'vi' ? 'Thủ tục' : 'Guide'}</span>
+              </button>
               <button
                 onClick={() => setRepositoryOpen(true)}
                 className="flex items-center gap-2 px-3 py-2 bg-red-50 hover:bg-red-100 text-red-700 rounded-lg transition-colors text-sm font-medium"
               >
                 <FolderOpen className="w-4 h-4" />
-                <span className="hidden sm:inline">Tài liệu</span>
+                <span className="hidden sm:inline">{language === 'vi' ? 'Tài liệu' : 'Docs'}</span>
               </button>
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
                 className="flex items-center gap-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors text-sm font-medium relative"
               >
                 <Book className="w-4 h-4" />
-                <span className="hidden sm:inline">Nguồn</span>
+                <span className="hidden sm:inline">{language === 'vi' ? 'Nguồn' : 'Sources'}</span>
                 {currentSourceReferences.length > 0 && (
                   <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                     {currentSourceReferences.length}
@@ -668,8 +985,19 @@ const ChatBotPage = () => {
                 </div>
                 <div>
                   <h2 className="text-base md:text-lg font-semibold">PSU ChatBot</h2>
-                  <p className="text-red-100 text-xs md:text-sm">Đang hoạt động</p>
+                  <p className="text-red-100 text-xs md:text-sm">
+                    {language === 'vi' ? 'Đang hoạt động' : 'Online'}
+                  </p>
                 </div>
+              </div>
+              {/* Disclaimer Notice */}
+              <div className="mt-3 pt-3 border-t border-red-500/30">
+                <p className="text-xs text-red-100/90 leading-relaxed">
+                  ⚠️ <span className="font-medium">{language === 'vi' ? 'Lưu ý:' : 'Note:'}</span>{' '}
+                  {language === 'vi' 
+                    ? 'UniChatBot là trợ lý ảo, không thay thế hoàn toàn tư vấn viên Phòng đào tạo / CTSV.'
+                    : 'UniChatBot is a virtual assistant, not a complete replacement for the Training/Student Affairs Office advisors.'}
+                </p>
               </div>
             </div>
 
@@ -720,18 +1048,89 @@ const ChatBotPage = () => {
               )}
 
               {messages.length === 1 && (
-                <div className="space-y-3">
-                  <p className="text-sm text-gray-600 font-medium">Câu hỏi gợi ý:</p>
-                  <div className="grid grid-cols-1 gap-2">
-                    {suggestedQuestions.map((question, index) => (
-                      <button
-                        key={index}
-                        onClick={() => setInputMessage(question)}
-                        className="text-left p-3 text-sm bg-white hover:bg-red-50 rounded-lg border border-gray-200 hover:border-red-300 text-gray-700 transition-all duration-200 shadow-sm hover:shadow-md"
-                      >
-                        {question}
-                      </button>
-                    ))}
+                <div className="space-y-4">
+                  {/* Quick Procedure Access */}
+                  <div className="bg-gradient-to-r from-indigo-50 to-blue-50 rounded-xl p-4 border border-indigo-100">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Compass className="w-5 h-5 text-indigo-600" />
+                      <h4 className="font-medium text-indigo-900">
+                        {language === 'vi' ? 'Thủ tục phổ biến' : 'Common Procedures'}
+                      </h4>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        { 
+                          icon: '📄', 
+                          label: language === 'vi' ? 'Xin giấy xác nhận' : 'Request confirmation',
+                          action: () => setGuidedFlowOpen(true)
+                        },
+                        { 
+                          icon: '⏸️', 
+                          label: language === 'vi' ? 'Nghỉ học tạm thời' : 'Temporary leave',
+                          action: () => setGuidedFlowOpen(true)
+                        },
+                        { 
+                          icon: '💰', 
+                          label: language === 'vi' ? 'Đóng học phí' : 'Pay tuition',
+                          action: () => setGuidedFlowOpen(true)
+                        },
+                        { 
+                          icon: '🏠', 
+                          label: language === 'vi' ? 'Đăng ký KTX' : 'Dormitory',
+                          action: () => setGuidedFlowOpen(true)
+                        },
+                      ].map((item, index) => (
+                        <button
+                          key={index}
+                          onClick={item.action}
+                          className="flex items-center gap-2 p-2.5 bg-white hover:bg-indigo-50 rounded-lg border border-indigo-100 hover:border-indigo-300 text-sm text-gray-700 hover:text-indigo-700 transition-all duration-200"
+                        >
+                          <span>{item.icon}</span>
+                          <span className="truncate">{item.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                    <button
+                      onClick={() => setGuidedFlowOpen(true)}
+                      className="w-full mt-3 text-center text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+                    >
+                      {language === 'vi' ? 'Xem tất cả thủ tục →' : 'View all procedures →'}
+                    </button>
+                  </div>
+
+                  {/* Suggested Questions */}
+                  <div>
+                    <p className="text-sm text-gray-600 font-medium mb-2 flex items-center gap-2">
+                      {language === 'vi' ? 'Hoặc hỏi trực tiếp:' : 'Or ask directly:'}
+                      {loadingSuggestions && (
+                        <span className="text-xs text-gray-400 italic">
+                          ({language === 'vi' ? 'Đang tải...' : 'Loading...'})
+                        </span>
+                      )}
+                    </p>
+                    <div className="grid grid-cols-1 gap-2">
+                      {loadingSuggestions ? (
+                        // Loading skeleton
+                        Array.from({ length: 5 }).map((_, index) => (
+                          <div
+                            key={index}
+                            className="p-3 bg-gray-100 rounded-lg border border-gray-200 animate-pulse"
+                          >
+                            <div className="h-4 bg-gray-300 rounded w-3/4"></div>
+                          </div>
+                        ))
+                      ) : (
+                        suggestedQuestions.map((question, index) => (
+                          <button
+                            key={index}
+                            onClick={() => setInputMessage(question)}
+                            className="text-left p-3 text-sm bg-white hover:bg-red-50 rounded-lg border border-gray-200 hover:border-red-300 text-gray-700 transition-all duration-200 shadow-sm hover:shadow-md"
+                          >
+                            {question}
+                          </button>
+                        ))
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
@@ -750,68 +1149,84 @@ const ChatBotPage = () => {
               {isListening && (
                 <div className="mb-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-blue-600 text-xs flex items-center gap-2">
                   <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                  Đang lắng nghe... Nói câu hỏi của bạn
+                  {language === 'vi' ? 'Đang lắng nghe... Nói câu hỏi của bạn' : 'Listening... Speak your question'}
                   {transcript && <span className="text-gray-500">({transcript})</span>}
                 </div>
               )}
               {/* Image Upload Preview - Show previews above input when there are images */}
               {uploadedImages.length > 0 && (
-                <div className="mb-2 flex flex-wrap gap-2 p-2 bg-gray-50 rounded-lg border border-gray-200">
-                  {uploadedImages.map((image) => (
-                    <div key={image.id} className="relative group">
-                      <img
-                        src={image.preview}
-                        alt={image.name}
-                        className="w-16 h-16 object-cover rounded-lg border border-gray-300"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setUploadedImages(prev => prev.filter(img => img.id !== image.id))}
-                        className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
-                        title="Xóa ảnh"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </div>
-                  ))}
-                  {/* Add more button if under limit */}
-                  {uploadedImages.length < 4 && (
-                    <label className="w-16 h-16 rounded-lg border-2 border-dashed border-gray-300 hover:border-blue-400 flex items-center justify-center text-gray-400 hover:text-blue-500 transition-colors cursor-pointer">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        className="hidden"
-                        onChange={async (e) => {
-                          const files = e.target.files;
-                          if (!files) return;
-                          const remainingSlots = 4 - uploadedImages.length;
-                          const filesToProcess = Array.from(files).slice(0, remainingSlots);
-                          
-                          for (const file of filesToProcess) {
-                            if (!file.type.startsWith('image/')) continue;
-                            const reader = new FileReader();
-                            reader.onload = () => {
-                              const base64 = reader.result as string;
-                              setUploadedImages(prev => [...prev, {
-                                id: `img-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-                                name: file.name,
-                                mimeType: file.type,
-                                preview: URL.createObjectURL(file),
-                                base64
-                              }]);
-                            };
-                            reader.readAsDataURL(file);
-                          }
-                          e.target.value = '';
-                        }}
-                      />
-                      <ImagePlus className="w-5 h-5" />
-                    </label>
-                  )}
-                  <span className="flex items-center text-xs text-gray-500 ml-2">
-                    {uploadedImages.length}/4 ảnh
-                  </span>
+                <div className="mb-3 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
+                  <div className="flex flex-wrap gap-3">
+                    {uploadedImages.map((image) => (
+                      <div key={image.id} className="relative group">
+                        <div 
+                          className="w-20 h-20 rounded-xl overflow-hidden border-2 border-white shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer hover:border-blue-400"
+                          onClick={() => setPreviewImage(image.preview)}
+                        >
+                          <img
+                            src={image.preview}
+                            alt={image.name}
+                            className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
+                          />
+                          {/* Zoom overlay */}
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all duration-200 flex items-center justify-center">
+                            <ZoomIn className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 drop-shadow-lg" />
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setUploadedImages(prev => prev.filter(img => img.id !== image.id));
+                          }}
+                          className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-red-600 shadow-md"
+                          title="Xóa ảnh"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                    {/* Add more button if under limit */}
+                    {uploadedImages.length < 4 && (
+                      <label className="w-20 h-20 rounded-xl border-2 border-dashed border-blue-200 hover:border-blue-400 flex items-center justify-center text-blue-300 hover:text-blue-500 transition-all duration-200 cursor-pointer bg-white/50 hover:bg-white">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          className="hidden"
+                          onChange={async (e) => {
+                            const files = e.target.files;
+                            if (!files) return;
+                            const remainingSlots = 4 - uploadedImages.length;
+                            const filesToProcess = Array.from(files).slice(0, remainingSlots);
+                            
+                            for (const file of filesToProcess) {
+                              if (!file.type.startsWith('image/')) continue;
+                              const reader = new FileReader();
+                              reader.onload = () => {
+                                const base64 = reader.result as string;
+                                setUploadedImages(prev => [...prev, {
+                                  id: `img-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                                  name: file.name,
+                                  mimeType: file.type,
+                                  preview: URL.createObjectURL(file),
+                                  base64
+                                }]);
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                            e.target.value = '';
+                          }}
+                        />
+                        <ImagePlus className="w-6 h-6" />
+                      </label>
+                    )}
+                  </div>
+                  <div className="flex items-center justify-between mt-2">
+                    <span className="text-xs text-blue-600 font-medium">
+                      {uploadedImages.length}/4 ảnh • Click để xem chi tiết
+                    </span>
+                  </div>
                 </div>
               )}
               <div className="flex items-center gap-2 md:gap-3">
@@ -897,7 +1312,13 @@ const ChatBotPage = () => {
                       reader.readAsDataURL(file);
                     }
                   }}
-                  placeholder={isListening ? "Đang lắng nghe..." : uploadedImages.length > 0 ? "Mô tả hoặc hỏi về ảnh..." : "Nhập câu hỏi hoặc dán ảnh (Ctrl+V)..."}
+                  placeholder={
+                    isListening 
+                      ? (language === 'vi' ? "Đang lắng nghe..." : "Listening...")
+                      : uploadedImages.length > 0 
+                        ? (language === 'vi' ? "Mô tả hoặc hỏi về ảnh..." : "Describe or ask about the image...")
+                        : (language === 'vi' ? "Nhập câu hỏi hoặc dán ảnh (Ctrl+V)..." : "Type a question or paste an image (Ctrl+V)...")
+                  }
                   className="flex-1 min-w-0 h-10 md:h-11 px-4 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                   disabled={isTyping || isListening}
                 />
@@ -908,6 +1329,15 @@ const ChatBotPage = () => {
                 >
                   <Send className="w-5 h-5" />
                 </button>
+              </div>
+              {/* Footer Disclaimer */}
+              <div className="mt-2 pt-2 border-t border-gray-200">
+                <p className="text-xs text-gray-500 text-center leading-relaxed">
+                  📋 {language === 'vi' 
+                    ? <>Mọi thông tin pháp lý chính thức xin tham khảo văn bản được công bố trên <a href="https://dhannd.bocongan.gov.vn/" target="_blank" rel="noopener noreferrer" className="font-medium text-red-600 hover:text-red-700 hover:underline">website/trang thông báo của trường</a>.</>
+                    : <>For official legal information, please refer to documents published on the <a href="https://dhannd.bocongan.gov.vn/" target="_blank" rel="noopener noreferrer" className="font-medium text-red-600 hover:text-red-700 hover:underline">university's website/notice board</a>.</>
+                  }
+                </p>
               </div>
             </div>
           </div>
@@ -930,6 +1360,26 @@ const ChatBotPage = () => {
         onOpenDocument={(filename) => handleOpenDocument(filename)}
       />
 
+      {/* Guided Flow Modal */}
+      {guidedFlowOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="w-full max-w-lg max-h-[90vh] overflow-auto">
+            <GuidedFlow
+              language={language}
+              onClose={() => setGuidedFlowOpen(false)}
+              onAskBot={(message) => {
+                setGuidedFlowOpen(false);
+                setInputMessage(message);
+                // Auto-send after a short delay
+                setTimeout(() => {
+                  handleSendMessage(message);
+                }, 100);
+              }}
+            />
+          </div>
+        </div>
+      )}
+
       {/* PDF Viewer Modal */}
       {selectedDocument && (
         <PDFViewerModal
@@ -939,6 +1389,14 @@ const ChatBotPage = () => {
           initialPage={selectedDocument.page}
         />
       )}
+
+      {/* Image Preview Modal for uploaded images before sending */}
+      <ImageModal
+        isOpen={!!previewImage}
+        onClose={() => setPreviewImage(null)}
+        imageSrc={previewImage || ''}
+        imageAlt="Preview image"
+      />
     </div>
   );
 };

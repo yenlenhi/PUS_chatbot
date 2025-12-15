@@ -3,7 +3,8 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, MessageSquare, FileText, ThumbsUp } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, FileText, ThumbsUp, FolderOpen } from 'lucide-react';
+import { useLanguage } from '@/i18n/LanguageContext';
 
 interface AdminSidebarProps {
   onItemClick?: () => void;
@@ -11,31 +12,38 @@ interface AdminSidebarProps {
 
 const AdminSidebar = ({ onItemClick }: AdminSidebarProps) => {
   const pathname = usePathname();
+  const { t, language } = useLanguage();
 
   const menuItems = [
     {
       href: '/admin/dashboard',
       icon: LayoutDashboard,
-      label: 'Dashboard',
-      description: 'Tổng quan hệ thống'
+      label: t('dashboard'),
+      description: language === 'vi' ? 'Tổng quan hệ thống' : 'System Overview'
     },
     {
       href: '/admin/chat-history',
       icon: MessageSquare,
-      label: 'Lịch sử chat',
-      description: 'Quản lý hội thoại'
+      label: t('chatHistory'),
+      description: language === 'vi' ? 'Quản lý hội thoại' : 'Conversation Management'
     },
     {
       href: '/admin/feedback',
       icon: ThumbsUp,
-      label: 'Phản hồi',
-      description: 'Đánh giá & cải thiện'
+      label: t('feedback'),
+      description: language === 'vi' ? 'Đánh giá & cải thiện' : 'Feedback & Improvement'
     },
     {
       href: '/admin/documents',
       icon: FileText,
-      label: 'Tài liệu',
-      description: 'Quản lý tài liệu'
+      label: t('documents'),
+      description: language === 'vi' ? 'Quản lý tài liệu' : 'Document Management'
+    },
+    {
+      href: '/admin/attachments',
+      icon: FolderOpen,
+      label: language === 'vi' ? 'File đính kèm' : 'Attachments',
+      description: language === 'vi' ? 'Quản lý forms & templates' : 'Manage forms & templates'
     }
   ];
 
@@ -76,7 +84,9 @@ const AdminSidebar = ({ onItemClick }: AdminSidebarProps) => {
       <div className="px-4 py-4 border-t border-gray-200">
         <div className="bg-gradient-to-r from-red-50 to-blue-50 rounded-lg p-4">
           <h3 className="text-sm font-semibold text-gray-900 mb-1">PSU ChatBot</h3>
-          <p className="text-xs text-gray-600">Hệ thống quản trị phiên bản 1.0</p>
+          <p className="text-xs text-gray-600">
+            {language === 'vi' ? 'Hệ thống quản trị phiên bản 1.0' : 'Admin System v1.0'}
+          </p>
         </div>
       </div>
     </div>

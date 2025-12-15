@@ -1,6 +1,12 @@
 import requests
 import json
-from config.settings import GEMINI_API_KEY, GEMINI_API_URL, ENABLE_GEMINI_NORMALIZATION
+from config.settings import (
+    GEMINI_API_KEY,
+    GEMINI_API_URL,
+    ENABLE_GEMINI_NORMALIZATION,
+    GEMINI_MAX_OUTPUT_TOKENS,
+    GEMINI_TEMPERATURE,
+)
 from src.utils.logger import log
 
 
@@ -50,7 +56,7 @@ Chỉ trả về câu hỏi đã chuẩn hóa, không giải thích:
             "contents": [{"parts": [{"text": normalization_prompt}]}],
             "generationConfig": {
                 "temperature": 0.3,  # Lower temperature for more consistent normalization
-                "maxOutputTokens": 256,  # Shorter response for question normalization
+                "maxOutputTokens": 1024,  # Increased for Gemini 2.5 Flash thinking tokens
             },
         }
 
@@ -65,8 +71,18 @@ Chỉ trả về câu hỏi đã chuẩn hóa, không giải thích:
 
         if response.status_code == 200:
             result = response.json()
+            log.debug(f"Gemini normalization response: {result}")
+
             if "candidates" in result and result["candidates"]:
-                content = result["candidates"][0].get("content", {})
+                candidate = result["candidates"][0]
+                content = candidate.get("content", {})
+                finish_reason = candidate.get("finishReason", "")
+
+                # Handle MAX_TOKENS in normalization
+                if finish_reason == "MAX_TOKENS":
+                    log.warning("Normalization hit MAX_TOKENS, using original question")
+                    return question
+
                 if "parts" in content and content["parts"]:
                     normalized_question = content["parts"][0].get("text", "").strip()
 
@@ -75,6 +91,14 @@ Chỉ trả về câu hỏi đã chuẩn hóa, không giải thích:
                             f"Question normalized: '{question}' -> '{normalized_question}'"
                         )
                         return normalized_question
+                else:
+                    log.warning(f"Gemini response has no text parts: {content}")
+            else:
+                log.warning(f"Gemini response has no candidates: {result}")
+        else:
+            log.warning(
+                f"Gemini API returned status {response.status_code}: {response.text[:200]}"
+            )
 
         log.warning("Gemini normalization failed, using original question")
         return question
@@ -108,8 +132,12 @@ def generate_response(
     data = {
         "contents": [{"parts": [{"text": prompt}]}],
         "generationConfig": {
-            "temperature": temperature,
-            "maxOutputTokens": 2048,
+            "temperature": (
+                temperature if temperature is not None else GEMINI_TEMPERATURE
+            ),
+            "maxOutputTokens": GEMINI_MAX_OUTPUT_TOKENS,
+            "topP": 0.95,
+            "topK": 40,
         },
     }
 
@@ -126,7 +154,29 @@ def generate_response(
         if response.status_code == 200:
             result = response.json()
             if "candidates" in result and result["candidates"]:
-                content = result["candidates"][0].get("content", {})
+                candidate = result["candidates"][0]
+                content = candidate.get("content", {})
+                finish_reason = candidate.get("finishReason", "")
+
+                # Check finish reason
+                if finish_reason == "MAX_TOKENS":
+                    log.warning(
+                        f"Gemini hit MAX_TOKENS limit. Usage: {result.get('usageMetadata', {})}"
+                    )
+                    # Try to get partial response
+                    if "parts" in content and content["parts"]:
+                        partial_text = content["parts"][0].get("text", "").strip()
+                        if partial_text:
+                            log.warning("Returning partial response due to MAX_TOKENS")
+                            return (
+                                partial_text
+                                + "\n\n[Câu trả lời đã bị cắt ngắn do giới hạn độ dài. Vui lòng hỏi lại với câu hỏi ngắn gọn hơn.]"
+                            )
+
+                    log.error("MAX_TOKENS but no text content available")
+                    return "Xin lỗi, câu trả lời quá dài. Vui lòng hỏi lại với câu hỏi ngắn gọn hơn."
+
+                # Normal response
                 if "parts" in content and content["parts"]:
                     generated_text = content["parts"][0].get("text", "").strip()
 

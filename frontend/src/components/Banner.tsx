@@ -58,13 +58,14 @@ const Banner = () => {
               </div>
             </div>
 
-            {/* Image Placeholder */}
+            {/* Image */}
             <div className="hidden lg:block">
-              <div className="w-full h-64 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-lg shadow-xl flex items-center justify-center">
-                <div className="text-center text-red-800 font-bold">
-                  <div className="text-4xl mb-2">🏛️</div>
-                  <div>Hình ảnh sự kiện</div>
-                </div>
+              <div className="w-full h-64 rounded-lg shadow-xl overflow-hidden">
+                <img 
+                  src="/assests/t04_1.jpg" 
+                  alt="Hình ảnh sự kiện" 
+                  className="w-full h-full object-cover"
+                />
               </div>
             </div>
           </div>

@@ -4,12 +4,10 @@ Monitors PDF directory and processes new files automatically
 """
 
 import asyncio
-import os
 from pathlib import Path
-from typing import List, Optional
-from datetime import datetime
+from typing import Optional
 from watchdog.observers import Observer
-from watchdog.events import FileSystemEventHandler, FileModifiedEvent
+from watchdog.events import FileSystemEventHandler
 from src.utils.logger import log
 from config.settings import (
     PDF_WATCH_DIR,
@@ -49,7 +47,24 @@ class PDFFileHandler(FileSystemEventHandler):
         if event.src_path.lower().endswith(".pdf"):
             log.info(f"📝 PDF modified: {event.src_path}")
             # Schedule reprocessing
-            asyncio.create_task(self.ingestion_service.process_pdf(event.src_path))
+            asyncio.create_task(
+                self.ingestion_service.process_pdf(event.src_path, is_update=True)
+            )
+
+    def on_deleted(self, event):
+        """Handle file deletion event"""
+        if event.is_directory:
+            return
+
+        if event.src_path.lower().endswith(".pdf"):
+            log.info(f"🗑️ PDF deleted: {event.src_path}")
+            # Track document deletion
+            if self.ingestion_service.analytics_service:
+                filename = Path(event.src_path).name
+                self.ingestion_service.analytics_service.log_document_action(
+                    document_name=filename,
+                    action="deleted",
+                )
 
 
 class IngestionService:
@@ -61,6 +76,7 @@ class IngestionService:
         embedding_service,
         pdf_processor,
         hybrid_retrieval_service=None,
+        analytics_service=None,
     ):
         """
         Initialize Ingestion Service
@@ -70,11 +86,13 @@ class IngestionService:
             embedding_service: Embedding service
             pdf_processor: PDF processor service
             hybrid_retrieval_service: Optional hybrid retrieval service for index updates
+            analytics_service: Optional analytics service for document tracking
         """
         self.db_service = db_service
         self.embedding_service = embedding_service
         self.pdf_processor = pdf_processor
         self.hybrid_retrieval_service = hybrid_retrieval_service
+        self.analytics_service = analytics_service
 
         self.watch_dir = Path(PDF_WATCH_DIR)
         self.processed_dir = Path(PROCESSED_PDF_DIR)
@@ -88,12 +106,13 @@ class IngestionService:
         log.info(f"📁 Watching directory: {self.watch_dir}")
         log.info(f"📁 Processed directory: {self.processed_dir}")
 
-    async def process_pdf(self, pdf_path: str) -> bool:
+    async def process_pdf(self, pdf_path: str, is_update: bool = False) -> bool:
         """
         Process a single PDF file
 
         Args:
             pdf_path: Path to PDF file
+            is_update: Whether this is an update to existing document
 
         Returns:
             True if processing was successful
@@ -129,7 +148,7 @@ class IngestionService:
             log.info(f"✂️ Created {len(chunks)} chunks from {pdf_path.name}")
 
             # Insert chunks into database
-            log.info(f"💾 Inserting chunks into database...")
+            log.info("💾 Inserting chunks into database...")
             chunk_ids = self.db_service.insert_chunks(chunks)
 
             # Generate embeddings
@@ -140,13 +159,26 @@ class IngestionService:
             )
 
             # Insert embeddings
-            log.info(f"💾 Inserting embeddings into database...")
+            log.info("💾 Inserting embeddings into database...")
             self.db_service.insert_embeddings(chunk_ids, embeddings)
 
             # Update BM25 index if available
             if self.hybrid_retrieval_service:
-                log.info(f"🔨 Rebuilding BM25 index...")
+                log.info("🔨 Rebuilding BM25 index...")
                 self.hybrid_retrieval_service.rebuild_bm25_index()
+
+            # Track document in analytics
+            if self.analytics_service:
+                file_size = (
+                    processed_path.stat().st_size if processed_path.exists() else 0
+                )
+                action = "updated" if is_update else "added"
+                self.analytics_service.log_document_action(
+                    document_name=pdf_path.name,
+                    action=action,
+                    file_size=file_size,
+                    chunk_count=len(chunks),
+                )
 
             # Move processed file
             processed_path = self.processed_dir / pdf_path.name
@@ -237,7 +269,9 @@ class IngestionService:
     async def run_periodic_check(self):
         """Run periodic check for new PDFs"""
         try:
-            log.info(f"⏰ Starting periodic PDF check (interval: {INGESTION_CHECK_INTERVAL}s)")
+            log.info(
+                f"⏰ Starting periodic PDF check (interval: {INGESTION_CHECK_INTERVAL}s)"
+            )
 
             while True:
                 await asyncio.sleep(INGESTION_CHECK_INTERVAL)
@@ -258,4 +292,3 @@ class IngestionService:
             "check_interval": INGESTION_CHECK_INTERVAL,
             "auto_ingest_on_startup": AUTO_INGEST_ON_STARTUP,
         }
-
