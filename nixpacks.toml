@@ -1,12 +1,18 @@
+# Railway Nixpacks configuration
+providers = ["python"]
+
 [phases.setup]
-nixPkgs = ["python311", "python311Packages.pip", "gcc", "postgresql"]
+nixPkgs = ["gcc", "postgresql"]
 
 [phases.install]
-cmds = ["python3.11 -m pip install --upgrade pip", "python3.11 -m pip install -r requirements.txt"]
+cmds = [
+  "python -m ensurepip --upgrade",
+  "python -m pip install --upgrade pip setuptools wheel",
+  "python -m pip install -r requirements.txt"
+]
 
 [start]
-cmd = "python3.11 -m uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"
+cmd = "python -m uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"
 
 [variables]
-PYTHON_VERSION = "3.11"
-PIP_NO_CACHE_DIR = "1"
+NIXPACKS_PYTHON_VERSION = "3.11"
