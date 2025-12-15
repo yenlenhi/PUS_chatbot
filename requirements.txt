@@ -38,6 +38,7 @@ ollama==0.1.7
 # Data Processing
 numpy>=1.26.0
 pandas==2.0.3
+tqdm>=4.65.0
 
 # Image Processing
 Pillow>=10.0.0
