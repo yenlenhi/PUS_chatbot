@@ -74,7 +74,7 @@ export const chatAPI = {
       try {
         console.log("Sending streaming request:", request);
         
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/v1/chat`, {
+        const response = await fetch(`${API_BASE_URL}/api/v1/chat`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
