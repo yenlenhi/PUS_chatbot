@@ -22,7 +22,16 @@ from src.middleware.https_middleware import (
 )
 from src.middleware.checksum_middleware import ChecksumMiddleware
 from src.utils.logger import log
-from config.settings import API_HOST, API_PORT, API_RELOAD, ALLOWED_ORIGINS
+from config.settings import (
+    API_HOST,
+    API_PORT,
+    API_RELOAD,
+    ALLOWED_ORIGINS,
+    PDF_DIR,
+    BASE_DIR,
+)
+import shutil
+
 from contextlib import asynccontextmanager
 
 
@@ -32,6 +41,32 @@ async def lifespan(app: FastAPI):
     # Startup logic
     log.info("Starting University Chatbot API...")
     log.info(f"API documentation available at: http://{API_HOST}:{API_PORT}/docs")
+
+    # Ensure PDFs from the bundled repo are present in the mounted data volume
+    try:
+        repo_pdfs = BASE_DIR / "data" / "pdfs"
+        target_pdfs = Path(PDF_DIR)
+        target_pdfs.mkdir(parents=True, exist_ok=True)
+
+        # If target is empty but repo has files, copy them into the volume
+        if (
+            repo_pdfs.exists()
+            and any(repo_pdfs.iterdir())
+            and not any(target_pdfs.iterdir())
+        ):
+            files_copied = 0
+            for src in repo_pdfs.rglob("*"):
+                if src.is_file():
+                    rel = src.relative_to(repo_pdfs)
+                    dest = target_pdfs / rel
+                    dest.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(src, dest)
+                    files_copied += 1
+            log.info(
+                f"Copied {files_copied} PDF files from bundled repo to data volume: {target_pdfs}"
+            )
+    except Exception as e:
+        log.warning(f"Failed to copy bundled PDFs to data volume: {e}")
     yield
     # Shutdown logic
     log.info("Shutting down University Chatbot API...")

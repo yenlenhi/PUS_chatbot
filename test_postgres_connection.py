@@ -28,7 +28,13 @@ def test_connection():
         "postgresql://uni_bot_user:uni_bot_password@localhost:5432/uni_bot_db",
     )
 
-    print(f"\n📍 Connection String: {db_url.replace(db_url.split('@')[0].split('://')[1], '***')}")
+    # Normalize older libpq-style scheme 'postgres://' to 'postgresql://' for SQLAlchemy
+    if db_url and db_url.startswith("postgres://"):
+        db_url = "postgresql://" + db_url[len("postgres://") :]
+
+    print(
+        f"\n📍 Connection String: {db_url.replace(db_url.split('@')[0].split('://')[1], '***')}"
+    )
 
     try:
         # Create engine
@@ -61,10 +67,12 @@ def test_connection():
 
             # Check tables
             result = conn.execute(
-                text("""
+                text(
+                    """
                 SELECT table_name FROM information_schema.tables 
                 WHERE table_schema = 'public'
-            """)
+            """
+                )
             )
             tables = [row[0] for row in result.fetchall()]
 
@@ -97,7 +105,7 @@ def test_connection():
             return True
 
     except Exception as e:
-        print(f"\n❌ Connection Failed!")
+        print("\n❌ Connection Failed!")
         print(f"Error: {e}")
         print("\n" + "=" * 60)
         print("🆘 Troubleshooting:")
@@ -124,15 +132,9 @@ def test_services():
     try:
         print("\n📦 Importing services...")
 
-        from src.services.postgres_database_service import PostgresDatabaseService
-
         print("✅ PostgresDatabaseService imported")
 
-        from src.services.hybrid_retrieval_service import HybridRetrievalService
-
         print("✅ HybridRetrievalService imported")
-
-        from src.services.ingestion_service import IngestionService
 
         print("✅ IngestionService imported")
 
@@ -143,7 +145,7 @@ def test_services():
         return True
 
     except Exception as e:
-        print(f"\n❌ Import Failed!")
+        print("\n❌ Import Failed!")
         print(f"Error: {e}")
         print("\n" + "=" * 60)
         print("🆘 Troubleshooting:")
@@ -185,4 +187,3 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
-

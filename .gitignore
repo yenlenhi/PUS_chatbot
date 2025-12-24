@@ -283,5 +283,10 @@ frontend/out/
 # Package files
 *.tgz
 *.tar.gz
+*.zip
+
+# Data bundles
+data_bundle.*
+tmp_pdfs.*
 
 memory-bank

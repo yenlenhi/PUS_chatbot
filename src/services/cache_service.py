@@ -15,7 +15,12 @@ class CacheService:
     """Redis-based caching service for RAG system"""
 
     def __init__(
-        self, host: str = "localhost", port: int = 6379, db: int = 0, ttl: int = 3600
+        self,
+        host: str = "localhost",
+        port: int = 6379,
+        db: int = 0,
+        password: Optional[str] = None,
+        ttl: int = 3600,
     ):
         """
         Initialize Redis cache service
@@ -24,11 +29,13 @@ class CacheService:
             host: Redis server host
             port: Redis server port
             db: Redis database number
+            password: Redis password (optional)
             ttl: Time-to-live for cache entries in seconds (default: 1 hour)
         """
         self.host = host
         self.port = port
         self.db = db
+        self.password = password
         self.ttl = ttl
         self.client = None
         self._connect()
@@ -40,6 +47,7 @@ class CacheService:
                 host=self.host,
                 port=self.port,
                 db=self.db,
+                password=self.password,
                 decode_responses=True,
                 socket_connect_timeout=5,
                 socket_timeout=5,
