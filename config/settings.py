@@ -65,18 +65,41 @@ POSTGRES_HOST = os.getenv("POSTGRES_HOST", "localhost")
 POSTGRES_PORT = int(os.getenv("POSTGRES_PORT", "5432"))
 
 # PostgreSQL Connection String
+# Prefer Railway-provided URL when present, then explicit DATABASE_URL, then constructed local URL
+RAILWAY_DATABASE_URL = os.getenv("RAILWAY_DATABASE_URL")
+
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}",
+    RAILWAY_DATABASE_URL
+    or f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}",
 )
+
+# Fix Railway's postgres:// URL scheme to postgresql:// for SQLAlchemy 1.4+
+if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
 # ============================================
 # Redis Configuration (NEW)
 # ============================================
-REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
-REDIS_PORT = int(os.getenv("REDIS_PORT", "6379"))
-REDIS_DB = int(os.getenv("REDIS_DB", "0"))
-REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", None)  # None if no password
+# Support Railway Redis URL format
+REDIS_URL = os.getenv("REDIS_URL") or os.getenv("REDIS_PRIVATE_URL")
+
+if REDIS_URL:
+    # Parse Redis URL (format: redis://user:pass@host:port/db)
+    import urllib.parse
+
+    parsed = urllib.parse.urlparse(REDIS_URL)
+    REDIS_HOST = parsed.hostname or "localhost"
+    REDIS_PORT = parsed.port or 6379
+    REDIS_PASSWORD = parsed.password
+    REDIS_DB = int(parsed.path[1:]) if parsed.path and len(parsed.path) > 1 else 0
+else:
+    # Local fallback - read from individual env vars
+    REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
+    REDIS_PORT = int(os.getenv("REDIS_PORT", "6379"))
+    REDIS_DB = int(os.getenv("REDIS_DB", "0"))
+    REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", None)  # None if no password
+
 REDIS_DECODE_RESPONSES = os.getenv("REDIS_DECODE_RESPONSES", "false").lower() == "true"
 
 # Redis Cache Configuration
