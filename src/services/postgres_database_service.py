@@ -101,13 +101,16 @@ class PostgresDatabaseService:
                 )
 
                 # Create embeddings table with pgvector
+                # Use EMBEDDING_DIMENSION from settings (default: 384)
+                from config.settings import EMBEDDING_DIMENSION
+
                 conn.execute(
                     text(
-                        """
+                        f"""
                     CREATE TABLE IF NOT EXISTS embeddings (
                         id SERIAL PRIMARY KEY,
                         chunk_id INTEGER NOT NULL UNIQUE,
-                        embedding vector(384),
+                        embedding vector({EMBEDDING_DIMENSION}),
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                         FOREIGN KEY (chunk_id) REFERENCES chunks (id) ON DELETE CASCADE
                     )

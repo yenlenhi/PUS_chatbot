@@ -78,16 +78,19 @@ class ConversationMemoryService:
                 )
 
                 # Create memory_summaries table with vector embedding
+                # Use EMBEDDING_DIMENSION from settings
+                from config.settings import EMBEDDING_DIMENSION
+
                 conn.execute(
                     text(
-                        """
+                        f"""
                     CREATE TABLE IF NOT EXISTS memory_summaries (
                         id SERIAL PRIMARY KEY,
                         conversation_id VARCHAR(255) NOT NULL,
                         summary TEXT NOT NULL,
                         turn_start INTEGER NOT NULL,
                         turn_end INTEGER NOT NULL,
-                        embedding vector(384),
+                        embedding vector({EMBEDDING_DIMENSION}),
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     )
                 """

@@ -120,6 +120,12 @@ FAISS_INDEX_PATH = os.getenv("FAISS_INDEX_PATH", str(EMBEDDINGS_DIR / "faiss_ind
 EMBEDDING_MODEL = os.getenv(
     "EMBEDDING_MODEL", "bkai-foundation-models/vietnamese-embedding-v1"
 )
+
+# Embedding Dimension Configuration
+# Auto-detect based on model, or set manually via EMBEDDING_DIMENSION env var
+# Common dimensions: 384 (MiniLM, vietnamese-sbert), 768 (halong_embedding, vietnamese-embedding-v1)
+EMBEDDING_DIMENSION = int(os.getenv("EMBEDDING_DIMENSION", "384"))
+
 BM25_INDEX_PATH = os.getenv("BM25_INDEX_PATH", str(EMBEDDINGS_DIR / "bm25_index.pkl"))
 
 # API Configuration
