@@ -180,7 +180,7 @@ const ImageModal: React.FC<ImageModalProps> = ({ isOpen, onClose, imageSrc, imag
 };
 
 // Custom hook for typewriter effect
-const useTypewriter = (text: string, speed: number = 5, enabled: boolean = true) => {
+const useTypewriter = (text: string, speed: number = 0.4, enabled: boolean = true) => {
   const [displayedText, setDisplayedText] = useState('');
   const [isComplete, setIsComplete] = useState(false);
 
@@ -255,7 +255,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
 }) => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const shouldAnimate = message.sender === 'bot' && isLatest && message.id !== '1';
-  const { displayedText, isComplete } = useTypewriter(message.content, 5, shouldAnimate);
+  const { displayedText, isComplete } = useTypewriter(message.content, 0.4, shouldAnimate);
   
   const contentToShow = shouldAnimate ? displayedText : message.content;
   const isCopied = copiedId === message.id;
@@ -460,13 +460,16 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
         )}
 
         {/* Source indicator */}
-        {message.sourceReferences && message.sourceReferences.length > 0 && isComplete && (
+        {message.sourceReferences && message.sourceReferences.filter(ref => (ref.relevance_score || 0) >= 0.8).length > 0 && isComplete && (
           <button
-            onClick={() => onViewSources(message.sourceReferences || [])}
+            onClick={() => {
+              const filteredSources = message.sourceReferences?.filter(ref => (ref.relevance_score || 0) >= 0.8) || [];
+              onViewSources(filteredSources);
+            }}
             className="mt-3 text-xs text-red-600 hover:text-red-700 flex items-center gap-1 bg-red-50 px-2.5 py-1.5 rounded-full transition-colors"
           >
             <Book className="w-3 h-3" />
-            {message.sourceReferences.length} nguồn tham khảo
+            {message.sourceReferences.filter(ref => (ref.relevance_score || 0) >= 0.8).length} nguồn tham khảo (≥80%)
           </button>
         )}
 
@@ -636,7 +639,8 @@ const ChatBotPage = () => {
   // Update input when speech recognition completes
   useEffect(() => {
     if (transcript && !isListening) {
-      setInputMessage(prev => prev + (prev ? ' ' : '') + transcript);
+      // Replace input with transcript instead of appending to avoid duplication
+      setInputMessage(transcript.trim());
       resetTranscript();
     }
   }, [transcript, isListening, resetTranscript]);
@@ -751,8 +755,9 @@ const ChatBotPage = () => {
         const data = await response.json();
         const allSourceReferences: SourceReference[] = data.source_references || [];
         
-        // Limit to top 5 most relevant sources (sorted by relevance_score)
+        // Filter sources with accuracy >= 80% and limit to top 5 most relevant
         const sourceReferences: SourceReference[] = allSourceReferences
+          .filter(ref => (ref.relevance_score || 0) >= 0.8) // Only show sources with >= 80% accuracy
           .sort((a, b) => (b.relevance_score || 0) - (a.relevance_score || 0))
           .slice(0, 5);
 
@@ -955,9 +960,9 @@ const ChatBotPage = () => {
               >
                 <Book className="w-4 h-4" />
                 <span className="hidden sm:inline">{language === 'vi' ? 'Nguồn' : 'Sources'}</span>
-                {currentSourceReferences.length > 0 && (
+                {currentSourceReferences.filter(ref => (ref.relevance_score || 0) >= 0.8).length > 0 && (
                   <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                    {currentSourceReferences.length}
+                    {currentSourceReferences.filter(ref => (ref.relevance_score || 0) >= 0.8).length}
                   </span>
                 )}
               </button>
@@ -1346,7 +1351,7 @@ const ChatBotPage = () => {
 
       {/* Document Sidebar */}
       <DocumentSidebar
-        sourceReferences={currentSourceReferences}
+        sourceReferences={currentSourceReferences.filter(ref => (ref.relevance_score || 0) >= 0.8)}
         isOpen={sidebarOpen}
         onToggle={() => setSidebarOpen(!sidebarOpen)}
         onOpenDocument={handleOpenDocument}

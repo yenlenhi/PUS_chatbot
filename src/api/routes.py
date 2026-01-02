@@ -1590,6 +1590,47 @@ async def get_business_insights(
         )
 
 
+@router.get("/analytics/popular-questions")
+async def get_popular_questions(
+    time_range: TimeRange = Query(
+        TimeRange.LAST_7_DAYS, description="Time range filter"
+    ),
+    limit: int = Query(10, ge=1, le=20, description="Number of questions to return"),
+    analytics_svc: AnalyticsService = Depends(get_analytics_service),
+):
+    """
+    Get popular questions from real conversation data
+
+    This endpoint analyzes actual conversation data to find
+    the most frequently asked questions.
+
+    - **time_range**: Time period to analyze (L7D, MTD, YTD)
+    - **limit**: Number of questions to return (1-20, default: 10)
+
+    Returns a list of popular questions with:
+    - question: The question text
+    - count: How many times it was asked
+    - last_asked: When it was last asked
+    """
+    try:
+        questions = analytics_svc.get_real_popular_questions(
+            time_range=time_range, limit=limit
+        )
+
+        return {
+            "popular_questions": questions,
+            "total_count": len(questions),
+            "time_range": time_range.value,
+            "data_source": "real" if questions else "sample",
+        }
+
+    except Exception as e:
+        log.error(f"❌ Error getting popular questions: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Error getting popular questions: {str(e)}"
+        )
+
+
 @router.get("/analytics/suggested-questions")
 async def get_suggested_questions(
     limit: int = Query(5, ge=1, le=10, description="Number of questions to return"),

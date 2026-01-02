@@ -543,7 +543,7 @@ Hướng dẫn:
                 )
             else:
                 # Add engagement prompt
-                answer = self._add_engagement_prompt(answer)
+                answer = self._add_engagement_prompt(answer, query, language)
 
             log.info("Vision response generated successfully")
 
@@ -567,22 +567,206 @@ Hướng dẫn:
                 "conversation_id": conversation_id or str(uuid.uuid4()),
             }
 
-    def _add_engagement_prompt(self, answer: str) -> str:
+    def _create_contextual_followup(
+        self, user_query: str, answer: str, language: str = "vi"
+    ) -> List[str]:
         """
-        Add engagement prompt to the answer if not already present
+        Create 2-3 contextual follow-up questions based on the user's query and answer
+
+        Args:
+            user_query: The original user question
+            answer: The generated answer
+            language: Language for the follow-up questions
+
+        Returns:
+            List of 2-3 contextual follow-up questions
+        """
+        try:
+            # Extract key topics/entities from the user query
+            key_topics = self._extract_key_topics(user_query)
+            questions = []
+
+            if key_topics and language == "vi":
+                # Create 2-3 contextual follow-up questions in Vietnamese
+                if any(
+                    word in user_query.lower()
+                    for word in [
+                        "tuyển sinh",
+                        "xét tuyển",
+                        "đăng ký",
+                        "nhập học",
+                        "chỉ tiêu",
+                    ]
+                ):
+                    questions = [
+                        "Bạn có muốn biết chi tiết về hồ sơ xét tuyển không?",
+                        "Bạn cần thông tin về điềm chuẩn các ngành không?",
+                        "Bạn có muốn tìm hiểu về phương thức xét tuyển không?",
+                    ]
+                elif any(
+                    word in user_query.lower()
+                    for word in [
+                        "học phí",
+                        "chi phí",
+                        "tiền học",
+                        "học bổng",
+                        "tài chính",
+                    ]
+                ):
+                    questions = [
+                        "Bạn có cần thông tin về các gói hỗ trợ tài chính không?",
+                        "Bạn có muốn biết về điều kiện nhận học bổng không?",
+                        "Bạn cần hướng dẫn về thủ tục trả học phí không?",
+                    ]
+                elif any(
+                    word in user_query.lower()
+                    for word in [
+                        "ngành",
+                        "chuyên ngành",
+                        "khoa",
+                        "chương trình",
+                        "đào tạo",
+                    ]
+                ):
+                    questions = [
+                        "Bạn có muốn tìm hiểu kế hoạch học tập của ngành này không?",
+                        "Bạn cần thông tin về cơ hội thực tập và việc làm không?",
+                        "Bạn có muốn biết về chứng chỉ và bằng cấp không?",
+                    ]
+                elif any(
+                    word in user_query.lower()
+                    for word in ["ký túc xá", "ktx", "chỗ ở", "nội trú", "sinh viên"]
+                ):
+                    questions = [
+                        "Bạn có cần biết kỹ hơn về cơ sở vật chất ký túc xá không?",
+                        "Bạn có muốn tìm hiểu về quy định sinh hoạt tại KTX không?",
+                        "Bạn cần hướng dẫn thủ tục đăng ký phòng ở không?",
+                    ]
+                elif any(
+                    word in user_query.lower()
+                    for word in [
+                        "việc làm",
+                        "nghề nghiệp",
+                        "cơ hội",
+                        "tương lai",
+                        "thực tập",
+                    ]
+                ):
+                    questions = [
+                        "Bạn có muốn tìm hiểu về mạng lưới doanh nghiệp đối tác không?",
+                        "Bạn cần thông tin về chương trình thực tập tại các công ty không?",
+                        "Bạn có muốn biết về tỷ lệ có việc của cử nhân không?",
+                    ]
+                elif any(
+                    word in user_query.lower()
+                    for word in [
+                        "quy định",
+                        "quy chế",
+                        "nội quy",
+                        "chính sách",
+                        "thủ tục",
+                    ]
+                ):
+                    questions = [
+                        "Bạn có cần giải thích thêm về quy trình thực hiện không?",
+                        "Bạn có muốn biết về giấy tờ cần thiết không?",
+                        "Bạn cần hướng dẫn cụ thể về thời hạn không?",
+                    ]
+                else:
+                    # Generic contextual follow-up based on the main topic
+                    main_topic = key_topics[0] if key_topics else "chủ đề này"
+                    questions = [
+                        f"Bạn có muốn biết thêm gì về {main_topic} không?",
+                        "Bạn có câu hỏi nào liên quan khác không?",
+                        "Có thông tin nào khác tôi có thể giúp bạn không?",
+                    ]
+            elif language == "en":
+                questions = [
+                    "Would you like to know more about this topic?",
+                    "Do you have any related questions?",
+                    "Is there anything else I can help you with?",
+                ]
+            else:
+                questions = [
+                    "Bạn có muốn biết thêm về chủ đề này không?",
+                    "Bạn có câu hỏi nào khác không?",
+                ]
+
+            # Return 2-3 questions (randomly pick 2-3 if more available)
+            import random
+
+            num_questions = min(len(questions), random.choice([2, 3]))
+            return (
+                random.sample(questions, num_questions)
+                if len(questions) > num_questions
+                else questions
+            )
+
+        except Exception as e:
+            log.error(f"Error creating contextual follow-up: {e}")
+            # Fallback to generic questions
+            if language == "vi":
+                return [
+                    "Bạn có câu hỏi gì khác không?",
+                    "Tôi có thể giúp gì thêm cho bạn không?",
+                ]
+            else:
+                return [
+                    "Do you have any other questions?",
+                    "Is there anything else I can help you with?",
+                ]
+
+    def _extract_key_topics(self, query: str) -> List[str]:
+        """
+        Extract key topics from user query
+
+        Args:
+            query: User query
+
+        Returns:
+            List of key topics/entities
+        """
+        query_lower = query.lower()
+
+        # Define topic keywords
+        topic_map = {
+            "tuyển sinh": ["tuyển sinh", "xét tuyển", "đăng ký", "nhập học"],
+            "học phí": ["học phí", "chi phí", "tiền học", "học bổng", "tài chính"],
+            "ngành học": ["ngành", "chuyên ngành", "khoa", "chương trình"],
+            "ký túc xá": ["ký túc xá", "chỗ ở", "nội trú", "sinh viên"],
+            "việc làm": ["việc làm", "nghề nghiệp", "cơ hội", "tương lai"],
+            "quy định": ["quy định", "quy chế", "nội quy", "chính sách"],
+            "đào tạo": ["đào tạo", "học tập", "giảng dạy", "chất lượng"],
+        }
+
+        topics = []
+        for topic, keywords in topic_map.items():
+            if any(keyword in query_lower for keyword in keywords):
+                topics.append(topic)
+
+        return topics
+
+    def _add_engagement_prompt(
+        self, answer: str, user_query: str = "", language: str = "vi"
+    ) -> str:
+        """
+        Add contextual engagement prompt to the answer
 
         Args:
             answer: The generated answer
+            user_query: The original user query for context
+            language: Language for the follow-up question
 
         Returns:
-            Answer with engagement prompt added
+            Answer with contextual engagement prompt added
         """
         engagement_prompts = [
-            "Bạn còn có thắc mắc gì khác không? Tôi sẵn sàng hỗ trợ thêm!",
             "bạn còn có thắc mắc gì khác không",
             "tôi sẵn sàng hỗ trợ thêm",
             "có câu hỏi nào khác không",
             "cần hỗ trợ thêm gì không",
+            "muốn biết thêm",
+            "có muốn",
         ]
 
         # Check if any engagement prompt is already present (case insensitive)
@@ -592,15 +776,31 @@ Hướng dẫn:
         )
 
         if not has_engagement:
-            # Add the engagement prompt with proper formatting
-            if (
-                answer.strip().endswith(".")
-                or answer.strip().endswith("!")
-                or answer.strip().endswith("?")
-            ):
-                return f"{answer}\n\n**Bạn còn có thắc mắc gì khác không? Tôi sẵn sàng hỗ trợ thêm!**"
-            else:
-                return f"{answer}.\n\n**Bạn còn có thắc mắc gì khác không? Tôi sẵn sàng hỗ trợ thêm!**"
+            # Create contextual follow-up questions (2-3 questions)
+            followup_questions = self._create_contextual_followup(
+                user_query, answer, language
+            )
+
+            # Format multiple questions with proper numbering and clear header
+            if followup_questions:
+                # Create a clear header for follow-up questions
+                header = "\n\n**--- CÁC CÂU HỎI LIÊN QUAN ---**\n"
+
+                formatted_questions = "\n".join(
+                    [f"- **{question}**" for question in followup_questions]
+                )
+
+                full_followup = f"{header}{formatted_questions}"
+
+                # Add the contextual follow-ups with proper formatting
+                if (
+                    answer.strip().endswith(".")
+                    or answer.strip().endswith("!")
+                    or answer.strip().endswith("?")
+                ):
+                    return f"{answer}{full_followup}"
+                else:
+                    return f"{answer}.{full_followup}"
 
         return answer
 
@@ -1047,7 +1247,7 @@ Trả lời / Response:"""
             else:
                 log.info(f"Raw answer from LLM: {repr(answer)}")
                 # Add engagement prompt if not already present
-                answer = self._add_engagement_prompt(answer)
+                answer = self._add_engagement_prompt(answer, query, language)
                 log.info(f"Using answer with engagement prompt: {repr(answer)}")
 
             # Update conversation history (in-memory cache)

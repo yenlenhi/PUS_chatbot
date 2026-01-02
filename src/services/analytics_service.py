@@ -622,33 +622,16 @@ class AnalyticsService:
                     )
                     total_unique += count
 
-            # Popular questions from conversations
-            popular_result = session.execute(
-                text(
-                    """
-                SELECT 
-                    user_message,
-                    COUNT(*) as count,
-                    MAX(created_at) as last_asked
-                FROM conversations
-                WHERE DATE(created_at) BETWEEN :start AND :end
-                GROUP BY user_message
-                ORDER BY count DESC
-                LIMIT 10
-            """
-                ),
-                {"start": start, "end": end},
-            )
-
-            popular_questions = []
-            for row in popular_result.fetchall():
-                popular_questions.append(
-                    PopularQuestion(
-                        question=row[0][:100] + "..." if len(row[0]) > 100 else row[0],
-                        count=row[1],
-                        last_asked=str(row[2]) if row[2] else None,
-                    )
-                )
+            # Get popular questions using optimized method
+            popular_questions = self.get_real_popular_questions(time_range, limit=10)
+            
+            # If no real data, try different time ranges
+            if not popular_questions:
+                for backup_range in [TimeRange.LAST_30_DAYS, TimeRange.YEAR_TO_DATE]:
+                    popular_questions = self.get_real_popular_questions(backup_range, limit=10)
+                    if popular_questions:
+                        log.info(f"📊 Using popular questions from {backup_range.value} period")
+                        break
 
             # Get YTD stats
             ytd_result = session.execute(
@@ -673,7 +656,9 @@ class AnalyticsService:
                 daily_users = self._generate_sample_daily_users(start, end)
                 total_unique = sum(d.unique_users for d in daily_users)
 
+            # Only use sample data if absolutely no real data found
             if not popular_questions:
+                log.warning("⚠️ No real popular questions found, using sample data")
                 popular_questions = self._generate_sample_popular_questions()
 
             # Get REAL data from new tracking methods
@@ -2574,7 +2559,7 @@ class AnalyticsService:
             List of trending topics with scores
         """
         try:
-            session = self.db_service.Session()
+            session = self.db_service.SessionLocal()
 
             # Calculate time windows
             now = datetime.now()
@@ -2655,6 +2640,71 @@ class AnalyticsService:
             log.error(f"❌ Error getting trending topics: {e}")
             return []
 
+    def get_real_popular_questions(self, time_range: TimeRange = TimeRange.LAST_7_DAYS, limit: int = 10) -> List[PopularQuestion]:
+        """
+        Get actual popular questions from conversation data
+
+        Args:
+            time_range: Time range for analysis
+            limit: Maximum number of questions to return
+
+        Returns:
+            List of popular questions from real data
+        """
+        try:
+            start, end = self._get_date_range(time_range)
+            session = self.db_service.SessionLocal()
+
+            # Get popular questions from conversations with better filtering
+            popular_result = session.execute(
+                text(
+                    """
+                    SELECT 
+                        user_message,
+                        COUNT(*) as count,
+                        MAX(created_at) as last_asked
+                    FROM conversations
+                    WHERE DATE(created_at) BETWEEN :start AND :end
+                        AND LENGTH(TRIM(user_message)) > 5
+                        AND user_message NOT ILIKE '%test%'
+                        AND user_message NOT ILIKE '%hello%'
+                        AND user_message NOT ILIKE '%xin chào%'
+                        AND user_message NOT ILIKE '%hi%'
+                    GROUP BY user_message
+                    HAVING COUNT(*) > 1
+                    ORDER BY count DESC
+                    LIMIT :limit
+                """
+                ),
+                {"start": start, "end": end, "limit": limit},
+            )
+
+            popular_questions = []
+            for row in popular_result.fetchall():
+                question_text = row[0]
+                # Cleanup and truncate question
+                display_question = (
+                    question_text[:100] + "..."
+                    if len(question_text) > 100
+                    else question_text
+                )
+                popular_questions.append(
+                    PopularQuestion(
+                        question=display_question,
+                        count=row[1],
+                        last_asked=str(row[2]) if row[2] else None,
+                    )
+                )
+
+            session.close()
+
+            log.info(f"📊 Found {len(popular_questions)} popular questions from real data")
+            return popular_questions
+
+        except Exception as e:
+            log.error(f"❌ Error getting real popular questions: {e}")
+            return []
+
     def get_suggested_questions(self, limit: int = 5) -> List[PopularQuestion]:
         """
         Get suggested questions based on trending topics
@@ -2676,7 +2726,7 @@ class AnalyticsService:
             # Get top 3 trending topics
             top_topics = [t["topic"] for t in trending_topics[:3]]
 
-            session = self.db_service.Session()
+            session = self.db_service.SessionLocal()
 
             # Get popular questions from trending topics
             questions_result = session.execute(

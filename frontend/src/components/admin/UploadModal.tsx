@@ -126,7 +126,9 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onUploadSucc
         message: 'Đang tải file lên server...',
       });
 
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      // Use API route proxy instead of calling backend directly
+      // This ensures BACKEND_URL is used from server-side
+      const uploadUrl = '/api/upload';
       
       // Simulate progress for upload
       const progressInterval = setInterval(() => {
@@ -138,7 +140,7 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onUploadSucc
         });
       }, 200);
 
-      const response = await fetch(`${API_URL}/api/v1/admin/upload`, {
+      const response = await fetch(uploadUrl, {
         method: 'POST',
         body: formData,
       });

@@ -118,6 +118,14 @@ export const analyticsAPI = {
     return apiCall<BusinessInsights>(`/api/v1/analytics/business?${query}`);
   },
 
+  // Get popular questions from real data
+  getPopularQuestions: async (filter: AnalyticsFilter = { timeRange: 'L7D' }, limit: number = 10) => {
+    const query = buildQueryParams(filter);
+    const params = new URLSearchParams(query);
+    params.append('limit', limit.toString());
+    return apiCall(`/api/v1/analytics/popular-questions?${params.toString()}`);
+  },
+
   // Get all insights at once
   getAllInsights: async (filter: AnalyticsFilter = { timeRange: 'L7D' }) => {
     const [overview, system, users, chat, documents, business] = await Promise.all([

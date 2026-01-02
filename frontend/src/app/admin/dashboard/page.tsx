@@ -59,16 +59,18 @@ const DashboardPage = () => {
   const [chatInsights, setChatInsights] = useState<ChatInsights | null>(null);
   const [documentInsights, setDocumentInsights] = useState<DocumentInsights | null>(null);
   const [businessInsights, setBusinessInsights] = useState<BusinessInsights | null>(null);
+  const [popularQuestions, setPopularQuestions] = useState<any>(null);
 
   const fetchAllData = useCallback(async () => {
     try {
-      const [overviewData, systemData, userData, chatData, docData, businessData] = await Promise.all([
+      const [overviewData, systemData, userData, chatData, docData, businessData, popularQuestionsData] = await Promise.all([
         analyticsAPI.getOverview(),
         analyticsAPI.getSystemInsights(filter),
         analyticsAPI.getUserInsights(filter),
         analyticsAPI.getChatInsights(filter),
         analyticsAPI.getDocumentInsights(filter),
         analyticsAPI.getBusinessInsights(filter),
+        analyticsAPI.getPopularQuestions(filter, 10),
       ]);
 
       setOverview(overviewData);
@@ -77,6 +79,7 @@ const DashboardPage = () => {
       setChatInsights(chatData);
       setDocumentInsights(docData);
       setBusinessInsights(businessData);
+      setPopularQuestions(popularQuestionsData);
     } catch (error) {
       console.error('Error fetching analytics data:', error);
     }
@@ -394,14 +397,33 @@ const DashboardPage = () => {
 
                 <InsightsSection title="Câu hỏi phổ biến" icon={HelpCircle}>
                   <div className="space-y-3">
-                    {userInsights.popular_questions.slice(0, 5).map((q, index) => (
+                    {/* Hiển thị thông tin data source */}
+                    <div className="flex items-center justify-between mb-3 pb-2 border-b border-gray-100">
+                      <span className="text-xs text-gray-500">
+                        {popularQuestions?.data_source === 'real' ? 
+                          `📊 Dữ liệu thực tế (${popularQuestions.total_count} câu hỏi)` : 
+                          '📋 Dữ liệu mẫu'
+                        }
+                      </span>
+                      <span className="text-xs text-gray-400">
+                        {popularQuestions?.time_range === 'L7D' ? '7 ngày qua' : popularQuestions?.time_range}
+                      </span>
+                    </div>
+                    {(popularQuestions?.popular_questions || userInsights.popular_questions).slice(0, 5).map((q: any, index: number) => (
                       <div key={index} className="flex items-start space-x-3 pb-3 border-b border-gray-100 last:border-0">
                         <div className="flex-shrink-0 w-6 h-6 rounded-full bg-red-100 text-red-600 flex items-center justify-center text-xs font-bold">
                           {index + 1}
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm text-gray-900 line-clamp-2">{q.question}</p>
-                          <p className="text-xs text-gray-500 mt-1">{q.count} lượt hỏi</p>
+                          <div className="flex items-center justify-between mt-1">
+                            <p className="text-xs text-gray-500">{q.count} lượt hỏi</p>
+                            {q.last_asked && (
+                              <p className="text-xs text-gray-400">
+                                Lần cuối: {new Date(q.last_asked).toLocaleDateString('vi-VN')}
+                              </p>
+                            )}
+                          </div>
                         </div>
                       </div>
                     ))}

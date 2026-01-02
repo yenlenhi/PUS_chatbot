@@ -120,9 +120,9 @@ export const useSpeechRecognition = (
       }
 
       if (finalTranscript) {
-        setTranscript(prev => prev + finalTranscript);
+        setTranscript(finalTranscript.trim()); // Set directly instead of accumulating
       } else if (interimTranscript && !continuous) {
-        setTranscript(interimTranscript);
+        setTranscript(interimTranscript.trim());
       }
     };
 
