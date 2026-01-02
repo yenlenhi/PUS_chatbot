@@ -82,7 +82,7 @@
 
 [23] S. Ramírez, "FastAPI Documentation," 2024. [Online]. Available: https://fastapi.tiangolo.com/
 
-[24] Vercel, "Next.js Documentation," 2024. [Online]. Available: https://nextjs.org/docs
+[24] [Vercel](https://fastapi.tiangolo.com/), "Next.js Documentation," 2024. [Online]. Available: https://nextjs.org/docs
 
 [25] Meta Platforms, "React Documentation," 2024. [Online]. Available: https://react.dev/
 

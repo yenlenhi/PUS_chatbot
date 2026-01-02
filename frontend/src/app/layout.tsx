@@ -17,6 +17,10 @@ export const metadata: Metadata = {
   title: "Trường Đại học An ninh Nhân dân - People's Security University",
   description: "Trường Đại học An ninh Nhân dân - Cơ sở đào tạo cán bộ an ninh chất lượng cao, đáp ứng yêu cầu bảo vệ an ninh quốc gia trong tình hình mới",
   keywords: "Trường Đại học An ninh Nhân dân, PSU, tuyển sinh, an ninh quốc gia, đào tạo cán bộ",
+  icons: {
+    icon: '/assests/logo-main.png',
+    apple: '/assests/logo-main.png',
+  },
 };
 
 export default function RootLayout({
