@@ -495,144 +495,103 @@ async def get_document_info(filename: str):
 async def admin_list_documents(rag: RAGService = Depends(get_rag_service)):
     """
     Admin endpoint: List all documents with full metadata and statistics
-    Scans all subdirectories in data/ folder for PDF files
+    Gets documents from database (chunks table) - works with both local and Supabase Storage
     """
-    from pathlib import Path
-    from config.settings import DATA_DIR
     import datetime
 
     try:
-        data_dir = Path(DATA_DIR)
-        if not data_dir.exists():
-            return {"documents": [], "total": 0, "categories": ["Tất cả"]}
-
         documents = []
-        seen_files = set()  # Track seen filenames to avoid duplicates
 
-        # Get chunk counts and active status from database for all source files
+        # Get document info from database - source files with chunk counts and status
         try:
             from sqlalchemy import text
 
             session = rag.db_service.SessionLocal()
-            # Get chunk count and is_active status per source file
+            
+            # Get unique source files with their chunk counts, active status, and created_at
             result = session.execute(
                 text(
-                    """SELECT source_file, COUNT(*) as cnt, bool_and(is_active) as is_active 
-                       FROM chunks GROUP BY source_file"""
+                    """
+                    SELECT 
+                        source_file,
+                        COUNT(*) as chunk_count,
+                        COALESCE(bool_and(is_active), true) as is_active,
+                        MIN(created_at) as first_created,
+                        MAX(created_at) as last_updated
+                    FROM chunks 
+                    GROUP BY source_file
+                    ORDER BY MAX(created_at) DESC
+                    """
                 )
             )
-            db_chunk_counts = {}
-            db_active_status = {}
+            
             for row in result.fetchall():
-                db_chunk_counts[row[0]] = row[1]
-                db_active_status[row[0]] = row[2] if row[2] is not None else True
+                source_file = row[0]
+                chunk_count = row[1]
+                is_active = row[2] if row[2] is not None else True
+                created_at = row[3]
+                
+                # Calculate category based on filename patterns
+                category = "Khác"
+                filename_lower = source_file.lower()
+                if (
+                    "tuyen sinh" in filename_lower
+                    or "tuyển sinh" in filename_lower
+                    or "tuyen_sinh" in filename_lower
+                ):
+                    category = "Tuyển sinh"
+                elif (
+                    "dao tao" in filename_lower
+                    or "đào tạo" in filename_lower
+                    or "dao_tao" in filename_lower
+                ):
+                    category = "Đào tạo"
+                elif "hoc phi" in filename_lower or "học phí" in filename_lower:
+                    category = "Tài chính"
+                elif "ky tuc xa" in filename_lower or "ký túc xá" in filename_lower:
+                    category = "Sinh viên"
+                elif "quy che" in filename_lower or "quy_che" in filename_lower:
+                    category = "Quy chế"
+                elif "thong bao" in filename_lower or "thong_bao" in filename_lower:
+                    category = "Thông báo"
+
+                # Determine status
+                if chunk_count == 0:
+                    status = "pending"
+                elif is_active:
+                    status = "active"
+                else:
+                    status = "inactive"
+
+                # Format date
+                upload_date = created_at.strftime("%Y-%m-%d") if created_at else "N/A"
+                upload_datetime = created_at.isoformat() if created_at else datetime.datetime.now().isoformat()
+
+                documents.append(
+                    {
+                        "id": source_file.replace(".pdf", "").replace(" ", "_"),
+                        "name": source_file,
+                        "category": category,
+                        "size": 0,  # Size not available from DB
+                        "size_formatted": "N/A",
+                        "uploadDate": upload_date,
+                        "uploadDateTime": upload_datetime,
+                        "status": status,
+                        "is_active": is_active,
+                        "downloads": 0,
+                        "format": "PDF",
+                        "chunks": chunk_count,
+                        "path": source_file,
+                    }
+                )
+            
             session.close()
+            
         except Exception as e:
-            log.warning(f"Could not get chunk counts from DB: {e}")
-            db_chunk_counts = {}
-            db_active_status = {}
-
-        # Helper function to normalize filename for matching
-        def normalize_filename(name: str) -> str:
-            """Normalize filename for matching (replace spaces with underscores, lowercase)"""
-            return name.replace(" ", "_").lower()
-
-        # Create a mapping from normalized names to chunk counts and active status
-        normalized_chunk_counts = {}
-        normalized_active_status = {}
-        for source_file, info in db_chunk_counts.items():
-            norm_name = normalize_filename(source_file)
-            normalized_chunk_counts[norm_name] = info
-            normalized_active_status[norm_name] = db_active_status.get(
-                source_file, True
+            log.error(f"Error getting documents from database: {e}")
+            raise HTTPException(
+                status_code=500, detail=f"Error getting documents: {str(e)}"
             )
-
-        # Scan all PDF files in data/ directory and subdirectories
-        for pdf_file in data_dir.rglob("*.pdf"):
-            # Skip duplicates (same filename from different folders)
-            if pdf_file.name in seen_files:
-                continue
-            seen_files.add(pdf_file.name)
-
-            # Skip backup folders
-            if "backup" in str(pdf_file.parent).lower():
-                continue
-
-            try:
-                stat = pdf_file.stat()
-            except:
-                continue
-
-            # Get chunk count and active status for this file
-            chunk_count = db_chunk_counts.get(pdf_file.name, 0)
-            is_active = db_active_status.get(pdf_file.name, True)
-
-            if chunk_count == 0:
-                # Try normalized matching
-                normalized_name = normalize_filename(pdf_file.name)
-                chunk_count = normalized_chunk_counts.get(normalized_name, 0)
-                is_active = normalized_active_status.get(normalized_name, True)
-
-            # Calculate category based on filename patterns
-            category = "Khác"
-            filename_lower = pdf_file.name.lower()
-            if (
-                "tuyen sinh" in filename_lower
-                or "tuyển sinh" in filename_lower
-                or "tuyen_sinh" in filename_lower
-            ):
-                category = "Tuyển sinh"
-            elif (
-                "dao tao" in filename_lower
-                or "đào tạo" in filename_lower
-                or "dao_tao" in filename_lower
-            ):
-                category = "Đào tạo"
-            elif "hoc phi" in filename_lower or "học phí" in filename_lower:
-                category = "Tài chính"
-            elif "ky tuc xa" in filename_lower or "ký túc xá" in filename_lower:
-                category = "Sinh viên"
-            elif "quy che" in filename_lower or "quy_che" in filename_lower:
-                category = "Quy chế"
-            elif "thong bao" in filename_lower or "thong_bao" in filename_lower:
-                category = "Thông báo"
-
-            # Determine status based on chunk count and is_active
-            if chunk_count == 0:
-                status = "pending"
-            elif is_active:
-                status = "active"
-            else:
-                status = "inactive"
-
-            documents.append(
-                {
-                    "id": pdf_file.stem,
-                    "name": pdf_file.name,
-                    "category": category,
-                    "size": stat.st_size,
-                    "size_formatted": (
-                        f"{stat.st_size / (1024 * 1024):.2f} MB"
-                        if stat.st_size >= 1024 * 1024
-                        else f"{stat.st_size / 1024:.1f} KB"
-                    ),
-                    "uploadDate": datetime.datetime.fromtimestamp(
-                        stat.st_mtime
-                    ).strftime("%Y-%m-%d"),
-                    "uploadDateTime": datetime.datetime.fromtimestamp(
-                        stat.st_mtime
-                    ).isoformat(),
-                    "status": status,
-                    "is_active": is_active if chunk_count > 0 else None,
-                    "downloads": 0,
-                    "format": "PDF",
-                    "chunks": chunk_count,
-                    "path": str(pdf_file.relative_to(data_dir)),
-                }
-            )
-
-        # Sort by upload date (newest first)
-        documents.sort(key=lambda x: x["uploadDateTime"], reverse=True)
 
         return {
             "documents": documents,
