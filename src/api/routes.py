@@ -507,7 +507,7 @@ async def admin_list_documents(rag: RAGService = Depends(get_rag_service)):
             from sqlalchemy import text
 
             session = rag.db_service.SessionLocal()
-            
+
             # Get unique source files with their chunk counts, active status, and created_at
             result = session.execute(
                 text(
@@ -524,13 +524,13 @@ async def admin_list_documents(rag: RAGService = Depends(get_rag_service)):
                     """
                 )
             )
-            
+
             for row in result.fetchall():
                 source_file = row[0]
                 chunk_count = row[1]
                 is_active = row[2] if row[2] is not None else True
                 created_at = row[3]
-                
+
                 # Calculate category based on filename patterns
                 category = "Khác"
                 filename_lower = source_file.lower()
@@ -565,7 +565,11 @@ async def admin_list_documents(rag: RAGService = Depends(get_rag_service)):
 
                 # Format date
                 upload_date = created_at.strftime("%Y-%m-%d") if created_at else "N/A"
-                upload_datetime = created_at.isoformat() if created_at else datetime.datetime.now().isoformat()
+                upload_datetime = (
+                    created_at.isoformat()
+                    if created_at
+                    else datetime.datetime.now().isoformat()
+                )
 
                 documents.append(
                     {
@@ -584,9 +588,9 @@ async def admin_list_documents(rag: RAGService = Depends(get_rag_service)):
                         "path": source_file,
                     }
                 )
-            
+
             session.close()
-            
+
         except Exception as e:
             log.error(f"Error getting documents from database: {e}")
             raise HTTPException(
