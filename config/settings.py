@@ -194,5 +194,15 @@ CHECKSUM_ALGORITHM = os.getenv("CHECKSUM_ALGORITHM", "sha256")  # md5 or sha256
 # CORS Configuration
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "*").split(",")
 
+# ============================================
+# Supabase Storage Configuration (NEW)
+# ============================================
+SUPABASE_URL = os.getenv("SUPABASE_URL", "")
+SUPABASE_SERVICE_KEY = os.getenv(
+    "SUPABASE_SERVICE_KEY", ""
+)  # Service role key for server-side uploads
+SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY", "")
+SUPABASE_STORAGE_BUCKET = os.getenv("SUPABASE_STORAGE_BUCKET", "documents")
+
 # Create logs directory
 Path(LOG_FILE).parent.mkdir(parents=True, exist_ok=True)

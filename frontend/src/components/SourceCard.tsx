@@ -3,6 +3,7 @@
 import React from 'react';
 import { FileText, Download, ExternalLink, Star } from 'lucide-react';
 import type { Source } from '@/types';
+import { getDocumentUrl } from '@/lib/supabase';
 
 interface SourceCardProps {
   source: Source;
@@ -40,6 +41,22 @@ const SourceCard: React.FC<SourceCardProps> = ({
   const getConfidenceText = (confidence?: number): string => {
     if (!confidence) return 'N/A';
     return `${Math.round(confidence * 100)}%`;
+  };
+
+  // Handle view document - open Supabase Storage URL
+  const handleViewDocument = () => {
+    const url = getDocumentUrl(source.filename || source.title);
+    window.open(url, '_blank');
+  };
+
+  // Handle download document
+  const handleDownloadDocument = () => {
+    if (onDownload) {
+      onDownload(source);
+    } else {
+      const url = getDocumentUrl(source.filename || source.title);
+      window.open(url, '_blank');
+    }
   };
 
   return (
@@ -91,25 +108,21 @@ const SourceCard: React.FC<SourceCardProps> = ({
       {/* Actions */}
       <div className="flex items-center justify-between">
         <div className="flex space-x-2">
-          {onViewDetails && (
-            <button
-              onClick={() => onViewDetails(source)}
-              className="inline-flex items-center space-x-1 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 rounded-md hover:bg-red-100 transition-colors duration-200"
-            >
-              <ExternalLink className="w-3 h-3" />
-              <span>Xem chi tiết</span>
-            </button>
-          )}
+          <button
+            onClick={onViewDetails ? () => onViewDetails(source) : handleViewDocument}
+            className="inline-flex items-center space-x-1 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 rounded-md hover:bg-red-100 transition-colors duration-200"
+          >
+            <ExternalLink className="w-3 h-3" />
+            <span>Xem chi tiết</span>
+          </button>
           
-          {onDownload && (
-            <button
-              onClick={() => onDownload(source)}
-              className="inline-flex items-center space-x-1 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-50 rounded-md hover:bg-gray-100 transition-colors duration-200"
-            >
-              <Download className="w-3 h-3" />
-              <span>Tải xuống</span>
-            </button>
-          )}
+          <button
+            onClick={handleDownloadDocument}
+            className="inline-flex items-center space-x-1 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-50 rounded-md hover:bg-gray-100 transition-colors duration-200"
+          >
+            <Download className="w-3 h-3" />
+            <span>Tải xuống</span>
+          </button>
         </div>
         
         <div className="text-xs text-gray-400">

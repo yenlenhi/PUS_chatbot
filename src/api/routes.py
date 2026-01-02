@@ -47,6 +47,7 @@ from src.services.feedback_service import FeedbackService
 from src.services.analytics_service import AnalyticsService
 from src.services.attachment_service import AttachmentService
 from src.services.postgres_database_service import PostgresDatabaseService
+from src.services.supabase_storage_service import get_supabase_storage_service
 from src.utils.logger import log
 
 # Create router
@@ -799,10 +800,10 @@ async def admin_upload_document(
 
     This endpoint:
     1. Validates the uploaded file (PDF only, max 50MB)
-    2. Saves the file to PDF_DIR
-    3. Processes the PDF (extract text, chunk, create embeddings)
-    4. Stores chunks and embeddings in database
-    5. Updates FAISS index
+    2. Uploads the file to Supabase Storage
+    3. Saves a local copy for processing
+    4. Processes the PDF (extract text, chunk, create embeddings)
+    5. Stores chunks and embeddings in Supabase PostgreSQL
 
     Args:
         file: PDF file to upload
@@ -839,12 +840,34 @@ async def admin_upload_document(
         if file_size == 0:
             raise HTTPException(status_code=400, detail="File rỗng")
 
-        # Ensure PDF_DIR exists
+        # Get original filename
+        original_filename = Path(file.filename).name
+
+        # Upload to Supabase Storage
+        storage_service = get_supabase_storage_service()
+        supabase_url = None
+        safe_filename = storage_service.normalize_filename(original_filename)
+
+        if storage_service.is_configured():
+            log.info(f"📤 Uploading to Supabase Storage: {original_filename}")
+            success, message, supabase_url = storage_service.upload_file(
+                file_content=file_content,
+                filename=original_filename,
+                content_type="application/pdf",
+            )
+            if success:
+                log.info(f"✅ Supabase upload successful: {supabase_url}")
+            else:
+                log.warning(
+                    f"⚠️ Supabase upload failed: {message} - will save locally only"
+                )
+        else:
+            log.warning("⚠️ Supabase Storage not configured - saving locally only")
+
+        # Save a local copy for processing (using temp file or PDF_DIR)
         pdf_dir = Path(PDF_DIR)
         pdf_dir.mkdir(parents=True, exist_ok=True)
 
-        # Generate safe filename (avoid overwriting)
-        safe_filename = Path(file.filename).name
         file_path = pdf_dir / safe_filename
 
         # If file exists, add timestamp to filename
@@ -854,9 +877,9 @@ async def admin_upload_document(
             safe_filename = f"{name_without_ext}_{timestamp}.pdf"
             file_path = pdf_dir / safe_filename
 
-        # Save file to disk
+        # Save file to disk for processing
         log.info(
-            f"📤 Saving uploaded file: {safe_filename} ({file_size / 1024:.1f} KB)"
+            f"📤 Saving uploaded file locally: {safe_filename} ({file_size / 1024:.1f} KB)"
         )
         with open(file_path, "wb") as buffer:
             buffer.write(file_content)
@@ -884,16 +907,18 @@ async def admin_upload_document(
                         "success": True,
                         "message": f"File '{safe_filename}' đã được lưu nhưng không trích xuất được nội dung. File có thể là PDF scan hoặc rỗng.",
                         "filename": safe_filename,
+                        "original_filename": original_filename,
                         "file_size": file_size,
                         "chunks_created": 0,
+                        "supabase_url": supabase_url,
                         "status": "warning",
                     },
                 )
 
             log.info(f"✂️ Created {len(chunks)} chunks from {safe_filename}")
 
-            # Insert chunks into database
-            log.info(f"💾 Inserting {len(chunks)} chunks into database...")
+            # Insert chunks into database (Supabase PostgreSQL)
+            log.info(f"💾 Inserting {len(chunks)} chunks into Supabase database...")
             chunk_ids = rag.db_service.insert_chunks(chunks)
 
             # Generate embeddings
@@ -902,8 +927,8 @@ async def admin_upload_document(
                 [chunk.content for chunk in chunks], batch_size=16, show_progress=False
             )
 
-            # Insert embeddings into database
-            log.info("💾 Inserting embeddings into database...")
+            # Insert embeddings into database (Supabase PostgreSQL)
+            log.info("💾 Inserting embeddings into Supabase database...")
             rag.db_service.insert_embeddings(chunk_ids, embeddings)
 
             # Rebuild BM25 index for hybrid retrieval
@@ -923,13 +948,15 @@ async def admin_upload_document(
                 status_code=200,
                 content={
                     "success": True,
-                    "message": f"File '{safe_filename}' đã được xử lý thành công!",
+                    "message": f"File '{original_filename}' đã được xử lý và lưu vào Supabase thành công!",
                     "filename": safe_filename,
+                    "original_filename": original_filename,
                     "file_size": file_size,
                     "chunks_created": len(chunks),
                     "embeddings_created": len(embeddings),
                     "category": category,
                     "use_gemini": use_gemini,
+                    "supabase_url": supabase_url,
                     "status": "success",
                 },
             )
@@ -943,7 +970,9 @@ async def admin_upload_document(
                     "success": False,
                     "message": f"Lỗi khi xử lý file: {str(e)}",
                     "filename": safe_filename,
+                    "original_filename": original_filename,
                     "file_size": file_size,
+                    "supabase_url": supabase_url,
                     "status": "error",
                 },
             )

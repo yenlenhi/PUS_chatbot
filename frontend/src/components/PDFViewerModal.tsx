@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { X, Download, ExternalLink, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { getDocumentUrl } from '@/lib/supabase';
 
 interface PDFViewerModalProps {
   isOpen: boolean;
@@ -9,6 +10,7 @@ interface PDFViewerModalProps {
   filename: string;
   initialPage?: number;
   backendUrl?: string;
+  useSupabase?: boolean; // Flag to use Supabase Storage URLs
 }
 
 const PDFViewerModal: React.FC<PDFViewerModalProps> = ({
@@ -16,14 +18,18 @@ const PDFViewerModal: React.FC<PDFViewerModalProps> = ({
   onClose,
   filename,
   initialPage = 1,
-  backendUrl = 'http://localhost:8000'
+  backendUrl = 'http://localhost:8000',
+  useSupabase = true // Default to Supabase Storage
 }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(initialPage);
   const [totalPages, setTotalPages] = useState<number | null>(null);
 
-  const pdfUrl = `${backendUrl}/api/v1/documents/${encodeURIComponent(filename)}`;
+  // Use Supabase Storage URL or fallback to backend API
+  const pdfUrl = useSupabase 
+    ? getDocumentUrl(filename)
+    : `${backendUrl}/api/v1/documents/${encodeURIComponent(filename)}`;
 
   const handlePrevPage = useCallback(() => {
     if (currentPage > 1) setCurrentPage(p => p - 1);

@@ -13,6 +13,7 @@ import {
   Database, HardDrive, LayoutGrid, List, Power, PowerOff,
   ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Check
 } from 'lucide-react';
+import { getDocumentUrl } from '@/lib/supabase';
 
 type ViewMode = 'grid' | 'list';
 
@@ -272,15 +273,15 @@ const DocumentsPage = () => {
     });
   };
 
-  // Handle download
+  // Handle download - Use Supabase Storage URL
   const handleDownload = (filename: string) => {
-    const url = documentsAPI.getDownloadUrl(filename);
+    const url = getDocumentUrl(filename);
     window.open(url, '_blank');
   };
 
-  // Handle view
+  // Handle view - Use Supabase Storage URL
   const handleView = (filename: string) => {
-    const url = documentsAPI.getDownloadUrl(filename);
+    const url = getDocumentUrl(filename);
     window.open(url, '_blank');
   };
 
