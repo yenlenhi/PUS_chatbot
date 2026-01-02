@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.89.0",
     "@types/react-syntax-highlighter": "^15.5.13",
     "axios": "^1.6.0",
     "github-markdown-css": "^5.8.1",

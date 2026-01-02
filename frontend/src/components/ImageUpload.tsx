@@ -10,6 +10,9 @@ export interface UploadedImage {
   file?: File;
   preview: string;
   base64: string;
+  serverUrl?: string; // URL after uploaded to server (Supabase)
+  serverId?: string; // Server-generated ID
+  supabasePath?: string; // Supabase Storage path
 }
 
 interface ImageUploadProps {
@@ -25,13 +28,47 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
   images,
   onImagesChange,
   maxImages = 4,
-  maxSizeMB = 10,
+  maxSizeMB = 2,
   disabled = false,
   className = ''
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+
+  const uploadImagesToServer = async (imageFiles: File[]) => {
+    setUploading(true);
+    setUploadProgress(0);
+    
+    try {
+      const formData = new FormData();
+      imageFiles.forEach((file, index) => {
+        formData.append(`images${index}`, file);
+      });
+
+      const response = await fetch('/api/upload/images', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const result = await response.json();
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Đã xảy ra lỗi khi upload');
+      }
+
+      setUploadProgress(100);
+      return result.files;
+    } catch (error) {
+      console.error('Error uploading images:', error);
+      throw error;
+    } finally {
+      setUploading(false);
+      setTimeout(() => setUploadProgress(0), 1000);
+    }
+  };
 
   const convertToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -64,10 +101,10 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
         continue;
       }
 
-      // Validate file size
+      // Validate file size (max 2MB)
       const sizeMB = file.size / (1024 * 1024);
       if (sizeMB > maxSizeMB) {
-        setError(`Ảnh không được vượt quá ${maxSizeMB}MB`);
+        setError(`Ảnh "${file.name}" vượt quá giới hạn ${maxSizeMB}MB (hiện tại: ${sizeMB.toFixed(2)}MB)`);
         continue;
       }
 
@@ -90,7 +127,24 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
     }
 
     if (newImages.length > 0) {
-      onImagesChange([...images, ...newImages]);
+      try {
+        // Upload images to server
+        const uploadedFiles = await uploadImagesToServer(newImages.map(img => img.file!));
+        
+        // Update images with server URLs
+        const imagesWithUrls = newImages.map((img, index) => ({
+          ...img,
+          serverUrl: uploadedFiles[index]?.url,
+          serverId: uploadedFiles[index]?.id,
+          supabasePath: uploadedFiles[index]?.supabasePath
+        }));
+        
+        onImagesChange([...images, ...imagesWithUrls]);
+        setError(null); // Clear any previous errors
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Lỗi upload ảnh');
+        // Don't add images if upload fails
+      }
     }
 
     // Reset input
@@ -119,6 +173,22 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
       {error && (
         <div className="mb-2 px-3 py-2 bg-red-50 border border-red-200 rounded-lg text-red-600 text-xs">
           {error}
+        </div>
+      )}
+
+      {/* Upload progress */}
+      {uploading && (
+        <div className="mb-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="flex items-center justify-between text-blue-600 text-xs mb-1">
+            <span>Đang tải ảnh lên...</span>
+            <span>{uploadProgress}%</span>
+          </div>
+          <div className="w-full bg-blue-200 rounded-full h-1.5">
+            <div 
+              className="bg-blue-600 h-1.5 rounded-full transition-all duration-300"
+              style={{ width: `${uploadProgress}%` }}
+            ></div>
+          </div>
         </div>
       )}
 

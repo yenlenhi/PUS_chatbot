@@ -17,7 +17,7 @@ import VoiceInputButton from '@/components/VoiceInputButton';
 import ChartRenderer from '@/components/ChartRenderer';
 import ImageRenderer from '@/components/ImageRenderer';
 import GuidedFlow from '@/components/GuidedFlow';
-import { UploadedImage as UploadedImageType } from '@/components/ImageUpload';
+import ImageUpload, { UploadedImage as UploadedImageType } from '@/components/ImageUpload';
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 import { useSpeechSynthesis } from '@/hooks/useSpeechSynthesis';
 
@@ -1251,6 +1251,15 @@ const ChatBotPage = () => {
                         
                         for (const file of filesToProcess) {
                           if (!file.type.startsWith('image/')) continue;
+                          
+                          // Validate file size (max 2MB)
+                          const maxSize = 2 * 1024 * 1024; // 2MB
+                          if (file.size > maxSize) {
+                            const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+                            alert(`Ảnh "${file.name}" vượt quá 2MB (hiện tại: ${sizeMB}MB). Vui lòng chọn ảnh nhỏ hơn.`);
+                            continue;
+                          }
+                          
                           const reader = new FileReader();
                           reader.onload = () => {
                             const base64 = reader.result as string;
@@ -1302,6 +1311,14 @@ const ChatBotPage = () => {
                     for (const item of imageItems.slice(0, remainingSlots)) {
                       const file = item.getAsFile();
                       if (!file) continue;
+                      
+                      // Validate file size (max 2MB)
+                      const maxSize = 2 * 1024 * 1024; // 2MB
+                      if (file.size > maxSize) {
+                        const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+                        alert(`Ảnh paste vượt quá 2MB (hiện tại: ${sizeMB}MB). Vui lòng chọn ảnh nhỏ hơn.`);
+                        continue;
+                      }
                       
                       const reader = new FileReader();
                       reader.onload = () => {
