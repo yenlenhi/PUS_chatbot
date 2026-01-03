@@ -4,9 +4,22 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import ReactMarkdown from 'react-markdown';
 import AdminLayout from '@/components/admin/AdminLayout';
+import Toast, { ToastType } from '@/components/ui/Toast';
+import ConfirmModal from '@/components/ui/ConfirmModal';
 import { Search, Filter, Download, Eye, Calendar, User, MessageSquare, RefreshCw, Trash2, X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Image as ImageIcon, Copy, Check, RotateCw, Maximize2 } from 'lucide-react';
 import { chatHistoryAPI } from '@/services/api';
 import { ConversationSummary, ConversationDetail, ChatHistoryStats } from '@/types/api';
+
+// Confirm modal state type
+interface ConfirmState {
+  isOpen: boolean;
+  title: string;
+  message: string;
+  confirmText: string;
+  type: 'danger' | 'warning' | 'info';
+  icon: 'power' | 'powerOff' | 'delete' | 'warning';
+  onConfirm: () => void;
+}
 
 // Image Modal Component for viewing images in detail (same as chat-bot page)
 interface ImageModalProps {
@@ -263,6 +276,40 @@ const ChatHistoryPage = () => {
   // Portal mount state
   const [mounted, setMounted] = useState(false);
 
+  // Toast state
+  const [toast, setToast] = useState<{ message: string; type: ToastType; isVisible: boolean }>({
+    message: '',
+    type: 'info',
+    isVisible: false,
+  });
+
+  // Confirm modal state
+  const [confirmModal, setConfirmModal] = useState<ConfirmState>({
+    isOpen: false,
+    title: '',
+    message: '',
+    confirmText: 'Xác nhận',
+    type: 'warning',
+    icon: 'warning',
+    onConfirm: () => {},
+  });
+
+  const showToast = (message: string, type: ToastType) => {
+    setToast({ message, type, isVisible: true });
+  };
+
+  const hideToast = () => {
+    setToast(prev => ({ ...prev, isVisible: false }));
+  };
+
+  const showConfirm = (config: Omit<ConfirmState, 'isOpen'>) => {
+    setConfirmModal({ ...config, isOpen: true });
+  };
+
+  const hideConfirm = () => {
+    setConfirmModal(prev => ({ ...prev, isOpen: false }));
+  };
+
   useEffect(() => {
     setMounted(true);
     return () => setMounted(false);
@@ -333,15 +380,24 @@ const ChatHistoryPage = () => {
 
   // Delete conversation
   const handleDelete = async (conversationId: string) => {
-    if (!confirm('Bạn có chắc chắn muốn xóa cuộc hội thoại này?')) return;
-    
-    try {
-      await chatHistoryAPI.deleteConversation(conversationId);
-      fetchConversations(); // Refresh list
-    } catch (err) {
-      console.error('Error deleting conversation:', err);
-      alert('Không thể xóa cuộc hội thoại');
-    }
+    showConfirm({
+      title: 'Xóa cuộc hội thoại',
+      message: `Bạn có chắc muốn xóa cuộc hội thoại này?\n\nID: ${conversationId}\n\nHành động này không thể hoàn tác.`,
+      confirmText: 'Xóa',
+      type: 'danger',
+      icon: 'delete',
+      onConfirm: async () => {
+        hideConfirm();
+        try {
+          await chatHistoryAPI.deleteConversation(conversationId);
+          await fetchConversations();
+          showToast('Đã xóa cuộc hội thoại thành công', 'success');
+        } catch (err) {
+          console.error('Error deleting conversation:', err);
+          showToast(err instanceof Error ? err.message : 'Không thể xóa cuộc hội thoại', 'error');
+        }
+      },
+    });
   };
 
   // Export conversations
@@ -959,6 +1015,26 @@ const ChatHistoryPage = () => {
           allImages={allPreviewImages}
           currentIndex={previewImageIndex}
           onNavigate={navigateImage}
+        />
+
+        {/* Confirm Modal */}
+        <ConfirmModal
+          isOpen={confirmModal.isOpen}
+          title={confirmModal.title}
+          message={confirmModal.message}
+          confirmText={confirmModal.confirmText}
+          type={confirmModal.type}
+          icon={confirmModal.icon}
+          onConfirm={confirmModal.onConfirm}
+          onClose={hideConfirm}
+        />
+
+        {/* Toast */}
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          isVisible={toast.isVisible}
+          onClose={hideToast}
         />
       </div>
     </AdminLayout>
