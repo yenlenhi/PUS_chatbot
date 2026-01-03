@@ -74,21 +74,23 @@ const Footer = () => {
                 <MapPin className="w-5 h-5 text-yellow-400 mt-1 flex-shrink-0" />
                 <div>
                   <p className="text-gray-300">
-                    125 Trần Phú, Văn Quán, Hà Đông, Hà Nội
+                    Km18 Xa Lộ Hà Nội, Phường Linh Trung, Quận Thủ Đức, TP. Hồ Chí Minh
                   </p>
                 </div>
               </div>
               <div className="flex items-center space-x-3">
                 <Phone className="w-5 h-5 text-yellow-400 flex-shrink-0" />
-                <p className="text-gray-300">024.3854.2222</p>
+                <p className="text-gray-300">0283.896.3883</p>
               </div>
               <div className="flex items-center space-x-3">
                 <Mail className="w-5 h-5 text-yellow-400 flex-shrink-0" />
-                <p className="text-gray-300">info@psu.edu.vn</p>
+                <p className="text-gray-300">info@dhannd.edu.vn</p>
               </div>
               <div className="flex items-center space-x-3">
                 <Globe className="w-5 h-5 text-yellow-400 flex-shrink-0" />
-                <p className="text-gray-300">www.psu.edu.vn</p>
+                <a href="https://dhannd.bocongan.gov.vn/" target="_blank" rel="noopener noreferrer" className="text-gray-300 hover:text-white">
+                  dhannd.bocongan.gov.vn
+                </a>
               </div>
             </div>
           </div>

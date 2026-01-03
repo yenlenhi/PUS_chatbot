@@ -83,8 +83,8 @@ export default function LienHe() {
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">Website & Mạng xã hội</h3>
                     <p className="text-gray-700 mb-2">
                       <span className="font-semibold">Website:</span>{' '}
-                      <a href="http://dhannd.edu.vn/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800">
-                        dhannd.edu.vn
+                      <a href="https://dhannd.bocongan.gov.vn/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800">
+                        dhannd.bocongan.gov.vn
                       </a>
                     </p>
                     <div className="flex items-center space-x-4 mt-3">
