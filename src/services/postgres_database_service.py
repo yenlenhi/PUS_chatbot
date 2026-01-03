@@ -508,6 +508,7 @@ class PostgresDatabaseService:
         sources: List[str] = None,
         confidence: float = 0.0,
         processing_time: float = 0.0,
+        images: List[str] = None,
     ) -> int:
         """
         Save a conversation turn to database
@@ -519,6 +520,7 @@ class PostgresDatabaseService:
             sources: List of source documents
             confidence: Confidence score
             processing_time: Processing time in seconds
+            images: List of image URLs from Supabase Storage
 
         Returns:
             ID of inserted conversation record
@@ -528,13 +530,16 @@ class PostgresDatabaseService:
             import json
 
             sources_json = json.dumps(sources or [], ensure_ascii=False)
+            images_json = (
+                json.dumps(images or [], ensure_ascii=False) if images else None
+            )
 
             result = session.execute(
                 text(
                     """
                 INSERT INTO conversations 
-                (conversation_id, user_message, assistant_response, sources, confidence, processing_time)
-                VALUES (:conversation_id, :user_message, :assistant_response, :sources, :confidence, :processing_time)
+                (conversation_id, user_message, assistant_response, sources, confidence, processing_time, images)
+                VALUES (:conversation_id, :user_message, :assistant_response, :sources, :confidence, :processing_time, :images)
                 RETURNING id
             """
                 ),
@@ -545,6 +550,7 @@ class PostgresDatabaseService:
                     "sources": sources_json,
                     "confidence": confidence,
                     "processing_time": processing_time,
+                    "images": images_json,
                 },
             )
 
@@ -685,7 +691,7 @@ class PostgresDatabaseService:
                 text(
                     """
                 SELECT id, user_message, assistant_response, sources, 
-                       confidence, processing_time, created_at
+                       confidence, processing_time, created_at, images
                 FROM conversations
                 WHERE conversation_id = :conversation_id
                 ORDER BY created_at ASC
@@ -710,6 +716,13 @@ class PostgresDatabaseService:
                     except:
                         sources = []
 
+                images = []
+                if row[7]:  # images column
+                    try:
+                        images = json.loads(row[7])
+                    except:
+                        images = []
+
                 messages.append(
                     {
                         "id": row[0],
@@ -719,6 +732,7 @@ class PostgresDatabaseService:
                         "confidence": row[4],
                         "processing_time": row[5],
                         "timestamp": row[6].isoformat() if row[6] else None,
+                        "images": images,
                     }
                 )
                 total_processing_time += row[5] or 0

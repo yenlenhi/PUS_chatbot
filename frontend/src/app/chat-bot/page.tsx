@@ -266,19 +266,19 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   if (message.sender === 'user') {
     return (
       <>
-        <div className="flex justify-end items-start gap-3">
+        <div className="flex justify-end items-start gap-2 sm:gap-3">
           {/* Message content */}
-          <div className="max-w-[75%] md:max-w-[70%]">
+          <div className="max-w-[85%] sm:max-w-[75%] md:max-w-[70%]">
             {/* Uploaded images - shown above text */}
             {message.uploadedImages && message.uploadedImages.length > 0 && (
-              <div className="mb-2 flex flex-wrap gap-2 justify-end">
+              <div className="mb-2 flex flex-wrap gap-1.5 sm:gap-2 justify-end">
                 {message.uploadedImages.map((img, idx) => (
                   <div 
                     key={img.id || idx} 
                     className="relative group cursor-pointer"
                     onClick={() => setSelectedImage(img.preview || img.base64 || '')}
                   >
-                    <div className="w-28 h-28 rounded-xl overflow-hidden shadow-lg border-2 border-white hover:border-blue-400 transition-all duration-200 hover:shadow-xl">
+                    <div className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-lg sm:rounded-xl overflow-hidden shadow-lg border border-white sm:border-2 hover:border-blue-400 transition-all duration-200 hover:shadow-xl">
                       <img
                         src={img.preview || img.base64}
                         alt={`Uploaded ${idx + 1}`}
@@ -322,8 +322,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
           </div>
           
           {/* User Avatar - separate */}
-          <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
-            <User className="w-5 h-5 text-white" />
+          <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-md sm:shadow-lg shadow-blue-500/30">
+            <User className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
           </div>
         </div>
 
@@ -340,20 +340,20 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
 
   // Bot message
   return (
-    <div className="flex justify-start items-start gap-3">
+    <div className="flex justify-start items-start gap-2 sm:gap-3">
       {/* Bot Avatar */}
       <div className="flex-shrink-0">
         <Image
           src="/assests/chatbot_avatar.png"
           alt="PSU ChatBot"
-          width={40}
-          height={40}
-          className="rounded-full shadow-md"
+          width={32}
+          height={32}
+          className="w-8 h-8 sm:w-10 sm:h-10 rounded-full shadow-sm sm:shadow-md"
         />
       </div>
       
       {/* Message content */}
-      <div className="max-w-[85%] md:max-w-[80%] bg-white rounded-2xl rounded-tl-sm p-4 shadow-md border border-gray-100">
+      <div className="max-w-[90%] sm:max-w-[85%] md:max-w-[80%] bg-white rounded-xl sm:rounded-2xl rounded-tl-sm p-3 sm:p-4 shadow-sm sm:shadow-md border border-gray-100">
         <div className="text-sm markdown-body leading-relaxed text-gray-800">
           <ReactMarkdown 
             remarkPlugins={[remarkGfm]}
@@ -883,41 +883,41 @@ const ChatBotPage = () => {
     >
       {/* Header */}
       <header className="bg-white shadow-md border-b-4 border-red-600 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16 md:h-20">
-            <div className="flex items-center space-x-3 md:space-x-4">
+        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
+          <div className="flex items-center justify-between h-14 sm:h-16 md:h-20">
+            <div className="flex items-center space-x-2 sm:space-x-3 md:space-x-4 min-w-0 flex-1">
               {/* Back to Home button */}
               <Link
                 href="/"
-                className="flex items-center gap-1 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors text-sm font-medium"
+                className="flex items-center gap-1 px-2 sm:px-3 py-1.5 sm:py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors text-xs sm:text-sm font-medium flex-shrink-0"
                 title="Về trang chủ"
               >
-                <ArrowLeft className="w-4 h-4" />
-                <Home className="w-4 h-4" />
+                <ArrowLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <Home className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </Link>
               
               <Image
                 src="/assests/logo-main.png"
                 alt="Logo Trường Đại học An ninh Nhân dân"
-                width={50}
-                height={50}
-                className="object-contain"
+                width={40}
+                height={40}
+                className="object-contain w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex-shrink-0"
               />
-              <div>
-                <h1 className="text-lg md:text-xl font-bold text-gray-900">
+              <div className="min-w-0 flex-1">
+                <h1 className="text-sm sm:text-lg md:text-xl font-bold text-gray-900 truncate">
                   PSU ChatBot
                 </h1>
-                <p className="text-xs md:text-sm text-gray-600 hidden sm:block">Hỗ trợ tư vấn 24/7</p>
+                <p className="text-xs md:text-sm text-gray-600 hidden xs:block sm:block truncate">Hỗ trợ tư vấn 24/7</p>
               </div>
             </div>
 
             {/* Header Actions */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
               {/* Language Toggle */}
-              <div className="flex items-center bg-gray-100 rounded-lg p-1">
+              <div className="flex items-center bg-gray-100 rounded-lg p-0.5 sm:p-1">
                 <button
                   onClick={() => setLanguage('vi')}
-                  className={`px-2.5 py-1.5 text-xs font-semibold rounded-md transition-all duration-200 ${
+                  className={`px-1.5 sm:px-2.5 py-1 sm:py-1.5 text-xs font-semibold rounded-md transition-all duration-200 ${
                     language === 'vi'
                       ? 'bg-red-600 text-white shadow-sm'
                       : 'text-gray-600 hover:text-gray-900'
@@ -928,7 +928,7 @@ const ChatBotPage = () => {
                 </button>
                 <button
                   onClick={() => setLanguage('en')}
-                  className={`px-2.5 py-1.5 text-xs font-semibold rounded-md transition-all duration-200 ${
+                  className={`px-1.5 sm:px-2.5 py-1 sm:py-1.5 text-xs font-semibold rounded-md transition-all duration-200 ${
                     language === 'en'
                       ? 'bg-blue-600 text-white shadow-sm'
                       : 'text-gray-600 hover:text-gray-900'
@@ -938,30 +938,30 @@ const ChatBotPage = () => {
                   EN
                 </button>
               </div>
-              {/* Guided Flow Button */}
+              {/* Guided Flow Button - Hidden on very small screens */}
               <button
                 onClick={() => setGuidedFlowOpen(true)}
-                className="flex items-center gap-2 px-3 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg transition-colors text-sm font-medium"
+                className="hidden xs:flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg transition-colors text-xs sm:text-sm font-medium"
                 title={language === 'vi' ? 'Hướng dẫn thủ tục' : 'Procedure Guide'}
               >
-                <Compass className="w-4 h-4" />
+                <Compass className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 <span className="hidden sm:inline">{language === 'vi' ? 'Thủ tục' : 'Guide'}</span>
               </button>
               <button
                 onClick={() => setRepositoryOpen(true)}
-                className="flex items-center gap-2 px-3 py-2 bg-red-50 hover:bg-red-100 text-red-700 rounded-lg transition-colors text-sm font-medium"
+                className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 bg-red-50 hover:bg-red-100 text-red-700 rounded-lg transition-colors text-xs sm:text-sm font-medium"
               >
-                <FolderOpen className="w-4 h-4" />
+                <FolderOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 <span className="hidden sm:inline">{language === 'vi' ? 'Tài liệu' : 'Docs'}</span>
               </button>
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="flex items-center gap-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors text-sm font-medium relative"
+                className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors text-xs sm:text-sm font-medium relative"
               >
-                <Book className="w-4 h-4" />
+                <Book className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 <span className="hidden sm:inline">{language === 'vi' ? 'Nguồn' : 'Sources'}</span>
                 {currentSourceReferences.filter(ref => (ref.relevance_score || 0) >= 0.8).length > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center">
                     {currentSourceReferences.filter(ref => (ref.relevance_score || 0) >= 0.8).length}
                   </span>
                 )}
@@ -973,30 +973,30 @@ const ChatBotPage = () => {
 
       {/* Main Content - Adjusted for sidebar */}
       <div className={`transition-all duration-300 ${sidebarOpen ? 'mr-0 md:mr-96' : 'mr-0'}`}>
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-8">
-          <div className="bg-white rounded-xl shadow-lg border border-gray-200 h-[calc(100vh-140px)] md:h-[calc(100vh-160px)] flex flex-col">
+        <div className="max-w-4xl mx-auto px-2 sm:px-4 lg:px-8 py-2 sm:py-4 md:py-8">
+          <div className="bg-white rounded-lg sm:rounded-xl shadow-lg border border-gray-200 h-[calc(100vh-120px)] sm:h-[calc(100vh-140px)] md:h-[calc(100vh-160px)] flex flex-col">
             {/* Chat Header */}
-            <div className="bg-gradient-to-r from-red-600 to-red-700 text-white p-4 md:p-6 rounded-t-xl">
-              <div className="flex items-center space-x-3">
-                <div className="relative">
+            <div className="bg-gradient-to-r from-red-600 to-red-700 text-white p-3 sm:p-4 md:p-6 rounded-t-lg sm:rounded-t-xl">
+              <div className="flex items-center space-x-2 sm:space-x-3">
+                <div className="relative flex-shrink-0">
                   <Image
                     src="/assests/chatbot_avatar.png"
                     alt="PSU ChatBot Avatar"
-                    width={40}
-                    height={40}
-                    className="rounded-full border-2 border-white"
+                    width={32}
+                    height={32}
+                    className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 border-white"
                   />
-                  <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-white"></div>
+                  <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 sm:w-3 sm:h-3 bg-green-400 rounded-full border border-white sm:border-2"></div>
                 </div>
-                <div>
-                  <h2 className="text-base md:text-lg font-semibold">PSU ChatBot</h2>
+                <div className="min-w-0 flex-1">
+                  <h2 className="text-sm sm:text-base md:text-lg font-semibold truncate">PSU ChatBot</h2>
                   <p className="text-red-100 text-xs md:text-sm">
                     {language === 'vi' ? 'Đang hoạt động' : 'Online'}
                   </p>
                 </div>
               </div>
               {/* Disclaimer Notice */}
-              <div className="mt-3 pt-3 border-t border-red-500/30">
+              <div className="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-red-500/30">
                 <p className="text-xs text-red-100/90 leading-relaxed">
                   ⚠️ <span className="font-medium">{language === 'vi' ? 'Lưu ý:' : 'Note:'}</span>{' '}
                   {language === 'vi' 
@@ -1007,7 +1007,7 @@ const ChatBotPage = () => {
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 md:space-y-6">
+            <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 space-y-3 sm:space-y-4 md:space-y-6">
               {messages.map((message, index) => (
                 <MessageBubble
                   key={message.id}
@@ -1143,29 +1143,29 @@ const ChatBotPage = () => {
             </div>
 
             {/* Input */}
-            <div className="p-3 md:p-4 border-t border-gray-200 bg-gray-50 rounded-b-xl">
+            <div className="p-2 sm:p-3 md:p-4 border-t border-gray-200 bg-gray-50 rounded-b-lg sm:rounded-b-xl">
               {/* Voice recognition error message */}
               {speechRecognitionError && (
-                <div className="mb-2 px-3 py-2 bg-red-50 border border-red-200 rounded-lg text-red-600 text-xs">
+                <div className="mb-2 px-2 sm:px-3 py-1.5 sm:py-2 bg-red-50 border border-red-200 rounded-lg text-red-600 text-xs">
                   {speechRecognitionError}
                 </div>
               )}
               {/* Voice recognition listening indicator */}
               {isListening && (
-                <div className="mb-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-blue-600 text-xs flex items-center gap-2">
+                <div className="mb-2 px-2 sm:px-3 py-1.5 sm:py-2 bg-blue-50 border border-blue-200 rounded-lg text-blue-600 text-xs flex items-center gap-2">
                   <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
                   {language === 'vi' ? 'Đang lắng nghe... Nói câu hỏi của bạn' : 'Listening... Speak your question'}
-                  {transcript && <span className="text-gray-500">({transcript})</span>}
+                  {transcript && <span className="text-gray-500 truncate">({transcript})</span>}
                 </div>
               )}
               {/* Image Upload Preview - Show previews above input when there are images */}
               {uploadedImages.length > 0 && (
-                <div className="mb-3 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
-                  <div className="flex flex-wrap gap-3">
+                <div className="mb-2 sm:mb-3 p-2 sm:p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg sm:rounded-xl border border-blue-100">
+                  <div className="flex flex-wrap gap-2 sm:gap-3">
                     {uploadedImages.map((image) => (
                       <div key={image.id} className="relative group">
                         <div 
-                          className="w-20 h-20 rounded-xl overflow-hidden border-2 border-white shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer hover:border-blue-400"
+                          className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg sm:rounded-xl overflow-hidden border border-white sm:border-2 shadow-sm sm:shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer hover:border-blue-400"
                           onClick={() => setPreviewImage(image.preview)}
                         >
                           <img
@@ -1184,16 +1184,16 @@ const ChatBotPage = () => {
                             e.stopPropagation();
                             setUploadedImages(prev => prev.filter(img => img.id !== image.id));
                           }}
-                          className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-red-600 shadow-md"
+                          className="absolute -top-1 -right-1 w-5 h-5 sm:w-6 sm:h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-red-600 shadow-md"
                           title="Xóa ảnh"
                         >
-                          <X className="w-3.5 h-3.5" />
+                          <X className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                         </button>
                       </div>
                     ))}
                     {/* Add more button if under limit */}
                     {uploadedImages.length < 4 && (
-                      <label className="w-20 h-20 rounded-xl border-2 border-dashed border-blue-200 hover:border-blue-400 flex items-center justify-center text-blue-300 hover:text-blue-500 transition-all duration-200 cursor-pointer bg-white/50 hover:bg-white">
+                      <label className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg sm:rounded-xl border border-dashed sm:border-2 border-blue-200 hover:border-blue-400 flex items-center justify-center text-blue-300 hover:text-blue-500 transition-all duration-200 cursor-pointer bg-white/50 hover:bg-white">
                         <input
                           type="file"
                           accept="image/*"
@@ -1223,7 +1223,7 @@ const ChatBotPage = () => {
                             e.target.value = '';
                           }}
                         />
-                        <ImagePlus className="w-6 h-6" />
+                        <ImagePlus className="w-5 h-5 sm:w-6 sm:h-6" />
                       </label>
                     )}
                   </div>
@@ -1234,10 +1234,10 @@ const ChatBotPage = () => {
                   </div>
                 </div>
               )}
-              <div className="flex items-center gap-2 md:gap-3">
+              <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3">
                 {/* Image Upload Button - Only show when no images */}
                 {uploadedImages.length === 0 && (
-                  <label className="flex items-center justify-center w-10 h-10 md:w-11 md:h-11 rounded-xl bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors cursor-pointer flex-shrink-0">
+                  <label className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 rounded-lg sm:rounded-xl bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors cursor-pointer flex-shrink-0">
                     <input
                       type="file"
                       accept="image/*"
@@ -1276,7 +1276,7 @@ const ChatBotPage = () => {
                         e.target.value = '';
                       }}
                     />
-                    <ImagePlus className="w-5 h-5" />
+                    <ImagePlus className="w-4 h-4 sm:w-5 sm:h-5" />
                   </label>
                 )}
                 {/* Voice Input Button */}
@@ -1341,20 +1341,20 @@ const ChatBotPage = () => {
                         ? (language === 'vi' ? "Mô tả hoặc hỏi về ảnh..." : "Describe or ask about the image...")
                         : (language === 'vi' ? "Nhập câu hỏi hoặc dán ảnh (Ctrl+V)..." : "Type a question or paste an image (Ctrl+V)...")
                   }
-                  className="flex-1 min-w-0 h-10 md:h-11 px-4 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                  className="flex-1 min-w-0 h-8 sm:h-10 md:h-11 px-3 sm:px-4 border border-gray-300 rounded-lg sm:rounded-xl focus:outline-none focus:ring-1 sm:focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                   disabled={isTyping || isListening}
                 />
                 <button
                   onClick={() => handleSendMessage()}
                   disabled={(!inputMessage.trim() && uploadedImages.length === 0) || isTyping}
-                  className="flex-shrink-0 w-10 h-10 md:w-11 md:h-11 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 disabled:bg-gray-400 disabled:from-gray-400 disabled:to-gray-400 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center shadow-sm hover:shadow-md"
+                  className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg sm:rounded-xl hover:from-blue-600 hover:to-blue-700 disabled:bg-gray-400 disabled:from-gray-400 disabled:to-gray-400 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center shadow-sm hover:shadow-md"
                 >
-                  <Send className="w-5 h-5" />
+                  <Send className="w-4 h-4 sm:w-5 sm:h-5" />
                 </button>
               </div>
               {/* Footer Disclaimer */}
-              <div className="mt-2 pt-2 border-t border-gray-200">
-                <p className="text-xs text-gray-500 text-center leading-relaxed">
+              <div className="mt-1.5 sm:mt-2 pt-1.5 sm:pt-2 border-t border-gray-200">
+                <p className="text-xs text-gray-500 text-center leading-relaxed px-1">
                   📋 {language === 'vi' 
                     ? <>Mọi thông tin pháp lý chính thức xin tham khảo văn bản được công bố trên <a href="https://dhannd.bocongan.gov.vn/" target="_blank" rel="noopener noreferrer" className="font-medium text-red-600 hover:text-red-700 hover:underline">website/trang thông báo của trường</a>.</>
                     : <>For official legal information, please refer to documents published on the <a href="https://dhannd.bocongan.gov.vn/" target="_blank" rel="noopener noreferrer" className="font-medium text-red-600 hover:text-red-700 hover:underline">university's website/notice board</a>.</>

@@ -547,6 +547,52 @@ Hướng dẫn:
 
             log.info("Vision response generated successfully")
 
+            # Upload images to Supabase Storage and save conversation
+            image_urls = []
+            if images:
+                try:
+                    from src.utils.chat_image_storage import upload_chat_images
+
+                    # Convert ImageInput objects to base64 strings
+                    base64_images = []
+                    for img in images:
+                        try:
+                            # Get the full base64 data with prefix
+                            base64_data = getattr(img, "base64", None)
+                            mime_type = getattr(img, "mime_type", "image/png")
+                            if base64_data:
+                                # Ensure proper data URI format
+                                if not base64_data.startswith("data:"):
+                                    base64_data = (
+                                        f"data:{mime_type};base64,{base64_data}"
+                                    )
+                                base64_images.append(base64_data)
+                        except Exception as conv_err:
+                            log.warning(f"Could not convert image: {conv_err}")
+
+                    if base64_images:
+                        image_urls = upload_chat_images(base64_images, conversation_id)
+                        log.info(
+                            f"📸 Uploaded {len(image_urls)} images to Supabase Storage"
+                        )
+                except Exception as img_error:
+                    log.warning(f"Could not upload images: {img_error}")
+
+            # Save conversation to PostgreSQL
+            try:
+                self.db_service.save_conversation(
+                    conversation_id=conversation_id,
+                    user_message=query,
+                    assistant_response=answer,
+                    sources=[],
+                    confidence=0.85,
+                    processing_time=0.0,
+                    images=image_urls if image_urls else None,
+                )
+                log.info(f"💾 Saved vision conversation with {len(image_urls)} images")
+            except Exception as save_error:
+                log.warning(f"Could not save vision conversation to DB: {save_error}")
+
             return {
                 "answer": answer,
                 "sources": [],
@@ -554,7 +600,7 @@ Hướng dẫn:
                 "confidence": 0.85,  # Default confidence for vision queries
                 "conversation_id": conversation_id,
                 "chart_data": [],
-                "images": [],
+                "images": image_urls,
             }
 
         except Exception as e:
@@ -1287,6 +1333,19 @@ Trả lời / Response:"""
             # Save conversation to PostgreSQL (legacy)
             processing_time = time.time() - time.time()  # Will be calculated properly
             try:
+                # Upload images to Supabase Storage if provided
+                image_urls = []
+                if images:
+                    try:
+                        from src.utils.chat_image_storage import upload_chat_images
+
+                        image_urls = upload_chat_images(images, conversation_id)
+                        log.info(
+                            f"📸 Uploaded {len(image_urls)} images to Supabase Storage"
+                        )
+                    except Exception as img_error:
+                        log.warning(f"Could not upload images: {img_error}")
+
                 self.db_service.save_conversation(
                     conversation_id=conversation_id,
                     user_message=query,
@@ -1294,6 +1353,7 @@ Trả lời / Response:"""
                     sources=sources,
                     confidence=confidence,
                     processing_time=0.0,  # Processing time will be set at API level
+                    images=image_urls if image_urls else None,
                 )
             except Exception as save_error:
                 log.warning(f"Could not save conversation to DB: {save_error}")

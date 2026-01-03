@@ -50,8 +50,8 @@ const AdminSidebar = ({ onItemClick }: AdminSidebarProps) => {
   const isActive = (href: string) => pathname === href;
 
   return (
-    <div className="h-full flex flex-col py-6">
-      <nav className="flex-1 px-4 space-y-2">
+    <div className="h-full flex flex-col py-3 sm:py-6">
+      <nav className="flex-1 px-2 sm:px-4 space-y-1 sm:space-y-2">
         {menuItems.map((item) => {
           const Icon = item.icon;
           const active = isActive(item.href);
@@ -61,18 +61,18 @@ const AdminSidebar = ({ onItemClick }: AdminSidebarProps) => {
               key={item.href}
               href={item.href}
               onClick={onItemClick}
-              className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
+              className={`flex items-center space-x-2 sm:space-x-3 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg transition-all duration-200 ${
                 active
                   ? 'bg-red-600 text-white shadow-md'
                   : 'text-gray-700 hover:bg-red-50 hover:text-red-600'
               }`}
             >
-              <Icon className={`w-5 h-5 ${active ? 'text-white' : 'text-gray-500'}`} />
-              <div className="flex-1">
-                <div className={`font-medium ${active ? 'text-white' : 'text-gray-900'}`}>
+              <Icon className={`w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0 ${active ? 'text-white' : 'text-gray-500'}`} />
+              <div className="flex-1 min-w-0">
+                <div className={`font-medium text-sm sm:text-base truncate ${active ? 'text-white' : 'text-gray-900'}`}>
                   {item.label}
                 </div>
-                <div className={`text-xs ${active ? 'text-red-100' : 'text-gray-500'}`}>
+                <div className={`text-xs truncate ${active ? 'text-red-100' : 'text-gray-500'}`}>
                   {item.description}
                 </div>
               </div>
@@ -81,8 +81,8 @@ const AdminSidebar = ({ onItemClick }: AdminSidebarProps) => {
         })}
       </nav>
 
-      <div className="px-4 py-4 border-t border-gray-200">
-        <div className="bg-gradient-to-r from-red-50 to-blue-50 rounded-lg p-4">
+      <div className="px-2 sm:px-4 py-3 sm:py-4 border-t border-gray-200">
+        <div className="bg-gradient-to-r from-red-50 to-blue-50 rounded-lg p-3 sm:p-4">
           <h3 className="text-sm font-semibold text-gray-900 mb-1">PSU ChatBot</h3>
           <p className="text-xs text-gray-600">
             {language === 'vi' ? 'Hệ thống quản trị phiên bản 1.0' : 'Admin System v1.0'}

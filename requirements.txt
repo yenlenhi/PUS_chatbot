@@ -19,6 +19,9 @@ psycopg2-binary==2.9.9
 pgvector==0.2.4
 sqlmodel==0.0.14
 
+# Supabase Storage
+supabase==2.3.0
+
 # Keyword Search
 rank-bm25==0.2.2
 

@@ -127,21 +127,21 @@ const DashboardPage = () => {
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         {/* Header with Filter */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex flex-col gap-3 sm:gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Dashboard Analytics</h1>
-            <p className="text-gray-600">Theo dõi và phân tích hiệu suất hệ thống</p>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Dashboard Analytics</h1>
+            <p className="text-sm sm:text-base text-gray-600">Theo dõi và phân tích hiệu suất hệ thống</p>
           </div>
-          <div className="flex items-center space-x-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2 sm:gap-3">
             <button
               onClick={handleRefresh}
               disabled={isRefreshing}
-              className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+              className="self-start sm:self-auto p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
               title="Làm mới dữ liệu"
             >
-              <RefreshCw className={`w-5 h-5 ${isRefreshing ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-4 h-4 sm:w-5 sm:h-5 ${isRefreshing ? 'animate-spin' : ''}`} />
             </button>
             <TimeRangeFilter value={filter.timeRange} onChange={handleFilterChange} />
           </div>
@@ -149,7 +149,7 @@ const DashboardPage = () => {
 
         {/* Overview Stats */}
         {overview && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
             <MetricCard
               title="Tổng số cuộc hội thoại"
               value={formatNumber(overview.total_conversations)}
@@ -186,21 +186,21 @@ const DashboardPage = () => {
 
         {/* Tabs */}
         <div className="border-b border-gray-200">
-          <nav className="flex space-x-4 overflow-x-auto pb-px">
+          <nav className="flex space-x-2 sm:space-x-4 overflow-x-auto pb-px">
             {tabs.map((tab) => {
               const Icon = tab.icon;
               return (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as typeof activeTab)}
-                  className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                  className={`flex items-center space-x-1 sm:space-x-2 px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                     activeTab === tab.id
                       ? 'border-red-600 text-red-600'
                       : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
                   }`}
                 >
-                  <Icon className="w-4 h-4" />
-                  <span>{tab.label}</span>
+                  <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  <span className="hidden xs:inline sm:inline">{tab.label}</span>
                 </button>
               );
             })}
@@ -208,23 +208,23 @@ const DashboardPage = () => {
         </div>
 
         {/* Tab Content */}
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {/* System Insights */}
           {activeTab === 'system' && systemInsights && (
             <>
               {/* Token Usage */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
                 <InsightsSection title="Token Usage theo ngày" icon={Zap}>
-                  <div className="grid grid-cols-2 gap-3 mb-4">
-                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-3.5 border border-blue-200">
+                  <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-3 sm:mb-4">
+                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-2.5 sm:p-3.5 border border-blue-200">
                       <p className="text-xs text-blue-600 font-medium mb-1">Tổng tokens</p>
-                      <p className="text-xl font-bold text-blue-700">
+                      <p className="text-lg sm:text-xl font-bold text-blue-700">
                         {formatNumber(systemInsights.total_tokens)}
                       </p>
                     </div>
-                    <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-3.5 border border-green-200">
+                    <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-2.5 sm:p-3.5 border border-green-200">
                       <p className="text-xs text-green-600 font-medium mb-1">Chi phí ước tính</p>
-                      <p className="text-xl font-bold text-green-700">
+                      <p className="text-lg sm:text-xl font-bold text-green-700">
                         {formatCurrency(systemInsights.total_estimated_cost)}
                       </p>
                     </div>
@@ -236,7 +236,7 @@ const DashboardPage = () => {
                     }))}
                     title="Token Usage Daily"
                     color="#3b82f6"
-                    height={300}
+                    height={250}
                     showBrush={true}
                   />
                 </InsightsSection>
@@ -249,24 +249,24 @@ const DashboardPage = () => {
                     }))}
                     title="Hourly Distribution"
                     color="#8b5cf6"
-                    height={280}
+                    height={230}
                   />
                 </InsightsSection>
               </div>
 
               {/* Access Metrics */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
                 <InsightsSection title="Lượt truy cập theo ngày" icon={TrendingUp}>
-                  <div className="grid grid-cols-2 gap-3 mb-4">
-                    <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-3.5 border border-purple-200">
+                  <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-3 sm:mb-4">
+                    <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-2.5 sm:p-3.5 border border-purple-200">
                       <p className="text-xs text-purple-600 font-medium mb-1">Tổng requests</p>
-                      <p className="text-xl font-bold text-purple-700">
+                      <p className="text-lg sm:text-xl font-bold text-purple-700">
                         {formatNumber(systemInsights.total_requests)}
                       </p>
                     </div>
-                    <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-lg p-3.5 border border-red-200">
+                    <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-lg p-2.5 sm:p-3.5 border border-red-200">
                       <p className="text-xs text-red-600 font-medium mb-1">Bị chặn</p>
-                      <p className="text-xl font-bold text-red-700">
+                      <p className="text-lg sm:text-xl font-bold text-red-700">
                         {formatNumber(systemInsights.total_blocked)}
                       </p>
                     </div>
@@ -278,7 +278,7 @@ const DashboardPage = () => {
                     }))}
                     title="Daily Access"
                     color="#9333ea"
-                    height={300}
+                    height={250}
                     showBrush={true}
                   />
                 </InsightsSection>
@@ -291,7 +291,7 @@ const DashboardPage = () => {
                     }))}
                     title="Hourly Distribution"
                     color="#8b5cf6"
-                    height={280}
+                    height={230}
                   />
                 </InsightsSection>
               </div>

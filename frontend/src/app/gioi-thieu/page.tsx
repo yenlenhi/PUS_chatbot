@@ -93,6 +93,10 @@ export default function GioiThieu() {
                   <span className="text-gray-700 ml-2">2001</span>
                 </div>
                 <div>
+                  <span className="font-semibold text-gray-900">Địa chỉ:</span>
+                  <span className="text-gray-700 ml-2">TP. Hồ Chí Minh</span>
+                </div>
+                <div>
                   <span className="font-semibold text-gray-900">Số sinh viên:</span>
                   <span className="text-gray-700 ml-2">~15,000</span>
                 </div>

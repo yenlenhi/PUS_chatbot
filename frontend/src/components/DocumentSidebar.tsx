@@ -75,14 +75,14 @@ const DocumentSidebar: React.FC<DocumentSidebarProps> = ({
       {/* Toggle Button - Always visible */}
       <button
         onClick={onToggle}
-        className={`fixed top-1/2 -translate-y-1/2 z-40 bg-red-600 text-white p-2 rounded-l-lg shadow-lg hover:bg-red-700 transition-all duration-300 ${
-          isOpen ? 'right-80 md:right-96' : 'right-0'
+        className={`fixed top-1/2 -translate-y-1/2 z-40 bg-red-600 text-white p-1.5 sm:p-2 rounded-l-lg shadow-lg hover:bg-red-700 transition-all duration-300 ${
+          isOpen ? 'right-[calc(100vw-2rem)] sm:right-80 md:right-96' : 'right-0'
         }`}
         title={isOpen ? 'Ẩn tài liệu' : 'Hiện tài liệu'}
       >
-        {isOpen ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
+        {isOpen ? <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" /> : <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />}
         {!isOpen && sourceReferences.length > 0 && (
-          <span className="absolute -top-2 -left-2 bg-yellow-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+          <span className="absolute -top-1 sm:-top-2 -left-1 sm:-left-2 bg-yellow-500 text-white text-xs rounded-full w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center">
             {sourceReferences.length}
           </span>
         )}
@@ -92,14 +92,14 @@ const DocumentSidebar: React.FC<DocumentSidebarProps> = ({
       <div
         className={`fixed top-0 right-0 h-full bg-white shadow-2xl z-30 transition-transform duration-300 ease-in-out ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
-        } w-80 md:w-96`}
+        } w-[calc(100vw-2rem)] max-w-sm sm:w-80 md:w-96`}
       >
         {/* Header */}
-        <div className="bg-gradient-to-r from-red-600 to-red-700 text-white p-4">
+        <div className="bg-gradient-to-r from-red-600 to-red-700 text-white p-3 sm:p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Book className="w-5 h-5" />
-              <h3 className="font-semibold">Tài liệu tham khảo</h3>
+              <Book className="w-4 h-4 sm:w-5 sm:h-5" />
+              <h3 className="font-semibold text-sm sm:text-base">Tài liệu tham khảo</h3>
             </div>
             <div className="flex items-center gap-2">
               {sourceReferences.length > 0 && (
@@ -112,7 +112,7 @@ const DocumentSidebar: React.FC<DocumentSidebarProps> = ({
         </div>
 
         {/* Content */}
-        <div className="h-[calc(100%-120px)] overflow-y-auto p-3">
+        <div className="h-[calc(100%-120px)] overflow-y-auto p-2 sm:p-3">
           {sourceReferences.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-gray-400">
               <FileText className="w-12 h-12 mb-3 opacity-50" />

@@ -5,7 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import AdminSidebar from './AdminSidebar';
 import Image from 'next/image';
-import { LogOut, Menu, X, Home, Loader2 } from 'lucide-react';
+import { LogOut, Menu, X, Home, Loader2, Star } from 'lucide-react';
 import { useLanguage } from '@/i18n/LanguageContext';
 import LanguageSwitcher from '@/i18n/LanguageSwitcher';
 
@@ -48,10 +48,10 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
   // Show loading spinner
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-red-50 via-gray-50 to-blue-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-red-900 via-red-800 to-red-900 flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="w-10 h-10 animate-spin text-red-600 mx-auto mb-4" />
-          <p className="text-gray-600">{t('loading')}</p>
+          <Loader2 className="w-10 h-10 animate-spin text-yellow-400 mx-auto mb-4" />
+          <p className="text-yellow-200">{t('loading')}</p>
         </div>
       </div>
     );
@@ -62,70 +62,82 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-red-50 via-gray-50 to-blue-50">
+    <div className="min-h-screen bg-gradient-to-br from-red-900 via-red-800 to-red-900">
+      {/* Decorative Background Elements */}
+      <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-96 h-96 bg-yellow-500/10 rounded-full blur-3xl"></div>
+        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-yellow-500/10 rounded-full blur-3xl"></div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-red-600/20 rounded-full blur-3xl"></div>
+        {/* Stars decoration */}
+        <Star className="absolute top-20 right-20 w-16 h-16 text-yellow-400/40 fill-yellow-400/40" />
+        <Star className="absolute top-40 right-40 w-8 h-8 text-yellow-400/30 fill-yellow-400/30" />
+        <Star className="absolute bottom-40 left-20 w-12 h-12 text-yellow-400/30 fill-yellow-400/30" />
+      </div>
       {/* Top Header */}
-      <header className="bg-white shadow-md border-b-4 border-red-600 fixed top-0 left-0 right-0 z-30">
-        <div className="flex items-center justify-between h-16 px-4">
-          <div className="flex items-center space-x-4">
+      <header className="bg-gradient-to-r from-red-900/95 via-red-800/95 to-red-900/95 backdrop-blur-md shadow-xl border-b border-yellow-500/30 fixed top-0 left-0 right-0 z-30">
+        <div className="flex items-center justify-between h-14 sm:h-16 px-2 sm:px-4">
+          <div className="flex items-center space-x-2 sm:space-x-4 min-w-0 flex-1">
             <button
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="hidden lg:block p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="hidden lg:block p-1.5 sm:p-2 hover:bg-yellow-500/20 rounded-lg transition-colors"
             >
-              <Menu className="w-5 h-5 text-gray-600" />
+              <Menu className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-200" />
             </button>
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="lg:hidden p-1.5 sm:p-2 hover:bg-yellow-500/20 rounded-lg transition-colors flex-shrink-0"
             >
               {isMobileMenuOpen ? (
-                <X className="w-5 h-5 text-gray-600" />
+                <X className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-200" />
               ) : (
-                <Menu className="w-5 h-5 text-gray-600" />
+                <Menu className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-200" />
               )}
             </button>
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
               <Image
                 src="/assests/logo-main.png"
                 alt="Logo"
-                width={40}
-                height={40}
-                className="object-contain"
+                width={32}
+                height={32}
+                className="w-8 h-8 sm:w-10 sm:h-10 object-contain flex-shrink-0"
               />
-              <div>
-                <h1 className="text-lg font-bold text-gray-900">Quản trị hệ thống</h1>
-                <p className="text-xs text-gray-600 hidden sm:block">Trường ĐH An ninh Nhân dân</p>
+              <div className="min-w-0 flex-1">
+                <h1 className="text-sm sm:text-lg font-bold text-white truncate">Quản trị hệ thống</h1>
+                <p className="text-xs text-yellow-200/80 hidden md:block truncate">Trường ĐH An ninh Nhân dân</p>
               </div>
             </div>
           </div>
-          <div className="flex items-center space-x-4">
-            <div className="hidden sm:block text-right">
-              <p className="text-sm font-medium text-gray-900">Admin</p>
-              <p className="text-xs text-gray-600">Quản trị viên</p>
+          <div className="flex items-center space-x-1 sm:space-x-2 md:space-x-4 flex-shrink-0">
+            <div className="hidden md:block text-right">
+              <p className="text-sm font-medium text-white">Admin</p>
+              <p className="text-xs text-yellow-200/80">Quản trị viên</p>
             </div>
-            <LanguageSwitcher />
+            <div className="hidden sm:block">
+              <LanguageSwitcher />
+            </div>
             <Link
               href="/"
-              className="flex items-center space-x-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
+              className="flex items-center space-x-1 sm:space-x-2 px-2 sm:px-3 py-1.5 sm:py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
               title={t('backToHome')}
             >
-              <Home className="w-4 h-4" />
-              <span className="hidden sm:inline">{t('backToHome')}</span>
+              <Home className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="hidden md:inline text-sm">{t('backToHome')}</span>
             </Link>
             <button
               onClick={handleLogout}
-              className="flex items-center space-x-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors shadow-sm"
+              className="flex items-center space-x-1 sm:space-x-2 px-2 sm:px-4 py-1.5 sm:py-2 bg-yellow-500 hover:bg-yellow-600 text-red-900 rounded-lg transition-colors shadow-sm font-medium"
             >
-              <LogOut className="w-4 h-4" />
-              <span className="hidden sm:inline">{t('logout')}</span>
+              <LogOut className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline text-sm">{t('logout')}</span>
             </button>
           </div>
         </div>
       </header>
 
-      <div className="flex pt-16 min-h-screen">
+      <div className="flex pt-14 sm:pt-16 min-h-screen">
         {/* Sidebar - Desktop */}
         <aside
-          className={`hidden lg:block fixed left-0 top-16 bottom-0 bg-white shadow-lg border-r border-gray-200 transition-all duration-300 z-20 ${
+          className={`hidden lg:block fixed left-0 top-14 sm:top-16 bottom-0 bg-white shadow-lg border-r border-gray-200 transition-all duration-300 z-20 ${
             isSidebarOpen ? 'w-64' : 'w-0 overflow-hidden'
           }`}
         >
@@ -142,7 +154,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
 
         {/* Sidebar - Mobile */}
         <aside 
-          className={`lg:hidden fixed left-0 top-16 bottom-0 w-64 bg-white shadow-xl z-50 transform transition-transform duration-300 ease-in-out ${
+          className={`lg:hidden fixed left-0 top-14 sm:top-16 bottom-0 w-[280px] max-w-[80vw] bg-white shadow-xl z-50 transform transition-transform duration-300 ease-in-out ${
             isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
           }`}
         >
@@ -151,16 +163,16 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
 
         {/* Main Content */}
         <main
-          className={`flex-1 min-h-[calc(100vh-4rem)] transition-all duration-300 ${
+          className={`flex-1 min-h-[calc(100vh-3.5rem)] sm:min-h-[calc(100vh-4rem)] transition-all duration-300 ${
             isSidebarOpen ? 'lg:ml-64' : 'lg:ml-0'
           }`}
         >
-          <div className="p-4 sm:p-6 lg:p-8 min-h-full">
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">{getPageTitle()}</h2>
-              <p className="text-gray-600 mt-1">{t('overview')}</p>
+          <div className="p-2 sm:p-4 md:p-6 lg:p-8 min-h-full">
+            <div className="mb-4 sm:mb-6">
+              <h2 className="text-xl sm:text-2xl font-bold text-white">{getPageTitle()}</h2>
+              <p className="text-yellow-200/80 mt-1 text-sm sm:text-base">{t('overview')}</p>
             </div>
-            <div className="bg-white/50 rounded-xl p-4 min-h-[200px]">
+            <div className="bg-white/95 backdrop-blur-md rounded-lg sm:rounded-xl p-3 sm:p-4 min-h-[200px] shadow-xl border border-white/20">
               {children}
             </div>
           </div>

@@ -17,7 +17,8 @@ import { getDocumentUrl } from '@/lib/supabase';
 
 type ViewMode = 'grid' | 'list';
 
-const ITEMS_PER_PAGE = 5;
+const ITEMS_PER_PAGE_GRID = 9;  // 3x3 grid
+const ITEMS_PER_PAGE_LIST = 10;
 
 // Confirm modal state type
 interface ConfirmState {
@@ -113,16 +114,17 @@ const DocumentsPage = () => {
     return matchesSearch && matchesCategory;
   });
 
-  // Pagination
-  const totalPages = Math.ceil(filteredDocuments.length / ITEMS_PER_PAGE);
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const endIndex = startIndex + ITEMS_PER_PAGE;
+  // Pagination - different items per page for grid vs list
+  const itemsPerPage = viewMode === 'grid' ? ITEMS_PER_PAGE_GRID : ITEMS_PER_PAGE_LIST;
+  const totalPages = Math.ceil(filteredDocuments.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
   const paginatedDocuments = filteredDocuments.slice(startIndex, endIndex);
 
-  // Reset to page 1 when filter changes
+  // Reset to page 1 when filter or view mode changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, selectedCategory]);
+  }, [searchTerm, selectedCategory, viewMode]);
 
   // Selection handlers
   const handleSelectAll = () => {
@@ -309,77 +311,84 @@ const DocumentsPage = () => {
     <AdminLayout>
       <div className="space-y-6">
         {/* Action Bar */}
-        <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6">
-          <div className="flex flex-col lg:flex-row gap-4">
+        <div className="bg-white rounded-xl shadow-md border border-gray-200 p-4 xs:p-6">
+          <div className="flex flex-col lg:flex-row gap-3 xs:gap-4">
             {/* Search */}
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 xs:w-5 xs:h-5" />
               <input
                 type="text"
                 placeholder="Tìm kiếm tài liệu..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-900"
+                className="w-full pl-9 xs:pl-10 pr-4 py-2.5 xs:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-900 text-sm xs:text-base"
               />
             </div>
 
             {/* Category Filter & Actions */}
-            <div className="flex items-center space-x-3">
-              <Filter className="w-5 h-5 text-gray-400" />
-              <select
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-900"
-              >
-                {categories.map(cat => (
-                  <option key={cat} value={cat}>
-                    {getCategoryLabel(cat)}
-                  </option>
-                ))}
-              </select>
-
-              <button
-                onClick={fetchDocuments}
-                disabled={isLoading}
-                className="p-3 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                title="Làm mới"
-              >
-                <RefreshCw className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
-              </button>
-
-              {/* View Toggle */}
-              <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden">
-                <button
-                  onClick={() => setViewMode('grid')}
-                  className={`p-3 transition-colors ${
-                    viewMode === 'grid' 
-                      ? 'bg-red-600 text-white' 
-                      : 'bg-white text-gray-600 hover:bg-gray-100'
-                  }`}
-                  title="Hiển thị dạng lưới"
+            <div className="flex flex-col xs:flex-row items-stretch xs:items-center gap-2 xs:gap-3">
+              {/* Category Filter */}
+              <div className="flex items-center gap-2 xs:gap-3">
+                <Filter className="w-4 h-4 xs:w-5 xs:h-5 text-gray-400 hidden xs:block" />
+                <select
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className="flex-1 xs:flex-none px-3 xs:px-4 py-2.5 xs:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-900 text-sm xs:text-base"
                 >
-                  <LayoutGrid className="w-5 h-5" />
-                </button>
-                <button
-                  onClick={() => setViewMode('list')}
-                  className={`p-3 transition-colors ${
-                    viewMode === 'list' 
-                      ? 'bg-red-600 text-white' 
-                      : 'bg-white text-gray-600 hover:bg-gray-100'
-                  }`}
-                  title="Hiển thị dạng danh sách"
-                >
-                  <List className="w-5 h-5" />
-                </button>
+                  {categories.map(cat => (
+                    <option key={cat} value={cat}>
+                      {getCategoryLabel(cat)}
+                    </option>
+                  ))}
+                </select>
               </div>
 
-              <button 
-                onClick={() => setIsUploadModalOpen(true)}
-                className="px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors flex items-center space-x-2 shadow-sm"
-              >
-                <Plus className="w-4 h-4" />
-                <span className="hidden sm:inline">Thêm mới</span>
-              </button>
+              {/* Action Buttons */}
+              <div className="flex items-center gap-2 xs:gap-3">
+                <button
+                  onClick={fetchDocuments}
+                  disabled={isLoading}
+                  className="p-2.5 xs:p-3 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                  title="Làm mới"
+                >
+                  <RefreshCw className={`w-4 h-4 xs:w-5 xs:h-5 ${isLoading ? 'animate-spin' : ''}`} />
+                </button>
+
+                {/* View Toggle */}
+                <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden">
+                  <button
+                    onClick={() => setViewMode('grid')}
+                    className={`p-2.5 xs:p-3 transition-colors ${
+                      viewMode === 'grid' 
+                        ? 'bg-red-600 text-white' 
+                        : 'bg-white text-gray-600 hover:bg-gray-100'
+                    }`}
+                    title="Hiển thị dạng lưới"
+                  >
+                    <LayoutGrid className="w-4 h-4 xs:w-5 xs:h-5" />
+                  </button>
+                  <button
+                    onClick={() => setViewMode('list')}
+                    className={`p-2.5 xs:p-3 transition-colors ${
+                      viewMode === 'list' 
+                        ? 'bg-red-600 text-white' 
+                        : 'bg-white text-gray-600 hover:bg-gray-100'
+                    }`}
+                    title="Hiển thị dạng danh sách"
+                  >
+                    <List className="w-4 h-4 xs:w-5 xs:h-5" />
+                  </button>
+                </div>
+
+                <button 
+                  onClick={() => setIsUploadModalOpen(true)}
+                  className="px-3 xs:px-4 py-2.5 xs:py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors flex items-center space-x-2 shadow-sm text-sm xs:text-base"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span className="hidden xs:inline">Thêm mới</span>
+                  <span className="xs:hidden">Thêm</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -399,46 +408,46 @@ const DocumentsPage = () => {
         )}
 
         {/* Statistics */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-white rounded-lg shadow-md border border-gray-200 p-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 xs:gap-4">
+          <div className="bg-white rounded-lg shadow-md border border-gray-200 p-3 xs:p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Tổng tài liệu</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">{stats.total}</p>
+                <p className="text-xs xs:text-sm text-gray-600">Tổng tài liệu</p>
+                <p className="text-xl xs:text-2xl font-bold text-gray-900 mt-1">{stats.total}</p>
               </div>
-              <FileText className="w-8 h-8 text-blue-500" />
+              <FileText className="w-6 h-6 xs:w-8 xs:h-8 text-blue-500" />
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-md border border-gray-200 p-4">
+          <div className="bg-white rounded-lg shadow-md border border-gray-200 p-3 xs:p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Đang hoạt động</p>
-                <p className="text-2xl font-bold text-green-600 mt-1">{stats.active}</p>
+                <p className="text-xs xs:text-sm text-gray-600">Đang hoạt động</p>
+                <p className="text-xl xs:text-2xl font-bold text-green-600 mt-1">{stats.active}</p>
               </div>
-              <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse" />
+              <div className="w-2 h-2 xs:w-3 xs:h-3 bg-green-500 rounded-full animate-pulse" />
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-md border border-gray-200 p-4">
+          <div className="bg-white rounded-lg shadow-md border border-gray-200 p-3 xs:p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Tổng chunks</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">{stats.totalChunks}</p>
+                <p className="text-xs xs:text-sm text-gray-600">Tổng chunks</p>
+                <p className="text-xl xs:text-2xl font-bold text-gray-900 mt-1">{stats.totalChunks}</p>
               </div>
-              <Database className="w-8 h-8 text-purple-500" />
+              <Database className="w-6 h-6 xs:w-8 xs:h-8 text-purple-500" />
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-md border border-gray-200 p-4">
+          <div className="bg-white rounded-lg shadow-md border border-gray-200 p-3 xs:p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Dung lượng</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">
+                <p className="text-xs xs:text-sm text-gray-600">Dung lượng</p>
+                <p className="text-lg xs:text-2xl font-bold text-gray-900 mt-1">
                   {formatFileSize(stats.totalSize)}
                 </p>
               </div>
-              <HardDrive className="w-8 h-8 text-yellow-500" />
+              <HardDrive className="w-6 h-6 xs:w-8 xs:h-8 text-yellow-500" />
             </div>
           </div>
         </div>
@@ -456,19 +465,20 @@ const DocumentsPage = () => {
           <>
             {/* Grid View */}
             {viewMode === 'grid' && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredDocuments.map((doc) => (
-                  <div 
-                    key={doc.id} 
-                    className="bg-white rounded-xl shadow-md border border-gray-200 p-6 hover:shadow-lg transition-all"
-                  >
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
-                        <FileText className="w-6 h-6 text-red-600" />
-                      </div>
-                      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                        doc.status === 'active'
-                          ? 'bg-green-100 text-green-800'
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 xs:gap-6">
+                  {paginatedDocuments.map((doc) => (
+                    <div 
+                      key={doc.id} 
+                      className="bg-white rounded-lg xs:rounded-xl shadow-md border border-gray-200 p-4 xs:p-6 hover:shadow-lg transition-all"
+                    >
+                      <div className="flex items-start justify-between mb-3 xs:mb-4">
+                        <div className="w-10 h-10 xs:w-12 xs:h-12 bg-red-100 rounded-lg flex items-center justify-center">
+                          <FileText className="w-5 h-5 xs:w-6 xs:h-6 text-red-600" />
+                        </div>
+                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                          doc.status === 'active'
+                            ? 'bg-green-100 text-green-800'
                           : doc.status === 'processing'
                           ? 'bg-yellow-100 text-yellow-800'
                           : doc.status === 'pending'
@@ -484,35 +494,35 @@ const DocumentsPage = () => {
                       </span>
                     </div>
 
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-2" title={doc.name}>
+                    <h3 className="text-base xs:text-lg font-semibold text-gray-900 mb-2 line-clamp-2" title={doc.name}>
                       {doc.name}
                     </h3>
 
-                    <div className="space-y-2 mb-4">
-                      <div className="flex items-center justify-between text-sm">
+                    <div className="space-y-1.5 xs:space-y-2 mb-3 xs:mb-4">
+                      <div className="flex items-center justify-between text-xs xs:text-sm">
                         <span className="text-gray-600">Danh mục:</span>
-                        <span className="font-medium text-gray-900">{doc.category}</span>
+                        <span className="font-medium text-gray-900 truncate ml-2">{doc.category}</span>
                       </div>
-                      <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center justify-between text-xs xs:text-sm">
                         <span className="text-gray-600">Dung lượng:</span>
                         <span className="font-medium text-gray-900">{doc.size_formatted}</span>
                       </div>
-                      <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center justify-between text-xs xs:text-sm">
                         <span className="text-gray-600">Chunks:</span>
                         <span className="font-medium text-gray-900">{doc.chunks || 0}</span>
                       </div>
-                      <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center justify-between text-xs xs:text-sm">
                         <span className="text-gray-600">Ngày tải lên:</span>
-                        <span className="font-medium text-gray-900">{doc.uploadDate}</span>
+                        <span className="font-medium text-gray-900 text-xs">{doc.uploadDate}</span>
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+                    <div className="flex items-center justify-between pt-3 xs:pt-4 border-t border-gray-200">
                       {/* Toggle Active Button */}
                       <button 
                         onClick={() => handleToggleActive(doc.name, doc.is_active)}
                         disabled={togglingId === doc.name || doc.status === 'pending'}
-                        className={`p-2 rounded-lg transition-colors disabled:opacity-50 ${
+                        className={`p-1.5 xs:p-2 rounded-lg transition-colors disabled:opacity-50 ${
                           doc.is_active === false 
                             ? 'text-gray-500 hover:bg-gray-100' 
                             : 'text-green-600 hover:bg-green-50'
@@ -520,43 +530,126 @@ const DocumentsPage = () => {
                         title={doc.is_active === false ? 'Bật tài liệu' : 'Tắt tài liệu'}
                       >
                         {togglingId === doc.name ? (
-                          <Loader2 className="w-5 h-5 animate-spin" />
+                          <Loader2 className="w-4 h-4 xs:w-5 xs:h-5 animate-spin" />
                         ) : doc.is_active === false ? (
-                          <PowerOff className="w-5 h-5" />
+                          <PowerOff className="w-4 h-4 xs:w-5 xs:h-5" />
                         ) : (
-                          <Power className="w-5 h-5" />
+                          <Power className="w-4 h-4 xs:w-5 xs:h-5" />
                         )}
                       </button>
                       <button 
                         onClick={() => handleView(doc.name)}
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" 
+                        className="p-1.5 xs:p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" 
                         title="Xem"
                       >
-                        <Eye className="w-5 h-5" />
+                        <Eye className="w-4 h-4 xs:w-5 xs:h-5" />
                       </button>
                       <button 
                         onClick={() => handleDownload(doc.name)}
-                        className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors" 
+                        className="p-1.5 xs:p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors" 
                         title="Tải xuống"
                       >
-                        <Download className="w-5 h-5" />
+                        <Download className="w-4 h-4 xs:w-5 xs:h-5" />
                       </button>
                       <button 
                         onClick={() => handleDelete(doc.name)}
                         disabled={deletingId === doc.name}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50" 
+                        className="p-1.5 xs:p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50" 
                         title="Xóa"
                       >
                         {deletingId === doc.name ? (
-                          <Loader2 className="w-5 h-5 animate-spin" />
+                          <Loader2 className="w-4 h-4 xs:w-5 xs:h-5 animate-spin" />
                         ) : (
-                          <Trash2 className="w-5 h-5" />
+                          <Trash2 className="w-4 h-4 xs:w-5 xs:h-5" />
                         )}
                       </button>
                     </div>
                   </div>
                 ))}
               </div>
+
+              {/* Grid View Pagination */}
+              {totalPages > 1 && (
+                <div className="mt-4 xs:mt-6 bg-white rounded-xl shadow-md border border-gray-200 px-4 xs:px-6 py-3 xs:py-4 flex flex-col xs:flex-row items-center justify-between gap-3 xs:gap-0">
+                  <p className="text-xs xs:text-sm text-gray-600 order-2 xs:order-1">
+                    <span className="hidden sm:inline">
+                      Hiển thị {startIndex + 1} - {Math.min(endIndex, filteredDocuments.length)} trong tổng số {filteredDocuments.length} tài liệu
+                    </span>
+                    <span className="sm:hidden">
+                      {startIndex + 1}-{Math.min(endIndex, filteredDocuments.length)} / {filteredDocuments.length}
+                    </span>
+                  </p>
+                  <div className="flex items-center gap-1 order-1 xs:order-2">
+                    <button
+                      onClick={() => setCurrentPage(1)}
+                      disabled={currentPage === 1}
+                      className="p-2 text-gray-600 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Trang đầu"
+                    >
+                      <ChevronsLeft className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className="p-2 text-gray-600 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Trang trước"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    
+                    {/* Page Numbers - Hidden on mobile */}
+                    <div className="hidden sm:flex items-center gap-1">
+                      {Array.from({ length: totalPages }, (_, i) => i + 1)
+                        .filter(page => {
+                          if (totalPages <= 5) return true;
+                          if (page === 1 || page === totalPages) return true;
+                          if (Math.abs(page - currentPage) <= 1) return true;
+                          return false;
+                        })
+                        .map((page, index, arr) => (
+                          <React.Fragment key={page}>
+                            {index > 0 && arr[index - 1] !== page - 1 && (
+                              <span className="px-2 text-gray-400">...</span>
+                            )}
+                            <button
+                              onClick={() => setCurrentPage(page)}
+                              className={`min-w-[36px] h-9 px-3 rounded-lg transition-colors ${
+                                currentPage === page
+                                  ? 'bg-red-600 text-white'
+                                  : 'text-gray-600 hover:bg-gray-200'
+                              }`}
+                            >
+                              {page}
+                            </button>
+                          </React.Fragment>
+                        ))}
+                    </div>
+                    
+                    {/* Current Page Indicator - Mobile only */}
+                    <div className="sm:hidden px-3 py-2 text-xs text-gray-700 bg-gray-100 rounded-lg border">
+                      {currentPage} / {totalPages}
+                    </div>
+                    
+                    <button
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                      className="p-2 text-gray-600 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Trang sau"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => setCurrentPage(totalPages)}
+                      disabled={currentPage === totalPages}
+                      className="p-2 text-gray-600 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Trang cuối"
+                    >
+                      <ChevronsRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
+              </>
             )}
 
             {/* List View */}
@@ -564,37 +657,38 @@ const DocumentsPage = () => {
               <div className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
                 {/* Bulk Actions Bar */}
                 {selectedIds.size > 0 && (
-                  <div className="bg-red-50 border-b border-red-200 px-6 py-3 flex items-center justify-between">
+                  <div className="bg-red-50 border-b border-red-200 px-4 xs:px-6 py-3 flex flex-col xs:flex-row xs:items-center justify-between gap-3 xs:gap-0">
                     <span className="text-sm font-medium text-red-800">
                       Đã chọn {selectedIds.size} tài liệu
                     </span>
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => handleBulkToggle(true)}
-                        className="px-3 py-1.5 text-sm bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center gap-1"
+                        className="flex-1 xs:flex-none px-3 py-1.5 text-sm bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center justify-center gap-1"
                       >
-                        <Power className="w-4 h-4" />
-                        Bật
+                        <Power className="w-3 h-3 xs:w-4 xs:h-4" />
+                        <span>Bật</span>
                       </button>
                       <button
                         onClick={() => handleBulkToggle(false)}
-                        className="px-3 py-1.5 text-sm bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors flex items-center gap-1"
+                        className="flex-1 xs:flex-none px-3 py-1.5 text-sm bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors flex items-center justify-center gap-1"
                       >
-                        <PowerOff className="w-4 h-4" />
-                        Tắt
+                        <PowerOff className="w-3 h-3 xs:w-4 xs:h-4" />
+                        <span>Tắt</span>
                       </button>
                       <button
                         onClick={handleBulkDelete}
-                        className="px-3 py-1.5 text-sm bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors flex items-center gap-1"
+                        className="flex-1 xs:flex-none px-3 py-1.5 text-sm bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors flex items-center justify-center gap-1"
                       >
-                        <Trash2 className="w-4 h-4" />
-                        Xóa
+                        <Trash2 className="w-3 h-3 xs:w-4 xs:h-4" />
+                        <span>Xóa</span>
                       </button>
                       <button
                         onClick={clearSelection}
                         className="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-200 rounded-lg transition-colors"
                       >
-                        Bỏ chọn
+                        <span className="hidden xs:inline">Bỏ chọn</span>
+                        <span className="xs:hidden">Bỏ</span>
                       </button>
                     </div>
                   </div>
@@ -755,11 +849,16 @@ const DocumentsPage = () => {
 
                 {/* Pagination */}
                 {totalPages > 1 && (
-                  <div className="bg-gray-50 border-t border-gray-200 px-6 py-4 flex items-center justify-between">
-                    <p className="text-sm text-gray-600">
-                      Hiển thị {startIndex + 1} - {Math.min(endIndex, filteredDocuments.length)} trong tổng số {filteredDocuments.length} tài liệu
+                  <div className="bg-gray-50 border-t border-gray-200 px-4 xs:px-6 py-3 xs:py-4 flex flex-col xs:flex-row items-center justify-between gap-3 xs:gap-0">
+                    <p className="text-xs xs:text-sm text-gray-600 order-2 xs:order-1">
+                      <span className="hidden sm:inline">
+                        Hiển thị {startIndex + 1} - {Math.min(endIndex, filteredDocuments.length)} trong tổng số {filteredDocuments.length} tài liệu
+                      </span>
+                      <span className="sm:hidden">
+                        {startIndex + 1}-{Math.min(endIndex, filteredDocuments.length)} / {filteredDocuments.length}
+                      </span>
                     </p>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 order-1 xs:order-2">
                       <button
                         onClick={() => setCurrentPage(1)}
                         disabled={currentPage === 1}
@@ -777,31 +876,38 @@ const DocumentsPage = () => {
                         <ChevronLeft className="w-4 h-4" />
                       </button>
                       
-                      {/* Page Numbers */}
-                      {Array.from({ length: totalPages }, (_, i) => i + 1)
-                        .filter(page => {
-                          if (totalPages <= 5) return true;
-                          if (page === 1 || page === totalPages) return true;
-                          if (Math.abs(page - currentPage) <= 1) return true;
-                          return false;
-                        })
-                        .map((page, index, arr) => (
-                          <React.Fragment key={page}>
-                            {index > 0 && arr[index - 1] !== page - 1 && (
-                              <span className="px-2 text-gray-400">...</span>
-                            )}
-                            <button
-                              onClick={() => setCurrentPage(page)}
-                              className={`min-w-[36px] h-9 px-3 rounded-lg transition-colors ${
-                                currentPage === page
-                                  ? 'bg-red-600 text-white'
-                                  : 'text-gray-600 hover:bg-gray-200'
-                              }`}
-                            >
-                              {page}
-                            </button>
-                          </React.Fragment>
-                        ))}
+                      {/* Page Numbers - Hidden on mobile */}
+                      <div className="hidden sm:flex items-center gap-1">
+                        {Array.from({ length: totalPages }, (_, i) => i + 1)
+                          .filter(page => {
+                            if (totalPages <= 5) return true;
+                            if (page === 1 || page === totalPages) return true;
+                            if (Math.abs(page - currentPage) <= 1) return true;
+                            return false;
+                          })
+                          .map((page, index, arr) => (
+                            <React.Fragment key={page}>
+                              {index > 0 && arr[index - 1] !== page - 1 && (
+                                <span className="px-2 text-gray-400">...</span>
+                              )}
+                              <button
+                                onClick={() => setCurrentPage(page)}
+                                className={`min-w-[36px] h-9 px-3 rounded-lg transition-colors ${
+                                  currentPage === page
+                                    ? 'bg-red-600 text-white'
+                                    : 'text-gray-600 hover:bg-gray-200'
+                                }`}
+                              >
+                                {page}
+                              </button>
+                            </React.Fragment>
+                          ))}
+                      </div>
+                      
+                      {/* Current Page Indicator - Mobile only */}
+                      <div className="sm:hidden px-3 py-2 text-xs text-gray-700 bg-white rounded-lg border">
+                        {currentPage} / {totalPages}
+                      </div>
                       
                       <button
                         onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
@@ -829,9 +935,9 @@ const DocumentsPage = () => {
 
         {/* Empty State */}
         {!isLoading && filteredDocuments.length === 0 && !error && (
-          <div className="bg-white rounded-xl shadow-md border border-gray-200 p-12 text-center">
-            <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-600 text-lg">
+          <div className="bg-white rounded-lg xs:rounded-xl shadow-md border border-gray-200 p-8 xs:p-12 text-center">
+            <FileText className="w-12 h-12 xs:w-16 xs:h-16 text-gray-400 mx-auto mb-3 xs:mb-4" />
+            <p className="text-gray-600 text-base xs:text-lg mb-2">
               {documents.length === 0 
                 ? 'Chưa có tài liệu nào'
                 : 'Không tìm thấy tài liệu nào'}

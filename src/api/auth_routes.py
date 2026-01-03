@@ -2,8 +2,7 @@
 Authentication routes for JWT token generation
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi import APIRouter, HTTPException, status, Form
 from pydantic import BaseModel
 from typing import Optional
 from src.auth.jwt_handler import create_token_for_user
@@ -68,12 +67,12 @@ def authenticate_user(username: str, password: str):
 
 
 @auth_router.post("/token", response_model=Token)
-async def login(form_data: OAuth2PasswordRequestForm = Depends()):
+async def login(username: str = Form(...), password: str = Form(...)):
     """
     OAuth2 compatible token login endpoint
     Use this endpoint to get an access token
     """
-    user = authenticate_user(form_data.username, form_data.password)
+    user = authenticate_user(username, password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

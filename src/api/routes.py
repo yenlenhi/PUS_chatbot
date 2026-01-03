@@ -624,29 +624,38 @@ async def admin_delete_document(
     filename: str, rag: RAGService = Depends(get_rag_service)
 ):
     """
-    Admin endpoint: Delete a document and its associated data
+    Admin endpoint: Delete a document and its associated data from Supabase Storage
     """
     from pathlib import Path
-    from config.settings import PDF_DIR
+    from config.settings import PDF_DIR, SUPABASE_URL, SUPABASE_SERVICE_KEY
     import urllib.parse
 
     try:
         decoded_filename = urllib.parse.unquote(filename)
         safe_filename = Path(decoded_filename).name
 
-        pdf_dir = Path(PDF_DIR)
-        file_path = pdf_dir / safe_filename
-
-        if not file_path.exists():
-            raise HTTPException(status_code=404, detail="Document not found")
-
-        # Delete from database
+        # Delete from database first
         success = rag.db_service.delete_chunks_by_file(safe_filename)
 
         if success:
-            # Delete physical file
-            file_path.unlink()
-            log.info(f"Deleted document: {safe_filename}")
+            # Try to delete from Supabase Storage
+            try:
+                from supabase import create_client
+
+                if SUPABASE_URL and SUPABASE_SERVICE_KEY:
+                    supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+                    # Delete from 'documents' bucket
+                    result = supabase.storage.from_("documents").remove([safe_filename])
+                    log.info(f"Deleted from Supabase Storage: {safe_filename}")
+            except Exception as storage_error:
+                log.warning(f"Could not delete from Supabase Storage: {storage_error}")
+
+            # Also try to delete local file if exists
+            pdf_dir = Path(PDF_DIR)
+            file_path = pdf_dir / safe_filename
+            if file_path.exists():
+                file_path.unlink()
+                log.info(f"Deleted local file: {safe_filename}")
 
             # Rebuild BM25 index after deletion
             if hasattr(rag, "retrieval_service") and rag.retrieval_service:

@@ -55,13 +55,13 @@ const TimeRangeFilter: React.FC<TimeRangeFilterProps> = ({
     <div className={`relative ${className}`}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center space-x-2 px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500"
+        className="flex items-center space-x-1 sm:space-x-2 px-2 sm:px-4 py-1.5 sm:py-2 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500"
       >
-        <Calendar className="w-4 h-4 text-gray-500" />
-        <span className="text-sm font-medium text-gray-700">
+        <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-500" />
+        <span className="text-xs sm:text-sm font-medium text-gray-700 truncate max-w-[100px] sm:max-w-none">
           {getTimeRangeLabel(value)}
         </span>
-        <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {isOpen && (
@@ -76,7 +76,7 @@ const TimeRangeFilter: React.FC<TimeRangeFilterProps> = ({
           />
 
           {/* Dropdown */}
-          <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
+          <div className="absolute right-0 mt-2 w-56 sm:w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
             {!showCustom ? (
               <div className="py-1">
                 {options.map((option) => (
