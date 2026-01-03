@@ -38,13 +38,13 @@ export async function POST(request: NextRequest) {
         }, { status: 400 });
       }
 
-      // Validate file size (2MB = 2 * 1024 * 1024 bytes)
-      const maxSize = 2 * 1024 * 1024; // 2MB
+      // Validate file size (5MB = 5 * 1024 * 1024 bytes)
+      const maxSize = 5 * 1024 * 1024; // 5MB
       if (file.size > maxSize) {
         const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
         return NextResponse.json({ 
           success: false, 
-          error: `Ảnh "${file.name}" vượt quá 2MB (hiện tại: ${sizeMB}MB)` 
+          error: `Ảnh "${file.name}" vượt quá 5MB (hiện tại: ${sizeMB}MB)` 
         }, { status: 400 });
       }
 

@@ -1252,11 +1252,11 @@ const ChatBotPage = () => {
                         for (const file of filesToProcess) {
                           if (!file.type.startsWith('image/')) continue;
                           
-                          // Validate file size (max 2MB)
-                          const maxSize = 2 * 1024 * 1024; // 2MB
+                          // Validate file size (max 5MB)
+                          const maxSize = 5 * 1024 * 1024; // 5MB
                           if (file.size > maxSize) {
                             const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
-                            alert(`Ảnh "${file.name}" vượt quá 2MB (hiện tại: ${sizeMB}MB). Vui lòng chọn ảnh nhỏ hơn.`);
+                            alert(`Ảnh "${file.name}" vượt quá 5MB (hiện tại: ${sizeMB}MB). Vui lòng chọn ảnh nhỏ hơn.`);
                             continue;
                           }
                           
@@ -1312,11 +1312,11 @@ const ChatBotPage = () => {
                       const file = item.getAsFile();
                       if (!file) continue;
                       
-                      // Validate file size (max 2MB)
-                      const maxSize = 2 * 1024 * 1024; // 2MB
+                      // Validate file size (max 5MB)
+                      const maxSize = 5 * 1024 * 1024; // 5MB
                       if (file.size > maxSize) {
                         const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
-                        alert(`Ảnh paste vượt quá 2MB (hiện tại: ${sizeMB}MB). Vui lòng chọn ảnh nhỏ hơn.`);
+                        alert(`Ảnh paste vượt quá 5MB (hiện tại: ${sizeMB}MB). Vui lòng chọn ảnh nhỏ hơn.`);
                         continue;
                       }
                       
