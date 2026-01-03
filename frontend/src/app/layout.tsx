@@ -18,8 +18,12 @@ export const metadata: Metadata = {
   description: "Trường Đại học An ninh Nhân dân - Cơ sở đào tạo cán bộ an ninh chất lượng cao, đáp ứng yêu cầu bảo vệ an ninh quốc gia trong tình hình mới",
   keywords: "Trường Đại học An ninh Nhân dân, PSU, tuyển sinh, an ninh quốc gia, đào tạo cán bộ",
   icons: {
-    icon: '/assests/logo-main.png',
-    apple: '/assests/logo-main.png',
+    icon: [
+      { url: '/favicon.ico' },
+      { url: '/icon.png', type: 'image/png' },
+    ],
+    apple: '/apple-icon.png',
+    shortcut: '/favicon.ico',
   },
 };
 
@@ -30,11 +34,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="vi">
-      <head>
-        <link rel="icon" href="/assests/logo-main.png" type="image/png" />
-        <link rel="apple-touch-icon" href="/assests/logo-main.png" />
-        <link rel="shortcut icon" href="/assests/logo-main.png" type="image/png" />
-      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
