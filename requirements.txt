@@ -35,8 +35,8 @@ PyMuPDF>=1.24.0
 
 # Database (sqlite3 is built-in with Python)
 
-# Ollama Client
-ollama==0.1.7
+# Ollama Client (using requests instead - no separate package needed)
+# ollama==0.1.7
 
 # Data Processing
 numpy>=1.26.0
