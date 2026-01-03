@@ -1,6 +1,7 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { AlertTriangle, Power, PowerOff, Trash2, X } from 'lucide-react';
 
 export type ConfirmType = 'danger' | 'warning' | 'info';
@@ -30,7 +31,14 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
   icon = 'warning',
   isLoading = false,
 }) => {
-  if (!isOpen) return null;
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
+
+  if (!isOpen || !mounted) return null;
 
   const iconComponents = {
     power: <Power className="w-6 h-6" />,
@@ -59,21 +67,24 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
 
   const styles = typeStyles[type];
 
-  return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
+  const modalContent = (
+    <div className="fixed inset-0 z-[9999] overflow-y-auto">
       {/* Backdrop */}
       <div 
         className="fixed inset-0 bg-black/50 transition-opacity"
         onClick={onClose}
       />
       
-      {/* Modal */}
-      <div className="flex min-h-full items-center justify-center p-4">
-        <div className="relative bg-white rounded-xl shadow-2xl max-w-md w-full transform transition-all animate-in zoom-in-95 fade-in duration-200">
+      {/* Modal - use fixed positioning to ensure it's centered on screen */}
+      <div className="fixed inset-0 flex items-center justify-center p-4">
+        <div 
+          className="relative bg-white rounded-xl shadow-2xl max-w-md w-full transform transition-all animate-in zoom-in-95 fade-in duration-200 mx-4"
+          onClick={(e) => e.stopPropagation()}
+        >
           {/* Close button */}
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            className="absolute top-4 right-4 p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors z-10"
           >
             <X className="w-5 h-5" />
           </button>
@@ -126,6 +137,9 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
       </div>
     </div>
   );
+
+  // Use portal to render modal at document.body level
+  return createPortal(modalContent, document.body);
 };
 
 export default ConfirmModal;

@@ -1,4 +1,5 @@
 """Complete migration script: Create all tables + Import all data to Supabase"""
+
 import psycopg2
 import json
 from pathlib import Path
@@ -53,10 +54,10 @@ CREATE TABLE IF NOT EXISTS embeddings (
     FOREIGN KEY (chunk_id) REFERENCES chunks (id) ON DELETE CASCADE
 );
 
--- Create conversations table
+-- Create conversations table (conversation_id is NOT UNIQUE because one conversation can have multiple messages)
 CREATE TABLE IF NOT EXISTS conversations (
     id SERIAL PRIMARY KEY,
-    conversation_id VARCHAR(255) UNIQUE NOT NULL,
+    conversation_id VARCHAR(255) NOT NULL,
     user_message TEXT NOT NULL,
     assistant_response TEXT NOT NULL,
     sources TEXT,
@@ -222,7 +223,11 @@ CREATE TABLE IF NOT EXISTS memory_summaries (
 """
 
 # Execute each statement separately
-statements = [s.strip() for s in create_tables_sql.split(";") if s.strip() and not s.strip().startswith("--")]
+statements = [
+    s.strip()
+    for s in create_tables_sql.split(";")
+    if s.strip() and not s.strip().startswith("--")
+]
 for stmt in statements:
     try:
         cur.execute(stmt)
@@ -234,7 +239,9 @@ for stmt in statements:
             print(f"  ⚠️  Warning: {str(e)[:60]}")
 
 # Verify tables
-cur.execute("SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename")
+cur.execute(
+    "SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename"
+)
 tables = [r[0] for r in cur.fetchall()]
 print(f"\n  📊 Total tables: {len(tables)}")
 
@@ -245,11 +252,24 @@ print("\n🗑️  STEP 2: Clearing existing data...")
 
 # Delete in reverse order (respecting FK constraints)
 tables_to_clear = [
-    'memory_summaries', 'unanswered_queries', 'topic_classifications',
-    'user_sessions', 'access_logs', 'token_usage', 'feedback',
-    'query_metrics', 'query_document_coverage', 'chunk_performance',
-    'document_history', 'chunk_attachments', 'document_attachments',
-    'conversation_memory', 'bm25_index', 'embeddings', 'conversations', 'chunks'
+    "memory_summaries",
+    "unanswered_queries",
+    "topic_classifications",
+    "user_sessions",
+    "access_logs",
+    "token_usage",
+    "feedback",
+    "query_metrics",
+    "query_document_coverage",
+    "chunk_performance",
+    "document_history",
+    "chunk_attachments",
+    "document_attachments",
+    "conversation_memory",
+    "bm25_index",
+    "embeddings",
+    "conversations",
+    "chunks",
 ]
 
 for table in tables_to_clear:
@@ -266,24 +286,24 @@ print("\n📦 STEP 3: Importing data from export files...")
 
 # Import order (respecting foreign keys)
 import_order = [
-    'chunks',
-    'embeddings',
-    'bm25_index',
-    'conversations',
-    'conversation_memory',
-    'document_attachments',
-    'chunk_attachments',
-    'document_history',
-    'chunk_performance',
-    'query_document_coverage',
-    'query_metrics',
-    'feedback',
-    'token_usage',
-    'access_logs',
-    'user_sessions',
-    'topic_classifications',
-    'unanswered_queries',
-    'memory_summaries',
+    "chunks",
+    "embeddings",
+    "bm25_index",
+    "conversations",
+    "conversation_memory",
+    "document_attachments",
+    "chunk_attachments",
+    "document_history",
+    "chunk_performance",
+    "query_document_coverage",
+    "query_metrics",
+    "feedback",
+    "token_usage",
+    "access_logs",
+    "user_sessions",
+    "topic_classifications",
+    "unanswered_queries",
+    "memory_summaries",
 ]
 
 results = {}
@@ -294,42 +314,45 @@ for table_name in import_order:
     if not file_path.exists():
         print(f"  ⏭️  Skipping {table_name} (file not found)")
         continue
-    
-    with open(file_path, 'r', encoding='utf-8') as f:
+
+    with open(file_path, "r", encoding="utf-8") as f:
         data = json.load(f)
-    
+
     if not data:
         print(f"  ⏭️  Skipping {table_name} (empty data)")
         results[table_name] = 0
         continue
-    
+
     print(f"\n  📥 Importing {table_name} ({len(data)} records)...")
-    
+
     imported = 0
     skipped = 0
-    
+
     try:
         columns = list(data[0].keys())
-        placeholders = ', '.join(['%s'] * len(columns))
-        column_str = ', '.join(columns)
-        
+        placeholders = ", ".join(["%s"] * len(columns))
+        column_str = ", ".join(columns)
+
         # Special handling for embeddings
-        if table_name == 'embeddings' and 'embedding' in columns:
+        if table_name == "embeddings" and "embedding" in columns:
             for i, row in enumerate(data):
                 if i % 200 == 0 and i > 0:
                     print(f"    ✓ {i}/{len(data)}")
-                
-                emb_list = row['embedding']
+
+                emb_list = row["embedding"]
                 if len(emb_list) != 384:
                     skipped += 1
                     continue
-                
+
                 try:
-                    emb_str = '[' + ','.join(str(x) for x in emb_list) + ']'
-                    cur.execute(f"""
+                    emb_str = "[" + ",".join(str(x) for x in emb_list) + "]"
+                    cur.execute(
+                        """
                         INSERT INTO embeddings (id, chunk_id, embedding, created_at)
                         VALUES (%s, %s, %s::vector(384), %s)
-                    """, (row['id'], row['chunk_id'], emb_str, row['created_at']))
+                    """,
+                        (row["id"], row["chunk_id"], emb_str, row["created_at"]),
+                    )
                     imported += 1
                 except Exception as e:
                     if "duplicate" not in str(e).lower():
@@ -339,7 +362,7 @@ for table_name in import_order:
             for i, row in enumerate(data):
                 if i % 500 == 0 and i > 0:
                     print(f"    ✓ {i}/{len(data)}")
-                
+
                 try:
                     values = [row.get(col) for col in columns]
                     sql = f"INSERT INTO {table_name} ({column_str}) VALUES ({placeholders})"
@@ -350,17 +373,22 @@ for table_name in import_order:
                         skipped += 1
                         if skipped <= 2:
                             print(f"    ⚠️  Error: {str(e)[:80]}")
-        
-        print(f"    ✅ Imported {imported} records" + (f" ({skipped} skipped)" if skipped > 0 else ""))
+
+        print(
+            f"    ✅ Imported {imported} records"
+            + (f" ({skipped} skipped)" if skipped > 0 else "")
+        )
         results[table_name] = imported
-        
+
         # Update sequence
-        if 'id' in columns:
+        if "id" in columns:
             try:
-                cur.execute(f"SELECT setval('{table_name}_id_seq', (SELECT COALESCE(MAX(id), 0) FROM {table_name}), true)")
+                cur.execute(
+                    f"SELECT setval('{table_name}_id_seq', (SELECT COALESCE(MAX(id), 0) FROM {table_name}), true)"
+                )
             except:
                 pass
-    
+
     except Exception as e:
         print(f"    ❌ Error: {str(e)[:100]}")
         results[table_name] = f"ERROR: {str(e)[:50]}"
@@ -372,7 +400,9 @@ print("\n" + "=" * 60)
 print("📊 FINAL VERIFICATION:")
 print("=" * 60)
 
-cur.execute("SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename")
+cur.execute(
+    "SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename"
+)
 tables = [r[0] for r in cur.fetchall()]
 
 total_records = 0

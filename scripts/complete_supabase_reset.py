@@ -118,7 +118,7 @@ cur.execute(
     """
 CREATE TABLE conversations (
     id SERIAL PRIMARY KEY,
-    conversation_id VARCHAR(255) UNIQUE NOT NULL,
+    conversation_id VARCHAR(255) NOT NULL,
     user_message TEXT NOT NULL,
     assistant_response TEXT NOT NULL,
     sources TEXT,

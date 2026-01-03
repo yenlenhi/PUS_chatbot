@@ -1,11 +1,237 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import ReactMarkdown from 'react-markdown';
 import AdminLayout from '@/components/admin/AdminLayout';
-import { Search, Filter, Download, Eye, Calendar, User, MessageSquare, RefreshCw, Trash2, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Filter, Download, Eye, Calendar, User, MessageSquare, RefreshCw, Trash2, X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Image as ImageIcon, Copy, Check, RotateCw, Maximize2 } from 'lucide-react';
 import { chatHistoryAPI } from '@/services/api';
 import { ConversationSummary, ConversationDetail, ChatHistoryStats } from '@/types/api';
+
+// Image Modal Component for viewing images in detail (same as chat-bot page)
+interface ImageModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  imageSrc: string;
+  imageAlt?: string;
+  allImages?: string[];
+  currentIndex?: number;
+  onNavigate?: (direction: 'prev' | 'next') => void;
+}
+
+const ImageModal: React.FC<ImageModalProps> = ({ 
+  isOpen, 
+  onClose, 
+  imageSrc, 
+  imageAlt = 'Image',
+  allImages = [],
+  currentIndex = 0,
+  onNavigate
+}) => {
+  const [scale, setScale] = useState(1);
+  const [rotation, setRotation] = useState(0);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [portalMounted, setPortalMounted] = useState(false);
+
+  useEffect(() => {
+    setPortalMounted(true);
+    return () => setPortalMounted(false);
+  }, []);
+
+  useEffect(() => {
+    if (isOpen) {
+      setScale(1);
+      setRotation(0);
+      setPosition({ x: 0, y: 0 });
+    }
+  }, [isOpen, imageSrc]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!isOpen) return;
+      if (e.key === 'Escape') onClose();
+      if (e.key === '+' || e.key === '=') setScale(s => Math.min(s + 0.25, 5));
+      if (e.key === '-') setScale(s => Math.max(s - 0.25, 0.25));
+      if (e.key === 'r') setRotation(r => (r + 90) % 360);
+      if (e.key === '0') { setScale(1); setRotation(0); setPosition({ x: 0, y: 0 }); }
+      if (e.key === 'ArrowLeft' && onNavigate) onNavigate('prev');
+      if (e.key === 'ArrowRight' && onNavigate) onNavigate('next');
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose, onNavigate]);
+
+  const handleWheel = (e: React.WheelEvent) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -0.1 : 0.1;
+    setScale(s => Math.min(Math.max(s + delta, 0.25), 5));
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (scale > 1) {
+      setIsDragging(true);
+      setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y });
+    }
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (isDragging) {
+      setPosition({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y });
+    }
+  };
+
+  const handleMouseUp = () => setIsDragging(false);
+
+  const handleDownload = () => {
+    const link = document.createElement('a');
+    link.href = imageSrc;
+    link.download = `image-${Date.now()}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  if (!isOpen || !portalMounted) return null;
+
+  const modalContent = (
+    <div 
+      className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-sm flex items-center justify-center"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      {/* Control Bar */}
+      <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-white/10 backdrop-blur-md rounded-full px-3 xs:px-4 py-2 flex items-center gap-2 xs:gap-3 z-10">
+        <button
+          onClick={() => setScale(s => Math.max(s - 0.25, 0.25))}
+          className="p-1.5 xs:p-2 rounded-full hover:bg-white/20 text-white transition-colors"
+          title="Thu nhỏ (-)"
+        >
+          <ZoomOut className="w-4 h-4 xs:w-5 xs:h-5" />
+        </button>
+        <span className="text-white text-xs xs:text-sm min-w-[50px] xs:min-w-[60px] text-center font-medium">
+          {Math.round(scale * 100)}%
+        </span>
+        <button
+          onClick={() => setScale(s => Math.min(s + 0.25, 5))}
+          className="p-1.5 xs:p-2 rounded-full hover:bg-white/20 text-white transition-colors"
+          title="Phóng to (+)"
+        >
+          <ZoomIn className="w-4 h-4 xs:w-5 xs:h-5" />
+        </button>
+        <div className="w-px h-5 xs:h-6 bg-white/30" />
+        <button
+          onClick={() => setRotation(r => (r + 90) % 360)}
+          className="p-1.5 xs:p-2 rounded-full hover:bg-white/20 text-white transition-colors"
+          title="Xoay (R)"
+        >
+          <RotateCw className="w-4 h-4 xs:w-5 xs:h-5" />
+        </button>
+        <button
+          onClick={() => { setScale(1); setRotation(0); setPosition({ x: 0, y: 0 }); }}
+          className="p-1.5 xs:p-2 rounded-full hover:bg-white/20 text-white transition-colors"
+          title="Đặt lại (0)"
+        >
+          <Maximize2 className="w-4 h-4 xs:w-5 xs:h-5" />
+        </button>
+        <div className="w-px h-5 xs:h-6 bg-white/30" />
+        <button
+          onClick={handleDownload}
+          className="p-1.5 xs:p-2 rounded-full hover:bg-white/20 text-white transition-colors"
+          title="Tải xuống"
+        >
+          <Download className="w-4 h-4 xs:w-5 xs:h-5" />
+        </button>
+      </div>
+
+      {/* Image counter */}
+      {allImages.length > 1 && (
+        <div className="absolute top-4 left-4 bg-white/10 backdrop-blur-md rounded-full px-3 py-1.5 text-white text-sm font-medium z-10">
+          {currentIndex + 1} / {allImages.length}
+        </div>
+      )}
+
+      {/* Close Button */}
+      <button
+        onClick={onClose}
+        className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors z-10"
+        title="Đóng (Esc)"
+      >
+        <X className="w-5 h-5 xs:w-6 xs:h-6" />
+      </button>
+
+      {/* Navigation Arrows */}
+      {allImages.length > 1 && onNavigate && (
+        <>
+          <button
+            onClick={() => onNavigate('prev')}
+            className="absolute left-2 xs:left-4 top-1/2 -translate-y-1/2 p-2 xs:p-3 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors z-10"
+            title="Ảnh trước (←)"
+          >
+            <ChevronLeft className="w-6 h-6 xs:w-8 xs:h-8" />
+          </button>
+          <button
+            onClick={() => onNavigate('next')}
+            className="absolute right-2 xs:right-4 top-1/2 -translate-y-1/2 p-2 xs:p-3 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors z-10"
+            title="Ảnh sau (→)"
+          >
+            <ChevronRight className="w-6 h-6 xs:w-8 xs:h-8" />
+          </button>
+        </>
+      )}
+
+      {/* Image Container */}
+      <div 
+        className="relative overflow-hidden w-full h-full flex items-center justify-center"
+        onWheel={handleWheel}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+        style={{ cursor: scale > 1 ? (isDragging ? 'grabbing' : 'grab') : 'default' }}
+      >
+        <img
+          src={imageSrc}
+          alt={imageAlt}
+          className="max-w-[90vw] max-h-[85vh] object-contain select-none transition-transform duration-200"
+          style={{
+            transform: `translate(${position.x}px, ${position.y}px) scale(${scale}) rotate(${rotation}deg)`,
+          }}
+          draggable={false}
+        />
+      </div>
+
+      {/* Thumbnail Strip */}
+      {allImages.length > 1 && (
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-white/10 backdrop-blur-md rounded-xl p-2 flex items-center gap-2 max-w-[90vw] overflow-x-auto z-10">
+          {allImages.map((img, idx) => (
+            <button
+              key={idx}
+              onClick={() => onNavigate && (idx < currentIndex ? Array(currentIndex - idx).fill(0).forEach(() => onNavigate('prev')) : Array(idx - currentIndex).fill(0).forEach(() => onNavigate('next')))}
+              className={`flex-shrink-0 w-12 h-12 xs:w-14 xs:h-14 rounded-lg overflow-hidden border-2 transition-all ${
+                idx === currentIndex 
+                  ? 'border-white ring-2 ring-white/50' 
+                  : 'border-transparent hover:border-white/50'
+              }`}
+            >
+              <img src={img} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-cover" />
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Keyboard Shortcuts Hint */}
+      <div className="absolute bottom-20 left-1/2 -translate-x-1/2 text-white/60 text-xs hidden sm:block">
+        <span className="bg-white/10 px-2 py-1 rounded">Cuộn</span> zoom • 
+        <span className="bg-white/10 px-2 py-1 rounded mx-1">R</span> xoay • 
+        <span className="bg-white/10 px-2 py-1 rounded">←→</span> chuyển ảnh • 
+        <span className="bg-white/10 px-2 py-1 rounded ml-1">Esc</span> đóng
+      </div>
+    </div>
+  );
+
+  return createPortal(modalContent, document.body);
+};
 
 const ChatHistoryPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -30,6 +256,17 @@ const ChatHistoryPage = () => {
   
   // Image preview modal
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [previewImageIndex, setPreviewImageIndex] = useState<number>(0);
+  const [allPreviewImages, setAllPreviewImages] = useState<string[]>([]);
+  const [copiedMessageId, setCopiedMessageId] = useState<number | null>(null);
+
+  // Portal mount state
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
 
   const filters = [
     { value: 'all', label: 'Tất cả' },
@@ -128,6 +365,61 @@ const ChatHistoryPage = () => {
       alert('Không thể xuất dữ liệu');
     } finally {
       setExporting(false);
+    }
+  };
+
+  // Open image preview with gallery support
+  const openImagePreview = (imageUrl: string, allImages: string[], currentIndex: number) => {
+    setPreviewImage(imageUrl);
+    setAllPreviewImages(allImages);
+    setPreviewImageIndex(currentIndex);
+  };
+
+  // Navigate images in gallery
+  const navigateImage = (direction: 'prev' | 'next') => {
+    if (allPreviewImages.length <= 1) return;
+    
+    let newIndex = direction === 'next' 
+      ? (previewImageIndex + 1) % allPreviewImages.length
+      : (previewImageIndex - 1 + allPreviewImages.length) % allPreviewImages.length;
+    
+    setPreviewImageIndex(newIndex);
+    setPreviewImage(allPreviewImages[newIndex]);
+  };
+
+  // Close image preview
+  const closeImagePreview = () => {
+    setPreviewImage(null);
+    setAllPreviewImages([]);
+    setPreviewImageIndex(0);
+  };
+
+  // Copy message to clipboard
+  const copyMessage = async (text: string, messageId: number) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedMessageId(messageId);
+      setTimeout(() => setCopiedMessageId(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
+
+  // Download image
+  const downloadImage = async (imageUrl: string) => {
+    try {
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `image-${Date.now()}.jpg`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Failed to download image:', err);
     }
   };
 
@@ -465,10 +757,10 @@ const ChatHistoryPage = () => {
           )}
         </div>
 
-        {/* Detail Modal */}
-        {showDetailModal && selectedConversation && (
-          <div className="fixed inset-0 bg-gray-900 bg-opacity-75 z-50 flex items-center justify-center p-0">
-            <div className="bg-white w-full h-full overflow-hidden flex flex-col">
+        {/* Detail Modal - using Portal for proper centering */}
+        {mounted && showDetailModal && selectedConversation && createPortal(
+          <div className="fixed inset-0 bg-gray-900/80 backdrop-blur-sm z-[9999] flex items-center justify-center">
+            <div className="bg-white w-full h-full sm:w-[95vw] sm:h-[95vh] sm:max-w-6xl sm:rounded-2xl overflow-hidden flex flex-col shadow-2xl">
               {/* Modal Header */}
               <div className="bg-gradient-to-r from-red-600 to-red-700 text-white px-4 xs:px-6 py-3 xs:py-4 flex items-center justify-between">
                 <div className="min-w-0 flex-1">
@@ -512,7 +804,20 @@ const ChatHistoryPage = () => {
                     <div key={index} className="space-y-3 xs:space-y-4">
                       {/* User message */}
                       <div className="flex justify-end">
-                        <div className="max-w-[90%] xs:max-w-[75%] bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-2xl p-3 xs:p-4 shadow-lg">
+                        <div className="max-w-[95%] xs:max-w-[85%] lg:max-w-[75%] bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-2xl p-3 xs:p-4 shadow-lg relative group">
+                          {/* Copy button */}
+                          <button
+                            onClick={() => copyMessage(msg.user_message, msg.id)}
+                            className="absolute top-2 right-2 p-1.5 bg-white bg-opacity-20 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-opacity-30"
+                            title="Sao chép"
+                          >
+                            {copiedMessageId === msg.id ? (
+                              <Check className="w-3 h-3" />
+                            ) : (
+                              <Copy className="w-3 h-3" />
+                            )}
+                          </button>
+                          
                           <div className="flex items-center gap-2 mb-2">
                             <div className="w-6 h-6 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
                               <User className="w-3 h-3" />
@@ -520,31 +825,50 @@ const ChatHistoryPage = () => {
                             <p className="text-xs font-medium text-blue-100">Người dùng</p>
                           </div>
                           
-                          {/* User text message */}
-                          <p className="text-sm xs:text-base break-words leading-relaxed">{msg.user_message}</p>
-                          
-                          {/* User images if any */}
+                          {/* User images - styled like chat-bot page */}
                           {msg.images && msg.images.length > 0 && (
-                            <div className="mt-3 flex flex-wrap gap-2">
+                            <div className="mb-3 flex flex-wrap gap-2 justify-end">
                               {msg.images.map((imageUrl: string, imgIndex: number) => (
                                 <div 
                                   key={imgIndex} 
-                                  className="bg-white bg-opacity-10 rounded-lg p-1 cursor-pointer hover:bg-opacity-20 transition-all"
-                                  onClick={() => setPreviewImage(imageUrl)}
+                                  className="relative group cursor-pointer"
+                                  onClick={() => openImagePreview(imageUrl, msg.images, imgIndex)}
                                 >
-                                  <img 
-                                    src={imageUrl} 
-                                    alt={`Hình ảnh ${imgIndex + 1}`}
-                                    className="w-16 h-16 xs:w-20 xs:h-20 object-cover rounded-md"
-                                    onError={(e) => {
-                                      const target = e.target as HTMLImageElement;
-                                      target.style.display = 'none';
-                                    }}
-                                  />
+                                  <div className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-lg sm:rounded-xl overflow-hidden shadow-lg border-2 border-white/30 hover:border-white/60 transition-all duration-200 hover:shadow-xl bg-blue-400/30">
+                                    <img
+                                      src={imageUrl}
+                                      alt={`Hình ảnh ${imgIndex + 1}`}
+                                      className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
+                                      onError={(e) => {
+                                        const target = e.target as HTMLImageElement;
+                                        target.style.display = 'none';
+                                        const parent = target.parentElement;
+                                        if (parent && !parent.querySelector('.fallback-icon')) {
+                                          const fallback = document.createElement('div');
+                                          fallback.className = 'fallback-icon w-full h-full flex flex-col items-center justify-center text-white/70';
+                                          fallback.innerHTML = '<svg class="w-8 h-8 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg><span class="text-xs">Lỗi</span>';
+                                          parent.appendChild(fallback);
+                                        }
+                                      }}
+                                    />
+                                  </div>
+                                  {/* Zoom overlay */}
+                                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 rounded-xl transition-all duration-200 flex items-center justify-center">
+                                    <ZoomIn className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 drop-shadow-lg" />
+                                  </div>
+                                  {/* Image counter badge */}
+                                  {msg.images.length > 1 && imgIndex === msg.images.length - 1 && (
+                                    <div className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-medium shadow-md">
+                                      {msg.images.length}
+                                    </div>
+                                  )}
                                 </div>
                               ))}
                             </div>
                           )}
+                          
+                          {/* User text message */}
+                          <p className="text-sm xs:text-base break-words leading-relaxed">{msg.user_message}</p>
                           
                           <p className="text-xs text-blue-100 mt-2 opacity-75">{formatDate(msg.timestamp)}</p>
                         </div>
@@ -552,7 +876,20 @@ const ChatHistoryPage = () => {
                       
                       {/* Assistant response */}
                       <div className="flex justify-start">
-                        <div className="max-w-[90%] xs:max-w-[75%] bg-white rounded-2xl p-3 xs:p-4 shadow-lg border border-gray-200">
+                        <div className="max-w-[95%] xs:max-w-[85%] lg:max-w-[75%] bg-white rounded-2xl p-3 xs:p-4 shadow-lg border border-gray-200 relative group">
+                          {/* Copy button */}
+                          <button
+                            onClick={() => copyMessage(msg.assistant_response, msg.id + 1000)}
+                            className="absolute top-2 right-2 p-1.5 bg-gray-100 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-gray-200"
+                            title="Sao chép"
+                          >
+                            {copiedMessageId === msg.id + 1000 ? (
+                              <Check className="w-3 h-3 text-green-600" />
+                            ) : (
+                              <Copy className="w-3 h-3 text-gray-500" />
+                            )}
+                          </button>
+                          
                           <div className="flex items-center gap-2 mb-2">
                             <div className="w-6 h-6 bg-gradient-to-br from-green-400 to-green-500 rounded-full flex items-center justify-center">
                               <MessageSquare className="w-3 h-3 text-white" />
@@ -609,29 +946,20 @@ const ChatHistoryPage = () => {
                 </button>
               </div>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
 
-        {/* Image Preview Modal */}
-        {previewImage && (
-          <div 
-            className="fixed inset-0 bg-black bg-opacity-90 z-[60] flex items-center justify-center p-4"
-            onClick={() => setPreviewImage(null)}
-          >
-            <button
-              onClick={() => setPreviewImage(null)}
-              className="absolute top-4 right-4 p-2 text-white hover:text-gray-300 transition-colors"
-            >
-              <X className="w-8 h-8" />
-            </button>
-            <img 
-              src={previewImage} 
-              alt="Preview"
-              className="max-w-full max-h-full object-contain rounded-lg"
-              onClick={(e) => e.stopPropagation()}
-            />
-          </div>
-        )}
+        {/* Image Modal - using the enhanced ImageModal component */}
+        <ImageModal
+          isOpen={!!previewImage}
+          onClose={closeImagePreview}
+          imageSrc={previewImage || ''}
+          imageAlt="Hình ảnh từ cuộc hội thoại"
+          allImages={allPreviewImages}
+          currentIndex={previewImageIndex}
+          onNavigate={navigateImage}
+        />
       </div>
     </AdminLayout>
   );

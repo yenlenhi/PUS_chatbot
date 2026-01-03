@@ -1,9 +1,8 @@
 import { FeedbackRequest, FeedbackResponse } from '@/types/feedback';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
-
 export async function submitFeedback(request: FeedbackRequest): Promise<FeedbackResponse> {
-  const url = `${API_BASE}/api/v1/feedback`;
+  // Use Next.js API route instead of calling backend directly
+  const url = '/api/feedback';
   const resp = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

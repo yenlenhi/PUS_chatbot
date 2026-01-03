@@ -72,7 +72,7 @@ const FeedbackButtons: React.FC<FeedbackButtonsProps> = ({
   };
 
   const handleSubmitWithComment = async () => {
-    if (!rating) return;
+    if (!rating || isSubmitting) return;
     await submitFeedbackData(rating, comment);
   };
 
@@ -151,17 +151,25 @@ const FeedbackButtons: React.FC<FeedbackButtonsProps> = ({
           <div className="flex gap-2">
             <button
               onClick={handleSubmitWithComment}
-              disabled={isSubmitting}
-              className="px-3 py-1 text-xs bg-red-600 text-white rounded-md hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+              disabled={isSubmitting || !rating}
+              className="px-3 py-1 text-xs bg-red-600 text-white rounded-md hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
+              title={!rating ? 'Vui lòng chọn đánh giá trước' : isSubmitting ? 'Đang gửi...' : 'Gửi phản hồi'}
             >
-              {isSubmitting ? 'Đang gửi...' : 'Gửi phản hồi'}
+              {isSubmitting ? (
+                <>
+                  <span className="inline-block animate-spin rounded-full h-3 w-3 border-b-2 border-white"></span>
+                  Đang gửi...
+                </>
+              ) : (
+                'Gửi phản hồi'
+              )}
             </button>
             <button
               onClick={handleCancelComment}
               disabled={isSubmitting}
-              className="px-3 py-1 text-xs bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 disabled:opacity-50 transition-colors"
+              className="px-3 py-1 text-xs bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 disabled:opacity-50 transition-colors flex items-center gap-1"
             >
-              <X className="w-3 h-3 inline mr-1" />
+              <X className="w-3 h-3" />
               Hủy
             </button>
           </div>
