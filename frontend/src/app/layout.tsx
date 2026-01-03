@@ -17,6 +17,11 @@ export const metadata: Metadata = {
   title: "Trường Đại học An ninh Nhân dân - People's Security University",
   description: "Trường Đại học An ninh Nhân dân - Cơ sở đào tạo cán bộ an ninh chất lượng cao, đáp ứng yêu cầu bảo vệ an ninh quốc gia trong tình hình mới",
   keywords: "Trường Đại học An ninh Nhân dân, PSU, tuyển sinh, an ninh quốc gia, đào tạo cán bộ",
+  icons: {
+    icon: '/favicon.ico',
+    shortcut: '/favicon.ico',
+    apple: '/favicon.ico',
+  },
 };
 
 export default function RootLayout({
@@ -26,11 +31,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="vi">
-      <head>
-        <link rel="icon" href="/assests/Logo-Bo-Cong-An.webp" type="image/webp" />
-        <link rel="shortcut icon" href="/assests/Logo-Bo-Cong-An.webp" type="image/webp" />
-        <link rel="apple-touch-icon" href="/assests/Logo-Bo-Cong-An.webp" />
-      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
