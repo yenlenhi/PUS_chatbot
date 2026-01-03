@@ -1,3 +1,0 @@
-# Additional requirements for Gemini PDF processing
-PyMuPDF>=1.23.0  # For PDF to image conversion
-Pillow>=10.0.0   # For image processing
