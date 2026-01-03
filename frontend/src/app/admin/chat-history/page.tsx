@@ -499,34 +499,49 @@ const ChatHistoryPage = () => {
     <AdminLayout>
       <div className="space-y-6">
         {/* Search and Filter Bar */}
-        <div className="bg-white rounded-xl shadow-md border border-gray-200 p-4 xs:p-6">
-          <div className="flex flex-col lg:flex-row gap-3 xs:gap-4">
-            {/* Search */}
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 xs:w-5 xs:h-5" />
+        <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-5 md:p-6">
+          <div className="flex flex-col gap-4">
+            {/* Search Box */}
+            <div className="relative w-full">
+              <div className="absolute left-0 top-0 bottom-0 flex items-center pl-4 pointer-events-none">
+                <Search className="h-5 w-5 text-gray-400" />
+              </div>
               <input
                 type="text"
-                placeholder="Tìm kiếm theo nội dung..."
+                placeholder="Tìm kiếm theo nội dung cuộc hội thoại..."
                 value={searchTerm}
                 onChange={(e) => {
                   setSearchTerm(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="w-full pl-9 xs:pl-10 pr-4 py-2.5 xs:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-900 text-sm xs:text-base"
+                className="w-full h-12 pl-12 pr-11 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent hover:border-gray-300 transition-all"
               />
+              {searchTerm && (
+                <button
+                  onClick={() => {
+                    setSearchTerm('');
+                    setCurrentPage(1);
+                  }}
+                  className="absolute right-3 top-0 bottom-0 flex items-center p-1 hover:bg-gray-100 rounded transition-colors text-gray-400 hover:text-gray-600"
+                  title="Xóa tìm kiếm"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              )}
             </div>
 
             {/* Filter Controls */}
-            <div className="flex flex-col xs:flex-row items-stretch xs:items-center gap-2 xs:gap-3">
-              <div className="flex items-center space-x-2 xs:space-x-3">
-                <Filter className="w-4 h-4 xs:w-5 xs:h-5 text-gray-400 hidden xs:block" />
+            <div className="flex flex-col sm:flex-row gap-3">
+              {/* Filter Dropdown */}
+              <div className="relative">
+                <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
                 <select
                   value={selectedFilter}
                   onChange={(e) => {
                     setSelectedFilter(e.target.value);
                     setCurrentPage(1);
                   }}
-                  className="flex-1 xs:flex-none px-3 xs:px-4 py-2.5 xs:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-900 text-sm xs:text-base"
+                  className="h-10 pl-9 pr-3 border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent hover:border-gray-300 cursor-pointer transition-all appearance-none bg-white"
                 >
                   {filters.map(filter => (
                     <option key={filter.value} value={filter.value}>
@@ -536,25 +551,26 @@ const ChatHistoryPage = () => {
                 </select>
               </div>
 
-              <div className="flex gap-2 xs:gap-3">
+              {/* Action Buttons */}
+              <div className="flex gap-2 sm:gap-3 sm:ml-auto">
                 <button 
                   onClick={fetchConversations}
-                  className="flex-1 xs:flex-none px-3 xs:px-4 py-2.5 xs:py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors flex items-center justify-center space-x-2 text-sm xs:text-base"
                   disabled={loading}
+                  className="h-10 px-3 sm:px-4 bg-gray-100 hover:bg-gray-200 disabled:bg-gray-50 disabled:cursor-not-allowed text-gray-700 rounded-lg transition-all flex items-center justify-center gap-2 text-sm font-medium"
+                  title="Làm mới dữ liệu"
                 >
                   <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                  <span className="xs:hidden">Làm mới</span>
-                  <span className="hidden xs:inline">Làm mới</span>
+                  <span className="hidden sm:inline">Làm mới</span>
                 </button>
 
                 <button 
                   onClick={handleExport}
-                  className="flex-1 xs:flex-none px-3 xs:px-4 py-2.5 xs:py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors flex items-center justify-center space-x-2 shadow-sm text-sm xs:text-base"
                   disabled={exporting}
+                  className="h-10 px-3 sm:px-4 bg-red-600 hover:bg-red-700 disabled:bg-red-400 disabled:cursor-not-allowed text-white rounded-lg transition-all flex items-center justify-center gap-2 shadow-sm text-sm font-medium"
+                  title="Xuất dữ liệu"
                 >
                   <Download className={`w-4 h-4 ${exporting ? 'animate-pulse' : ''}`} />
-                  <span className="xs:hidden">{exporting ? 'Xuất...' : 'Export'}</span>
-                  <span className="hidden xs:inline">{exporting ? 'Đang xuất...' : 'Export'}</span>
+                  <span className="hidden sm:inline">{exporting ? 'Đang xuất...' : 'Export'}</span>
                 </button>
               </div>
             </div>

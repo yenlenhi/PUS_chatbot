@@ -311,84 +311,87 @@ const DocumentsPage = () => {
     <AdminLayout>
       <div className="space-y-6">
         {/* Action Bar */}
-        <div className="bg-white rounded-xl shadow-md border border-gray-200 p-4 xs:p-6">
-          <div className="flex flex-col lg:flex-row gap-3 xs:gap-4">
-            {/* Search */}
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 xs:w-5 xs:h-5" />
+        <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-5 md:p-6">
+          {/* Top Section: Search */}
+          <div className="mb-4">
+            <div className="relative w-full">
+              <div className="absolute left-0 top-0 bottom-0 flex items-center pl-4 pointer-events-none">
+                <Search className="text-gray-400 w-5 h-5" />
+              </div>
               <input
                 type="text"
-                placeholder="Tìm kiếm tài liệu..."
+                placeholder="Tìm kiếm tài liệu theo tên hoặc nội dung..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-9 xs:pl-10 pr-4 py-2.5 xs:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-900 text-sm xs:text-base"
+                className="w-full h-12 pl-12 pr-4 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent hover:border-gray-300 transition-all"
               />
             </div>
+          </div>
 
-            {/* Category Filter & Actions */}
-            <div className="flex flex-col xs:flex-row items-stretch xs:items-center gap-2 xs:gap-3">
-              {/* Category Filter */}
-              <div className="flex items-center gap-2 xs:gap-3">
-                <Filter className="w-4 h-4 xs:w-5 xs:h-5 text-gray-400 hidden xs:block" />
-                <select
-                  value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="flex-1 xs:flex-none px-3 xs:px-4 py-2.5 xs:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-900 text-sm xs:text-base"
-                >
-                  {categories.map(cat => (
-                    <option key={cat} value={cat}>
-                      {getCategoryLabel(cat)}
-                    </option>
-                  ))}
-                </select>
-              </div>
+          {/* Bottom Section: Filters & Controls */}
+          <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+            {/* Category Filter */}
+            <div className="relative">
+              <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="h-10 pl-9 pr-3 border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent hover:border-gray-300 cursor-pointer transition-all appearance-none bg-white"
+              >
+                {categories.map(cat => (
+                  <option key={cat} value={cat}>
+                    {getCategoryLabel(cat)}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-              {/* Action Buttons */}
-              <div className="flex items-center gap-2 xs:gap-3">
+            {/* Action Buttons - Right Side */}
+            <div className="flex gap-2 sm:ml-auto">
+              <button
+                onClick={fetchDocuments}
+                disabled={isLoading}
+                className="h-10 px-3 bg-gray-100 hover:bg-gray-200 disabled:bg-gray-50 disabled:cursor-not-allowed text-gray-700 rounded-lg transition-all flex items-center gap-2 text-sm font-medium"
+                title="Làm mới"
+              >
+                <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+                <span className="hidden sm:inline">Làm mới</span>
+              </button>
+
+              {/* View Toggle */}
+              <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden">
                 <button
-                  onClick={fetchDocuments}
-                  disabled={isLoading}
-                  className="p-2.5 xs:p-3 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                  title="Làm mới"
+                  onClick={() => setViewMode('grid')}
+                  className={`h-10 px-3 transition-all ${
+                    viewMode === 'grid' 
+                      ? 'bg-red-600 text-white' 
+                      : 'bg-white text-gray-600 hover:bg-gray-50'
+                  }`}
+                  title="Hiển thị dạng lưới"
                 >
-                  <RefreshCw className={`w-4 h-4 xs:w-5 xs:h-5 ${isLoading ? 'animate-spin' : ''}`} />
+                  <LayoutGrid className="w-4 h-4" />
                 </button>
-
-                {/* View Toggle */}
-                <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden">
-                  <button
-                    onClick={() => setViewMode('grid')}
-                    className={`p-2.5 xs:p-3 transition-colors ${
-                      viewMode === 'grid' 
-                        ? 'bg-red-600 text-white' 
-                        : 'bg-white text-gray-600 hover:bg-gray-100'
-                    }`}
-                    title="Hiển thị dạng lưới"
-                  >
-                    <LayoutGrid className="w-4 h-4 xs:w-5 xs:h-5" />
-                  </button>
-                  <button
-                    onClick={() => setViewMode('list')}
-                    className={`p-2.5 xs:p-3 transition-colors ${
-                      viewMode === 'list' 
-                        ? 'bg-red-600 text-white' 
-                        : 'bg-white text-gray-600 hover:bg-gray-100'
-                    }`}
-                    title="Hiển thị dạng danh sách"
-                  >
-                    <List className="w-4 h-4 xs:w-5 xs:h-5" />
-                  </button>
-                </div>
-
-                <button 
-                  onClick={() => setIsUploadModalOpen(true)}
-                  className="px-3 xs:px-4 py-2.5 xs:py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors flex items-center space-x-2 shadow-sm text-sm xs:text-base"
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`h-10 px-3 transition-all ${
+                    viewMode === 'list' 
+                      ? 'bg-red-600 text-white' 
+                      : 'bg-white text-gray-600 hover:bg-gray-50'
+                  }`}
+                  title="Hiển thị dạng danh sách"
                 >
-                  <Plus className="w-4 h-4" />
-                  <span className="hidden xs:inline">Thêm mới</span>
-                  <span className="xs:hidden">Thêm</span>
+                  <List className="w-4 h-4" />
                 </button>
               </div>
+
+              <button 
+                onClick={() => setIsUploadModalOpen(true)}
+                className="h-10 px-3 sm:px-4 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-all flex items-center gap-2 shadow-sm text-sm font-medium"
+              >
+                <Plus className="w-4 h-4" />
+                <span className="hidden sm:inline">Thêm mới</span>
+                <span className="sm:hidden">Thêm</span>
+              </button>
             </div>
           </div>
         </div>
