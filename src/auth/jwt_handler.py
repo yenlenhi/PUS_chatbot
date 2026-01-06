@@ -127,6 +127,26 @@ async def get_current_user(
     return user
 
 
+def require_admin(current_user: Optional[User] = Depends(get_current_user)) -> User:
+    """
+    Dependency to require admin access
+    """
+    if current_user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    if "admin" not in current_user.scopes:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required",
+        )
+
+    return current_user
+
+
 def create_token_for_user(username: str, user_id: str, scopes: list[str] = None) -> str:
     """
     Create an access token for a user

@@ -49,6 +49,7 @@ from src.services.attachment_service import AttachmentService
 from src.services.postgres_database_service import PostgresDatabaseService
 from src.services.supabase_storage_service import get_supabase_storage_service
 from src.utils.logger import log
+from src.auth.jwt_handler import require_admin
 
 # Create router
 router = APIRouter()
@@ -492,7 +493,10 @@ async def get_document_info(filename: str):
 
 
 @router.get("/admin/documents")
-async def admin_list_documents(rag: RAGService = Depends(get_rag_service)):
+async def admin_list_documents(
+    rag: RAGService = Depends(get_rag_service),
+    admin_user=Depends(require_admin),
+):
     """
     Admin endpoint: List all documents with full metadata and statistics
     Gets documents from database (chunks table) - works with both local and Supabase Storage
@@ -621,7 +625,9 @@ async def admin_list_documents(rag: RAGService = Depends(get_rag_service)):
 
 @router.delete("/admin/documents/{filename}")
 async def admin_delete_document(
-    filename: str, rag: RAGService = Depends(get_rag_service)
+    filename: str,
+    rag: RAGService = Depends(get_rag_service),
+    admin_user=Depends(require_admin),
 ):
     """
     Admin endpoint: Delete a document and its associated data from Supabase Storage
@@ -685,7 +691,9 @@ async def admin_delete_document(
 
 @router.patch("/admin/documents/{filename}/toggle-active")
 async def admin_toggle_document_active(
-    filename: str, rag: RAGService = Depends(get_rag_service)
+    filename: str,
+    rag: RAGService = Depends(get_rag_service),
+    admin_user=Depends(require_admin),
 ):
     """
     Admin endpoint: Toggle active status of a document.
@@ -766,6 +774,7 @@ async def admin_upload_document(
     category: str = Form("Khác"),
     use_gemini: bool = Form(True),
     rag: RAGService = Depends(get_rag_service),
+    admin_user=Depends(require_admin),
 ):
     """
     Admin endpoint: Upload and process a PDF document
@@ -957,7 +966,10 @@ async def admin_upload_document(
 
 
 @router.get("/admin/stats")
-async def admin_get_stats(rag: RAGService = Depends(get_rag_service)):
+async def admin_get_stats(
+    rag: RAGService = Depends(get_rag_service),
+    admin_user=Depends(require_admin),
+):
     """
     Admin endpoint: Get dashboard statistics
     """
@@ -1015,6 +1027,7 @@ async def get_chat_history(
     search: str = None,
     status: str = None,
     rag: RAGService = Depends(get_rag_service),
+    admin_user=Depends(require_admin),
 ):
     """
     Get all chat conversations with pagination and filtering
@@ -1055,7 +1068,9 @@ async def get_chat_history(
 
 @router.get("/admin/chat-history/{conversation_id}")
 async def get_conversation_detail(
-    conversation_id: str, rag: RAGService = Depends(get_rag_service)
+    conversation_id: str,
+    rag: RAGService = Depends(get_rag_service),
+    admin_user=Depends(require_admin),
 ):
     """
     Get detailed conversation by ID
@@ -1084,7 +1099,9 @@ async def get_conversation_detail(
 
 @router.delete("/admin/chat-history/{conversation_id}")
 async def delete_conversation(
-    conversation_id: str, rag: RAGService = Depends(get_rag_service)
+    conversation_id: str,
+    rag: RAGService = Depends(get_rag_service),
+    admin_user=Depends(require_admin),
 ):
     """
     Delete a conversation by ID
@@ -1115,7 +1132,10 @@ async def delete_conversation(
 
 
 @router.get("/admin/chat-history/stats/overview")
-async def get_chat_stats(rag: RAGService = Depends(get_rag_service)):
+async def get_chat_stats(
+    rag: RAGService = Depends(get_rag_service),
+    admin_user=Depends(require_admin),
+):
     """
     Get chat history statistics
     """
@@ -1135,6 +1155,7 @@ async def export_chat_history(
     start_date: str = None,
     end_date: str = None,
     rag: RAGService = Depends(get_rag_service),
+    admin_user=Depends(require_admin),
 ):
     """
     Export chat history as JSON
