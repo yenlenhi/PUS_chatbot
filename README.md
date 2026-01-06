@@ -41,6 +41,10 @@ Sao chép file `.env.example` thành `.env` và cấu hình các thông số:
 cp .env.example .env
 ```
 
+**Yêu cầu bảo mật cho JWT**
+- `JWT_SECRET_KEY` là bắt buộc, tối thiểu 32 bytes.
+- Xoay `JWT_SECRET_KEY` định kỳ (và ngay khi nghi ngờ lộ lọt).
+
 ### 4. Cài đặt và chạy Ollama
 
 Tải và cài đặt Ollama từ: https://ollama.ai
