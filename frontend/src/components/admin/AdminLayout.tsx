@@ -23,18 +23,41 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    const auth = sessionStorage.getItem('isAdminAuthenticated');
-    if (auth === 'true') {
-      setIsAuthenticated(true);
-    } else {
-      router.push('/admin');
-    }
-    setIsLoading(false);
+    let isMounted = true;
+
+    const validateSession = async () => {
+      try {
+        const response = await fetch('/api/auth/me');
+        if (response.ok && isMounted) {
+          setIsAuthenticated(true);
+          return;
+        }
+      } catch {
+        // Ignore validation errors
+      }
+
+      if (isMounted) {
+        setIsAuthenticated(false);
+        router.push('/admin');
+      }
+    };
+
+    validateSession().finally(() => {
+      if (isMounted) {
+        setIsLoading(false);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
   }, [router]);
 
   const handleLogout = () => {
-    sessionStorage.removeItem('isAdminAuthenticated');
-    router.push('/admin');
+    fetch('/api/auth/logout', { method: 'POST' }).finally(() => {
+      setIsAuthenticated(false);
+      router.push('/admin');
+    });
   };
 
   const getPageTitle = () => {

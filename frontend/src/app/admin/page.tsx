@@ -17,29 +17,61 @@ const AdminLoginPage = () => {
 
   // Check if already authenticated
   useEffect(() => {
-    const auth = sessionStorage.getItem('isAdminAuthenticated');
-    if (auth === 'true') {
-      router.push('/admin/dashboard');
-    } else {
-      setIsChecking(false);
-    }
+    let isMounted = true;
+
+    const checkSession = async () => {
+      try {
+        const response = await fetch('/api/auth/me');
+        if (response.ok && isMounted) {
+          router.push('/admin/dashboard');
+          return;
+        }
+      } catch {
+        // Ignore session check errors
+      }
+
+      if (isMounted) {
+        setIsChecking(false);
+      }
+    };
+
+    checkSession();
+
+    return () => {
+      isMounted = false;
+    };
   }, [router]);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
 
-    // Simple authentication check
-    if (username === 'admin' && password === 'admin') {
-      // Store authentication status
-      sessionStorage.setItem('isAdminAuthenticated', 'true');
-      // Redirect to dashboard
-      setTimeout(() => {
-        router.push('/admin/dashboard');
-      }, 500);
-    } else {
-      setError('Tên đăng nhập hoặc mật khẩu không đúng!');
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, password, rememberMe }),
+      });
+
+      if (!response.ok) {
+        let message = 'Tên đăng nhập hoặc mật khẩu không đúng!';
+        try {
+          const errorData = await response.json();
+          message = errorData.detail || message;
+        } catch {
+          // Ignore JSON parse error
+        }
+        setError(message);
+        return;
+      }
+
+      router.push('/admin/dashboard');
+    } catch {
+      setError('Không thể kết nối đến server. Vui lòng thử lại.');
+    } finally {
       setIsLoading(false);
     }
   };
