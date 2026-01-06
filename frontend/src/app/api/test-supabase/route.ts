@@ -1,27 +1,26 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-// Test Supabase connection
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const isDev = process.env.NODE_ENV === 'development';
+const isRouteEnabled = process.env.ENABLE_SUPABASE_TEST_ROUTE === 'true';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
+  if (!isDev || !isRouteEnabled) {
+    return new NextResponse(null, { status: 404 });
+  }
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+
   try {
-    console.log('Testing Supabase connection...');
-    console.log('URL:', supabaseUrl);
-    console.log('Anon Key (first 20 chars):', supabaseAnonKey?.substring(0, 20));
-    console.log('Service Key (first 20 chars):', supabaseServiceKey?.substring(0, 20));
-
     // Test with anon key
     const supabaseAnon = createClient(supabaseUrl, supabaseAnonKey);
     
     try {
-      const { data: buckets, error } = await supabaseAnon.storage.listBuckets();
-      console.log('Anon key test - Buckets:', buckets);
-      console.log('Anon key test - Error:', error);
+      await supabaseAnon.storage.listBuckets();
     } catch (e) {
-      console.log('Anon key test failed:', e);
+      // ignore anon failures to proceed with service key test
     }
 
     // Test with service key
@@ -29,8 +28,6 @@ export async function GET(request: NextRequest) {
     
     try {
       const { data: buckets, error } = await supabaseService.storage.listBuckets();
-      console.log('Service key test - Buckets:', buckets);
-      console.log('Service key test - Error:', error);
       
       if (buckets) {
         return NextResponse.json({
@@ -46,7 +43,6 @@ export async function GET(request: NextRequest) {
         }, { status: 500 });
       }
     } catch (e) {
-      console.log('Service key test failed:', e);
       return NextResponse.json({
         success: false,
         error: e instanceof Error ? e.message : 'Unknown error',
