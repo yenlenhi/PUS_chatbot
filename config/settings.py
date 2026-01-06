@@ -180,6 +180,9 @@ JWT_SECRET_KEY = os.getenv(
 )
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
+MAX_FAILED_LOGIN_ATTEMPTS = int(os.getenv("MAX_FAILED_LOGIN_ATTEMPTS", "5"))
+LOCKOUT_MINUTES = int(os.getenv("LOCKOUT_MINUTES", "15"))
+USE_FAKE_USERS = os.getenv("USE_FAKE_USERS", "false").lower() == "true"
 
 # HTTPS Configuration
 HTTPS_ONLY = os.getenv("HTTPS_ONLY", "false").lower() == "true"

@@ -136,6 +136,26 @@ class PostgresDatabaseService:
                     )
                 )
 
+                # Create users table for authentication
+                conn.execute(
+                    text(
+                        """
+                    CREATE TABLE IF NOT EXISTS users (
+                        id SERIAL PRIMARY KEY,
+                        username VARCHAR(255) NOT NULL UNIQUE,
+                        full_name TEXT,
+                        hashed_password TEXT NOT NULL,
+                        disabled BOOLEAN DEFAULT FALSE,
+                        scopes TEXT[],
+                        failed_login_attempts INTEGER DEFAULT 0,
+                        lockout_until TIMESTAMP,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """
+                    )
+                )
+
                 # Create indexes
                 conn.execute(
                     text(
@@ -151,6 +171,9 @@ class PostgresDatabaseService:
                     text(
                         "CREATE INDEX IF NOT EXISTS idx_conversations_id ON conversations(conversation_id)"
                     )
+                )
+                conn.execute(
+                    text("CREATE INDEX IF NOT EXISTS idx_users_username ON users(username)")
                 )
 
                 # Create vector index for similarity search
