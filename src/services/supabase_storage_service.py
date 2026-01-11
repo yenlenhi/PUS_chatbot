@@ -109,6 +109,7 @@ class SupabaseStorageService:
                 "Authorization": f"Bearer {self.service_key}",
                 "apikey": self.service_key,
                 "Content-Type": content_type,
+                "x-upsert": "true",  # Allow overwriting existing files to avoid 409 Duplicate error
             }
 
             # Upload file
