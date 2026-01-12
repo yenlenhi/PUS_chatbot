@@ -74,7 +74,7 @@ server {
 ### Cấu hình
 
 ```env
-# Secret key (sử dụng key mạnh trong production)
+# Secret key (bắt buộc, >= 32 bytes, xoay định kỳ trong production)
 JWT_SECRET_KEY=your-super-secret-key-min-32-characters
 
 # Thuật toán mã hóa
@@ -93,6 +93,8 @@ openssl rand -hex 32
 # Hoặc Python
 python -c "import secrets; print(secrets.token_hex(32))"
 ```
+
+Khuyến nghị xoay (rotate) `JWT_SECRET_KEY` định kỳ và ngay khi nghi ngờ lộ lọt.
 
 ### Đăng Nhập và Lấy Token
 

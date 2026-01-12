@@ -11,7 +11,16 @@ from pydantic import BaseModel
 import os
 
 # JWT Configuration
-SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your-secret-key-change-this-in-production")
+SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+if not SECRET_KEY:
+    raise RuntimeError(
+        "JWT_SECRET_KEY is required. Set a strong secret (>= 32 bytes) in the "
+        "environment before starting the application."
+    )
+if len(SECRET_KEY) < 32:
+    raise RuntimeError(
+        "JWT_SECRET_KEY must be at least 32 bytes long to ensure token security."
+    )
 ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
 
@@ -125,6 +134,26 @@ async def get_current_user(
     )
 
     return user
+
+
+def require_admin(current_user: Optional[User] = Depends(get_current_user)) -> User:
+    """
+    Dependency to require admin access
+    """
+    if current_user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    if "admin" not in current_user.scopes:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required",
+        )
+
+    return current_user
 
 
 def create_token_for_user(username: str, user_id: str, scopes: list[str] = None) -> str:
