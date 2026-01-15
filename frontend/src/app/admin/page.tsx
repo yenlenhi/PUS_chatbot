@@ -25,21 +25,46 @@ const AdminLoginPage = () => {
     }
   }, [router]);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
 
-    // Simple authentication check
-    if (username === 'admin' && password === 'admin') {
-      // Store authentication status
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      
+      const response = await fetch(`${apiUrl}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username,
+          password,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        setError('Tên đăng nhập hoặc mật khẩu không đúng!');
+        setIsLoading(false);
+        return;
+      }
+
+      const data = await response.json();
+      
+      // Store authentication token
       sessionStorage.setItem('isAdminAuthenticated', 'true');
+      sessionStorage.setItem('adminToken', data.access_token);
+      sessionStorage.setItem('username', username);
+      
       // Redirect to dashboard
       setTimeout(() => {
         router.push('/admin/dashboard');
       }, 500);
-    } else {
-      setError('Tên đăng nhập hoặc mật khẩu không đúng!');
+    } catch (err) {
+      console.error('Login error:', err);
+      setError('Lỗi kết nối đến máy chủ. Vui lòng thử lại!');
       setIsLoading(false);
     }
   };
