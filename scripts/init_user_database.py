@@ -101,7 +101,7 @@ def init_user_database():
         log.info("  Roles: admin, user")
         log.info("\nRegular User Account:")
         log.info("  Username: user")
-        log.info("  Password: User123")
+        log.info("  Password: User1234")
         log.info("  Roles: user")
         log.info("\n⚠️  IMPORTANT: Change these passwords in production!")
         log.info("=" * 60)
