@@ -11,10 +11,14 @@ from src.models.user import (
     UserChangePassword,
     UserResponse,
     UserListResponse,
+    UserInDB,
 )
 from src.services.user_service import get_user_service, UserService
-from src.auth import get_current_user, User
+from src.auth import get_current_user
 from src.utils.logger import log
+
+# Use UserInDB as the User type for dependency injection
+User = UserInDB
 
 
 # Create router
