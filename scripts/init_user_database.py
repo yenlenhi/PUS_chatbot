@@ -62,7 +62,7 @@ def init_user_database():
             user_data = UserCreate(
                 username="user",
                 email="user@example.com",
-                password="User123",
+                password="User1234",  # 8 characters minimum
                 full_name="Regular User",
                 disabled=False,
                 roles=["user"],

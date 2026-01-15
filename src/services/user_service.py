@@ -21,7 +21,7 @@ class UserService:
     def create_tables(self):
         """Create users and user_roles tables if they don't exist"""
         try:
-            with self.db.get_connection() as conn:
+            with self.db.engine.connect() as conn:
                 # Create users table
                 conn.execute(
                     text(
@@ -90,7 +90,7 @@ class UserService:
             ValueError: If username or email already exists
         """
         try:
-            with self.db.get_connection() as conn:
+            with self.db.engine.connect() as conn:
                 # Check if username exists
                 result = conn.execute(
                     text("SELECT id FROM users WHERE username = :username"),
@@ -159,7 +159,7 @@ class UserService:
     def get_user_by_id(self, user_id: int) -> Optional[UserResponse]:
         """Get user by ID"""
         try:
-            with self.db.get_connection() as conn:
+            with self.db.engine.connect() as conn:
                 result = conn.execute(
                     text(
                         """
@@ -200,7 +200,7 @@ class UserService:
     def get_user_by_username(self, username: str) -> Optional[UserInDB]:
         """Get user by username (includes hashed password for authentication)"""
         try:
-            with self.db.get_connection() as conn:
+            with self.db.engine.connect() as conn:
                 result = conn.execute(
                     text(
                         """
@@ -243,7 +243,7 @@ class UserService:
     def get_user_by_email(self, email: str) -> Optional[UserResponse]:
         """Get user by email"""
         try:
-            with self.db.get_connection() as conn:
+            with self.db.engine.connect() as conn:
                 result = conn.execute(
                     text(
                         """
@@ -296,7 +296,7 @@ class UserService:
             Tuple of (list of users, total count)
         """
         try:
-            with self.db.get_connection() as conn:
+            with self.db.engine.connect() as conn:
                 # Build query
                 where_clause = ""
                 params = {"skip": skip, "limit": limit}
@@ -359,7 +359,7 @@ class UserService:
     ) -> Optional[UserResponse]:
         """Update user information"""
         try:
-            with self.db.get_connection() as conn:
+            with self.db.engine.connect() as conn:
                 # Check if user exists
                 existing = conn.execute(
                     text("SELECT id FROM users WHERE id = :user_id"),
@@ -425,7 +425,7 @@ class UserService:
     ) -> bool:
         """Change user password"""
         try:
-            with self.db.get_connection() as conn:
+            with self.db.engine.connect() as conn:
                 # Get current hashed password
                 result = conn.execute(
                     text("SELECT hashed_password FROM users WHERE id = :user_id"),
@@ -467,7 +467,7 @@ class UserService:
     def delete_user(self, user_id: int) -> bool:
         """Delete user (soft delete by setting disabled=True)"""
         try:
-            with self.db.get_connection() as conn:
+            with self.db.engine.connect() as conn:
                 result = conn.execute(
                     text(
                         """
