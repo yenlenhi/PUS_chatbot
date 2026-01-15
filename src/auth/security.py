@@ -22,8 +22,8 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
     try:
         # Encode strings to bytes
-        password_bytes = plain_password.encode('utf-8')
-        hash_bytes = hashed_password.encode('utf-8')
+        password_bytes = plain_password.encode("utf-8")
+        hash_bytes = hashed_password.encode("utf-8")
         return bcrypt.checkpw(password_bytes, hash_bytes)
     except Exception:
         return False
@@ -39,7 +39,7 @@ def get_password_hash(password: str) -> str:
     Returns:
         Hashed password string
     """
-    password_bytes = password.encode('utf-8')
+    password_bytes = password.encode("utf-8")
     salt = bcrypt.gensalt(rounds=12)
     hashed = bcrypt.hashpw(password_bytes, salt)
-    return hashed.decode('utf-8')
+    return hashed.decode("utf-8")

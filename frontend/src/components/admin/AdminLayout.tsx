@@ -5,9 +5,10 @@ import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import AdminSidebar from './AdminSidebar';
 import Image from 'next/image';
-import { LogOut, Menu, X, Home, Loader2, Star } from 'lucide-react';
+import { LogOut, Menu, X, Home, Loader2, Star, Clock } from 'lucide-react';
 import { useLanguage } from '@/i18n/LanguageContext';
 import LanguageSwitcher from '@/i18n/LanguageSwitcher';
+import { checkSession, clearSession, isTokenExpiringSoon, getTimeToExpiry } from '@/utils/auth';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -21,20 +22,50 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [sessionWarning, setSessionWarning] = useState(false);
+  const [timeToExpiry, setTimeToExpiry] = useState(0);
 
   useEffect(() => {
-    const auth = sessionStorage.getItem('isAdminAuthenticated');
-    if (auth === 'true') {
-      setIsAuthenticated(true);
-    } else {
-      router.push('/admin');
-    }
+    const validateSession = () => {
+      const session = checkSession();
+      
+      if (session.isAuthenticated) {
+        setIsAuthenticated(true);
+        
+        // Check if session is expiring soon
+        const expiringSoon = isTokenExpiringSoon(30); // 30 minutes warning
+        setSessionWarning(expiringSoon);
+        setTimeToExpiry(getTimeToExpiry());
+      } else {
+        setIsAuthenticated(false);
+        router.push('/admin');
+      }
+    };
+
+    validateSession();
     setIsLoading(false);
+
+    // Check session every minute
+    const interval = setInterval(validateSession, 60 * 1000);
+    
+    return () => clearInterval(interval);
   }, [router]);
 
   const handleLogout = () => {
-    sessionStorage.removeItem('isAdminAuthenticated');
-    router.push('/admin');
+    if (confirm('Bạn có chắc chắn muốn đăng xuất?')) {
+      clearSession();
+      router.push('/admin');
+    }
+  };
+
+  const formatTimeRemaining = (ms: number): string => {
+    const minutes = Math.floor(ms / 60000);
+    const hours = Math.floor(minutes / 60);
+    
+    if (hours > 0) {
+      return `${hours}h ${minutes % 60}m`;
+    }
+    return `${minutes}m`;
   };
 
   const getPageTitle = () => {
@@ -108,6 +139,13 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
             </div>
           </div>
           <div className="flex items-center space-x-1 sm:space-x-2 md:space-x-4 flex-shrink-0">
+            {/* Session Warning */}
+            {sessionWarning && (
+              <div className="flex items-center space-x-1 px-2 py-1 bg-yellow-500/20 text-yellow-200 rounded-lg text-xs border border-yellow-500/30">
+                <Clock className="w-3 h-3" />
+                <span className="hidden sm:inline">Còn {formatTimeRemaining(timeToExpiry)}</span>
+              </div>
+            )}
             <div className="hidden md:block text-right">
               <p className="text-sm font-medium text-white">Admin</p>
               <p className="text-xs text-yellow-200/80">Quản trị viên</p>
