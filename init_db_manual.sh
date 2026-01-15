@@ -1,8 +1,8 @@
-#!/bin/bash
+#!/bin/sh
 
 # Manual Database Initialization Script
 # Run this AFTER the server is successfully deployed
-# Usage: railway run bash init_db_manual.sh
+# Usage: railway run sh init_db_manual.sh
 
 set -e
 

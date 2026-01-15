@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # Simplified Railway Startup Script for Debugging
 set -e
