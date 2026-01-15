@@ -12,21 +12,21 @@ Hệ thống University Chatbot đã được kiểm tra toàn diện về các 
 
 | # | Yêu Cầu Bảo Mật | Trạng Thái | Điểm | Mức Độ |
 |---|-----------------|-----------|------|---------|
-| 1 | Phân quyền người dùng | ⚠️ Cơ bản | 60/100 | MEDIUM |
+| 1 | Phân quyền người dùng | ✅ Hoàn thành | 90/100 | LOW |
 | 2 | Mã hóa dữ liệu | ⚠️ Một phần | 50/100 | HIGH |
 | 3 | Sao lưu dữ liệu | ❌ Thiếu | 30/100 | CRITICAL |
 | 4 | Quản lý phiên đăng nhập | ⚠️ Cơ bản | 55/100 | MEDIUM |
 | 5 | Biện pháp bảo mật khác | ✅ Tốt | 65/100 | LOW |
 
-### **TỔNG ĐIỂM**: 52/100 ⚠️
+### **TỔNG ĐIỂM**: 58/100 ⚠️
 
-**Kết luận**: Hệ thống có foundation bảo mật tốt nhưng **CHƯA PRODUCTION-READY**. Cần khắc phục các vấn đề CRITICAL và HIGH trước khi triển khai.
+**Kết luận**: Hệ thống đã cải thiện đáng kể về phân quyền người dùng. Cần tiếp tục khắc phục các vấn đề về mã hóa dữ liệu và sao lưu trước khi triển khai production.
 
 ---
 
-## 1️⃣ Phân Quyền Người Dùng (60/100) ⚠️
+## 1️⃣ Phân Quyền Người Dùng (90/100) ✅
 
-### ✅ Đã Có
+### ✅ Đã Hoàn Thành
 
 #### **JWT Authentication**
 ```python
@@ -77,12 +77,19 @@ POST /auth/token       # OAuth2 form login
 POST /auth/login       # JSON login
 ```
 
-### ❌ Thiếu / Hạn Chế
+### ✅ Đã Khắc Phục (15/01/2026)
+
+| Vấn Đề | Trạng Thái | Mô Tả |
+|--------|-----------|-------|
+| **User Database** | ✅ DONE | PostgreSQL với bảng `users` và `user_roles` trên Supabase |
+| **User CRUD API** | ✅ DONE | Full API: create/read/update/delete users |
+| **Strong JWT Secret** | ✅ DONE | 64-char hex key được generate |
+| **Password Hashing** | ✅ DONE | Bcrypt với cost factor 12 |
+
+### ⚠️ Còn Hạn Chế
 
 | Vấn Đề | Mức Độ | Mô Tả |
 |--------|--------|-------|
-| **Hardcoded Users** | 🔴 CRITICAL | Users lưu trong `FAKE_USERS_DB`, không có database |
-| **No User CRUD** | 🔴 HIGH | Không có API tạo/sửa/xóa users |
 | **No Password Reset** | 🟡 MEDIUM | Không có flow reset password |
 | **No 2FA** | 🟢 LOW | Không có two-factor authentication |
 | **No Session Tracking** | 🟡 MEDIUM | Không track active sessions |
