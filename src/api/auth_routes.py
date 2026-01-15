@@ -1,12 +1,13 @@
 """
 Authentication routes for JWT token generation
+Now uses PostgreSQL database for user management
 """
 
-from fastapi import APIRouter, HTTPException, status, Form
+from fastapi import APIRouter, HTTPException, status, Form, Depends
 from pydantic import BaseModel
-from typing import Optional
 from src.auth.jwt_handler import create_token_for_user
-from src.auth.security import verify_password
+from src.services.user_service import get_user_service, UserService
+from src.utils.logger import log
 
 auth_router = APIRouter(prefix="/auth", tags=["authentication"])
 
@@ -25,86 +26,71 @@ class LoginRequest(BaseModel):
     password: str
 
 
-class UserCreate(BaseModel):
-    """User creation model"""
-
-    username: str
-    password: str
-    full_name: Optional[str] = None
-
-
-# Fake user database for demonstration
-# In production, replace with real database
-# Pre-hashed passwords to avoid bcrypt version conflicts
-# admin123: $2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYqXc3rKHzC
-# user123: $2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW
-FAKE_USERS_DB = {
-    "admin": {
-        "username": "admin",
-        "full_name": "System Administrator",
-        "hashed_password": "$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYqXc3rKHzC",
-        "disabled": False,
-        "scopes": ["admin", "user"],
-    },
-    "user": {
-        "username": "user",
-        "full_name": "Regular User",
-        "hashed_password": "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW",
-        "disabled": False,
-        "scopes": ["user"],
-    },
-}
-
-
-def authenticate_user(username: str, password: str):
-    """Authenticate a user"""
-    user = FAKE_USERS_DB.get(username)
-    if not user:
-        return False
-    if not verify_password(password, user["hashed_password"]):
-        return False
-    return user
-
-
 @auth_router.post("/token", response_model=Token)
-async def login(username: str = Form(...), password: str = Form(...)):
+async def login(
+    username: str = Form(...),
+    password: str = Form(...),
+    user_service: UserService = Depends(get_user_service),
+):
     """
     OAuth2 compatible token login endpoint
     Use this endpoint to get an access token
+
+    For testing in Swagger UI, use:
+    - Username: admin or user
+    - Password: Admin123 or User123
     """
-    user = authenticate_user(username, password)
+    # Authenticate user from database
+    user = user_service.authenticate_user(username, password)
+
     if not user:
+        log.warning(f"Failed login attempt for username: {username}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    log.info(f"User logged in: {user.username}")
+
     access_token = create_token_for_user(
-        username=user["username"],
-        user_id=user["username"],
-        scopes=user.get("scopes", []),
+        username=user.username,
+        user_id=str(user.id),
+        scopes=user.roles,
     )
 
     return {"access_token": access_token, "token_type": "bearer"}
 
 
 @auth_router.post("/login", response_model=Token)
-async def login_json(login_data: LoginRequest):
+async def login_json(
+    login_data: LoginRequest, user_service: UserService = Depends(get_user_service)
+):
     """
     JSON login endpoint (alternative to OAuth2 form)
+
+    Request body:
+    {
+        "username": "admin",
+        "password": "Admin123"
+    }
     """
-    user = authenticate_user(login_data.username, login_data.password)
+    # Authenticate user from database
+    user = user_service.authenticate_user(login_data.username, login_data.password)
+
     if not user:
+        log.warning(f"Failed login attempt for username: {login_data.username}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
         )
 
+    log.info(f"User logged in: {user.username}")
+
     access_token = create_token_for_user(
-        username=user["username"],
-        user_id=user["username"],
-        scopes=user.get("scopes", []),
+        username=user.username,
+        user_id=str(user.id),
+        scopes=user.roles,
     )
 
     return {"access_token": access_token, "token_type": "bearer"}

@@ -161,6 +161,44 @@ uni_bot/
 └── requirements.txt      # Dependencies
 ```
 
+## Deployment
+
+### Railway + Supabase Deployment
+
+Hệ thống hỗ trợ deploy trên Railway với Supabase PostgreSQL:
+
+1. **Setup Supabase**:
+   - Tạo project trên [Supabase](https://supabase.com)
+   - Enable pgvector extension
+   - Lấy DATABASE_URL và Storage credentials
+
+2. **Setup Railway**:
+   - Connect GitHub repository
+   - Add Redis service
+   - Add Volume mount tại `/data`
+
+3. **Configure Environment**:
+   - Copy template từ `.env.railway`
+   - Set các biến trong Railway Dashboard
+   - **CRITICAL**: Đổi JWT_SECRET_KEY và default passwords
+
+4. **Deploy**:
+   - Railway tự động deploy khi push code
+   - Startup script tự động init database
+   - Monitor logs để verify
+
+📚 **Chi tiết**: [docs/deployment/RAILWAY_SUPABASE_DEPLOYMENT.md](docs/deployment/RAILWAY_SUPABASE_DEPLOYMENT.md)
+
+### Quick Deploy Checklist
+
+- [ ] Supabase project created với pgvector enabled
+- [ ] Railway project với Redis và Volume configured
+- [ ] Environment variables set (DATABASE_URL, SUPABASE_*, JWT_SECRET_KEY, GEMINI_API_KEY)
+- [ ] First deploy successful (check health endpoint)
+- [ ] Default passwords changed (admin/Admin123 → strong password)
+- [ ] PDFs uploaded và embeddings built
+- [ ] Frontend CORS configured trong ALLOWED_ORIGINS
+
 ## Development
 
 ### Chạy tests
