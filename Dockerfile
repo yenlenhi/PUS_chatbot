@@ -10,10 +10,16 @@ FROM python:3.11-slim as model-downloader
 
 WORKDIR /models
 
+# Configure pip for better reliability and timeout handling
+ENV PIP_DEFAULT_TIMEOUT=300
+ENV PIP_NO_CACHE_DIR=1
+ENV PIP_DISABLE_PIP_VERSION_CHECK=1
+
 # Install minimal dependencies for downloading models
-RUN pip install --no-cache-dir \
+# Use CPU-only torch to reduce download size from 670MB to ~100MB
+RUN pip install --timeout 300 --retries 5 \
     sentence-transformers==2.3.1 \
-    torch==2.1.2 \
+    torch==2.1.2+cpu --index-url https://download.pytorch.org/whl/cpu \
     transformers==4.36.2
 
 # Pre-download the Vietnamese SBERT model
@@ -26,6 +32,7 @@ os.environ['HF_HOME'] = '/models/cache'; \
 print('📥 Downloading keepitreal/vietnamese-sbert...'); \
 model = SentenceTransformer('keepitreal/vietnamese-sbert', cache_folder='/models/cache'); \
 print('✅ Model downloaded successfully'); \
+print(f'   Embedding dimension: {model.get_sentence_embedding_dimension()}'); \
 "
 
 # Also download the fallback model
@@ -37,6 +44,7 @@ os.environ['HF_HOME'] = '/models/cache'; \
 print('📥 Downloading fallback model: all-MiniLM-L6-v2...'); \
 model = SentenceTransformer('all-MiniLM-L6-v2', cache_folder='/models/cache'); \
 print('✅ Fallback model downloaded successfully'); \
+print(f'   Embedding dimension: {model.get_sentence_embedding_dimension()}'); \
 "
 
 # ============================================
@@ -67,9 +75,9 @@ ENV TRANSFORMERS_OFFLINE=1
 # Copy requirements first for better caching
 COPY requirements.txt .
 
-# Install Python dependencies
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+# Install Python dependencies with better timeout handling
+RUN pip install --timeout 300 --retries 5 --no-cache-dir --upgrade pip && \
+    pip install --timeout 300 --retries 5 --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY . .

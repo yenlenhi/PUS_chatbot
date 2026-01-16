@@ -70,49 +70,47 @@ class EmbeddingService:
     def _load_model(self):
         """Load the sentence transformer model with offline support"""
         import os
-        
+
         # Set cache directories for offline model loading
-        cache_dir = os.environ.get('TRANSFORMERS_CACHE', '/root/.cache/huggingface')
-        os.environ['TRANSFORMERS_CACHE'] = cache_dir
-        os.environ['HF_HOME'] = cache_dir
-        os.environ['SENTENCE_TRANSFORMERS_HOME'] = cache_dir
-        
+        cache_dir = os.environ.get("TRANSFORMERS_CACHE", "/root/.cache/huggingface")
+        os.environ["TRANSFORMERS_CACHE"] = cache_dir
+        os.environ["HF_HOME"] = cache_dir
+        os.environ["SENTENCE_TRANSFORMERS_HOME"] = cache_dir
+
         # List of models to try (primary + fallbacks)
         models_to_try = [
             self.model_name,  # Primary: keepitreal/vietnamese-sbert
             "all-MiniLM-L6-v2",  # Fallback 1
             "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",  # Fallback 2
         ]
-        
+
         for idx, model_name in enumerate(models_to_try):
             try:
                 if idx == 0:
                     log.info(f"🤖 Loading embedding model: {model_name}")
                 else:
                     log.info(f"🔄 Trying fallback model {idx}: {model_name}")
-                    
+
                 log.info(f"📍 Using device: {self.device}")
                 log.info(f"📁 Cache directory: {cache_dir}")
-                
+
                 # Try to load from cache first (offline mode)
                 self.model = SentenceTransformer(
-                    model_name, 
-                    device=self.device,
-                    cache_folder=cache_dir
+                    model_name, device=self.device, cache_folder=cache_dir
                 )
-                
+
                 # Verify model loaded correctly
                 embedding_dim = self.model.get_sentence_embedding_dimension()
                 log.info(f"✅ Embedding model loaded successfully: {model_name}")
                 log.info(f"   📊 Embedding dimension: {embedding_dim}")
-                
+
                 # Update model name if using fallback
                 if idx > 0:
                     log.warning(f"⚠️ Using fallback model: {model_name}")
                     self.model_name = model_name
-                    
+
                 return  # Success - exit the method
-                
+
             except Exception as e:
                 log.error(f"❌ Failed to load {model_name}: {e}")
                 if idx == len(models_to_try) - 1:

@@ -1,0 +1,53 @@
+# ============================================
+# Lightweight Dockerfile - No Pre-download
+# Models download on first run and cached in volume
+# ============================================
+
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    git \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set environment variables for model cache
+# Railway will persist /root/.cache via volume
+ENV TRANSFORMERS_CACHE=/root/.cache/huggingface
+ENV HF_HOME=/root/.cache/huggingface
+ENV SENTENCE_TRANSFORMERS_HOME=/root/.cache/huggingface
+
+# Configure pip for better reliability
+ENV PIP_DEFAULT_TIMEOUT=300
+ENV PIP_NO_CACHE_DIR=1
+ENV PIP_DISABLE_PIP_VERSION_CHECK=1
+
+# Copy requirements first for better caching
+COPY requirements.txt .
+
+# Install Python dependencies with timeout and retry
+RUN pip install --timeout 300 --retries 5 --upgrade pip && \
+    pip install --timeout 300 --retries 5 -r requirements.txt
+
+# Copy application code
+COPY . .
+
+# Create necessary directories
+RUN mkdir -p data/pdfs data/processed data/embeddings logs
+
+# Set permissions
+RUN chmod -R 755 /app
+
+# Expose port
+EXPOSE 8080
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=90s --retries=3 \
+    CMD curl -f http://localhost:8080/health || exit 1
+
+# Run the application
+CMD ["python", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080", "--workers", "1"]
