@@ -29,7 +29,7 @@ export const VoiceInputButton: React.FC<VoiceInputButtonProps> = ({
       type="button"
       onClick={isListening ? onStop : onStart}
       disabled={disabled}
-      className={`p-3 rounded-xl transition-all duration-200 flex items-center justify-center ${
+      className={`p-2 rounded-xl transition-all duration-200 flex items-center justify-center ${
         isListening
           ? 'bg-red-500 text-white animate-pulse hover:bg-red-600'
           : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -37,9 +37,9 @@ export const VoiceInputButton: React.FC<VoiceInputButtonProps> = ({
       title={isListening ? 'Dừng ghi âm' : 'Nhấn để nói'}
     >
       {isListening ? (
-        <Square className="w-5 h-5" />
+        <Square className="w-4 h-4" />
       ) : (
-        <Mic className="w-5 h-5" />
+        <Mic className="w-4 h-4" />
       )}
     </button>
   );

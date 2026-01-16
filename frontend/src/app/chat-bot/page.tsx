@@ -1279,10 +1279,10 @@ const ChatBotPage = () => {
                   </div>
                 </div>
               )}
-              <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
+              <div className="flex items-center gap-1 sm:gap-2">
                 {/* Enhanced Image Upload Button */}
                 {uploadedImages.length === 0 && (
-                  <label className="group flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-2xl bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 hover:from-indigo-100 hover:to-purple-200 hover:text-indigo-600 transition-all duration-300 cursor-pointer flex-shrink-0 shadow-sm hover:shadow-md hover:scale-105">
+                  <label className="group flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 hover:from-indigo-100 hover:to-purple-200 hover:text-indigo-600 transition-all duration-300 cursor-pointer flex-shrink-0 shadow-sm hover:shadow-md hover:scale-105">
                     <input
                       type="file"
                       accept="image/*"
@@ -1321,7 +1321,7 @@ const ChatBotPage = () => {
                         e.target.value = '';
                       }}
                     />
-                    <ImagePlus className="w-4 h-4 sm:w-5 sm:h-5" />
+                    <ImagePlus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </label>
                 )}
                 {/* Voice Input Button */}
@@ -1386,15 +1386,15 @@ const ChatBotPage = () => {
                         ? (language === 'vi' ? "💭 Mô tả hoặc hỏi về ảnh..." : "💭 Describe or ask about the image...")
                         : (language === 'vi' ? "💬 Nhập câu hỏi hoặc dán ảnh (Ctrl+V)..." : "💬 Type a question or paste an image (Ctrl+V)...")
                   }
-                  className="flex-1 min-w-0 h-10 sm:h-12 md:h-14 px-4 sm:px-5 border-2 border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base font-medium bg-white/80 backdrop-blur-sm shadow-sm hover:shadow-md transition-all duration-300"
+                  className="flex-1 min-w-0 h-8 sm:h-10 px-3 sm:px-4 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm font-medium bg-white/80 backdrop-blur-sm shadow-sm hover:shadow-md transition-all duration-300"
                   disabled={isTyping || isListening}
                 />
                 <button
                   onClick={() => handleSendMessage()}
                   disabled={(!inputMessage.trim() && uploadedImages.length === 0) || isTyping}
-                  className="group flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 text-white rounded-2xl hover:from-blue-600 hover:via-blue-700 hover:to-indigo-700 disabled:bg-gray-400 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transition-all duration-300 flex items-center justify-center shadow-lg hover:shadow-xl hover:scale-105 active:scale-95"
+                  className="group flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-600 hover:via-blue-700 hover:to-indigo-700 disabled:bg-gray-400 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transition-all duration-300 flex items-center justify-center shadow-lg hover:shadow-xl hover:scale-105 active:scale-95"
                 >
-                  <Send className="w-5 h-5 sm:w-6 sm:h-6 group-hover:translate-x-0.5 transition-transform" />
+                  <Send className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-0.5 transition-transform" />
                 </button>
               </div>
               {/* Ultra Compact Footer */}
