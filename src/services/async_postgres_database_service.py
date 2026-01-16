@@ -44,13 +44,18 @@ class AsyncPostgresDatabaseService:
             return
 
         try:
-            # Create async engine
+            # Create async engine with pgbouncer compatibility
+            # statement_cache_size=0 is required for pgbouncer in transaction/statement mode
             self.engine = create_async_engine(
                 self.database_url,
                 echo=False,
                 pool_size=10,
                 max_overflow=20,
                 pool_pre_ping=True,
+                connect_args={
+                    "statement_cache_size": 0,  # Disable prepared statements for pgbouncer
+                    "prepared_statement_cache_size": 0,
+                },
             )
 
             # Create async session factory
