@@ -296,25 +296,33 @@ const BatchUploadModal: React.FC<BatchUploadModalProps> = ({ isOpen, onClose, on
       await uploadSingleFile(file);
     }
 
-    // Check if all files are processed
-    const allProcessed = files.every(f => 
-      f.status === 'completed' || f.status === 'error' || f.status === 'paused'
-    );
-    
-    if (allProcessed) {
-      setIsProcessing(false);
-      processQueueRef.current = false;
+    // Check if all files are processed using functional state update to get latest state
+    setFiles(prevFiles => {
+      const allProcessed = prevFiles.every(f => 
+        f.status === 'completed' || f.status === 'error' || f.status === 'paused'
+      );
       
-      // Auto close if all successful
-      const allSuccessful = files.every(f => f.status === 'completed');
-      if (allSuccessful && files.length > 0) {
-        setTimeout(() => {
-          onUploadSuccess();
-          handleClose();
-        }, 2000);
+      if (allProcessed) {
+        setIsProcessing(false);
+        processQueueRef.current = false;
+        
+        // Auto close if all successful
+        const allSuccessful = prevFiles.every(f => f.status === 'completed');
+        if (allSuccessful && prevFiles.length > 0) {
+          setTimeout(() => {
+            onUploadSuccess();
+            // Reset state and close
+            setFiles([]);
+            setIsProcessing(false);
+            setIsDragging(false);
+            onClose();
+          }, 2000);
+        }
       }
-    }
-  }, [files, uploadSingleFile, onUploadSuccess]);
+      
+      return prevFiles; // Return unchanged state
+    });
+  }, [files, uploadSingleFile, onUploadSuccess, onClose]);
 
   // Start batch upload
   const startBatchUpload = useCallback(() => {

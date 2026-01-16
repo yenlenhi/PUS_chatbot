@@ -98,7 +98,12 @@ else:
     REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
     REDIS_PORT = int(os.getenv("REDIS_PORT", "6379"))
     REDIS_DB = int(os.getenv("REDIS_DB", "0"))
-    REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", None)  # None if no password
+
+# ============================================
+# Rate Limiting Configuration
+# ============================================
+RATE_LIMIT_ENABLED = os.getenv("RATE_LIMIT_ENABLED", "true").lower() == "true"
+REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", None)  # None if no password
 
 REDIS_DECODE_RESPONSES = os.getenv("REDIS_DECODE_RESPONSES", "false").lower() == "true"
 

@@ -11,6 +11,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
+from pathlib import Path
 import time
 import uvicorn
 from src.api.routes import router
@@ -22,6 +23,11 @@ from src.middleware.https_middleware import (
     SecurityHeadersMiddleware,
 )
 from src.middleware.checksum_middleware import ChecksumMiddleware
+from src.middleware.rate_limit_middleware import (
+    RateLimitMiddleware,
+    custom_rate_limit_exceeded_handler,
+)
+from slowapi.errors import RateLimitExceeded
 from src.utils.logger import log
 from config.settings import (
     API_HOST,
@@ -42,6 +48,26 @@ async def lifespan(app: FastAPI):
     # Startup logic
     log.info("Starting University Chatbot API...")
     log.info(f"API documentation available at: http://{API_HOST}:{API_PORT}/docs")
+
+    # Initialize async services
+    try:
+        from src.services.async_postgres_database_service import (
+            get_async_database_service,
+        )
+        from src.services.async_user_service import get_async_user_service
+
+        # Initialize database service
+        log.info("Initializing async database service...")
+        await get_async_database_service()
+
+        # Initialize user service
+        log.info("Initializing async user service...")
+        await get_async_user_service()
+
+        log.info("✅ Async services initialized successfully")
+    except Exception as e:
+        log.error(f"❌ Failed to initialize async services: {e}")
+        # Don't crash the server, continue with sync fallback
 
     # Ensure PDFs from the bundled repo are present in the mounted data volume
     try:
@@ -72,6 +98,16 @@ async def lifespan(app: FastAPI):
     # Shutdown logic
     log.info("Shutting down University Chatbot API...")
 
+    # Close async database connections
+    try:
+        from src.services.async_postgres_database_service import _async_db_service
+
+        if _async_db_service:
+            await _async_db_service.close()
+            log.info("✅ Async database service closed")
+    except Exception as e:
+        log.warning(f"⚠️ Error closing async database service: {e}")
+
 
 app = FastAPI(
     title="University Chatbot API",
@@ -84,6 +120,7 @@ app = FastAPI(
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(HTTPSRedirectMiddleware)
 app.add_middleware(ChecksumMiddleware)
+app.add_middleware(RateLimitMiddleware)
 
 # Add CORS middleware
 app.add_middleware(
@@ -123,6 +160,12 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         status_code=422,
         content={"detail": "Dữ liệu đầu vào không hợp lệ", "errors": exc.errors()},
     )
+
+
+@app.exception_handler(RateLimitExceeded)
+async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
+    """Handle rate limit exceeded errors"""
+    return custom_rate_limit_exceeded_handler(request, exc)
 
 
 @app.exception_handler(Exception)

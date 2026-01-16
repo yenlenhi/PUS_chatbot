@@ -3,10 +3,11 @@ Authentication routes for JWT token generation
 Now uses PostgreSQL database for user management
 """
 
-from fastapi import APIRouter, HTTPException, status, Form, Depends
+from fastapi import APIRouter, HTTPException, status, Form, Depends, Request
 from pydantic import BaseModel
 from src.auth.jwt_handler import create_token_for_user
-from src.services.user_service import get_user_service, UserService
+from src.services.async_user_service import get_async_user_service, AsyncUserService
+from src.middleware.rate_limit_middleware import rate_limit
 from src.utils.logger import log
 
 auth_router = APIRouter(prefix="/auth", tags=["authentication"])
@@ -27,10 +28,12 @@ class LoginRequest(BaseModel):
 
 
 @auth_router.post("/token", response_model=Token)
+@rate_limit("5/minute")  # Limit login attempts to 5 per minute
 async def login(
+    request: Request,
     username: str = Form(...),
     password: str = Form(...),
-    user_service: UserService = Depends(get_user_service),
+    user_service: AsyncUserService = Depends(get_async_user_service),
 ):
     """
     OAuth2 compatible token login endpoint
@@ -41,7 +44,7 @@ async def login(
     - Password: Admin123 or User123
     """
     # Authenticate user from database
-    user = user_service.authenticate_user(username, password)
+    user = await user_service.authenticate_user(username, password)
 
     if not user:
         log.warning(f"Failed login attempt for username: {username}")
@@ -63,8 +66,11 @@ async def login(
 
 
 @auth_router.post("/login", response_model=Token)
+@rate_limit("5/minute")  # Limit login attempts to 5 per minute
 async def login_json(
-    login_data: LoginRequest, user_service: UserService = Depends(get_user_service)
+    request: Request,
+    login_data: LoginRequest,
+    user_service: AsyncUserService = Depends(get_async_user_service),
 ):
     """
     JSON login endpoint (alternative to OAuth2 form)
@@ -76,7 +82,9 @@ async def login_json(
     }
     """
     # Authenticate user from database
-    user = user_service.authenticate_user(login_data.username, login_data.password)
+    user = await user_service.authenticate_user(
+        login_data.username, login_data.password
+    )
 
     if not user:
         log.warning(f"Failed login attempt for username: {login_data.username}")

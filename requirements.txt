@@ -17,6 +17,7 @@ transformers==4.44.2
 # PostgreSQL and pgvector (NEW)
 sqlalchemy==2.0.23
 psycopg2-binary==2.9.9
+asyncpg==0.29.0
 pgvector==0.2.4
 sqlmodel==0.0.14
 
@@ -28,6 +29,9 @@ rank-bm25==0.2.2
 
 # Redis Cache (NEW - for Adaptive Retrieval Layer)
 redis==5.0.1
+
+# Rate Limiting
+slowapi==0.1.9
 
 # PDF Processing
 PyPDF2==3.0.1
@@ -79,3 +83,4 @@ bcrypt>=4.0.1
 cryptography==41.0.7
 python-multipart==0.0.6
 
+slowapi==0.1.9

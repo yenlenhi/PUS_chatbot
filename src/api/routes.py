@@ -48,6 +48,7 @@ from src.services.analytics_service import AnalyticsService
 from src.services.attachment_service import AttachmentService
 from src.services.postgres_database_service import PostgresDatabaseService
 from src.services.supabase_storage_service import get_supabase_storage_service
+from src.middleware.rate_limit_middleware import rate_limit
 from src.utils.logger import log
 
 # Create router
@@ -101,9 +102,10 @@ def get_attachment_service() -> AttachmentService:
 
 
 @router.post("/chat", response_model=ChatResponse)
+@rate_limit("60/minute")  # Limit chat requests to 60 per minute
 async def chat_endpoint(
-    request: ChatRequest,
-    fastapi_request: Request,
+    request: Request,
+    chat_request: ChatRequest,
     background_tasks: BackgroundTasks,
     rag: RAGService = Depends(get_rag_service),
     analytics: AnalyticsService = Depends(get_analytics_service),
@@ -111,17 +113,19 @@ async def chat_endpoint(
     start_time = time.time()
     try:
         log.info(
-            f"Received chat request: {request.message[:50] if request.message else '[Image only]'}..."
+            f"Received chat request: {chat_request.message[:50] if chat_request.message else '[Image only]'}..."
         )
-        log.info(f"Images count: {len(request.images) if request.images else 0}")
+        log.info(
+            f"Images count: {len(chat_request.images) if chat_request.images else 0}"
+        )
 
         # Get RAG response (with images if provided)
         rag_response = rag.generate_answer(
-            query=request.message,
-            conversation_id=request.conversation_id,
-            conversation_history=request.conversation_history,
-            images=request.images,
-            language=request.language or "vi",  # Pass language preference
+            query=chat_request.message,
+            conversation_id=chat_request.conversation_id,
+            conversation_history=chat_request.conversation_history,
+            images=chat_request.images,
+            language=chat_request.language or "vi",  # Pass language preference
         )
 
         # Calculate processing time
@@ -137,7 +141,7 @@ async def chat_endpoint(
             source_references=rag_response.get("source_references", []),
             confidence=rag_response.get("confidence", 0.0),
             conversation_id=rag_response.get(
-                "conversation_id", request.conversation_id or "default"
+                "conversation_id", chat_request.conversation_id or "default"
             ),
             processing_time=processing_time,
             normalization_applied=rag_response.get("normalization_applied", False),
@@ -146,11 +150,11 @@ async def chat_endpoint(
         )
 
         # Track analytics in background (non-blocking)
-        session_id = request.conversation_id or rag_response.get(
+        session_id = chat_request.conversation_id or rag_response.get(
             "conversation_id", "default"
         )
-        ip_address = fastapi_request.client.host if fastapi_request.client else None
-        user_agent = fastapi_request.headers.get("user-agent", "")
+        ip_address = request.client.host if request.client else None
+        user_agent = request.headers.get("user-agent", "")
 
         # Get retrieved documents and scores from rag_response
         retrieved_docs = rag_response.get("sources", [])
@@ -162,7 +166,9 @@ async def chat_endpoint(
             )
 
         # Estimate token counts (rough estimation based on text length)
-        input_tokens = len(request.message.split()) * 2 if request.message else 0
+        input_tokens = (
+            len(chat_request.message.split()) * 2 if chat_request.message else 0
+        )
         output_tokens = len(response.answer.split()) * 2 if response.answer else 0
 
         # Schedule background tracking
@@ -170,7 +176,7 @@ async def chat_endpoint(
             analytics.track_chat_interaction,
             session_id=session_id,
             conversation_id=response.conversation_id,
-            query=request.message or "",
+            query=chat_request.message or "",
             response=response.answer,
             confidence=response.confidence,
             retrieved_documents=retrieved_docs,
@@ -760,7 +766,9 @@ async def admin_toggle_document_active(
 
 
 @router.post("/admin/upload")
+@rate_limit("10/minute")  # Limit file uploads to 10 per minute
 async def admin_upload_document(
+    request: Request,
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     category: str = Form("Khác"),

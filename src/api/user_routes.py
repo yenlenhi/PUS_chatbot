@@ -3,7 +3,7 @@ User Management API Routes
 Protected admin endpoints for managing users
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
 from typing import Optional
 from src.models.user import (
     UserCreate,
@@ -13,8 +13,9 @@ from src.models.user import (
     UserListResponse,
     UserInDB,
 )
-from src.services.user_service import get_user_service, UserService
-from src.auth import get_current_user
+from src.services.async_user_service import get_async_user_service, AsyncUserService
+from src.auth.async_jwt_handler import get_current_user_async
+from src.middleware.rate_limit_middleware import rate_limit
 from src.utils.logger import log
 
 # Use UserInDB as the User type for dependency injection
@@ -25,7 +26,7 @@ User = UserInDB
 user_router = APIRouter(prefix="/api/users", tags=["User Management"])
 
 
-def require_admin(current_user: User = Depends(get_current_user)):
+async def require_admin(current_user: User = Depends(get_current_user_async)):
     """Dependency to require admin access"""
     if current_user is None:
         raise HTTPException(
@@ -49,8 +50,8 @@ def require_admin(current_user: User = Depends(get_current_user)):
 
 @user_router.get("/me", response_model=UserResponse)
 async def get_current_user_info(
-    current_user: User = Depends(get_current_user),
-    user_service: UserService = Depends(get_user_service),
+    current_user: User = Depends(get_current_user_async),
+    user_service: AsyncUserService = Depends(get_async_user_service),
 ):
     """
     Get current logged-in user information
@@ -62,7 +63,7 @@ async def get_current_user_info(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required"
         )
 
-    user = user_service.get_user_by_username(current_user.username)
+    user = await user_service.get_user_by_username(current_user.username)
 
     if not user:
         raise HTTPException(
@@ -84,8 +85,8 @@ async def get_current_user_info(
 @user_router.post("/change-password")
 async def change_own_password(
     password_data: UserChangePassword,
-    current_user: User = Depends(get_current_user),
-    user_service: UserService = Depends(get_user_service),
+    current_user: User = Depends(get_current_user_async),
+    user_service: AsyncUserService = Depends(get_async_user_service),
 ):
     """
     Change own password
@@ -99,16 +100,14 @@ async def change_own_password(
 
     try:
         # Get user ID from username
-        user = user_service.get_user_by_username(current_user.username)
+        user = await user_service.get_user_by_username(current_user.username)
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
             )
 
-        success = user_service.change_password(
-            user_id=user.id,
-            current_password=password_data.current_password,
-            new_password=password_data.new_password,
+        success = await user_service.change_password(
+            user.id, password_data.new_password
         )
 
         if not success:
@@ -130,10 +129,12 @@ async def change_own_password(
 @user_router.post(
     "/admin/users", response_model=UserResponse, status_code=status.HTTP_201_CREATED
 )
+@rate_limit("3/minute")  # Limit user creation to 3 per minute
 async def create_user(
+    request: Request,
     user_data: UserCreate,
     admin_user: User = Depends(require_admin),
-    user_service: UserService = Depends(get_user_service),
+    user_service: AsyncUserService = Depends(get_async_user_service),
 ):
     """
     Create a new user
@@ -141,7 +142,7 @@ async def create_user(
     Requires admin access
     """
     try:
-        user = user_service.create_user(user_data)
+        user = await user_service.create_user(user_data)
         log.info(f"Admin {admin_user.username} created user: {user.username}")
         return user
 
@@ -161,7 +162,7 @@ async def list_users(
     page_size: int = Query(20, ge=1, le=100, description="Items per page"),
     disabled: Optional[bool] = Query(None, description="Filter by disabled status"),
     admin_user: User = Depends(require_admin),
-    user_service: UserService = Depends(get_user_service),
+    user_service: AsyncUserService = Depends(get_async_user_service),
 ):
     """
     List all users with pagination
@@ -169,9 +170,9 @@ async def list_users(
     Requires admin access
     """
     skip = (page - 1) * page_size
-    users, total = user_service.list_users(
-        skip=skip, limit=page_size, disabled=disabled
-    )
+    users = await user_service.list_users(skip=skip, limit=page_size)
+    # For now, use users count as total (can be improved later)
+    total = len(users)
 
     return UserListResponse(total=total, users=users, page=page, page_size=page_size)
 
@@ -180,14 +181,14 @@ async def list_users(
 async def get_user(
     user_id: int,
     admin_user: User = Depends(require_admin),
-    user_service: UserService = Depends(get_user_service),
+    user_service: AsyncUserService = Depends(get_async_user_service),
 ):
     """
     Get user details by ID
 
     Requires admin access
     """
-    user = user_service.get_user_by_id(user_id)
+    user = await user_service.get_user_by_id(user_id)
 
     if not user:
         raise HTTPException(
@@ -203,7 +204,7 @@ async def update_user(
     user_id: int,
     user_data: UserUpdate,
     admin_user: User = Depends(require_admin),
-    user_service: UserService = Depends(get_user_service),
+    user_service: AsyncUserService = Depends(get_async_user_service),
 ):
     """
     Update user information
@@ -211,7 +212,7 @@ async def update_user(
     Requires admin access
     """
     try:
-        user = user_service.update_user(user_id, user_data)
+        user = await user_service.update_user(user_id, user_data)
 
         if not user:
             raise HTTPException(
@@ -234,7 +235,7 @@ async def update_user(
 async def delete_user(
     user_id: int,
     admin_user: User = Depends(require_admin),
-    user_service: UserService = Depends(get_user_service),
+    user_service: AsyncUserService = Depends(get_async_user_service),
 ):
     """
     Delete user (soft delete - sets disabled=True)
@@ -242,14 +243,14 @@ async def delete_user(
     Requires admin access
     """
     # Prevent self-deletion
-    user = user_service.get_user_by_username(admin_user.username)
+    user = await user_service.get_user_by_username(admin_user.username)
     if user and user.id == user_id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Cannot delete your own account",
         )
 
-    success = user_service.delete_user(user_id)
+    success = await user_service.delete_user(user_id)
 
     if not success:
         raise HTTPException(
@@ -265,7 +266,7 @@ async def delete_user(
 async def enable_user(
     user_id: int,
     admin_user: User = Depends(require_admin),
-    user_service: UserService = Depends(get_user_service),
+    user_service: AsyncUserService = Depends(get_async_user_service),
 ):
     """
     Enable a disabled user
@@ -273,7 +274,7 @@ async def enable_user(
     Requires admin access
     """
     user_data = UserUpdate(disabled=False)
-    user = user_service.update_user(user_id, user_data)
+    user = await user_service.update_user(user_id, user_data)
 
     if not user:
         raise HTTPException(
@@ -288,7 +289,7 @@ async def enable_user(
 @user_router.get("/admin/stats")
 async def get_user_stats(
     admin_user: User = Depends(require_admin),
-    user_service: UserService = Depends(get_user_service),
+    user_service: AsyncUserService = Depends(get_async_user_service),
 ):
     """
     Get user statistics
@@ -296,15 +297,15 @@ async def get_user_stats(
     Requires admin access
     """
     # Get all users
-    all_users, total = user_service.list_users(skip=0, limit=10000)
+    all_users, total = await user_service.list_users(skip=0, limit=10000)
 
     # Get active users
-    active_users, active_count = user_service.list_users(
+    active_users, active_count = await user_service.list_users(
         skip=0, limit=10000, disabled=False
     )
 
     # Get disabled users
-    disabled_users, disabled_count = user_service.list_users(
+    disabled_users, disabled_count = await user_service.list_users(
         skip=0, limit=10000, disabled=True
     )
 
