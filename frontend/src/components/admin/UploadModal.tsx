@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useRef, useCallback } from 'react';
-import { X, Upload, FileText, CheckCircle, AlertCircle, Loader2, File } from 'lucide-react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { X, Upload, FileText, CheckCircle, AlertCircle, Loader2, File, Clock, Zap, Sparkles } from 'lucide-react';
+import DetailedErrorDisplay from './DetailedErrorDisplay';
 
 interface UploadModalProps {
   isOpen: boolean;
@@ -15,6 +16,9 @@ interface UploadState {
   status: UploadStatus;
   progress: number;
   message: string;
+  startTime?: number;
+  estimatedTimeRemaining?: number;
+  uploadSpeed?: number;
   result?: {
     filename: string;
     chunks_created: number;
@@ -42,14 +46,48 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onUploadSucc
     message: '',
   });
   const [isDragging, setIsDragging] = useState(false);
+  const [isHovering, setIsHovering] = useState(false);
+  const [showErrorDetails, setShowErrorDetails] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const startTimeRef = useRef<number>(0);
 
   const resetState = useCallback(() => {
     setSelectedFile(null);
     setCategory('Khác');
     setUseGemini(true);
     setUploadState({ status: 'idle', progress: 0, message: '' });
+    setIsHovering(false);
+    setShowErrorDetails(false);
+    startTimeRef.current = 0;
   }, []);
+
+  // Calculate upload metrics
+  const calculateUploadMetrics = useCallback((progress: number, fileSize?: number) => {
+    if (!startTimeRef.current || progress === 0) return {};
+    
+    const elapsed = (Date.now() - startTimeRef.current) / 1000; // seconds
+    const speed = fileSize ? (fileSize * (progress / 100)) / elapsed : 0; // bytes per second
+    const remainingProgress = 100 - progress;
+    const estimatedTimeRemaining = progress > 0 ? (elapsed * remainingProgress) / progress : 0;
+    
+    return {
+      uploadSpeed: speed,
+      estimatedTimeRemaining: Math.max(0, estimatedTimeRemaining)
+    };
+  }, []);
+
+  const formatSpeed = (bytesPerSecond: number) => {
+    if (bytesPerSecond < 1024) return `${bytesPerSecond.toFixed(0)} B/s`;
+    if (bytesPerSecond < 1024 * 1024) return `${(bytesPerSecond / 1024).toFixed(1)} KB/s`;
+    return `${(bytesPerSecond / (1024 * 1024)).toFixed(1)} MB/s`;
+  };
+
+  const formatTime = (seconds: number) => {
+    if (seconds < 60) return `${Math.ceil(seconds)}s`;
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = Math.ceil(seconds % 60);
+    return `${minutes}m ${remainingSeconds}s`;
+  };
 
   const handleClose = useCallback(() => {
     if (uploadState.status === 'uploading' || uploadState.status === 'processing') {
@@ -91,7 +129,18 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onUploadSucc
 
   const handleDragLeave = useCallback((e: React.DragEvent) => {
     e.preventDefault();
-    setIsDragging(false);
+    // Only set to false if leaving the drop zone completely
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      setIsDragging(false);
+    }
+  }, []);
+
+  const handleMouseEnter = useCallback(() => {
+    if (!isProcessing) setIsHovering(true);
+  }, [uploadState.status]);
+
+  const handleMouseLeave = useCallback(() => {
+    setIsHovering(false);
   }, []);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
@@ -120,21 +169,29 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onUploadSucc
     formData.append('use_gemini', String(useGemini));
 
     try {
+      startTimeRef.current = Date.now();
       setUploadState({
         status: 'uploading',
         progress: 10,
         message: 'Đang tải file lên server...',
+        startTime: startTimeRef.current,
       });
 
       // Use API route proxy instead of calling backend directly
       // This ensures BACKEND_URL is used from server-side
       const uploadUrl = '/api/upload';
       
-      // Simulate progress for upload
+      // Enhanced progress simulation with metrics
       const progressInterval = setInterval(() => {
         setUploadState(prev => {
           if (prev.progress < 30) {
-            return { ...prev, progress: prev.progress + 5 };
+            const newProgress = prev.progress + 5;
+            const metrics = calculateUploadMetrics(newProgress, selectedFile?.size);
+            return { 
+              ...prev, 
+              progress: newProgress,
+              ...metrics
+            };
           }
           return prev;
         });
@@ -158,21 +215,25 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onUploadSucc
         message: 'Đang xử lý PDF...',
       });
 
-      // Simulate processing progress
+      // Enhanced processing progress with metrics
       const processingMessages = [
-        { progress: 50, message: 'Đang trích xuất văn bản...' },
-        { progress: 65, message: 'Đang phân đoạn nội dung...' },
-        { progress: 80, message: 'Đang tạo embeddings...' },
-        { progress: 90, message: 'Đang lưu vào database...' },
+        { progress: 50, message: 'Đang trích xuất văn bản...', icon: FileText },
+        { progress: 65, message: 'Đang phân đoạn nội dung...', icon: Zap },
+        { progress: 80, message: 'Đang tạo embeddings...', icon: Sparkles },
+        { progress: 90, message: 'Đang lưu vào database...', icon: CheckCircle },
       ];
 
       for (const step of processingMessages) {
         await new Promise(resolve => setTimeout(resolve, 500));
-        setUploadState(prev => ({
-          ...prev,
-          progress: step.progress,
-          message: step.message,
-        }));
+        setUploadState(prev => {
+          const metrics = calculateUploadMetrics(step.progress, selectedFile?.size);
+          return {
+            ...prev,
+            progress: step.progress,
+            message: step.message,
+            ...metrics
+          };
+        });
       }
 
       const result = await response.json();
@@ -259,19 +320,32 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onUploadSucc
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
+              onMouseEnter={handleMouseEnter}
+              onMouseLeave={handleMouseLeave}
               onClick={() => !isProcessing && fileInputRef.current?.click()}
               className={`
-                border-2 border-dashed rounded-xl p-8 text-center cursor-pointer
-                transition-all duration-300 ease-in-out
+                relative border-2 border-dashed rounded-xl p-8 text-center cursor-pointer overflow-hidden
+                transition-all duration-500 ease-in-out
                 ${isDragging 
-                  ? 'border-red-500 bg-gradient-to-br from-red-50 to-orange-50 scale-[1.02] shadow-lg' 
+                  ? 'border-red-500 bg-gradient-to-br from-red-50 via-orange-50 to-yellow-50 scale-[1.03] shadow-2xl transform rotate-1' 
                   : selectedFile 
-                    ? 'border-green-500 bg-gradient-to-br from-green-50 to-emerald-50 shadow-md' 
-                    : 'border-gray-300 hover:border-red-400 hover:bg-gradient-to-br hover:from-gray-50 hover:to-red-50/30 hover:shadow-md'
+                    ? 'border-green-500 bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 shadow-lg transform scale-[1.01]' 
+                    : isHovering
+                      ? 'border-red-400 bg-gradient-to-br from-red-50 via-pink-50 to-purple-50 shadow-lg transform scale-[1.01]'
+                      : 'border-gray-300 hover:border-red-300 hover:shadow-md'
                 }
                 ${isProcessing ? 'cursor-not-allowed opacity-60' : ''}
               `}
             >
+              {/* Animated Background Particles */}
+              {(isDragging || isHovering) && (
+                <div className="absolute inset-0 pointer-events-none">
+                  <div className="absolute top-4 left-4 w-2 h-2 bg-red-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <div className="absolute top-8 right-8 w-1 h-1 bg-orange-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <div className="absolute bottom-6 left-8 w-1.5 h-1.5 bg-pink-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                  <div className="absolute bottom-4 right-4 w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '450ms' }} />
+                </div>
+              )}
               <input
                 ref={fileInputRef}
                 type="file"
@@ -282,42 +356,63 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onUploadSucc
               />
 
               {selectedFile ? (
-                <div className="flex flex-col items-center animate-in fade-in duration-300">
-                  <div className="p-3 bg-green-100 rounded-full mb-3">
-                    <File className="w-10 h-10 text-green-600" />
+                <div className="relative z-10 flex flex-col items-center animate-in fade-in duration-500 slide-in-from-bottom-4">
+                  <div className="p-4 bg-gradient-to-br from-green-100 to-emerald-100 rounded-2xl mb-4 shadow-inner">
+                    <File className="w-12 h-12 text-green-600" />
                   </div>
-                  <p className="text-sm font-semibold text-gray-900">{selectedFile.name}</p>
-                  <p className="text-xs text-gray-500 mt-1 font-medium">
-                    {formatFileSize(selectedFile.size)}
-                  </p>
+                  <div className="bg-white/80 backdrop-blur-sm rounded-lg p-3 shadow-lg border border-green-200/50">
+                    <p className="text-sm font-bold text-gray-900 mb-1">{selectedFile.name}</p>
+                    <div className="flex items-center gap-2 text-xs text-gray-600">
+                      <span className="font-medium">{formatFileSize(selectedFile.size)}</span>
+                      <span className="w-1 h-1 bg-gray-400 rounded-full"></span>
+                      <span className="text-green-600 font-medium">✓ Sẵn sàng upload</span>
+                    </div>
+                  </div>
                   {!isProcessing && (
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         setSelectedFile(null);
                       }}
-                      className="mt-3 px-3 py-1.5 text-xs font-medium text-red-600 hover:text-white bg-white hover:bg-red-600 border border-red-200 hover:border-red-600 rounded-lg transition-all duration-200"
+                      className="mt-4 px-4 py-2 text-sm font-semibold text-red-600 hover:text-white bg-white hover:bg-red-600 border border-red-200 hover:border-red-600 rounded-lg transition-all duration-300 hover:scale-105 hover:shadow-md"
                     >
                       Chọn file khác
                     </button>
                   )}
                 </div>
               ) : (
-                <div className="flex flex-col items-center">
-                  <div className="p-4 bg-gray-100 rounded-full mb-4">
-                    <Upload className="w-10 h-10 text-gray-400" />
+                <div className="relative z-10 flex flex-col items-center animate-in fade-in duration-300">
+                  <div className={`p-5 rounded-2xl mb-4 transition-all duration-500 ${
+                    isDragging 
+                      ? 'bg-gradient-to-br from-red-100 to-orange-100 shadow-lg scale-110'
+                      : isHovering
+                        ? 'bg-gradient-to-br from-gray-100 to-red-50 shadow-md scale-105'
+                        : 'bg-gradient-to-br from-gray-100 to-gray-50'
+                  }`}>
+                    <Upload className={`w-12 h-12 transition-all duration-300 ${
+                      isDragging ? 'text-red-600 animate-pulse' : isHovering ? 'text-red-500' : 'text-gray-400'
+                    }`} />
                   </div>
-                  <p className="text-sm font-semibold text-gray-700 mb-1">
-                    Kéo thả file PDF vào đây
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    hoặc click để chọn file (tối đa 50MB)
-                  </p>
+                  <div className="text-center space-y-2">
+                    <p className={`text-sm font-bold transition-all duration-300 ${
+                      isDragging ? 'text-red-600' : isHovering ? 'text-red-500' : 'text-gray-700'
+                    }`}>
+                      {isDragging ? 'Thả file PDF vào đây!' : 'Kéo thả file PDF vào đây'}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      hoặc <span className="font-semibold text-red-600">click để chọn file</span> (tối đa 50MB)
+                    </p>
+                    <div className="flex items-center justify-center gap-2 mt-3">
+                      <div className="w-2 h-2 bg-red-400 rounded-full animate-pulse"></div>
+                      <span className="text-xs text-gray-400 font-medium">Hỗ trợ file .PDF</span>
+                      <div className="w-2 h-2 bg-red-400 rounded-full animate-pulse"></div>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
 
-            {/* Options - Enhanced with better styling */}
+            {/* Options - Enhanced with mobile optimization */}
             <div className="space-y-4">
               {/* Category */}
               <div>
@@ -328,7 +423,7 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onUploadSucc
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
                   disabled={isProcessing}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 text-gray-900 disabled:bg-gray-100 disabled:cursor-not-allowed font-medium shadow-sm transition-all"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 text-gray-900 disabled:bg-gray-100 disabled:cursor-not-allowed font-medium shadow-sm transition-all text-touch min-h-touch"
                 >
                   {CATEGORIES.map((cat) => (
                     <option key={cat.value} value={cat.value}>
@@ -338,51 +433,87 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onUploadSucc
                 </select>
               </div>
 
-              {/* Use Gemini Toggle - Enhanced */}
+              {/* Use Gemini Toggle - Enhanced with mobile optimization */}
               <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-100">
-                <div>
+                <div className="flex-1 pr-4">
                   <p className="text-sm font-semibold text-gray-800">
                     Sử dụng Gemini OCR
                   </p>
                   <p className="text-xs text-gray-600 mt-0.5">
-                    Khuyến nghị cho PDF scan/ảnh (xử lý lâu hơn)
+                    Khuyến nghị cho PDF scan/ảnh <span className="hidden sm:inline">(xử lý lâu hơn)</span>
                   </p>
                 </div>
                 <button
                   onClick={() => !isProcessing && setUseGemini(!useGemini)}
                   disabled={isProcessing}
                   className={`
-                    relative w-14 h-7 rounded-full transition-all duration-300
+                    relative w-16 h-8 rounded-full transition-all duration-300 min-w-touch min-h-touch flex items-center
                     ${useGemini ? 'bg-red-600 shadow-md' : 'bg-gray-300'}
                     ${isProcessing ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:shadow-lg'}
                   `}
                 >
                   <span
                     className={`
-                      absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow-md
+                      absolute top-1 left-1 w-6 h-6 bg-white rounded-full shadow-md
                       transition-transform duration-300 ease-in-out
-                      ${useGemini ? 'translate-x-7' : 'translate-x-0'}
+                      ${useGemini ? 'translate-x-8' : 'translate-x-0'}
                     `}
                   />
                 </button>
               </div>
             </div>
 
-            {/* Progress Bar - Enhanced */}
+            {/* Enhanced Progress Bar with Metrics */}
             {isProcessing && (
-              <div className="space-y-3 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-100">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-800 font-medium flex items-center gap-2">
-                    <Loader2 className="w-4 h-4 animate-spin text-red-600" />
-                    {uploadState.message}
-                  </span>
-                  <span className="text-red-600 font-bold">{uploadState.progress}%</span>
+              <div className="space-y-4 p-4 sm:p-6 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 rounded-xl border border-blue-200 shadow-lg">
+                {/* Progress Header */}
+                <div className="flex items-start sm:items-center justify-between gap-3">
+                  <div className="flex items-start sm:items-center gap-3 flex-1">
+                    <div className="p-2 bg-white rounded-lg shadow-sm flex-shrink-0">
+                      <Loader2 className="w-5 h-5 animate-spin text-red-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-gray-900 truncate">{uploadState.message}</p>
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-xs text-gray-600 mt-1">
+                        {uploadState.uploadSpeed && (
+                          <span className="flex items-center gap-1">
+                            <Zap className="w-3 h-3" />
+                            {formatSpeed(uploadState.uploadSpeed)}
+                          </span>
+                        )}
+                        {uploadState.estimatedTimeRemaining && uploadState.estimatedTimeRemaining > 0 && (
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            Còn {formatTime(uploadState.estimatedTimeRemaining)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <span className="text-xl sm:text-2xl font-bold text-red-600">{uploadState.progress}%</span>
+                  </div>
                 </div>
-                <div className="w-full h-2.5 bg-gray-200 rounded-full overflow-hidden shadow-inner">
-                  <div
-                    className="h-full bg-gradient-to-r from-red-500 to-red-600 transition-all duration-300 ease-out shadow-sm"
-                    style={{ width: `${uploadState.progress}%` }}
-                  />
+                
+                {/* Enhanced Progress Bar */}
+                <div className="relative">
+                  <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden shadow-inner">
+                    <div
+                      className="h-full bg-gradient-to-r from-red-500 via-orange-500 to-yellow-500 transition-all duration-500 ease-out shadow-sm relative overflow-hidden"
+                      style={{ width: `${uploadState.progress}%` }}
+                    >
+                      {/* Shimmer effect */}
+                      <div className="absolute inset-0 -skew-x-12 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer" />
+                    </div>
+                  </div>
+                  
+                  {/* Progress Steps - Mobile responsive */}
+                  <div className="flex justify-between mt-2 text-xs text-gray-500">
+                    <span className={uploadState.progress >= 25 ? 'text-green-600 font-medium' : ''}>Tải lên</span>
+                    <span className={`${uploadState.progress >= 50 ? 'text-green-600 font-medium' : ''} hidden xs:inline`}>Xử lý</span>
+                    <span className={uploadState.progress >= 75 ? 'text-green-600 font-medium' : ''}>Embedding</span>
+                    <span className={uploadState.progress >= 100 ? 'text-green-600 font-medium' : ''}>Hoàn thành</span>
+                  </div>
                 </div>
               </div>
             )}
@@ -407,21 +538,27 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onUploadSucc
             )}
 
             {uploadState.status === 'error' && (
-              <div className="flex items-start p-4 bg-gradient-to-r from-red-50 to-orange-50 rounded-lg border border-red-200 shadow-sm animate-in fade-in duration-300">
-                <div className="p-1 bg-red-100 rounded-full mr-3 flex-shrink-0">
-                  <AlertCircle className="w-5 h-5 text-red-600" />
-                </div>
-                <p className="text-sm font-medium text-red-800">{uploadState.message}</p>
-              </div>
+              <DetailedErrorDisplay
+                error={uploadState.message}
+                onRetry={() => {
+                  setUploadState(prev => ({ ...prev, status: 'idle', message: '' }));
+                  setShowErrorDetails(false);
+                }}
+                onCopy={() => {
+                  // Toast notification có thể thêm vào đây
+                  console.log('Error details copied to clipboard');
+                }}
+                className="animate-in fade-in duration-300"
+              />
             )}
           </div>
 
-          {/* Footer - Enhanced with better styling */}
-          <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-100 bg-gray-50/50">
+          {/* Footer - Enhanced with mobile optimization */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 p-4 sm:p-6 border-t border-gray-100 bg-gray-50/50">
             <button
               onClick={handleClose}
               disabled={isProcessing}
-              className="px-5 py-2.5 text-gray-700 font-medium hover:bg-white border border-gray-200 hover:border-gray-300 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+              className="px-5 py-3 text-gray-700 font-medium hover:bg-white border border-gray-200 hover:border-gray-300 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm min-h-touch order-2 sm:order-1"
             >
               Hủy
             </button>
@@ -429,23 +566,23 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onUploadSucc
               onClick={handleUpload}
               disabled={!selectedFile || isProcessing}
               className={`
-                px-6 py-2.5 rounded-lg font-semibold transition-all
-                flex items-center gap-2
+                px-6 py-3 rounded-lg font-semibold transition-all min-h-touch order-1 sm:order-2
+                flex items-center justify-center gap-2
                 ${!selectedFile || isProcessing
                   ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white shadow-md hover:shadow-lg transform hover:scale-[1.02]'
+                  : 'bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white shadow-md hover:shadow-lg transform hover:scale-[1.02] active:scale-[0.98]'
                 }
               `}
             >
               {isProcessing ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Đang xử lý...
+                  <span>Đang xử lý...</span>
                 </>
               ) : (
                 <>
                   <Upload className="w-4 h-4" />
-                  Upload
+                  <span>Upload</span>
                 </>
               )}
             </button>

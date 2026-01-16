@@ -14,7 +14,9 @@ import uuid
 # JWT Configuration
 SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your-secret-key-change-this-in-production")
 ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "1440"))  # 24 hours
+ACCESS_TOKEN_EXPIRE_MINUTES = int(
+    os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "1440")
+)  # 24 hours
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token", auto_error=False)
 
@@ -56,12 +58,13 @@ def create_access_token(
     else:
         expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
 
-    import uuid
-    to_encode.update({
-        "exp": expire, 
-        "iat": datetime.utcnow(),
-        "jti": str(uuid.uuid4())  # Unique token ID
-    })
+    to_encode.update(
+        {
+            "exp": expire,
+            "iat": datetime.utcnow(),
+            "jti": str(uuid.uuid4()),  # Unique token ID
+        }
+    )
 
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
@@ -133,13 +136,15 @@ async def get_current_user(
     return user
 
 
-def create_token_for_user(username: str, user_id: str, scopes: list[str] = None, expires_minutes: int = None) -> str:
+def create_token_for_user(
+    username: str, user_id: str, scopes: list[str] = None, expires_minutes: int = None
+) -> str:
     """
     Create an access token for a user
 
     Args:
         username: Username
-        user_id: User ID  
+        user_id: User ID
         scopes: List of permission scopes
         expires_minutes: Token expiry in minutes (default: 24h)
 
@@ -148,16 +153,16 @@ def create_token_for_user(username: str, user_id: str, scopes: list[str] = None,
     """
     if scopes is None:
         scopes = []
-    
+
     if expires_minutes is None:
         expires_minutes = ACCESS_TOKEN_EXPIRE_MINUTES
 
     token_data = {
-        "sub": username, 
+        "sub": username,
         "user_id": str(user_id),  # Ensure string format
-        "username": username,     # Add explicit username field
-        "scopes": scopes
+        "username": username,  # Add explicit username field
+        "scopes": scopes,
     }
-    
+
     expires_delta = timedelta(minutes=expires_minutes)
     return create_access_token(token_data, expires_delta)

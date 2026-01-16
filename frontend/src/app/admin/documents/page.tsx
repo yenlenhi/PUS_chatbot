@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import UploadModal from '@/components/admin/UploadModal';
+import BatchUploadModal from '@/components/admin/BatchUploadModal';
+import QuickStats from '@/components/admin/QuickStats';
 import Toast, { ToastType } from '@/components/ui/Toast';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import { documentsAPI } from '@/services/api';
@@ -11,11 +13,13 @@ import {
   Search, Upload, Download, FileText, Eye, Trash2, 
   Plus, Filter, RefreshCw, AlertCircle, Loader2,
   Database, HardDrive, LayoutGrid, List, Power, PowerOff,
-  ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Check
+  ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Check,
+  Archive, FolderOpen, Zap, Clock, BarChart3
 } from 'lucide-react';
 import { getDocumentUrl } from '@/lib/supabase';
 
 type ViewMode = 'grid' | 'list';
+type UploadMode = 'single' | 'batch';
 
 const ITEMS_PER_PAGE_GRID = 9;  // 3x3 grid
 const ITEMS_PER_PAGE_LIST = 10;
@@ -39,9 +43,17 @@ const DocumentsPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [isBatchUploadModalOpen, setIsBatchUploadModalOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  const [uploadMode, setUploadMode] = useState<UploadMode>('single');
+  const [showStats, setShowStats] = useState(false);
+  
+  // Real-time processing data
+  const [processingQueue, setProcessingQueue] = useState(0);
+  const [recentUploads, setRecentUploads] = useState(0);
+  const [averageProcessingTime, setAverageProcessingTime] = useState(0);
   
   // Toast state
   const [toast, setToast] = useState<{ message: string; type: ToastType; isVisible: boolean }>({
@@ -310,7 +322,7 @@ const DocumentsPage = () => {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        {/* Action Bar */}
+        {/* Enhanced Action Bar with Upload Options */}
         <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-5 md:p-6">
           {/* Top Section: Search */}
           <div className="mb-4">
@@ -329,25 +341,71 @@ const DocumentsPage = () => {
           </div>
 
           {/* Bottom Section: Filters & Controls */}
-          <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
-            {/* Category Filter */}
-            <div className="relative">
-              <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-              <select
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="h-10 pl-9 pr-3 border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent hover:border-gray-300 cursor-pointer transition-all appearance-none bg-white"
-              >
-                {categories.map(cat => (
-                  <option key={cat} value={cat}>
-                    {getCategoryLabel(cat)}
-                  </option>
-                ))}
-              </select>
+          <div className="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center">
+            {/* Left Side: Filters */}
+            <div className="flex flex-col sm:flex-row gap-3 flex-1">
+              {/* Category Filter */}
+              <div className="relative">
+                <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                <select
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className="h-10 pl-9 pr-3 border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent hover:border-gray-300 cursor-pointer transition-all appearance-none bg-white min-w-[120px]"
+                >
+                  {categories.map(cat => (
+                    <option key={cat} value={cat}>
+                      {getCategoryLabel(cat)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Upload Mode Selector */}
+              <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden bg-white">
+                <button
+                  onClick={() => setUploadMode('single')}
+                  className={`h-10 px-3 text-sm font-medium transition-all flex items-center gap-2 ${
+                    uploadMode === 'single' 
+                      ? 'bg-blue-600 text-white' 
+                      : 'bg-white text-gray-600 hover:bg-gray-50'
+                  }`}
+                  title="Upload đơn lẻ"
+                >
+                  <FileText className="w-4 h-4" />
+                  <span className="hidden sm:inline">Đơn lẻ</span>
+                </button>
+                <button
+                  onClick={() => setUploadMode('batch')}
+                  className={`h-10 px-3 text-sm font-medium transition-all flex items-center gap-2 ${
+                    uploadMode === 'batch' 
+                      ? 'bg-purple-600 text-white' 
+                      : 'bg-white text-gray-600 hover:bg-gray-50'
+                  }`}
+                  title="Upload hàng loạt"
+                >
+                  <Archive className="w-4 h-4" />
+                  <span className="hidden sm:inline">Hàng loạt</span>
+                </button>
+              </div>
             </div>
 
-            {/* Action Buttons - Right Side */}
-            <div className="flex gap-2 sm:ml-auto">
+            {/* Right Side: Action Buttons */}
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowStats(!showStats)}
+                className={`h-10 px-3 rounded-lg transition-all flex items-center gap-2 text-sm font-medium ${
+                  showStats 
+                    ? 'bg-green-600 text-white shadow-md' 
+                    : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                }`}
+                title={showStats ? 'Ẩn thống kê' : 'Hiện thống kê'}
+              >
+                <BarChart3 className="w-4 h-4" />
+                <span className="hidden lg:inline">
+                  {showStats ? 'Ẩn thống kê' : 'Thống kê'}
+                </span>
+              </button>
+              
               <button
                 onClick={fetchDocuments}
                 disabled={isLoading}
@@ -355,7 +413,7 @@ const DocumentsPage = () => {
                 title="Làm mới"
               >
                 <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-                <span className="hidden sm:inline">Làm mới</span>
+                <span className="hidden md:inline">Làm mới</span>
               </button>
 
               {/* View Toggle */}
@@ -384,17 +442,53 @@ const DocumentsPage = () => {
                 </button>
               </div>
 
+              {/* Upload Button */}
               <button 
-                onClick={() => setIsUploadModalOpen(true)}
-                className="h-10 px-3 sm:px-4 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-all flex items-center gap-2 shadow-sm text-sm font-medium"
+                onClick={() => {
+                  if (uploadMode === 'single') {
+                    setIsUploadModalOpen(true);
+                  } else {
+                    setIsBatchUploadModalOpen(true);
+                  }
+                }}
+                className={`h-10 px-4 rounded-lg transition-all flex items-center gap-2 shadow-sm text-sm font-medium ${
+                  uploadMode === 'single'
+                    ? 'bg-red-600 hover:bg-red-700 text-white'
+                    : 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white'
+                }`}
               >
-                <Plus className="w-4 h-4" />
-                <span className="hidden sm:inline">Thêm mới</span>
-                <span className="sm:hidden">Thêm</span>
+                {uploadMode === 'single' ? (
+                  <>
+                    <Plus className="w-4 h-4" />
+                    <span className="hidden sm:inline">Thêm mới</span>
+                    <span className="sm:hidden">Thêm</span>
+                  </>
+                ) : (
+                  <>
+                    <Archive className="w-4 h-4" />
+                    <span className="hidden sm:inline">Upload nhiều</span>
+                    <span className="sm:hidden">Nhiều</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
         </div>
+
+        {/* Quick Stats Dashboard */}
+        {showStats && (
+          <QuickStats
+            totalDocuments={stats.total}
+            activeDocuments={stats.active}
+            totalChunks={stats.totalChunks}
+            totalSize={stats.totalSize}
+            recentUploads={recentUploads}
+            processingQueue={processingQueue}
+            averageProcessingTime={averageProcessingTime}
+            uploadSuccess={stats.active}
+            className="animate-in slide-in-from-top-4 duration-300"
+          />
+        )}
 
         {/* Error Message */}
         {error && (
@@ -963,10 +1057,16 @@ const DocumentsPage = () => {
         )}
       </div>
 
-      {/* Upload Modal */}
+      {/* Enhanced Upload Modals */}
       <UploadModal
         isOpen={isUploadModalOpen}
         onClose={() => setIsUploadModalOpen(false)}
+        onUploadSuccess={fetchDocuments}
+      />
+
+      <BatchUploadModal
+        isOpen={isBatchUploadModalOpen}
+        onClose={() => setIsBatchUploadModalOpen(false)}
         onUploadSuccess={fetchDocuments}
       />
 
