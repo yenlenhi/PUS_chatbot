@@ -96,14 +96,14 @@ class EmbeddingService:
 
                 # Ensure cache directory exists
                 os.makedirs(cache_dir, exist_ok=True)
-                
+
                 # Try to load model (will download if not cached)
-                log.info(f"📥 Loading model (will download if not in cache)...")
+                log.info("📥 Loading model (will download if not in cache)...")
                 self.model = SentenceTransformer(
-                    model_name, 
-                    device=self.device, 
+                    model_name,
+                    device=self.device,
                     cache_folder=cache_dir,
-                    use_auth_token=False  # No authentication needed for public models
+                    use_auth_token=False,  # No authentication needed for public models
                 )
 
                 # Verify model loaded correctly
@@ -121,11 +121,12 @@ class EmbeddingService:
             except Exception as e:
                 log.error(f"❌ Failed to load {model_name}: {e}")
                 log.error(f"   Error type: {type(e).__name__}")
-                
+
                 # Add more detailed error info
                 import traceback
+
                 log.debug(f"   Stack trace: {traceback.format_exc()}")
-                
+
                 if idx == len(models_to_try) - 1:
                     # All models failed
                     raise RuntimeError(
@@ -133,7 +134,7 @@ class EmbeddingService:
                         f"Last error: {str(e)}"
                     )
                 # Continue to next fallback
-                log.info(f"   Trying next fallback model...")
+                log.info("   Trying next fallback model...")
                 continue
 
     def create_embedding(self, text: str) -> np.ndarray:

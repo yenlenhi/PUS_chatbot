@@ -143,7 +143,12 @@ const DashboardPage = () => {
             >
               <RefreshCw className={`w-4 h-4 sm:w-5 sm:h-5 ${isRefreshing ? 'animate-spin' : ''}`} />
             </button>
-            <TimeRangeFilter value={filter.timeRange} onChange={handleFilterChange} />
+            <TimeRangeFilter 
+              value={filter.timeRange} 
+              startDate={filter.startDate}
+              endDate={filter.endDate}
+              onChange={handleFilterChange} 
+            />
           </div>
         </div>
 

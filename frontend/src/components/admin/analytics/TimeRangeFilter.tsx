@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Calendar, ChevronDown } from 'lucide-react';
 import { TimeRange, AnalyticsFilter } from '@/types/analytics';
 import { getTimeRangeLabel } from '@/services/analytics';
@@ -9,12 +9,16 @@ import { useLanguage } from '@/i18n/LanguageContext';
 interface TimeRangeFilterProps {
   value: TimeRange;
   onChange: (filter: AnalyticsFilter) => void;
+  startDate?: string;
+  endDate?: string;
   className?: string;
 }
 
 const TimeRangeFilter: React.FC<TimeRangeFilterProps> = ({
   value,
   onChange,
+  startDate: propStartDate,
+  endDate: propEndDate,
   className = '',
 }) => {
   const { t } = useLanguage();
@@ -22,6 +26,12 @@ const TimeRangeFilter: React.FC<TimeRangeFilterProps> = ({
   const [showCustom, setShowCustom] = useState(false);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+
+  // Sync local state with props when they change
+  useEffect(() => {
+    if (propStartDate) setStartDate(propStartDate);
+    if (propEndDate) setEndDate(propEndDate);
+  }, [propStartDate, propEndDate]);
 
   const options: { value: TimeRange; label: string }[] = [
     { value: 'L7D', label: t('last7Days') },
@@ -48,7 +58,16 @@ const TimeRangeFilter: React.FC<TimeRangeFilterProps> = ({
         endDate,
       });
       setIsOpen(false);
+      setShowCustom(false);
     }
+  };
+
+  // Get display label for custom date range
+  const getDisplayLabel = () => {
+    if (value === 'custom' && propStartDate && propEndDate) {
+      return `${propStartDate} ~ ${propEndDate}`;
+    }
+    return getTimeRangeLabel(value);
   };
 
   return (
@@ -58,8 +77,8 @@ const TimeRangeFilter: React.FC<TimeRangeFilterProps> = ({
         className="flex items-center space-x-1 sm:space-x-2 px-2 sm:px-4 py-1.5 sm:py-2 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500"
       >
         <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-500" />
-        <span className="text-xs sm:text-sm font-medium text-gray-700 truncate max-w-[100px] sm:max-w-none">
-          {getTimeRangeLabel(value)}
+        <span className="text-xs sm:text-sm font-medium text-gray-700 truncate max-w-[150px] sm:max-w-none" title={getDisplayLabel()}>
+          {getDisplayLabel()}
         </span>
         <ChevronDown className={`w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
