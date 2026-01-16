@@ -1,0 +1,76 @@
+# ============================================
+# .dockerignore - Exclude files from Docker build
+# ============================================
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation
+docs/
+*.md
+!README.md
+
+# Test files
+tests/
+test_*.py
+*_test.py
+
+# Logs
+logs/
+*.log
+
+# Data files (will be mounted as volumes)
+data/pdfs/*
+data/processed/*
+data/embeddings/*.index
+data/embeddings/*.metadata
+
+# Temporary files
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env.example
+.env.local
+.env.development
+
+# Docker files
+docker-compose.yml
+Dockerfile.dev
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+
+# Memory bank (development only)
+memory-bank/
+
+# Static files (if served separately)
+static/
+
+# Frontend (separate container)
+frontend/
