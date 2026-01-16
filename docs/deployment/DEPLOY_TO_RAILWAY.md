@@ -6,7 +6,7 @@
 - [x] Added Railway Redis URL support
 - [x] Updated Redis connection with password
 - [x] Local test passed (4/6 tests - expected)
-- [x] Embedding model working: `hiieu/halong_embedding`
+- [x] Embedding model working: `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`
 - [x] LLM configured: Gemini with API key
 
 ---
@@ -71,11 +71,17 @@ GEMINI_API_KEY=your_actual_gemini_api_key_here
 
 #### Optional (Recommended):
 ```bash
-# Embedding model (current working model)
-EMBEDDING_MODEL=hiieu/halong_embedding
+# Embedding model (recommended for Railway)
+EMBEDDING_MODEL=sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
+EMBEDDING_DIMENSION=384
+
+# Or use Vietnamese-optimized model (needs more RAM)
+# EMBEDDING_MODEL=bkai-foundation-models/vietnamese-embedding-v1
+# EMBEDDING_DIMENSION=768
 
 # Or use fallback for faster deployment
 # EMBEDDING_MODEL=all-MiniLM-L6-v2
+# EMBEDDING_DIMENSION=384
 
 # Enable/disable features
 ENABLE_REDIS_CACHE=true
@@ -274,7 +280,7 @@ Deploy frontend to Vercel/Railway.
 ### Developer Plan ($20/month):
 - 8GB RAM
 - 10GB Disk
-- **Can use:** `hiieu/halong_embedding` or Vietnamese models
+- **Can use:** `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` (recommended) or `bkai-foundation-models/vietnamese-embedding-v1` (768D, needs more RAM)
 
 ### Optimization Tips:
 - Use Redis to reduce embedding computations

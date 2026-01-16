@@ -122,8 +122,12 @@ DATABASE_PATH = os.getenv("DATABASE_PATH", str(EMBEDDINGS_DIR / "chatbot.db"))
 FAISS_INDEX_PATH = os.getenv("FAISS_INDEX_PATH", str(EMBEDDINGS_DIR / "faiss_index"))
 
 # Embedding Model Configuration
+# Recommended models for Vietnamese:
+# - bkai-foundation-models/vietnamese-embedding-v1 (768D, best accuracy)
+# - sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2 (384D, good balance)
+# - intfloat/multilingual-e5-base (768D, excellent multilingual)
 EMBEDDING_MODEL = os.getenv(
-    "EMBEDDING_MODEL", "bkai-foundation-models/vietnamese-embedding-v1"
+    "EMBEDDING_MODEL", "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 )
 
 # Embedding Dimension Configuration

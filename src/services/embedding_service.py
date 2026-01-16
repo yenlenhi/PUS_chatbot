@@ -77,14 +77,27 @@ class EmbeddingService:
 
         except Exception as e:
             log.error(f"❌ Failed to load embedding model: {e}")
-            # Fallback to a more common model
-            try:
-                log.info("🔄 Trying fallback model: all-MiniLM-L6-v2")
-                self.model = SentenceTransformer("all-MiniLM-L6-v2", device=self.device)
-                log.info("✅ Fallback embedding model loaded successfully")
-
-            except Exception as e2:
-                log.error(f"❌ Failed to load fallback model: {e2}")
+            # Fallback to Vietnamese-optimized models
+            fallback_models = [
+                "bkai-foundation-models/vietnamese-embedding-v1",
+                "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+                "intfloat/multilingual-e5-base",
+                "all-MiniLM-L6-v2",
+            ]
+            
+            for fallback_model in fallback_models:
+                try:
+                    log.info(f"🔄 Trying fallback model: {fallback_model}")
+                    self.model = SentenceTransformer(fallback_model, device=self.device)
+                    self.model_name = fallback_model  # Update model name for dimension detection
+                    log.info(f"✅ Fallback embedding model loaded: {fallback_model}")
+                    break
+                except Exception as fallback_error:
+                    log.warning(f"⚠️ Failed to load {fallback_model}: {fallback_error}")
+                    continue
+            
+            if not self.model:
+                log.error("❌ All fallback models failed to load")
                 raise RuntimeError("Could not load any embedding model")
 
     def create_embedding(self, text: str) -> np.ndarray:

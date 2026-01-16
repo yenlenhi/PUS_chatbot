@@ -38,7 +38,7 @@
 - [ ] `GEMINI_API_KEY=your_key_here`
 
 **Recommended:**
-- [ ] `EMBEDDING_MODEL=hiieu/halong_embedding`
+- [ ] `EMBEDDING_MODEL=sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`
 - [ ] `ENABLE_REDIS_CACHE=true`
 - [ ] `LOG_LEVEL=INFO`
 - [ ] `TOP_K_RESULTS=15`
