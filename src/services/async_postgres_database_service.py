@@ -51,12 +51,13 @@ class AsyncPostgresDatabaseService:
 
             async def get_asyncpg_connection():
                 """Custom connection creator with statement_cache_size=0 for pgbouncer"""
-                # Parse database URL
-                if self.database_url.startswith("postgresql+asyncpg://"):
-                    url = self.database_url.replace("postgresql+asyncpg://", "")
-                else:
-                    url = self.database_url
-
+                # Parse database URL - asyncpg expects postgresql:// not postgresql+asyncpg://
+                url = self.database_url
+                if url.startswith("postgresql+asyncpg://"):
+                    url = url.replace("postgresql+asyncpg://", "postgresql://")
+                elif url.startswith("postgres+asyncpg://"):
+                    url = url.replace("postgres+asyncpg://", "postgres://")
+                
                 # Create connection with statement cache disabled
                 return await asyncpg.connect(
                     url,
