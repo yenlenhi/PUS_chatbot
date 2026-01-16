@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User } from 'lucide-react';
+import { Send, Bot, User, Loader2 } from 'lucide-react';
 import type { Message } from '@/types/chat';
 import type { Source } from '@/types';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import SourceSection from './SourceSection';
 import FeedbackButtons from './FeedbackButtons';
+import { SSEParser } from '@/utils/sseUtils';
 
 const ChatInterface = () => {
   const [conversationId] = useState(() => `web-chat-${Date.now()}`);
@@ -21,6 +22,9 @@ const ChatInterface = () => {
   ]);
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
+  const [currentStreamingContent, setCurrentStreamingContent] = useState('');
+  const [streamingStatus, setStreamingStatus] = useState<string>('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -47,53 +51,142 @@ const ChatInterface = () => {
     setInputMessage('');
     setIsTyping(true);
 
+    // Create bot message for streaming
+    const botMessageId = (Date.now() + 1).toString();
+    setStreamingMessageId(botMessageId);
+    setCurrentStreamingContent('');
+
+    const initialBotMessage: Message = {
+      id: botMessageId,
+      content: '',
+      sender: 'bot',
+      timestamp: new Date(),
+      isStreaming: true
+    };
+
+    setMessages(prev => [...prev, initialBotMessage]);
+
     try {
-      const response = await fetch('/api/chat', {
+      const response = await fetch('/api/chat-stream', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: currentQuery, conversation_id: conversationId })
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'text/event-stream'
+        },
+        body: JSON.stringify({ 
+          message: currentQuery, 
+          conversation_id: conversationId,
+          language: 'vi' // You can make this dynamic
+        })
       });
 
-      if (response.ok) {
-        const data = await response.json();
-
-        // Convert string sources to Source objects
-        const sources: Source[] = (data.sources || []).map((source: string) => ({
-          title: source,
-          filename: source,
-          confidence: data.confidence
-        }));
-
-        // Extract chunk IDs from source_references if available
-        const chunkIds: number[] = (data.source_references || [])
-          .map((ref: { chunk_id: string }) => parseInt(ref.chunk_id, 10))
-          .filter((id: number) => !isNaN(id));
-
-        const botMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          content: data.response || data.answer || 'Xin lỗi, tôi không thể trả lời câu hỏi này lúc này.',
-          sender: 'bot',
-          timestamp: new Date(),
-          sources: sources,
-          confidence: data.confidence,
-          userQuery: currentQuery, // Store original query for feedback
-          chunkIds: chunkIds // Store chunk IDs for feedback
-        };
-        setMessages(prev => [...prev, botMessage]);
-      } else {
-        throw new Error('API call failed');
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
       }
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      const parser = new SSEParser();
+      let fullContent = '';
+      let sources: Source[] = [];
+      let confidence = 0;
+      let chunkIds: number[] = [];
+      let sourceReferences: any[] = [];
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value, { stream: true });
+          const events = parser.addData(chunk);
+
+          for (const event of events) {
+            if (event.type === 'answer_chunk' && event.content) {
+              fullContent += event.content;
+              setCurrentStreamingContent(fullContent);
+              
+              // Update the streaming message
+              setMessages(prev => 
+                prev.map(msg => 
+                  msg.id === botMessageId 
+                    ? { ...msg, content: fullContent }
+                    : msg
+                )
+              );
+            } else if (event.type === 'sources') {
+            } else if (event.type === 'sources') {
+              sources = (event.sources || []).map((source: string) => ({
+                title: source,
+                filename: source,
+                confidence: event.confidence || 0
+              }));
+              confidence = event.confidence || 0;
+              sourceReferences = event.source_references || [];
+              
+              // Extract chunk IDs
+              chunkIds = sourceReferences
+                .map((ref: { chunk_id: string }) => parseInt(ref.chunk_id, 10))
+                .filter((id: number) => !isNaN(id));
+            } else if (event.type === 'complete') {
+              // Streaming completed
+              break;
+            } else if (event.type === 'error') {
+              throw new Error(event.message || 'Streaming error');
+            } else if (event.type === 'status') {
+              // Show status messages to user
+              setStreamingStatus(event.message || '');
+              console.log('Status:', event.message);
+            }
+          }
+        }
+        
+        // Process any remaining buffered data
+        const finalEvents = parser.flush();
+        for (const event of finalEvents) {
+          if (event.type === 'answer_chunk' && event.content) {
+            fullContent += event.content;
+          }
+        }
+      }
+
+      // Final update with all metadata
+      setMessages(prev => 
+        prev.map(msg => 
+          msg.id === botMessageId 
+            ? { 
+                ...msg, 
+                content: fullContent || 'Xin lỗi, tôi không thể trả lời câu hỏi này lúc này.',
+                isStreaming: false,
+                sources,
+                confidence,
+                userQuery: currentQuery,
+                chunkIds
+              }
+            : msg
+        )
+      );
+
     } catch (error) {
-      console.error('Error sending message:', error);
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        content: 'Xin lỗi, có lỗi xảy ra. Vui lòng thử lại sau.',
-        sender: 'bot',
-        timestamp: new Date()
-      };
-      setMessages(prev => [...prev, errorMessage]);
+      console.error('Error sending streaming message:', error);
+      
+      // Update with error message
+      setMessages(prev => 
+        prev.map(msg => 
+          msg.id === botMessageId 
+            ? { 
+                ...msg, 
+                content: 'Xin lỗi, có lỗi xảy ra khi xử lý yêu cầu. Vui lòng thử lại sau.',
+                isStreaming: false
+              }
+            : msg
+        )
+      );
     } finally {
       setIsTyping(false);
+      setStreamingMessageId(null);
+      setCurrentStreamingContent('');
+      setStreamingStatus('');
     }
   };
 
@@ -163,17 +256,36 @@ ${source.content ? `📝 Nội dung liên quan:\n${source.content.substring(0, 3
           <div key={message.id} className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
             <div className={`max-w-[85%] p-4 rounded-lg shadow-sm ${message.sender === 'user' ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-800'}`}>
               <div className="flex items-start space-x-3">
-                {message.sender === 'bot' && <Bot className="w-5 h-5 mt-0.5 flex-shrink-0" />}
+                {message.sender === 'bot' && (
+                  <div className="flex-shrink-0">
+                    {message.isStreaming ? (
+                      <Loader2 className="w-5 h-5 mt-0.5 text-red-600 animate-spin" />
+                    ) : (
+                      <Bot className="w-5 h-5 mt-0.5" />
+                    )}
+                  </div>
+                )}
                 {message.sender === 'user' && <User className="w-5 h-5 mt-0.5 flex-shrink-0" />}
                 <div className="flex-1 min-w-0">
                   <div className="text-sm markdown-body leading-relaxed">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                      {message.content}
-                    </ReactMarkdown>
+                    {message.content ? (
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {message.content}
+                      </ReactMarkdown>
+                    ) : message.isStreaming ? (
+                      <div className="flex items-center space-x-2 text-gray-500 italic">
+                        <span>{message.id === streamingMessageId && streamingStatus ? streamingStatus : 'Đang soạn câu trả lời'}</span>
+                        <div className="flex space-x-1">
+                          <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce"></div>
+                          <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                          <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                        </div>
+                      </div>
+                    ) : null}
                   </div>
 
-                  {/* Sources Section - only for bot messages */}
-                  {message.sender === 'bot' && message.sources && message.sources.length > 0 && (
+                  {/* Sources Section - only for bot messages and not streaming */}
+                  {message.sender === 'bot' && message.sources && message.sources.length > 0 && !message.isStreaming && (
                     <SourceSection
                       sources={message.sources}
                       confidence={message.confidence}
@@ -187,8 +299,8 @@ ${source.content ? `📝 Nội dung liên quan:\n${source.content.substring(0, 3
                     {message.timestamp.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
                   </p>
 
-                  {/* Feedback Buttons - only for bot messages (except welcome message) */}
-                  {message.sender === 'bot' && message.id !== '1' && (
+                  {/* Feedback Buttons - only for bot messages (except welcome message) and not streaming */}
+                  {message.sender === 'bot' && message.id !== '1' && !message.isStreaming && (
                     <FeedbackButtons
                       conversationId={conversationId}
                       messageId={message.id}

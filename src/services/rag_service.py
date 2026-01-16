@@ -1468,6 +1468,310 @@ Trả lời / Response:"""
                 "images": [],
             }
 
+    def generate_answer_stream(
+        self,
+        query: str,
+        conversation_id: Optional[str] = None,
+        conversation_history: Optional[List[dict]] = None,
+        language: str = "vi",
+    ):
+        """
+        Generate answer using RAG approach with streaming response.
+        Yields chunks of data as they become available.
+
+        Args:
+            query: User query
+            conversation_id: Optional conversation ID
+            conversation_history: Optional conversation history
+            language: Response language - 'vi' for Vietnamese (default) or 'en' for English
+
+        Yields:
+            Dict with chunks of data (answer, metadata, etc.)
+        """
+        try:
+            from src.services.gemini_service import (
+                generate_response_stream as gemini_stream,
+            )
+
+            # Create new conversation if needed
+            if not conversation_id:
+                conversation_id = str(uuid.uuid4())
+                self.conversations[conversation_id] = []
+            elif conversation_id not in self.conversations:
+                self.conversations[conversation_id] = []
+
+            # Use conversation history if provided
+            if conversation_history and not self.conversations[conversation_id]:
+                for message in conversation_history:
+                    if (
+                        isinstance(message, dict)
+                        and "role" in message
+                        and "content" in message
+                    ):
+                        if message["role"] in ["user", "assistant"]:
+                            self.conversations[conversation_id].append(
+                                {"role": message["role"], "content": message["content"]}
+                            )
+
+            # Step 1: Send initial metadata
+            yield {
+                "type": "metadata",
+                "conversation_id": conversation_id,
+                "status": "processing",
+            }
+
+            # Step 2: Normalize query
+            log.info(f"Original query: {query}")
+            from src.services.gemini_service import normalize_question
+
+            normalized_query = normalize_question(query)
+            log.info(f"Normalized query: {normalized_query}")
+
+            normalization_applied = (
+                normalized_query != query
+            ) and ENABLE_GEMINI_NORMALIZATION
+
+            # Step 3: Get memory context
+            memory_context = ""
+            try:
+                conv_context = self.memory_service.get_conversation_context(
+                    conversation_id=conversation_id,
+                    query=normalized_query,
+                    include_memory_search=True,
+                )
+                if conv_context.has_long_term_memory or conv_context.recent_messages:
+                    memory_context = self.memory_service.format_context_for_prompt(
+                        conv_context
+                    )
+                    log.info(
+                        f"🧠 Loaded memory context: {len(conv_context.memory_summaries)} summaries, {len(conv_context.recent_messages)} recent messages"
+                    )
+            except Exception as mem_error:
+                log.warning(f"Could not load memory context: {mem_error}")
+
+            # Step 4: Rewrite query with history
+            current_history = self.conversations.get(conversation_id, [])
+            rewritten_query = self._rewrite_query_with_history(
+                normalized_query, current_history
+            )
+
+            # Step 5: Retrieve relevant chunks
+            yield {"type": "status", "message": "Đang tìm kiếm tài liệu liên quan..."}
+
+            relevant_chunks = self.retrieve_relevant_chunks(rewritten_query)
+            context = self.create_context(relevant_chunks)
+
+            # Get sources
+            sources = []
+            for chunk in relevant_chunks:
+                source = chunk.get("source_file", "") or chunk.get("source", "")
+                if source and source not in sources:
+                    sources.append(source)
+
+            # Build source references
+            source_references = []
+            for chunk in relevant_chunks:
+                chunk_id = chunk.get("chunk_id", "")
+                content = chunk.get("content", "")
+                snippet = content[:200]
+                if len(content) > 200:
+                    last_space = snippet.rfind(" ")
+                    if last_space > 150:
+                        snippet = snippet[:last_space]
+                    snippet += "..."
+
+                relevance_score = (
+                    chunk.get("rerank_score")
+                    or chunk.get("combined_score")
+                    or chunk.get("dense_score")
+                    or 0.0
+                )
+                if relevance_score > 1.0:
+                    relevance_score = min(1.0, (relevance_score + 10) / 20)
+                elif relevance_score < 0:
+                    relevance_score = max(0.0, (relevance_score + 10) / 20)
+
+                source_ref = {
+                    "chunk_id": str(chunk_id),
+                    "filename": chunk.get("source_file", "") or chunk.get("source", ""),
+                    "page_number": chunk.get("page_number"),
+                    "heading": chunk.get("heading_text"),
+                    "content_snippet": snippet,
+                    "full_content": content,
+                    "relevance_score": relevance_score,
+                }
+                source_references.append(source_ref)
+
+            # Calculate confidence
+            if relevant_chunks:
+                scores = []
+                for chunk in relevant_chunks:
+                    score = (
+                        chunk.get("rerank_score")
+                        or chunk.get("combined_score")
+                        or chunk.get("dense_score")
+                        or 0.0
+                    )
+                    if score > 1.0:
+                        score = min(1.0, (score + 10) / 20)
+                    elif score < 0:
+                        score = max(0.0, (score + 10) / 20)
+                    scores.append(score)
+
+                avg_score = sum(scores) / len(scores)
+                confidence = min(max(avg_score, 0.0), 1.0)
+            else:
+                confidence = 0.0
+
+            # Send sources before streaming answer
+            yield {
+                "type": "sources",
+                "sources": sources,
+                "source_references": source_references,
+                "confidence": confidence,
+            }
+
+            # Step 6: Generate streaming answer
+            yield {"type": "status", "message": "Đang tạo câu trả lời..."}
+
+            system_prompt = self.create_system_prompt(language=language)
+            user_prompt = self.create_user_prompt(
+                query, context, memory_context, language=language
+            )
+
+            full_prompt = f"{system_prompt}\n\n{user_prompt}"
+
+            # Stream answer from Gemini
+            full_answer = ""
+            for text_chunk in gemini_stream(prompt=full_prompt):
+                full_answer += text_chunk
+                yield {"type": "answer_chunk", "content": text_chunk}
+
+            # Add engagement prompt if needed
+            if full_answer:
+                full_answer = self._add_engagement_prompt(full_answer, query, language)
+
+                # If engagement was added, send the additional part
+                if len(full_answer) > len(full_answer.rstrip()):
+                    engagement_part = full_answer[len(full_answer.rstrip()) :]
+                    yield {"type": "answer_chunk", "content": engagement_part}
+
+            # Step 7: Get attachments
+            attachments = []
+            try:
+                attachment_ids_found = set()
+
+                if relevant_chunks:
+                    chunk_ids = [
+                        chunk.get("id") for chunk in relevant_chunks if chunk.get("id")
+                    ]
+                    if chunk_ids:
+                        chunk_attachments = (
+                            self.attachment_service.get_attachments_by_chunk_ids(
+                                chunk_ids
+                            )
+                        )
+                        for att in chunk_attachments:
+                            attachment_ids_found.add(att.id)
+                            attachments.append(
+                                {
+                                    "file_name": att.file_name,
+                                    "file_type": att.file_type,
+                                    "download_url": att.download_url,
+                                    "description": att.description,
+                                    "file_size": att.file_size,
+                                }
+                            )
+
+                from src.services.smart_attachment_matcher import SmartAttachmentMatcher
+
+                query_keywords = SmartAttachmentMatcher.extract_keywords_from_query(
+                    query
+                )
+                if query_keywords:
+                    keyword_attachments = self.attachment_service.search_attachments(
+                        keywords=query_keywords
+                    )
+                    for att in keyword_attachments:
+                        if att.id not in attachment_ids_found:
+                            score = SmartAttachmentMatcher.score_attachment_relevance(
+                                att.keywords or [], query_keywords
+                            )
+                            if score > 0.3:
+                                attachment_ids_found.add(att.id)
+                                attachments.append(
+                                    {
+                                        "file_name": att.file_name,
+                                        "file_type": att.file_type,
+                                        "download_url": att.download_url,
+                                        "description": att.description,
+                                        "file_size": att.file_size,
+                                    }
+                                )
+            except Exception as att_error:
+                log.warning(f"Could not retrieve attachments: {att_error}")
+
+            # Step 8: Detect charts
+            chart_data = self._detect_chart_request(query, full_answer)
+
+            # Step 9: Send final metadata
+            yield {
+                "type": "complete",
+                "attachments": attachments,
+                "chart_data": chart_data,
+                "normalization_applied": normalization_applied,
+                "original_query": query if normalization_applied else None,
+                "normalized_query": normalized_query if normalization_applied else None,
+            }
+
+            # Step 10: Save to memory and database
+            self.conversations[conversation_id].append(
+                {"role": "user", "content": query}
+            )
+            self.conversations[conversation_id].append(
+                {"role": "assistant", "content": full_answer}
+            )
+
+            if len(self.conversations[conversation_id]) > 10:
+                self.conversations[conversation_id] = self.conversations[
+                    conversation_id
+                ][-10:]
+
+            try:
+                self.memory_service.add_exchange(
+                    conversation_id=conversation_id,
+                    user_message=query,
+                    assistant_message=full_answer,
+                    metadata={
+                        "confidence": confidence,
+                        "sources": sources,
+                        "normalized_query": (
+                            normalized_query if normalization_applied else None
+                        ),
+                    },
+                )
+            except Exception as mem_error:
+                log.warning(f"Could not save to persistent memory: {mem_error}")
+
+            try:
+                self.db_service.save_conversation(
+                    conversation_id=conversation_id,
+                    user_message=query,
+                    assistant_response=full_answer,
+                    sources=sources,
+                    confidence=confidence,
+                    processing_time=0.0,
+                )
+            except Exception as save_error:
+                log.warning(f"Could not save conversation to DB: {save_error}")
+
+        except Exception as e:
+            log.error(f"Error in streaming answer generation: {e}")
+            yield {
+                "type": "error",
+                "message": "Xin lỗi, tôi không thể trả lời câu hỏi này. Vui lòng thử lại sau.",
+            }
+
     def get_conversation_history(self, conversation_id: str) -> List[Dict[str, Any]]:
         """
         Get conversation history

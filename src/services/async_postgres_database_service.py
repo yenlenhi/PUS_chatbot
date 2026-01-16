@@ -57,7 +57,7 @@ class AsyncPostgresDatabaseService:
                     url = url.replace("postgresql+asyncpg://", "postgresql://")
                 elif url.startswith("postgres+asyncpg://"):
                     url = url.replace("postgres+asyncpg://", "postgres://")
-                
+
                 # Create connection with statement cache disabled
                 return await asyncpg.connect(
                     url,
