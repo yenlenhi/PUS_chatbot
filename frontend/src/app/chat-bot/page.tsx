@@ -342,7 +342,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   return (
     <div className="flex justify-start items-start gap-2 sm:gap-3">
       {/* Bot Avatar */}
-      <div className="flex-shrink-0">
+      <div className="flex-shrink-0 relative">
         <Image
           src="/assests/chatbot_avatar.png"
           alt="PSU ChatBot"
@@ -350,6 +350,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
           height={32}
           className="w-8 h-8 sm:w-10 sm:h-10 rounded-full shadow-sm sm:shadow-md"
         />
+        <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-400 rounded-full border border-white"></div>
       </div>
       
       {/* Message content */}
@@ -980,20 +981,9 @@ const ChatBotPage = () => {
             <div className="bg-gradient-to-r from-red-600 to-red-700 text-white p-2 sm:p-3 relative overflow-hidden">
               <div className="flex items-center justify-between relative z-10">
                 <div className="flex items-center space-x-2">
-                  <div className="relative flex-shrink-0">
-                    <Image
-                      src="/assests/chatbot_avatar.png"
-                      alt="PSU ChatBot Avatar"
-                      width={32}
-                      height={32}
-                      className="w-8 h-8 rounded-full border-2 border-white shadow-sm"
-                    />
-                    <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-400 rounded-full border border-white"></div>
-                  </div>
                   <div>
-                    <h2 className="text-sm font-bold flex items-center gap-1">
+                    <h2 className="text-sm font-bold">
                       PSU ChatBot
-                      <span className="w-1.5 h-1.5 bg-green-400 rounded-full"></span>
                     </h2>
                   </div>
                 </div>
@@ -1071,60 +1061,14 @@ const ChatBotPage = () => {
               )}
 
               {messages.length === 1 && (
-                <div className="space-y-3 animate-in fade-in slide-in-from-bottom duration-700 delay-300">
-                  {/* Compact Quick Procedure Access */}
-                  <div className="bg-gradient-to-br from-indigo-50 via-blue-50 to-cyan-50 rounded-xl p-3 border border-indigo-200/50 shadow-md">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Compass className="w-4 h-4 text-indigo-600" />
-                      <h4 className="font-bold text-indigo-900 text-sm">
-                        {language === 'vi' ? '🚀 Thủ tục phổ biến' : '🚀 Common Procedures'}
-                      </h4>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      {[
-                        { 
-                          icon: '📄', 
-                          gradient: 'from-emerald-400 to-teal-600',
-                          label: language === 'vi' ? 'Giấy xác nhận' : 'Confirmation',
-                          action: () => setGuidedFlowOpen(true)
-                        },
-                        { 
-                          icon: '⏸️', 
-                          gradient: 'from-amber-400 to-orange-600',
-                          label: language === 'vi' ? 'Nghỉ học' : 'Leave',
-                          action: () => setGuidedFlowOpen(true)
-                        },
-                        { 
-                          icon: '💰', 
-                          gradient: 'from-purple-400 to-pink-600',
-                          label: language === 'vi' ? 'Học phí' : 'Tuition',
-                          action: () => setGuidedFlowOpen(true)
-                        },
-                        { 
-                          icon: '🏠', 
-                          gradient: 'from-cyan-400 to-blue-600',
-                          label: language === 'vi' ? 'KTX' : 'Dorm',
-                          action: () => setGuidedFlowOpen(true)
-                        },
-                      ].map((item, index) => (
-                        <button
-                          key={index}
-                          onClick={item.action}
-                          className={`group relative overflow-hidden flex items-center gap-2 p-2.5 bg-gradient-to-r ${item.gradient} hover:shadow-lg rounded-lg border border-white/30 text-white transition-all duration-300 hover:scale-105`}
-                        >
-                          <span className="text-sm">{item.icon}</span>
-                          <span className="font-medium text-xs leading-tight">{item.label}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                <div className="space-y-4 animate-in fade-in slide-in-from-bottom duration-700 delay-300">
 
-                  {/* Compact Suggested Questions */}
-                  <div className="bg-gradient-to-r from-white to-gray-50 rounded-xl p-3 shadow-md border border-gray-200/50">
-                    <div className="flex items-center justify-between mb-3">
-                      <p className="text-sm text-gray-800 font-bold flex items-center gap-2">
-                        💭 {language === 'vi' ? 'Hoặc hỏi trực tiếp:' : 'Or ask directly:'}
-                      </p>
+                  {/* Enhanced Suggested Questions */}
+                  <div className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 rounded-xl p-4 shadow-lg border border-blue-200/50">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-base text-indigo-900 font-bold flex items-center gap-2">
+                        🤔 {language === 'vi' ? 'Câu hỏi gợi ý cho bạn:' : 'Suggested questions for you:'}
+                      </h3>
                       {loadingSuggestions && (
                         <div className="flex items-center gap-1">
                           <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce"></div>
@@ -1133,27 +1077,28 @@ const ChatBotPage = () => {
                         </div>
                       )}
                     </div>
-                    <div className="grid grid-cols-1 gap-2">
+                    <div className="grid grid-cols-1 gap-3">
                       {loadingSuggestions ? (
-                        // Compact loading skeleton
-                        Array.from({ length: 3 }).map((_, index) => (
+                        // Enhanced loading skeleton
+                        Array.from({ length: 4 }).map((_, index) => (
                           <div
                             key={index}
-                            className="p-2.5 bg-gradient-to-r from-gray-100 to-gray-50 rounded-lg border border-gray-200 animate-pulse"
+                            className="p-3 bg-gradient-to-r from-gray-100 to-gray-50 rounded-lg border border-gray-200 animate-pulse"
                           >
-                            <div className="h-3 bg-gray-300 rounded w-3/4"></div>
+                            <div className="h-4 bg-gray-300 rounded w-full mb-2"></div>
+                            <div className="h-3 bg-gray-200 rounded w-3/4"></div>
                           </div>
                         ))
                       ) : (
-                        suggestedQuestions.slice(0, 3).map((question, index) => (
+                        suggestedQuestions.slice(0, 4).map((question, index) => (
                           <button
                             key={index}
                             onClick={() => setInputMessage(question)}
-                            className="group text-left p-2.5 text-xs bg-gradient-to-r from-white to-gray-50 hover:from-red-50 hover:to-pink-50 rounded-lg border border-gray-200 hover:border-red-300 text-gray-700 hover:text-red-700 transition-all duration-300 shadow-sm hover:shadow-md hover:scale-[1.01]"
+                            className="group text-left p-3 bg-gradient-to-r from-white to-blue-50 hover:from-blue-50 hover:to-indigo-100 rounded-lg border border-blue-200 hover:border-indigo-300 text-gray-700 hover:text-indigo-700 transition-all duration-300 shadow-sm hover:shadow-md hover:scale-[1.02] transform"
                           >
-                            <div className="flex items-start gap-2">
-                              <span className="text-red-400 text-xs">💡</span>
-                              <span className="font-medium leading-relaxed">{question}</span>
+                            <div className="flex items-start gap-3">
+                              <span className="text-blue-500 text-sm mt-0.5">💡</span>
+                              <span className="font-medium leading-relaxed text-sm">{question}</span>
                             </div>
                           </button>
                         ))
