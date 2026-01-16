@@ -45,16 +45,29 @@ class AsyncPostgresDatabaseService:
 
         try:
             # Create async engine with pgbouncer compatibility
-            # Use NullPool and disable prepared statements for pgbouncer
+            # Use NullPool and custom connection creator to disable prepared statements
             from sqlalchemy.pool import NullPool
+            import asyncpg
+
+            async def get_asyncpg_connection():
+                """Custom connection creator with statement_cache_size=0 for pgbouncer"""
+                # Parse database URL
+                if self.database_url.startswith("postgresql+asyncpg://"):
+                    url = self.database_url.replace("postgresql+asyncpg://", "")
+                else:
+                    url = self.database_url
+
+                # Create connection with statement cache disabled
+                return await asyncpg.connect(
+                    url,
+                    statement_cache_size=0,  # Disable prepared statements for pgbouncer
+                )
 
             self.engine = create_async_engine(
                 self.database_url,
                 echo=False,
                 poolclass=NullPool,  # Use NullPool for pgbouncer
-                connect_args={
-                    "statement_cache_size": 0,  # Disable prepared statements for pgbouncer
-                },
+                async_creator=get_asyncpg_connection,  # Use custom connection creator
             )
 
             # Create async session factory

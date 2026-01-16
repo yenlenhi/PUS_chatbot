@@ -68,8 +68,6 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         log.error(f"❌ Failed to initialize async services: {e}")
         # Don't crash the server, continue with sync fallback
-
-    # Ensure PDFs from the bundled repo are present in the mounted data volume
     try:
         repo_pdfs = BASE_DIR / "data" / "pdfs"
         target_pdfs = Path(PDF_DIR)
