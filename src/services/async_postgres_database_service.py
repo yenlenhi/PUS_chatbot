@@ -34,6 +34,12 @@ class AsyncPostgresDatabaseService:
         else:
             self.database_url = database_url
 
+        # Add prepared_statement_cache_size=0 for pgbouncer compatibility
+        if self.database_url and "?" in self.database_url:
+            self.database_url += "&prepared_statement_cache_size=0"
+        elif self.database_url:
+            self.database_url += "?prepared_statement_cache_size=0"
+
         self.engine = None
         self.async_session_factory = None
         self._initialized = False
@@ -45,17 +51,13 @@ class AsyncPostgresDatabaseService:
 
         try:
             # Create async engine with pgbouncer compatibility
-            # statement_cache_size=0 is required for pgbouncer in transaction/statement mode
+            # Use NullPool to avoid connection pooling issues with pgbouncer
+            from sqlalchemy.pool import NullPool
+            
             self.engine = create_async_engine(
                 self.database_url,
                 echo=False,
-                pool_size=10,
-                max_overflow=20,
-                pool_pre_ping=True,
-                connect_args={
-                    "statement_cache_size": 0,  # Disable prepared statements for pgbouncer
-                    "prepared_statement_cache_size": 0,
-                },
+                poolclass=NullPool,  # Use NullPool for pgbouncer
             )
 
             # Create async session factory
