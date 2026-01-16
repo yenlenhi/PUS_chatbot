@@ -48,13 +48,13 @@ class AttachmentService:
                     text(
                         """
                         INSERT INTO document_attachments 
-                        (file_name, file_type, file_path, file_size, description, keywords, is_active)
-                        VALUES (:file_name, :file_type, :file_path, :file_size, :description, :keywords, TRUE)
+                        (filename, file_type, file_path, file_size, description, keywords, is_active)
+                        VALUES (:filename, :file_type, :file_path, :file_size, :description, :keywords, TRUE)
                         RETURNING id
                     """
                     ),
                     {
-                        "file_name": file_name,
+                        "filename": file_name,
                         "file_type": file_type,
                         "file_path": file_path,
                         "file_size": file_size,
@@ -127,7 +127,7 @@ class AttachmentService:
                 result = conn.execute(
                     text(
                         """
-                        SELECT DISTINCT a.id, a.file_name, a.file_type, a.file_path, 
+                        SELECT DISTINCT a.id, a.filename, a.file_type, a.file_path, 
                                a.file_size, a.description, a.keywords
                         FROM document_attachments a
                         JOIN chunk_attachments ca ON a.id = ca.attachment_id
@@ -172,7 +172,7 @@ class AttachmentService:
                 result = conn.execute(
                     text(
                         """
-                        SELECT id, file_name, file_type, file_path, file_size, 
+                        SELECT id, filename, file_type, file_path, file_size, 
                                description, keywords
                         FROM document_attachments
                         WHERE id = :id AND is_active = TRUE
@@ -214,7 +214,7 @@ class AttachmentService:
         try:
             with self.db.engine.connect() as conn:
                 query = """
-                    SELECT id, file_name, file_type, file_path, file_size, 
+                    SELECT id, filename, file_type, file_path, file_size, 
                            description, keywords
                     FROM document_attachments
                     WHERE is_active = TRUE
@@ -228,7 +228,7 @@ class AttachmentService:
                         keyword_conditions.append(
                             f"(keywords && ARRAY[:kw{i}]::text[] OR "
                             f"description ILIKE :kw_desc{i} OR "
-                            f"file_name ILIKE :kw_file{i})"
+                            f"filename ILIKE :kw_file{i})"
                         )
                         params[f"kw{i}"] = kw
                         params[f"kw_desc{i}"] = f"%{kw}%"
@@ -237,8 +237,8 @@ class AttachmentService:
                     query += " AND (" + " OR ".join(keyword_conditions) + ")"
 
                 if file_name:
-                    query += " AND file_name ILIKE :file_name"
-                    params["file_name"] = f"%{file_name}%"
+                    query += " AND filename ILIKE :filename"
+                    params["filename"] = f"%{file_name}%"
 
                 query += " ORDER BY created_at DESC"
 
@@ -275,7 +275,7 @@ class AttachmentService:
                 result = conn.execute(
                     text(
                         """
-                        SELECT id, file_name, file_type, file_path, file_size, 
+                        SELECT id, filename, file_type, file_path, file_size, 
                                description, keywords
                         FROM document_attachments
                         WHERE is_active = TRUE
