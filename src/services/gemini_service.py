@@ -144,7 +144,7 @@ def generate_response(
     }
 
     try:
-        log.info(f"Sending request to Gemini API with prompt: {prompt[:100]}...")
+        log.debug(f"Sending request to Gemini API...")
 
         response = requests.post(
             f"{GEMINI_API_URL}?key={GEMINI_API_KEY}",

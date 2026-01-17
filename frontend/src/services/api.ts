@@ -8,12 +8,12 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 const apiCall = async <T>(endpoint: string, options: RequestInit = {}): Promise<T> => {
   const url = `${API_BASE_URL}${endpoint}`;
 
-  console.log(`API Request: ${options.method || 'GET'} ${url}`);
+  // console.log(`API Request: ${options.method || 'GET'} ${url}`);
 
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 30000);
-    
+
     const response = await fetch(url, {
       signal: controller.signal,
       headers: {
@@ -22,10 +22,10 @@ const apiCall = async <T>(endpoint: string, options: RequestInit = {}): Promise<
       },
       ...options,
     });
-    
+
     clearTimeout(timeoutId);
 
-    console.log(`API Response: ${response.status} ${url}`);
+    // console.log(`API Response: ${response.status} ${url}`);
 
     if (!response.ok) {
       let errorMessage = 'Đã xảy ra lỗi không xác định.';
@@ -68,12 +68,12 @@ export const chatAPI = {
     const timeoutPromise = new Promise<never>((_, reject) => {
       setTimeout(() => reject(new Error('Stream request timeout')), STREAM_TIMEOUT);
     });
-    
+
     // Tạo promise cho stream processing
     const streamPromise = (async () => {
       try {
-        console.log("Sending streaming request:", request);
-        
+        // console.log("Sending streaming request:", request);
+
         const response = await fetch(`${API_BASE_URL}/api/v1/chat`, {
           method: 'POST',
           headers: {
@@ -104,18 +104,18 @@ export const chatAPI = {
           while (true) {
             const { done, value } = await reader.read();
             if (done) break;
-            
+
             // Decode chunk và thêm vào buffer
             const chunk = decoder.decode(value, { stream: true });
-            console.log("Received chunk:", chunk);
+            // console.log("Received chunk:", chunk);
             buffer += chunk;
-            
+
             // Xử lý từng dòng trong buffer
             let newlineIndex;
             while ((newlineIndex = buffer.indexOf('\n')) >= 0) {
               const line = buffer.slice(0, newlineIndex);
               buffer = buffer.slice(newlineIndex + 1);
-              
+
               if (line.startsWith('data: ')) {
                 const data = line.slice(6);
                 try {
@@ -133,7 +133,7 @@ export const chatAPI = {
                     fullResponse.answer += data;
                   }
                 } catch {
-                  console.log("Not JSON, treating as text chunk:", data);
+                  // Skipping verbose log for non-JSON chunk
                   // Nếu không phải JSON, coi như là một phần của câu trả lời
                   onChunk(data);
                   fullResponse.answer += data;
@@ -141,9 +141,9 @@ export const chatAPI = {
               }
             }
           }
-          
-          console.log("Stream completed, full response:", fullResponse);
-          
+
+          // console.log("Stream completed, full response:", fullResponse);
+
           // Thêm fallback nếu không nhận được dữ liệu
           if (!fullResponse.answer && !fullResponse.sources.length) {
             console.warn('No answer received from stream, using fallback');
@@ -154,13 +154,11 @@ export const chatAPI = {
               conversation_id: request.conversation_id || '',
             };
           }
-          
+
           return fullResponse;
         } else {
           // Fallback nếu không phải stream
-          console.log("Not a stream response, parsing as JSON");
           const data = await response.json();
-          console.log("Parsed JSON response:", data);
           onChunk(data.answer || '');
           return data;
         }
@@ -169,7 +167,7 @@ export const chatAPI = {
         throw error;
       }
     })();
-    
+
     // Race giữa stream và timeout
     try {
       return await Promise.race([streamPromise, timeoutPromise]);
@@ -184,7 +182,7 @@ export const chatAPI = {
       };
     }
   },
-  
+
   // Giữ lại phương thức cũ để tương thích ngược
   sendMessage: async (request: ChatRequest): Promise<ChatResponse> => {
     return apiCall<ChatResponse>('/api/v1/chat', {
@@ -192,7 +190,7 @@ export const chatAPI = {
       body: JSON.stringify(request),
     });
   },
-  
+
   // Thêm hàm helper để chuyển đổi ChatResponse thành dạng Message
   formatChatResponseToMessage: (response: ChatResponse, messageId: string): Message => {
     return {
@@ -204,7 +202,7 @@ export const chatAPI = {
       confidence: response.confidence
     };
   },
-  
+
   // Search documents
   search: async (request: SearchRequest): Promise<SearchResponse> => {
     return apiCall<SearchResponse>('/api/v1/search', {
@@ -239,7 +237,7 @@ export const chatHistoryAPI = {
     params.append('offset', offset.toString());
     if (search) params.append('search', search);
     if (status && status !== 'all') params.append('status', status);
-    
+
     return apiCall<ChatHistoryResponse>(`/api/v1/admin/chat-history?${params.toString()}`);
   },
 
@@ -265,7 +263,7 @@ export const chatHistoryAPI = {
     const params = new URLSearchParams();
     if (startDate) params.append('start_date', startDate);
     if (endDate) params.append('end_date', endDate);
-    
+
     const queryString = params.toString();
     return apiCall<ChatHistoryExport>(`/api/v1/admin/chat-history/export${queryString ? `?${queryString}` : ''}`);
   },

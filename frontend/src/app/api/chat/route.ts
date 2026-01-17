@@ -20,9 +20,10 @@ export async function POST(request: NextRequest) {
     // Call backend RAG service
     const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
 
-    console.log(`Calling backend: ${backendUrl}/api/v1/chat`);
-    console.log(`Images count: ${images?.length || 0}`);
-    console.log(`Language: ${language || 'vi'}`);
+    // Debug logs (uncomment if needed for debugging)
+    // console.log(`Calling backend: ${backendUrl}/api/v1/chat`);
+    // console.log(`Images count: ${images?.length || 0}`);
+    // console.log(`Language: ${language || 'vi'}`);
 
     const response = await fetch(`${backendUrl}/api/v1/chat`, {
       method: 'POST',
@@ -50,7 +51,7 @@ export async function POST(request: NextRequest) {
     }
 
     const data = await response.json();
-    console.log('Backend response data:', JSON.stringify(data, null, 2));
+    // Skip verbose logging of response data
 
     return NextResponse.json({
       response: data.answer || data.response,

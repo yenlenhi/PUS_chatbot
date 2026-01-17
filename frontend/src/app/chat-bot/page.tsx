@@ -90,7 +90,7 @@ const ImageModal: React.FC<ImageModalProps> = ({ isOpen, onClose, imageSrc, imag
   if (!isOpen) return null;
 
   return (
-    <div 
+    <div
       className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm flex items-center justify-center"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
@@ -148,7 +148,7 @@ const ImageModal: React.FC<ImageModalProps> = ({ isOpen, onClose, imageSrc, imag
       </button>
 
       {/* Image Container */}
-      <div 
+      <div
         className="relative overflow-hidden w-full h-full flex items-center justify-center"
         onWheel={handleWheel}
         onMouseDown={handleMouseDown}
@@ -170,9 +170,9 @@ const ImageModal: React.FC<ImageModalProps> = ({ isOpen, onClose, imageSrc, imag
 
       {/* Keyboard Shortcuts Hint */}
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/60 text-xs">
-        <span className="bg-white/10 px-2 py-1 rounded">Cuộn chuột</span> zoom • 
-        <span className="bg-white/10 px-2 py-1 rounded mx-1">R</span> xoay • 
-        <span className="bg-white/10 px-2 py-1 rounded">Esc</span> đóng • 
+        <span className="bg-white/10 px-2 py-1 rounded">Cuộn chuột</span> zoom •
+        <span className="bg-white/10 px-2 py-1 rounded mx-1">R</span> xoay •
+        <span className="bg-white/10 px-2 py-1 rounded">Esc</span> đóng •
         <span className="bg-white/10 px-2 py-1 rounded ml-1">Kéo</span> di chuyển khi phóng to
       </div>
     </div>
@@ -193,7 +193,7 @@ const useTypewriter = (text: string, speed: number = 0.4, enabled: boolean = tru
 
     setDisplayedText('');
     setIsComplete(false);
-    
+
     if (!text) return;
 
     let index = 0;
@@ -232,6 +232,7 @@ interface MessageBubbleProps {
   speechSupported: boolean;
   copiedId: string | null;
   copiedQAId: string | null;
+  onSendFollowUp: (question: string) => void; // New prop for sending follow-up questions
 }
 
 const MessageBubble: React.FC<MessageBubbleProps> = ({
@@ -251,16 +252,50 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   speakingMessageId,
   speechSupported,
   copiedId,
-  copiedQAId
+  copiedQAId,
+  onSendFollowUp
 }) => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const shouldAnimate = message.sender === 'bot' && isLatest && message.id !== '1';
   const { displayedText, isComplete } = useTypewriter(message.content, 0.4, shouldAnimate);
-  
+
   const contentToShow = shouldAnimate ? displayedText : message.content;
   const isCopied = copiedId === message.id;
   const isCopiedQA = copiedQAId === message.id;
   const isThisMessageSpeaking = speakingMessageId === message.id && isSpeaking;
+
+  // Parse follow-up questions from content
+  const parseFollowUpQuestions = (content: string): { mainContent: string; followUpQuestions: string[] } => {
+    // Support multiple formats: with/without markdown bold markers
+    const markers = [
+      '**--- CÁC CÂU HỎI LIÊN QUAN ---**',
+      '--- CÁC CÂU HỎI LIÊN QUAN ---',
+      '**--- RELATED QUESTIONS ---**',
+      '--- RELATED QUESTIONS ---'
+    ];
+
+    for (const marker of markers) {
+      if (content.includes(marker)) {
+        const parts = content.split(marker);
+        const mainContent = parts[0].trim();
+        const followUpSection = parts[1]?.trim() || '';
+
+        // Extract questions (lines that end with '?' or '?**')
+        const questions = followUpSection
+          .split('\n')
+          .map(line => line.trim())
+          // Remove bullet points, dashes, and markdown bold markers
+          .map(line => line.replace(/^[-*]\s*/, '').replace(/\*\*/g, '').trim())
+          .filter(line => line.endsWith('?') && line.length > 5);
+
+        return { mainContent, followUpQuestions: questions };
+      }
+    }
+
+    return { mainContent: content, followUpQuestions: [] };
+  };
+
+  const { mainContent, followUpQuestions } = parseFollowUpQuestions(contentToShow);
 
   // User message with separate avatar
   if (message.sender === 'user') {
@@ -273,8 +308,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
             {message.uploadedImages && message.uploadedImages.length > 0 && (
               <div className="mb-2 flex flex-wrap gap-1.5 sm:gap-2 justify-end">
                 {message.uploadedImages.map((img, idx) => (
-                  <div 
-                    key={img.id || idx} 
+                  <div
+                    key={img.id || idx}
                     className="relative group cursor-pointer"
                     onClick={() => setSelectedImage(img.preview || img.base64 || '')}
                   >
@@ -293,14 +328,14 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                 ))}
               </div>
             )}
-            
+
             {/* Text bubble */}
             {message.content && (
               <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-2xl rounded-tr-sm px-4 py-3 shadow-lg shadow-blue-500/20">
                 <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
               </div>
             )}
-            
+
             {/* Footer: time and copy button */}
             <div className="flex items-center justify-end gap-2 mt-1.5 px-1">
               <span className="text-xs text-gray-400">
@@ -308,11 +343,10 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
               </span>
               <button
                 onClick={() => onCopy(message.content)}
-                className={`flex items-center gap-1 px-2 py-0.5 text-xs rounded-md transition-all duration-200 ${
-                  isCopied 
-                    ? 'bg-green-100 text-green-600' 
-                    : 'bg-gray-100 hover:bg-gray-200 text-gray-500'
-                }`}
+                className={`flex items-center gap-1 px-2 py-0.5 text-xs rounded-md transition-all duration-200 ${isCopied
+                  ? 'bg-green-100 text-green-600'
+                  : 'bg-gray-100 hover:bg-gray-200 text-gray-500'
+                  }`}
                 title="Sao chép"
               >
                 {isCopied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
@@ -320,7 +354,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
               </button>
             </div>
           </div>
-          
+
           {/* User Avatar - separate */}
           <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-md sm:shadow-lg shadow-blue-500/30">
             <User className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
@@ -352,11 +386,11 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
         />
         <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-400 rounded-full border border-white"></div>
       </div>
-      
+
       {/* Message content */}
       <div className="max-w-[90%] sm:max-w-[85%] md:max-w-[80%] bg-white rounded-xl sm:rounded-2xl rounded-tl-sm p-3 sm:p-4 shadow-sm sm:shadow-md border border-gray-100">
         <div className="text-sm markdown-body leading-relaxed text-gray-800">
-          <ReactMarkdown 
+          <ReactMarkdown
             remarkPlugins={[remarkGfm]}
             components={{
               code({ node, className, children, ...props }) {
@@ -402,13 +436,37 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
               },
             }}
           >
-            {contentToShow}
+            {mainContent}
           </ReactMarkdown>
           {/* Typing cursor while streaming */}
           {shouldAnimate && !isComplete && (
             <span className="inline-block w-2 h-4 bg-red-500 animate-pulse ml-1 align-middle"></span>
           )}
         </div>
+
+        {/* Follow-up Questions Section */}
+        {followUpQuestions.length > 0 && isComplete && (
+          <div className="mt-4 pt-4 border-t border-gray-200">
+            <h4 className="text-xs font-bold text-indigo-900 mb-3 flex items-center gap-2">
+              💡 Câu hỏi liên quan
+            </h4>
+            <div className="space-y-2">
+              {followUpQuestions.map((question, index) => (
+                <button
+                  key={index}
+                  onClick={() => onSendFollowUp(question)}
+                  className="w-full text-left p-3 bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 rounded-lg border border-blue-200 hover:border-indigo-300 text-gray-700 hover:text-indigo-700 transition-all duration-300 shadow-sm hover:shadow-md hover:scale-[1.02] transform group"
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="text-blue-500 text-sm mt-0.5 group-hover:scale-110 transition-transform">💬</span>
+                    <span className="font-medium leading-relaxed text-sm flex-1">{question}</span>
+                    <Send className="w-4 h-4 text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Charts */}
         {message.chartData && message.chartData.length > 0 && isComplete && (
@@ -479,36 +537,34 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
           <span className="text-xs text-gray-400">
             {(message.timestamp instanceof Date ? message.timestamp : new Date(message.timestamp)).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
           </span>
-          
+
           {message.id !== '1' && isComplete && (
             <>
               <button
                 onClick={() => onCopy(message.content)}
-                className={`flex items-center gap-1 px-2 py-1 text-xs rounded-md transition-all duration-200 ${
-                  isCopied 
-                    ? 'bg-green-100 text-green-600' 
-                    : 'bg-gray-100 hover:bg-gray-200 text-gray-500'
-                }`}
+                className={`flex items-center gap-1 px-2 py-1 text-xs rounded-md transition-all duration-200 ${isCopied
+                  ? 'bg-green-100 text-green-600'
+                  : 'bg-gray-100 hover:bg-gray-200 text-gray-500'
+                  }`}
                 title="Sao chép câu trả lời"
               >
                 {isCopied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
               </button>
-              
+
               {message.userQuery && (
                 <button
                   onClick={() => onCopyQA(message.userQuery || '', message.content)}
-                  className={`flex items-center gap-1 px-2 py-1 text-xs rounded-md transition-all duration-200 ${
-                    isCopiedQA 
-                      ? 'bg-green-100 text-green-600' 
-                      : 'bg-gray-100 hover:bg-gray-200 text-gray-500'
-                  }`}
+                  className={`flex items-center gap-1 px-2 py-1 text-xs rounded-md transition-all duration-200 ${isCopiedQA
+                    ? 'bg-green-100 text-green-600'
+                    : 'bg-gray-100 hover:bg-gray-200 text-gray-500'
+                    }`}
                   title="Sao chép Q&A"
                 >
                   {isCopiedQA ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
                   <span>Q&A</span>
                 </button>
               )}
-              
+
               {message.userQuery && (
                 <button
                   onClick={() => onRegenerate(message.userQuery || '')}
@@ -518,7 +574,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                   <RefreshCw className="w-3 h-3" />
                 </button>
               )}
-              
+
               {/* Text-to-Speech button */}
               {speechSupported && (
                 <button
@@ -533,11 +589,10 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                       onSpeak(message.content);
                     }
                   }}
-                  className={`flex items-center gap-1 px-2 py-1 text-xs rounded-md transition-all duration-200 ${
-                    isThisMessageSpeaking
-                      ? 'bg-blue-100 text-blue-600'
-                      : 'bg-gray-100 hover:bg-gray-200 text-gray-500'
-                  }`}
+                  className={`flex items-center gap-1 px-2 py-1 text-xs rounded-md transition-all duration-200 ${isThisMessageSpeaking
+                    ? 'bg-blue-100 text-blue-600'
+                    : 'bg-gray-100 hover:bg-gray-200 text-gray-500'
+                    }`}
                   title={isThisMessageSpeaking ? (isPaused ? 'Tiếp tục' : 'Tạm dừng') : 'Đọc câu trả lời'}
                 >
                   {isThisMessageSpeaking ? (
@@ -547,7 +602,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                   )}
                 </button>
               )}
-              
+
               {isThisMessageSpeaking && (
                 <button
                   onClick={onStopSpeaking}
@@ -741,8 +796,8 @@ const ChatBotPage = () => {
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          message: currentQuery, 
+        body: JSON.stringify({
+          message: currentQuery,
           conversation_id: conversationId,
           language: language, // Send language preference to backend
           images: currentImages.map(img => ({
@@ -756,7 +811,7 @@ const ChatBotPage = () => {
       if (response.ok) {
         const data = await response.json();
         const allSourceReferences: SourceReference[] = data.source_references || [];
-        
+
         // Filter sources with accuracy >= 80% and limit to top 5 most relevant
         const sourceReferences: SourceReference[] = allSourceReferences
           .filter(ref => (ref.relevance_score || 0) >= 0.8) // Only show sources with >= 80% accuracy
@@ -879,7 +934,7 @@ const ChatBotPage = () => {
 
 
   return (
-    <div 
+    <div
       className="min-h-screen bg-cover bg-center bg-fixed"
       style={{ backgroundImage: "url('/assests/background_image.jpg')" }}
     >
@@ -897,7 +952,7 @@ const ChatBotPage = () => {
                 <ArrowLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover:-translate-x-0.5 transition-transform" />
                 <Home className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover:scale-110 transition-transform" />
               </Link>
-              
+
               <Image
                 src="/assests/logo-main.png"
                 alt="Logo Trường Đại học An ninh Nhân dân"
@@ -919,22 +974,20 @@ const ChatBotPage = () => {
               <div className="flex items-center bg-gray-100 rounded-lg p-0.5 sm:p-1">
                 <button
                   onClick={() => setLanguage('vi')}
-                  className={`px-1.5 sm:px-2.5 py-1 sm:py-1.5 text-xs font-semibold rounded-md transition-all duration-200 ${
-                    language === 'vi'
-                      ? 'bg-red-600 text-white shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
+                  className={`px-1.5 sm:px-2.5 py-1 sm:py-1.5 text-xs font-semibold rounded-md transition-all duration-200 ${language === 'vi'
+                    ? 'bg-red-600 text-white shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                    }`}
                   title="Tiếng Việt"
                 >
                   VI
                 </button>
                 <button
                   onClick={() => setLanguage('en')}
-                  className={`px-1.5 sm:px-2.5 py-1 sm:py-1.5 text-xs font-semibold rounded-md transition-all duration-200 ${
-                    language === 'en'
-                      ? 'bg-blue-600 text-white shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
+                  className={`px-1.5 sm:px-2.5 py-1 sm:py-1.5 text-xs font-semibold rounded-md transition-all duration-200 ${language === 'en'
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                    }`}
                   title="English"
                 >
                   EN
@@ -949,13 +1002,7 @@ const ChatBotPage = () => {
                 <Compass className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 <span className="hidden sm:inline">{language === 'vi' ? 'Thủ tục' : 'Guide'}</span>
               </button>
-              <button
-                onClick={() => setRepositoryOpen(true)}
-                className="group flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-red-50 to-red-100 hover:from-red-100 hover:to-red-200 text-red-700 rounded-xl transition-all duration-300 text-xs sm:text-sm font-medium shadow-sm hover:shadow-md hover:scale-105"
-              >
-                <FolderOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover:scale-110 transition-transform" />
-                <span className="hidden sm:inline">{language === 'vi' ? 'Tài liệu' : 'Docs'}</span>
-              </button>
+
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
                 className="group flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-gray-50 to-gray-100 hover:from-gray-100 hover:to-gray-200 text-gray-700 rounded-xl transition-all duration-300 text-xs sm:text-sm font-medium relative shadow-sm hover:shadow-md hover:scale-105"
@@ -988,7 +1035,7 @@ const ChatBotPage = () => {
                   </div>
                 </div>
                 {/* Compact disclaimer toggle */}
-                <button 
+                <button
                   onClick={() => setShowDisclaimer(!showDisclaimer)}
                   className="text-xs text-red-100 hover:text-white p-1 rounded transition-colors"
                   title="Xem lưu ý"
@@ -1001,7 +1048,7 @@ const ChatBotPage = () => {
                 <div className="mt-2 p-2 bg-white/10 rounded-lg border border-white/20 animate-in slide-in-from-top duration-200">
                   <p className="text-xs text-red-50 leading-relaxed">
                     ⚠️ <span className="font-medium">{language === 'vi' ? 'Lưu ý:' : 'Note:'}</span>{' '}
-                    {language === 'vi' 
+                    {language === 'vi'
                       ? 'Thông tin từ AI chỉ mang tính tham khảo. Liên hệ phòng ban để được hỗ trợ chính thức.'
                       : 'AI information is for reference only. Contact departments for official support.'}
                   </p>
@@ -1032,6 +1079,7 @@ const ChatBotPage = () => {
                   speechSupported={speechSynthesisSupported}
                   copiedId={copiedMessageId}
                   copiedQAId={copiedQAMessageId}
+                  onSendFollowUp={handleSendMessage}
                 />
               ))}
 
@@ -1146,7 +1194,7 @@ const ChatBotPage = () => {
                   <div className="flex flex-wrap gap-3 sm:gap-4">
                     {uploadedImages.map((image) => (
                       <div key={image.id} className="relative group">
-                        <div 
+                        <div
                           className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden border-3 border-white shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer hover:scale-105 bg-gradient-to-br from-white to-gray-100"
                           onClick={() => setPreviewImage(image.preview)}
                         >
@@ -1186,7 +1234,7 @@ const ChatBotPage = () => {
                             if (!files) return;
                             const remainingSlots = 4 - uploadedImages.length;
                             const filesToProcess = Array.from(files).slice(0, remainingSlots);
-                            
+
                             for (const file of filesToProcess) {
                               if (!file.type.startsWith('image/')) continue;
                               const reader = new FileReader();
@@ -1238,10 +1286,10 @@ const ChatBotPage = () => {
                         const files = e.target.files;
                         if (!files) return;
                         const filesToProcess = Array.from(files).slice(0, 4);
-                        
+
                         for (const file of filesToProcess) {
                           if (!file.type.startsWith('image/')) continue;
-                          
+
                           // Validate file size (max 5MB)
                           const maxSize = 5 * 1024 * 1024; // 5MB
                           if (file.size > maxSize) {
@@ -1249,7 +1297,7 @@ const ChatBotPage = () => {
                             alert(`Ảnh "${file.name}" vượt quá 5MB (hiện tại: ${sizeMB}MB). Vui lòng chọn ảnh nhỏ hơn.`);
                             continue;
                           }
-                          
+
                           const reader = new FileReader();
                           reader.onload = () => {
                             const base64 = reader.result as string;
@@ -1289,19 +1337,19 @@ const ChatBotPage = () => {
                   onPaste={async (e) => {
                     const items = e.clipboardData?.items;
                     if (!items) return;
-                    
+
                     const imageItems = Array.from(items).filter(item => item.type.startsWith('image/'));
                     if (imageItems.length === 0) return;
-                    
+
                     e.preventDefault(); // Prevent pasting image as text
-                    
+
                     const remainingSlots = 4 - uploadedImages.length;
                     if (remainingSlots <= 0) return;
-                    
+
                     for (const item of imageItems.slice(0, remainingSlots)) {
                       const file = item.getAsFile();
                       if (!file) continue;
-                      
+
                       // Validate file size (max 5MB)
                       const maxSize = 5 * 1024 * 1024; // 5MB
                       if (file.size > maxSize) {
@@ -1309,7 +1357,7 @@ const ChatBotPage = () => {
                         alert(`Ảnh paste vượt quá 5MB (hiện tại: ${sizeMB}MB). Vui lòng chọn ảnh nhỏ hơn.`);
                         continue;
                       }
-                      
+
                       const reader = new FileReader();
                       reader.onload = () => {
                         const base64 = reader.result as string;
@@ -1325,9 +1373,9 @@ const ChatBotPage = () => {
                     }
                   }}
                   placeholder={
-                    isListening 
+                    isListening
                       ? (language === 'vi' ? "🎤 Đang lắng nghe..." : "🎤 Listening...")
-                      : uploadedImages.length > 0 
+                      : uploadedImages.length > 0
                         ? (language === 'vi' ? "💭 Mô tả hoặc hỏi về ảnh..." : "💭 Describe or ask about the image...")
                         : (language === 'vi' ? "💬 Nhập câu hỏi hoặc dán ảnh (Ctrl+V)..." : "💬 Type a question or paste an image (Ctrl+V)...")
                   }
@@ -1346,7 +1394,7 @@ const ChatBotPage = () => {
               <div className="mt-1.5 pt-1.5 border-t border-gray-200">
                 <div className="text-center">
                   <p className="text-xs text-gray-500 leading-tight">
-                    📋 {language === 'vi' 
+                    📋 {language === 'vi'
                       ? <>Mọi thông tin pháp lý chính thức xin tham khảo văn bản được công bố trên <a href="https://dhannd.bocongan.gov.vn/" target="_blank" rel="noopener noreferrer" className="text-red-600 hover:text-red-700 hover:underline font-medium">website/trang thông báo của trường</a>.</>
                       : <>For all official legal information, please refer to documents published on the <a href="https://dhannd.bocongan.gov.vn/" target="_blank" rel="noopener noreferrer" className="text-red-600 hover:text-red-700 hover:underline font-medium">university's website/notice board</a>.</>
                     }

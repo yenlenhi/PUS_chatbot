@@ -1291,10 +1291,10 @@ Trả lời / Response:"""
                 answer = "Xin lỗi, tôi không thể trả lời câu hỏi này lúc này. Vui lòng thử lại sau.\n\nBạn còn có thắc mắc gì khác không? Tôi sẵn sàng hỗ trợ thêm!"
                 confidence = 0.0
             else:
-                log.info(f"Raw answer from LLM: {repr(answer)}")
+                log.debug(f"Raw answer from LLM: {repr(answer[:100])}...")
                 # Add engagement prompt if not already present
                 answer = self._add_engagement_prompt(answer, query, language)
-                log.info(f"Using answer with engagement prompt: {repr(answer)}")
+                log.debug(f"Answer with engagement prompt added")
 
             # Update conversation history (in-memory cache)
             self.conversations[conversation_id].append(
