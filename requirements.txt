@@ -84,3 +84,6 @@ cryptography==41.0.7
 python-multipart==0.0.6
 
 slowapi==0.1.9
+
+# Excel Export
+openpyxl>=3.1.0
