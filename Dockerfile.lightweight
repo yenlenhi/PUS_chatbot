@@ -29,8 +29,9 @@ ENV PIP_DISABLE_PIP_VERSION_CHECK=1
 # Copy requirements first for better caching
 COPY requirements.txt .
 
-# Install Python dependencies with timeout and retry
+# Install PyTorch CPU-only first (smaller, faster download)
 RUN pip install --timeout 300 --retries 5 --upgrade pip && \
+    pip install --timeout 300 --retries 5 torch==2.2.0+cpu --extra-index-url https://download.pytorch.org/whl/cpu && \
     pip install --timeout 300 --retries 5 -r requirements.txt
 
 # Copy application code
