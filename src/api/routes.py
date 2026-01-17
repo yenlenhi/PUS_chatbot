@@ -116,8 +116,10 @@ async def chat_endpoint(
         # Check for streaming request
         accept_header = request.headers.get("accept", "") or ""
         if "text/event-stream" in accept_header:
-            log.info(f"Starting streaming chat for request: {chat_request.message[:50]}...")
-            
+            log.info(
+                f"Starting streaming chat for request: {chat_request.message[:50]}..."
+            )
+
             async def stream_generator():
                 session_id = chat_request.conversation_id or "default"
                 conversation_id = chat_request.conversation_id
@@ -125,18 +127,18 @@ async def chat_endpoint(
                 full_sources = []
                 final_confidence = 0.0
                 start_stream = time.time()
-                
+
                 try:
                     if chat_request.conversation_id:
                         conversation_id = chat_request.conversation_id
-                    
+
                     stream_iterator = rag.generate_answer_stream(
                         query=chat_request.message,
                         conversation_id=conversation_id,
                         conversation_history=chat_request.conversation_history,
                         language=chat_request.language or "vi",
                     )
-                    
+
                     for chunk in stream_iterator:
                         # Update metadata
                         if chunk.get("type") == "metadata":
@@ -147,15 +149,19 @@ async def chat_endpoint(
                             final_confidence = chunk.get("confidence", 0.0)
                         elif chunk.get("type") == "answer_chunk":
                             full_answer += chunk.get("content", "")
-                            
+
                         # Yield chunk
                         yield f"data: {json.dumps(chunk, ensure_ascii=False)}\n\n"
-                        
+
                     # Track analytics after stream finishes
                     processing_time_ms = (time.time() - start_stream) * 1000
-                    input_tokens = len(chat_request.message.split()) * 2 if chat_request.message else 0
+                    input_tokens = (
+                        len(chat_request.message.split()) * 2
+                        if chat_request.message
+                        else 0
+                    )
                     output_tokens = len(full_answer.split()) * 2
-                    
+
                     try:
                         analytics.track_chat_interaction(
                             session_id=session_id,
@@ -169,9 +175,9 @@ async def chat_endpoint(
                             output_tokens=output_tokens,
                             response_time_ms=processing_time_ms,
                             ip_address=request.client.host if request.client else None,
-                            user_agent=request.headers.get("user-agent", "")
+                            user_agent=request.headers.get("user-agent", ""),
                         )
-                        
+
                         analytics.log_access(
                             session_id=session_id,
                             ip_address=request.client.host if request.client else None,
@@ -179,14 +185,19 @@ async def chat_endpoint(
                             endpoint="/api/v1/chat",
                             method="POST",
                             status_code=200,
-                            response_time_ms=processing_time_ms
+                            response_time_ms=processing_time_ms,
                         )
                     except Exception as analytics_error:
-                        log.error(f"Error tracking analytics in stream: {analytics_error}")
-                        
+                        log.error(
+                            f"Error tracking analytics in stream: {analytics_error}"
+                        )
+
                 except Exception as e:
                     log.error(f"Streaming error: {e}")
-                    error_chunk = {"type": "error", "message": "Có lỗi xảy ra khi xử lý yêu cầu."}
+                    error_chunk = {
+                        "type": "error",
+                        "message": "Có lỗi xảy ra khi xử lý yêu cầu.",
+                    }
                     yield f"data: {json.dumps(error_chunk, ensure_ascii=False)}\n\n"
 
             return StreamingResponse(
@@ -196,7 +207,7 @@ async def chat_endpoint(
                     "Cache-Control": "no-cache",
                     "Connection": "keep-alive",
                     "X-Accel-Buffering": "no",
-                }
+                },
             )
 
         log.info(
@@ -787,13 +798,14 @@ async def admin_delete_document(
         if success:
             # Try to delete from Supabase Storage
             try:
-                from src.utils.chat_image_storage import get_supabase_client
+                from src.utils.chat_image_storage import get_supabase_client, _disable_proxy
 
                 if SUPABASE_URL and SUPABASE_SERVICE_KEY:
-                    supabase = get_supabase_client()
-                    # Delete from 'documents' bucket
-                    result = supabase.storage.from_("documents").remove([safe_filename])
-                    log.info(f"Deleted from Supabase Storage: {safe_filename}")
+                    with _disable_proxy():
+                        supabase = get_supabase_client()
+                        # Delete from 'documents' bucket
+                        result = supabase.storage.from_("documents").remove([safe_filename])
+                        log.info(f"Deleted from Supabase Storage: {safe_filename}")
             except Exception as storage_error:
                 log.warning(f"Could not delete from Supabase Storage: {storage_error}")
 
