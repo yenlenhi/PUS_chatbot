@@ -31,7 +31,7 @@ const NewsSectionLive = () => {
       setRefreshing(true);
       const response = await fetch('/api/news');
       const result = await response.json();
-      
+
       if (result.success) {
         setNewsData(result.data);
         setError(null);
@@ -121,14 +121,28 @@ const NewsSectionLive = () => {
 
           <div className="space-y-6">
             {mainNews.map((news) => (
-              <article 
-                key={news.id} 
+              <article
+                key={news.id}
                 className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200"
               >
                 <div className="md:flex">
                   <div className="md:w-1/3">
-                    <div className="h-48 md:h-full bg-gradient-to-br from-red-100 to-red-200 flex items-center justify-center relative overflow-hidden">
-                      <div className="text-red-800 text-center p-4">
+                    <div className="h-48 md:h-full bg-gray-100 flex items-center justify-center relative overflow-hidden group">
+                      {news.image ? (
+                        <img
+                          src={news.image}
+                          alt={news.title}
+                          className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            // Show fallback if image fails
+                            const sibling = e.currentTarget.nextElementSibling;
+                            if (sibling) sibling.classList.remove('opacity-0');
+                          }}
+                        />
+                      ) : null}
+
+                      <div className={`text-red-800 text-center p-4 transition-opacity duration-300 ${news.image ? 'opacity-0 absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-red-100 to-red-200' : 'bg-gradient-to-br from-red-100 to-red-200 w-full h-full flex flex-col items-center justify-center'}`}>
                         <div className="text-5xl mb-2">📰</div>
                         <div className="text-xs opacity-75">DHANND News</div>
                       </div>
@@ -162,7 +176,7 @@ const NewsSectionLive = () => {
                         <ArrowRight className="w-4 h-4 ml-1" />
                       </button>
                       {news.url && (
-                        <a 
+                        <a
                           href={news.url}
                           target="_blank"
                           rel="noopener noreferrer"
@@ -204,8 +218,21 @@ const NewsSectionLive = () => {
               {sidebarNews.map((news, index) => (
                 <article key={news.id} className="border-b border-gray-200 pb-4 last:border-b-0 hover:bg-gray-50 rounded transition-colors -mx-2 px-2">
                   <div className="flex items-start space-x-3">
-                    <div className="flex-shrink-0 w-8 h-8 bg-red-700 text-white rounded-full flex items-center justify-center text-sm font-bold">
-                      {index + 1}
+                    <div className="flex-shrink-0 w-20 h-14 relative overflow-hidden rounded bg-gray-100 border border-gray-200">
+                      {news.image ? (
+                        <img
+                          src={news.image}
+                          alt={news.title}
+                          className="absolute inset-0 w-full h-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                          }}
+                        />
+                      ) : null}
+                      <div className={`w-full h-full flex items-center justify-center bg-red-700 text-white font-bold text-sm ${news.image ? 'hidden' : ''}`}>
+                        {index + 1}
+                      </div>
                     </div>
                     <div className="flex-1">
                       <h4 className="text-sm font-medium text-gray-900 hover:text-red-700 cursor-pointer line-clamp-2 mb-2">
@@ -226,7 +253,7 @@ const NewsSectionLive = () => {
               ))}
             </div>
             <div className="mt-6 space-y-3">
-              <a 
+              <a
                 href="https://dhannd.bocongan.gov.vn/tin-tuc"
                 target="_blank"
                 rel="noopener noreferrer"

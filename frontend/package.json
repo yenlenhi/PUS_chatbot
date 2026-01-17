@@ -12,6 +12,7 @@
     "@supabase/supabase-js": "^2.89.0",
     "@types/react-syntax-highlighter": "^15.5.13",
     "axios": "^1.6.0",
+    "cheerio": "^1.1.2",
     "github-markdown-css": "^5.8.1",
     "lucide-react": "^0.400.0",
     "next": "^15.5.9",
