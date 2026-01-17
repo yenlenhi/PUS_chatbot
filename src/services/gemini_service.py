@@ -259,6 +259,8 @@ def generate_response_stream(
                 lines = decompressed_data.split("\n")
             else:
                 # Use iter_lines for non-gzipped response
+                # Explicitly set encoding to UTF-8 for Vietnamese text
+                response.encoding = 'utf-8'
                 lines = [line for line in response.iter_lines(decode_unicode=True)]
 
             # Process Server-Sent Events or newline-delimited JSON

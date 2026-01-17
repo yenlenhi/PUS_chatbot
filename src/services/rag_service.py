@@ -121,41 +121,34 @@ class RAGService:
         """
         Detect if the query/answer contains statistical data that can be visualized as charts.
         Returns chart data if applicable.
+        Only generates charts when user EXPLICITLY asks for statistics or charts.
         """
         chart_data = []
         query_lower = query.lower()
 
-        # Keywords that suggest chart visualization
-        chart_keywords = [
+        # Keywords that EXPLICITLY suggest chart visualization request
+        # Removed common keywords that appear in most questions
+        explicit_chart_keywords = [
             "thống kê",
             "biểu đồ",
-            "so sánh",
-            "tỷ lệ",
-            "phần trăm",
-            "%",
-            "số lượng",
-            "chỉ tiêu",
-            "điểm chuẩn",
-            "điểm trúng tuyển",
-            "tuyển sinh",
-            "học viên",
-            "sinh viên",
-            "năm",
-            "khóa",
-            "ngành",
+            "so sánh số liệu",
+            "vẽ biểu đồ",
+            "hiển thị biểu đồ",
             "chart",
             "graph",
             "statistics",
+            "visualize",
+            "visualization",
         ]
 
-        # Check if query asks for statistics/charts
+        # Check if query EXPLICITLY asks for statistics/charts
         should_generate_chart = any(
-            keyword in query_lower for keyword in chart_keywords
+            keyword in query_lower for keyword in explicit_chart_keywords
         )
 
         if should_generate_chart:
             # Example: Admission statistics by year
-            if any(word in query_lower for word in ["tuyển sinh", "chỉ tiêu", "năm"]):
+            if any(word in query_lower for word in ["tuyển sinh", "chỉ tiêu"]):
                 chart_data.append(
                     {
                         "type": "bar",
@@ -1649,12 +1642,15 @@ Trả lời / Response:"""
 
             # Add engagement prompt if needed
             if full_answer:
-                full_answer = self._add_engagement_prompt(full_answer, query, language)
-
-                # If engagement was added, send the additional part
-                if len(full_answer) > len(full_answer.rstrip()):
-                    engagement_part = full_answer[len(full_answer.rstrip()) :]
+                # Store original length before adding engagement
+                original_length = len(full_answer)
+                enhanced_answer = self._add_engagement_prompt(full_answer, query, language)
+                
+                # If engagement was added, stream the additional part
+                if len(enhanced_answer) > original_length:
+                    engagement_part = enhanced_answer[original_length:]
                     yield {"type": "answer_chunk", "content": engagement_part}
+                    full_answer = enhanced_answer
 
             # Step 7: Get attachments
             attachments = []

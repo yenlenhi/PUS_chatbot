@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Send, User, FolderOpen, Book, Copy, Check, RefreshCw, Volume2, VolumeX, Pause, Play, X, ImagePlus, Home, ArrowLeft, ZoomIn, ZoomOut, RotateCw, Download, Maximize2, Compass } from 'lucide-react';
-import type { Message, SourceReference, ChartData, ImageData, UploadedImage } from '@/types';
+import type { Message, SourceReference, ChartData, ImageData, UploadedImage, FileAttachment } from '@/types';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -792,77 +792,196 @@ const ChatBotPage = () => {
     setUploadedImages([]); // Clear uploaded images after sending
     setIsTyping(true);
 
+    // Create placeholder bot message for streaming
+    const newMessageId = (Date.now() + 1).toString();
+    let streamedContent = '';
+    let streamedSources: SourceReference[] = [];
+    let streamedConfidence = 0;
+    let streamedConversationId = conversationId;
+
+    // Add initial empty bot message for streaming
+    const initialBotMessage: Message = {
+      id: newMessageId,
+      role: 'assistant',
+      content: '',
+      sender: 'bot',
+      timestamp: new Date(),
+      userQuery: currentQuery,
+    };
+    setMessages(prev => [...prev, initialBotMessage]);
+    setLatestMessageId(newMessageId);
+    setIsTyping(false); // Hide typing indicator, show streaming message
+
     try {
-      const response = await fetch('/api/chat', {
+      // Use streaming endpoint - call backend directly with SSE header
+      const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
+      // If images are present, use non-streaming (vision not supported for streaming)
+      if (currentImages.length > 0) {
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: currentQuery,
+            conversation_id: conversationId,
+            language: language,
+            images: currentImages.map(img => ({
+              base64: img.base64,
+              mimeType: img.mimeType,
+              name: img.name
+            }))
+          })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const allSourceReferences: SourceReference[] = data.source_references || [];
+          const sourceReferences: SourceReference[] = allSourceReferences
+            .filter(ref => (ref.relevance_score || 0) >= 0.8)
+            .sort((a, b) => (b.relevance_score || 0) - (a.relevance_score || 0))
+            .slice(0, 5);
+
+          const chunkIds: number[] = sourceReferences
+            .map((ref: SourceReference) => parseInt(ref.chunk_id, 10))
+            .filter((id: number) => !isNaN(id));
+
+          if (sourceReferences.length > 0) {
+            setCurrentSourceReferences(sourceReferences);
+            setSidebarOpen(true);
+          }
+
+          setMessages(prev => prev.map(msg =>
+            msg.id === newMessageId
+              ? {
+                ...msg,
+                content: data.response || data.answer || 'Xin lỗi, tôi không thể trả lời câu hỏi này lúc này.',
+                sourceReferences: sourceReferences,
+                attachments: data.attachments || [],
+                confidence: data.confidence,
+                chunkIds: chunkIds,
+                chartData: data.chart_data || [],
+                images: data.images || []
+              }
+              : msg
+          ));
+        } else {
+          throw new Error('API call failed');
+        }
+        return;
+      }
+
+      // Use streaming for text-only messages
+      const response = await fetch(`${backendUrl}/api/v1/chat`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'text/event-stream',
+        },
         body: JSON.stringify({
           message: currentQuery,
           conversation_id: conversationId,
-          language: language, // Send language preference to backend
-          images: currentImages.map(img => ({
-            base64: img.base64,
-            mimeType: img.mimeType,
-            name: img.name
-          }))
+          language: language,
         })
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        const allSourceReferences: SourceReference[] = data.source_references || [];
-
-        // Filter sources with accuracy >= 80% and limit to top 5 most relevant
-        const sourceReferences: SourceReference[] = allSourceReferences
-          .filter(ref => (ref.relevance_score || 0) >= 0.8) // Only show sources with >= 80% accuracy
-          .sort((a, b) => (b.relevance_score || 0) - (a.relevance_score || 0))
-          .slice(0, 5);
-
-        // Extract chunk IDs for feedback
-        const chunkIds: number[] = sourceReferences
-          .map((ref: SourceReference) => parseInt(ref.chunk_id, 10))
-          .filter((id: number) => !isNaN(id));
-
-        // Update current source references for sidebar
-        if (sourceReferences.length > 0) {
-          setCurrentSourceReferences(sourceReferences);
-          setSidebarOpen(true); // Auto-open sidebar when sources are available
-        }
-
-        const newMessageId = (Date.now() + 1).toString();
-        const botMessage: Message = {
-          id: newMessageId,
-          role: 'assistant',
-          content: data.response || data.answer || 'Xin lỗi, tôi không thể trả lời câu hỏi này lúc này.',
-          sender: 'bot',
-          timestamp: new Date(),
-          sourceReferences: sourceReferences,
-          attachments: data.attachments || [], // File attachments from backend
-          confidence: data.confidence,
-          userQuery: currentQuery, // Store for feedback
-          chunkIds: chunkIds, // Store for feedback
-          chartData: data.chart_data || [], // Charts from backend
-          images: data.images || [] // Images from backend
-        };
-        setMessages(prev => [...prev, botMessage]);
-        setLatestMessageId(newMessageId);
-      } else {
-        throw new Error('API call failed');
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
       }
+
+      if (!response.body) {
+        throw new Error('No response body');
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let streamedAttachments: FileAttachment[] = [];
+      let streamedChartData: ChartData[] = [];
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+
+        // Process SSE lines
+        let newlineIndex;
+        while ((newlineIndex = buffer.indexOf('\n')) >= 0) {
+          const line = buffer.slice(0, newlineIndex);
+          buffer = buffer.slice(newlineIndex + 1);
+
+          if (line.startsWith('data: ')) {
+            const dataStr = line.slice(6);
+            try {
+              const chunk = JSON.parse(dataStr);
+
+              if (chunk.type === 'metadata') {
+                streamedConversationId = chunk.conversation_id || streamedConversationId;
+              } else if (chunk.type === 'sources') {
+                // Backend sends source_references, not sources
+                const allSourceReferences: SourceReference[] = chunk.source_references || [];
+                streamedSources = allSourceReferences
+                  .filter((ref: SourceReference) => (ref.relevance_score || 0) >= 0.8)
+                  .sort((a: SourceReference, b: SourceReference) => (b.relevance_score || 0) - (a.relevance_score || 0))
+                  .slice(0, 5);
+                streamedConfidence = chunk.confidence || 0;
+
+                if (streamedSources.length > 0) {
+                  setCurrentSourceReferences(streamedSources);
+                  setSidebarOpen(true);
+                }
+              } else if (chunk.type === 'answer_chunk') {
+                streamedContent += chunk.content || '';
+                // Update message content progressively
+                setMessages(prev => prev.map(msg =>
+                  msg.id === newMessageId
+                    ? { ...msg, content: streamedContent }
+                    : msg
+                ));
+              } else if (chunk.type === 'complete') {
+                // Handle complete chunk with attachments and charts
+                streamedAttachments = chunk.attachments || [];
+                streamedChartData = chunk.chart_data || [];
+              } else if (chunk.type === 'done') {
+                // Streaming complete
+                break;
+              } else if (chunk.type === 'error') {
+                throw new Error(chunk.message || 'Streaming error');
+              }
+            } catch (parseError) {
+              // Continue on parse errors
+              console.warn('Error parsing SSE chunk:', parseError);
+            }
+          }
+        }
+      }
+
+      // Final update with all metadata
+      const chunkIds: number[] = streamedSources
+        .map((ref: SourceReference) => parseInt(ref.chunk_id, 10))
+        .filter((id: number) => !isNaN(id));
+
+      setMessages(prev => prev.map(msg =>
+        msg.id === newMessageId
+          ? {
+            ...msg,
+            content: streamedContent || 'Xin lỗi, tôi không thể trả lời câu hỏi này lúc này.',
+            sourceReferences: streamedSources,
+            confidence: streamedConfidence,
+            chunkIds: chunkIds,
+            attachments: streamedAttachments,
+            chartData: streamedChartData,
+          }
+          : msg
+      ));
+
     } catch (error) {
       console.error('Error sending message:', error);
-      const newErrorId = (Date.now() + 1).toString();
-      const errorMessage: Message = {
-        id: newErrorId,
-        role: 'assistant',
-        content: 'Xin lỗi, có lỗi xảy ra. Vui lòng thử lại sau.',
-        sender: 'bot',
-        timestamp: new Date()
-      };
-      setMessages(prev => [...prev, errorMessage]);
-      setLatestMessageId(newErrorId);
-    } finally {
-      setIsTyping(false);
+      setMessages(prev => prev.map(msg =>
+        msg.id === newMessageId
+          ? { ...msg, content: 'Xin lỗi, có lỗi xảy ra. Vui lòng thử lại sau.' }
+          : msg
+      ));
     }
   };
 
