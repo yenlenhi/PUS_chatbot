@@ -55,8 +55,10 @@ class AsyncPostgresDatabaseService:
                 connect_args={
                     "statement_cache_size": 0,  # Disable statement cache
                     "prepared_statement_cache_size": 0,  # Disable prepared statement cache
-                    # This function returns None for statement names, which disables named prepared statements
-                    "prepared_statement_name_func": lambda: None,
+                },
+                # Disable SQLAlchemy's use of prepared statements
+                execution_options={
+                    "compiled_cache": None,
                 },
             )
 
@@ -67,12 +69,14 @@ class AsyncPostgresDatabaseService:
 
             # Test connection
             async with self.engine.begin() as conn:
-                result = await conn.execute(text("SELECT 1"))
+                result = await conn.execute(
+                    text("SELECT 1").execution_options(compiled_cache=None)
+                )
                 log.info("✅ Async PostgreSQL connection successful")
 
                 # Check pgvector extension
                 result = await conn.execute(
-                    text("SELECT * FROM pg_extension WHERE extname = 'vector'")
+                    text("SELECT * FROM pg_extension WHERE extname = 'vector'").execution_options(compiled_cache=None)
                 )
                 if result.fetchone():
                     log.info("✅ pgvector extension is installed")
@@ -80,7 +84,9 @@ class AsyncPostgresDatabaseService:
                     log.warning(
                         "⚠️ pgvector extension not found, attempting to create..."
                     )
-                    await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+                    await conn.execute(
+                        text("CREATE EXTENSION IF NOT EXISTS vector").execution_options(compiled_cache=None)
+                    )
                     log.info("✅ pgvector extension created")
 
             # Create tables
@@ -95,10 +101,8 @@ class AsyncPostgresDatabaseService:
         """Create database tables if they don't exist"""
         try:
             async with self.engine.begin() as conn:
-                # Create chunks table
-                await conn.execute(
-                    text(
-                        """
+                # Combine all DDL statements into one execution to avoid prepared statement issues
+                ddl_script = """
                     CREATE TABLE IF NOT EXISTS chunks (
                         id SERIAL PRIMARY KEY,
                         content TEXT NOT NULL,
@@ -117,63 +121,33 @@ class AsyncPostgresDatabaseService:
                         char_count INTEGER,
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                    )
-                """
-                    )
-                )
+                    );
 
-                # Create embeddings table
-                await conn.execute(
-                    text(
-                        """
                     CREATE TABLE IF NOT EXISTS embeddings (
                         id SERIAL PRIMARY KEY,
                         chunk_id INTEGER NOT NULL REFERENCES chunks(id) ON DELETE CASCADE,
                         embedding vector(768) NOT NULL,
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                    )
-                """
-                    )
-                )
+                    );
 
-                # Create indexes for better performance
-                await conn.execute(
-                    text(
-                        """
                     CREATE INDEX IF NOT EXISTS idx_chunks_source_file 
-                    ON chunks(source_file)
-                """
-                    )
-                )
+                    ON chunks(source_file);
 
-                await conn.execute(
-                    text(
-                        """
                     CREATE INDEX IF NOT EXISTS idx_chunks_heading_text 
-                    ON chunks(heading_text)
-                """
-                    )
-                )
+                    ON chunks(heading_text);
 
-                await conn.execute(
-                    text(
-                        """
                     CREATE INDEX IF NOT EXISTS idx_embeddings_chunk_id 
-                    ON embeddings(chunk_id)
-                """
-                    )
-                )
+                    ON embeddings(chunk_id);
 
-                # Create vector similarity index
-                await conn.execute(
-                    text(
-                        """
                     CREATE INDEX IF NOT EXISTS idx_embeddings_vector 
                     ON embeddings USING ivfflat (embedding vector_cosine_ops) 
-                    WITH (lists = 100)
+                    WITH (lists = 100);
                 """
-                    )
-                )
+                
+                # Execute as a single statement to minimize prepared statement usage
+                await conn.execute(text(ddl_script).execution_options(
+                    compiled_cache=None
+                ))
 
                 log.info("✅ Database tables and indexes created successfully")
 
