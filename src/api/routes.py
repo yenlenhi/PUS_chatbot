@@ -17,6 +17,7 @@ from fastapi.responses import JSONResponse, FileResponse, StreamingResponse
 import time
 import datetime
 from pathlib import Path
+import json
 from typing import Optional, List
 from src.models.schemas import (
     ChatRequest,
@@ -112,6 +113,92 @@ async def chat_endpoint(
 ):
     start_time = time.time()
     try:
+        # Check for streaming request
+        accept_header = request.headers.get("accept", "") or ""
+        if "text/event-stream" in accept_header:
+            log.info(f"Starting streaming chat for request: {chat_request.message[:50]}...")
+            
+            async def stream_generator():
+                session_id = chat_request.conversation_id or "default"
+                conversation_id = chat_request.conversation_id
+                full_answer = ""
+                full_sources = []
+                final_confidence = 0.0
+                start_stream = time.time()
+                
+                try:
+                    if chat_request.conversation_id:
+                        conversation_id = chat_request.conversation_id
+                    
+                    stream_iterator = rag.generate_answer_stream(
+                        query=chat_request.message,
+                        conversation_id=conversation_id,
+                        conversation_history=chat_request.conversation_history,
+                        language=chat_request.language or "vi",
+                    )
+                    
+                    for chunk in stream_iterator:
+                        # Update metadata
+                        if chunk.get("type") == "metadata":
+                            conversation_id = chunk.get("conversation_id")
+                            session_id = conversation_id
+                        elif chunk.get("type") == "sources":
+                            full_sources = chunk.get("sources", [])
+                            final_confidence = chunk.get("confidence", 0.0)
+                        elif chunk.get("type") == "answer_chunk":
+                            full_answer += chunk.get("content", "")
+                            
+                        # Yield chunk
+                        yield f"data: {json.dumps(chunk, ensure_ascii=False)}\n\n"
+                        
+                    # Track analytics after stream finishes
+                    processing_time_ms = (time.time() - start_stream) * 1000
+                    input_tokens = len(chat_request.message.split()) * 2 if chat_request.message else 0
+                    output_tokens = len(full_answer.split()) * 2
+                    
+                    try:
+                        analytics.track_chat_interaction(
+                            session_id=session_id,
+                            conversation_id=conversation_id,
+                            query=chat_request.message or "",
+                            response=full_answer,
+                            confidence=final_confidence,
+                            retrieved_documents=full_sources,
+                            relevance_scores=[final_confidence] * len(full_sources),
+                            input_tokens=input_tokens,
+                            output_tokens=output_tokens,
+                            response_time_ms=processing_time_ms,
+                            ip_address=request.client.host if request.client else None,
+                            user_agent=request.headers.get("user-agent", "")
+                        )
+                        
+                        analytics.log_access(
+                            session_id=session_id,
+                            ip_address=request.client.host if request.client else None,
+                            user_agent=request.headers.get("user-agent", ""),
+                            endpoint="/api/v1/chat",
+                            method="POST",
+                            status_code=200,
+                            response_time_ms=processing_time_ms
+                        )
+                    except Exception as analytics_error:
+                        log.error(f"Error tracking analytics in stream: {analytics_error}")
+                        
+                except Exception as e:
+                    log.error(f"Streaming error: {e}")
+                    error_chunk = {"type": "error", "message": "Có lỗi xảy ra khi xử lý yêu cầu."}
+                    yield f"data: {json.dumps(error_chunk, ensure_ascii=False)}\n\n"
+
+            return StreamingResponse(
+                stream_generator(),
+                media_type="text/event-stream",
+                headers={
+                    "Cache-Control": "no-cache",
+                    "Connection": "keep-alive",
+                    "X-Accel-Buffering": "no",
+                }
+            )
+
         log.info(
             f"Received chat request: {chat_request.message[:50] if chat_request.message else '[Image only]'}..."
         )
