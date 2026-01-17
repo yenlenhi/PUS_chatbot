@@ -20,6 +20,10 @@ class HTTPSRedirectMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next):
         """Redirect HTTP to HTTPS if enabled"""
+        # Exclude health check from HTTPS enforcement
+        if request.url.path == "/health":
+            return await call_next(request)
+
         if self.enforce_https:
             # Check if request is not already HTTPS
             if request.url.scheme != "https":

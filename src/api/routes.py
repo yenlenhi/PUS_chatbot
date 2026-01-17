@@ -1984,3 +1984,48 @@ async def link_attachment_to_chunks(
     except Exception as e:
         log.error(f"❌ Error linking attachment to chunks: {e}")
         raise HTTPException(status_code=500, detail=f"Link failed: {str(e)}")
+
+
+@router.get("/admin/analytics/export")
+async def export_analytics_data(
+    type: str = Query(
+        ..., description="Type of data: system, users, chat, documents, business"
+    ),
+    time_range: str = Query("L7D"),
+    start_date: str = None,
+    end_date: str = None,
+    format: str = "excel",
+    analytics: AnalyticsService = Depends(get_analytics_service),
+):
+    """Admin endpoint: Export analytics data"""
+    try:
+        # Validate type
+        if type not in ["system", "users", "chat", "documents", "business"]:
+            raise HTTPException(status_code=400, detail="Invalid data type")
+
+        tr_enum = TimeRange.LAST_7_DAYS
+        if time_range == "MTD":
+            tr_enum = TimeRange.MONTH_TO_DATE
+        elif time_range == "YTD":
+            tr_enum = TimeRange.YEAR_TO_DATE
+        elif time_range == "custom":
+            tr_enum = TimeRange.CUSTOM
+
+        buffer = analytics.export_data(
+            data_type=type,
+            time_range=tr_enum,
+            start_date=start_date,
+            end_date=end_date,
+            file_format=format,
+        )
+
+        filename = f"export_{type}_{datetime.datetime.now().strftime('%Y%m%d')}.xlsx"
+
+        return StreamingResponse(
+            buffer,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": f"attachment; filename={filename}"},
+        )
+    except Exception as e:
+        log.error(f"Export error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

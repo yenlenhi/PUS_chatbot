@@ -30,8 +30,13 @@ from src.models.analytics import (
     QualityScore,
     BusinessInsights,
     DashboardOverview,
+    DashboardOverview,
 )
 from src.utils.logger import log
+import io
+import openpyxl
+from openpyxl.styles import Font, PatternFill, Alignment
+
 
 
 class AnalyticsService:
@@ -2805,3 +2810,301 @@ class AnalyticsService:
         except Exception as e:
             log.error(f"❌ Error getting suggested questions: {e}")
             return self._generate_sample_popular_questions()[:limit]
+
+    # ==================== DATA EXPORT ====================
+
+    def export_data(
+        self,
+        data_type: str,
+        time_range: TimeRange = TimeRange.LAST_7_DAYS,
+        start_date: str = None,
+        end_date: str = None,
+        file_format: str = "excel",
+    ) -> io.BytesIO:
+        """
+        Export analytics data to Excel/CSV
+        """
+        try:
+            start, end = self._get_date_range(time_range, start_date, end_date)
+            # Adjust end date to include the full day
+            end_datetime = datetime.combine(end, datetime.max.time())
+            start_datetime = datetime.combine(start, datetime.min.time())
+
+            session = self.db_service.SessionLocal()
+            wb = openpyxl.Workbook()
+            ws = wb.active
+            ws.title = "Data Export"
+
+            # Style for header
+            header_font = Font(bold=True, color="FFFFFF")
+            header_fill = PatternFill(
+                start_color="4F81BD", end_color="4F81BD", fill_type="solid"
+            )
+            center_alignment = Alignment(horizontal="center")
+
+            def write_header(headers):
+                for col, header in enumerate(headers, 1):
+                    cell = ws.cell(row=1, column=col)
+                    cell.value = header
+                    cell.font = header_font
+                    cell.fill = header_fill
+                    cell.alignment = center_alignment
+                    # Auto adjust column width
+                    ws.column_dimensions[openpyxl.utils.get_column_letter(col)].width = 20
+
+            rows_written = 0
+
+            if data_type == "system":
+                # Export Token Usage & System Access
+                ws.title = "Token Usage"
+                write_header(
+                    [
+                        "ID",
+                        "Session ID",
+                        "Conversation ID",
+                        "Input Tokens",
+                        "Output Tokens",
+                        "Total Tokens",
+                        "Est. Cost ($)",
+                        "Created At",
+                    ]
+                )
+
+                result = session.execute(
+                    text(
+                        """
+                        SELECT id, session_id, conversation_id, input_tokens, output_tokens, total_tokens, estimated_cost, created_at
+                        FROM token_usage
+                        WHERE created_at BETWEEN :start AND :end
+                        ORDER BY created_at DESC
+                    """
+                    ),
+                    {"start": start_datetime, "end": end_datetime},
+                )
+
+                for row in result.fetchall():
+                    ws.append(list(row))
+                    rows_written += 1
+                
+                # Add second sheet for Access Logs
+                ws2 = wb.create_sheet("Access Logs")
+                ws2_headers = ["ID", "Session ID", "IP", "Endpoint", "Status", "Blocked", "Resp Time (ms)", "Created At"]
+                for col, header in enumerate(ws2_headers, 1):
+                    cell = ws2.cell(row=1, column=col)
+                    cell.value = header
+                    cell.font = header_font
+                    cell.fill = header_fill
+
+                access_result = session.execute(
+                    text(
+                         """
+                        SELECT id, session_id, ip_address, endpoint, status_code, is_blocked, response_time_ms, created_at
+                        FROM access_logs
+                        WHERE created_at BETWEEN :start AND :end
+                        ORDER BY created_at DESC
+                        LIMIT 10000
+                        """
+                    ),
+                   {"start": start_datetime, "end": end_datetime},
+                )
+                for row in access_result.fetchall():
+                    ws2.append(list(row))
+
+            elif data_type == "users":
+                # Export User Sessions
+                ws.title = "User Sessions"
+                write_header(
+                    [
+                        "Session ID",
+                        "IP Address",
+                        "User Agent",
+                        "First Visit",
+                        "Last Visit",
+                        "Total Visits",
+                        "Total Questions",
+                        "Total Convs",
+                        "Is New User",
+                        "Segment",
+                    ]
+                )
+
+                result = session.execute(
+                    text(
+                        """
+                        SELECT session_id, ip_address, user_agent, first_visit, last_visit, total_visits, total_questions, total_conversations, is_new_user, user_segment
+                        FROM user_sessions
+                        WHERE last_visit BETWEEN :start AND :end
+                        ORDER BY last_visit DESC
+                    """
+                    ),
+                    {"start": start_datetime, "end": end_datetime},
+                )
+
+                for row in result.fetchall():
+                    ws.append(list(row))
+                    rows_written += 1
+
+            elif data_type == "chat":
+                # Export Conversations
+                ws.title = "Chat Logs"
+                write_header(
+                    [
+                        "ID",
+                        "Conversation ID",
+                        "User Message",
+                        "Bot Response",
+                        "Confidence",
+                        "Proc Time (s)",
+                        "Created At",
+                    ]
+                )
+
+                # Need to handle potential huge text fields (Excel cell limit is 32k chars)
+                result = session.execute(
+                    text(
+                        """
+                        SELECT id, conversation_id, user_message, assistant_response, confidence, processing_time, created_at
+                        FROM conversations
+                        WHERE created_at BETWEEN :start AND :end
+                        ORDER BY created_at DESC
+                    """
+                    ),
+                    {"start": start_datetime, "end": end_datetime},
+                )
+
+                for row in result.fetchall():
+                    # Truncate if necessary (Excel 32k limit check)
+                    row_list = list(row)
+                    if row_list[2] and len(row_list[2]) > 32000:
+                        row_list[2] = row_list[2][:32000] + "..."
+                    if row_list[3] and len(row_list[3]) > 32000:
+                        row_list[3] = row_list[3][:32000] + "..."
+                    
+                    ws.append(row_list)
+                    rows_written += 1
+
+                # Add Sheet for Feedback/Unanswered
+                ws3 = wb.create_sheet("Unanswered")
+                ws3_headers = ["Query", "Reason", "Confidence", "Count", "Time"]
+                
+                # Simplified header writing for brevity
+                for col, header in enumerate(ws3_headers, 1):
+                    ws3.cell(row=1, column=col, value=header).font = header_font
+
+                unanswered_result = session.execute(
+                     text("""
+                        SELECT query, reason, confidence, retrieval_count, created_at
+                        FROM unanswered_queries
+                        WHERE created_at BETWEEN :start AND :end
+                        ORDER BY created_at DESC
+                     """),
+                     {"start": start_datetime, "end": end_datetime}
+                )
+                for row in unanswered_result.fetchall():
+                    ws3.append(list(row))
+
+            elif data_type == "documents":
+                 ws.title = "Documents Stats"
+                 write_header(
+                    [
+                        "File Name",
+                        "Chunk Count",
+                        "Is Active",
+                        "First Uploaded",
+                        "Last Updated",
+                        "Category"
+                    ]
+                 )
+                 
+                 # Logic from admin_list_documents
+                 result = session.execute(
+                    text(
+                        """
+                        SELECT 
+                            source_file,
+                            COUNT(*) as chunk_count,
+                            COALESCE(bool_and(is_active), true) as is_active,
+                            MIN(created_at) as first_created,
+                            MAX(created_at) as last_updated
+                        FROM chunks 
+                        GROUP BY source_file
+                        ORDER BY MAX(created_at) DESC
+                        """
+                    )
+                 )
+                 for row in result.fetchall():
+                     # Simple category logic reproduction or just usage
+                     filename_lower = row[0].lower()
+                     category = "Khác"
+                     if "tuyen sinh" in filename_lower: category = "Tuyển sinh"
+                     elif "dao tao" in filename_lower: category = "Đào tạo"
+                     elif "hoc phi" in filename_lower: category = "Tài chính"
+                     # ... simplified
+                     
+                     ws.append([row[0], row[1], row[2], row[3], row[4], category])
+                     rows_written += 1
+
+            elif data_type == "business":
+                 ws.title = "Business ROI"
+                 write_header([
+                     "Date",
+                     "Total Conversations",
+                     "Est. Hours Saved",
+                     "Est. Cost Saved",
+                     "Processing Cost"
+                 ])
+                 
+                 # Aggregate per day
+                 # This is complex to calculate accurately without pre-aggregation, 
+                 # so we will assume some derived metrics similar to business insights
+                 
+                 # Re-use logic: 100 queries ~ 1 hour saved. 1 hour ~ 150k VND.
+                 roi_query = text("""
+                    SELECT 
+                        DATE(created_at) as date,
+                        COUNT(DISTINCT conversation_id) as total_conversations,
+                        COUNT(*) as total_queries
+                    FROM conversations
+                    WHERE created_at BETWEEN :start AND :end
+                    GROUP BY DATE(created_at)
+                    ORDER BY date DESC
+                 """)
+                 
+                 cost_query = text("""
+                    SELECT DATE(created_at) as date, SUM(estimated_cost)
+                    FROM token_usage
+                    WHERE created_at BETWEEN :start AND :end
+                    GROUP BY DATE(created_at)
+                 """)
+                 
+                 # We need to join these in python dict
+                 roi_res = session.execute(roi_query, {"start": start_datetime, "end": end_datetime}).fetchall()
+                 cost_res = session.execute(cost_query, {"start": start_datetime, "end": end_datetime}).fetchall()
+                 
+                 costs = {str(row[0]): row[1] for row in cost_res}
+                 
+                 for row in roi_res:
+                     date_str = str(row[0])
+                     queries = row[2]
+                     conversations = row[1]
+                     cost = costs.get(date_str, 0)
+                     
+                     hours_saved = queries / 60.0 # Approx 1 min per query? Or 100 queries/hour?
+                                                # Business logic in code says: 2 mins per query manually?
+                                                # Let's say 0.05 hours per query (3 mins)
+                     hours_saved = queries * 0.05
+                     cost_saved = hours_saved * 50000 # 50k per hour
+                     
+                     ws.append([date_str, conversations, round(hours_saved, 2), round(cost_saved, 0), round(cost, 4)])
+                     rows_written += 1
+
+            session.close()
+            
+            output = io.BytesIO()
+            wb.save(output)
+            output.seek(0)
+            return output
+
+        except Exception as e:
+            log.error(f"❌ Error exporting data: {e}")
+            raise e

@@ -21,6 +21,7 @@ import {
   Award,
   Loader2,
   RefreshCw,
+  Download,
 } from 'lucide-react';
 import {
   TimeRangeFilter,
@@ -60,6 +61,23 @@ const DashboardPage = () => {
   const [documentInsights, setDocumentInsights] = useState<DocumentInsights | null>(null);
   const [businessInsights, setBusinessInsights] = useState<BusinessInsights | null>(null);
   const [popularQuestions, setPopularQuestions] = useState<any>(null);
+
+  // Export state
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExport = async (type: string) => {
+    try {
+      setIsExporting(true);
+      await analyticsAPI.exportData(type, filter);
+    } catch (error) {
+      console.error('Export failed:', error);
+      alert('Xuất dữ liệu thất bại. Vui lòng thử lại.');
+    } finally {
+      setIsExporting(false);
+      setShowExportMenu(false);
+    }
+  };
 
   const fetchAllData = useCallback(async () => {
     try {
@@ -135,6 +153,42 @@ const DashboardPage = () => {
             <p className="text-sm sm:text-base text-gray-600">Theo dõi và phân tích hiệu suất hệ thống</p>
           </div>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2 sm:gap-3">
+            {/* Export Data Button */}
+            <div className="relative">
+              <button
+                onClick={() => setShowExportMenu(!showExportMenu)}
+                disabled={isExporting}
+                className="flex items-center space-x-2 px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
+              >
+                {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                <span className="hidden sm:inline">Export</span>
+              </button>
+
+              {showExportMenu && (
+                <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-50">
+                  <div className="px-3 py-2 border-b border-gray-100 text-xs font-semibold text-gray-500 uppercase">
+                    Chọn loại dữ liệu
+                  </div>
+                  {[
+                    { id: 'system', label: 'Chỉ số hệ thống' },
+                    { id: 'users', label: 'Chỉ số người dùng' },
+                    { id: 'chat', label: 'Chỉ số tin nhắn' },
+                    { id: 'documents', label: 'Chỉ số tài liệu' },
+                    { id: 'business', label: 'Chỉ số kinh doanh' },
+                  ].map((item) => (
+                    <button
+                      key={item.id}
+                      onClick={() => handleExport(item.id)}
+                      disabled={isExporting}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-red-600 disabled:opacity-50"
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <button
               onClick={handleRefresh}
               disabled={isRefreshing}
@@ -143,11 +197,11 @@ const DashboardPage = () => {
             >
               <RefreshCw className={`w-4 h-4 sm:w-5 sm:h-5 ${isRefreshing ? 'animate-spin' : ''}`} />
             </button>
-            <TimeRangeFilter 
-              value={filter.timeRange} 
+            <TimeRangeFilter
+              value={filter.timeRange}
               startDate={filter.startDate}
               endDate={filter.endDate}
-              onChange={handleFilterChange} 
+              onChange={handleFilterChange}
             />
           </div>
         </div>
@@ -198,11 +252,10 @@ const DashboardPage = () => {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as typeof activeTab)}
-                  className={`flex items-center space-x-1 sm:space-x-2 px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-                    activeTab === tab.id
-                      ? 'border-red-600 text-red-600'
-                      : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
-                  }`}
+                  className={`flex items-center space-x-1 sm:space-x-2 px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === tab.id
+                    ? 'border-red-600 text-red-600'
+                    : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
+                    }`}
                 >
                   <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   <span className="hidden xs:inline sm:inline">{tab.label}</span>
@@ -405,8 +458,8 @@ const DashboardPage = () => {
                     {/* Hiển thị thông tin data source */}
                     <div className="flex items-center justify-between mb-3 pb-2 border-b border-gray-100">
                       <span className="text-xs text-gray-500">
-                        {popularQuestions?.data_source === 'real' ? 
-                          `📊 Dữ liệu thực tế (${popularQuestions.total_count} câu hỏi)` : 
+                        {popularQuestions?.data_source === 'real' ?
+                          `📊 Dữ liệu thực tế (${popularQuestions.total_count} câu hỏi)` :
                           '📋 Dữ liệu mẫu'
                         }
                       </span>
@@ -614,11 +667,10 @@ const DashboardPage = () => {
                           <td className="py-3 text-sm text-green-600 text-right">{doc.positive_feedback}</td>
                           <td className="py-3 text-sm text-red-600 text-right">{doc.negative_feedback}</td>
                           <td className="py-3 text-right">
-                            <span className={`px-2 py-1 rounded text-xs font-medium ${
-                              doc.effectiveness_score >= 0.8 ? 'bg-green-100 text-green-700' :
+                            <span className={`px-2 py-1 rounded text-xs font-medium ${doc.effectiveness_score >= 0.8 ? 'bg-green-100 text-green-700' :
                               doc.effectiveness_score >= 0.6 ? 'bg-yellow-100 text-yellow-700' :
-                              'bg-red-100 text-red-700'
-                            }`}>
+                                'bg-red-100 text-red-700'
+                              }`}>
                               {(doc.effectiveness_score * 100).toFixed(0)}%
                             </span>
                           </td>

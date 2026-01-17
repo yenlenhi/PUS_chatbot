@@ -68,16 +68,16 @@ const apiCall = async <T>(endpoint: string, options: RequestInit = {}): Promise<
 const buildQueryParams = (filter: AnalyticsFilter): string => {
   const params = new URLSearchParams();
   params.append('time_range', filter.timeRange);
-  
+
   if (filter.timeRange === 'custom' && filter.startDate && filter.endDate) {
     params.append('start_date', filter.startDate);
     params.append('end_date', filter.endDate);
   }
-  
+
   if (filter.category) {
     params.append('category', filter.category);
   }
-  
+
   return params.toString();
 };
 
@@ -138,6 +138,34 @@ export const analyticsAPI = {
     ]);
 
     return { overview, system, users, chat, documents, business };
+  },
+
+  // Export Data
+  exportData: async (type: string, filter: AnalyticsFilter = { timeRange: 'L7D' }) => {
+    const query = buildQueryParams(filter);
+    const url = `${API_BASE_URL}/api/v1/admin/analytics/export?${query}&type=${type}&format=excel`;
+
+    try {
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        throw new Error('Export failed');
+      }
+
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = `export_${type}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+      return true;
+    } catch (error) {
+      console.error("Export error:", error);
+      throw error;
+    }
   },
 };
 
