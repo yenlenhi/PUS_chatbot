@@ -798,13 +798,18 @@ async def admin_delete_document(
         if success:
             # Try to delete from Supabase Storage
             try:
-                from src.utils.chat_image_storage import get_supabase_client, _disable_proxy
+                from src.utils.chat_image_storage import (
+                    get_supabase_client,
+                    _disable_proxy,
+                )
 
                 if SUPABASE_URL and SUPABASE_SERVICE_KEY:
                     with _disable_proxy():
                         supabase = get_supabase_client()
                         # Delete from 'documents' bucket
-                        result = supabase.storage.from_("documents").remove([safe_filename])
+                        result = supabase.storage.from_("documents").remove(
+                            [safe_filename]
+                        )
                         log.info(f"Deleted from Supabase Storage: {safe_filename}")
             except Exception as storage_error:
                 log.warning(f"Could not delete from Supabase Storage: {storage_error}")
