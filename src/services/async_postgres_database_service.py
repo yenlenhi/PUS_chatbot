@@ -69,16 +69,12 @@ class AsyncPostgresDatabaseService:
 
             # Test connection
             async with self.engine.begin() as conn:
-                result = await conn.execute(
-                    text("SELECT 1").execution_options(compiled_cache=None)
-                )
+                result = await conn.execute(text("SELECT 1"))
                 log.info("✅ Async PostgreSQL connection successful")
 
                 # Check pgvector extension
                 result = await conn.execute(
-                    text(
-                        "SELECT * FROM pg_extension WHERE extname = 'vector'"
-                    ).execution_options(compiled_cache=None)
+                    text("SELECT * FROM pg_extension WHERE extname = 'vector'")
                 )
                 if result.fetchone():
                     log.info("✅ pgvector extension is installed")
@@ -86,11 +82,7 @@ class AsyncPostgresDatabaseService:
                     log.warning(
                         "⚠️ pgvector extension not found, attempting to create..."
                     )
-                    await conn.execute(
-                        text("CREATE EXTENSION IF NOT EXISTS vector").execution_options(
-                            compiled_cache=None
-                        )
-                    )
+                    await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
                     log.info("✅ pgvector extension created")
 
             # Create tables
@@ -149,9 +141,7 @@ class AsyncPostgresDatabaseService:
                 """
 
                 # Execute as a single statement to minimize prepared statement usage
-                await conn.execute(
-                    text(ddl_script).execution_options(compiled_cache=None)
-                )
+                await conn.execute(text(ddl_script))
 
                 log.info("✅ Database tables and indexes created successfully")
 

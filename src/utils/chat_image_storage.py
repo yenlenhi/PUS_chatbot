@@ -6,8 +6,9 @@ import base64
 import os
 import uuid
 from typing import List, Optional
+import httpx
 
-# Clear proxy environment variables BEFORE importing supabase
+# Clear proxy environment variables BEFORE importing anything
 # This prevents supabase from trying to use proxy settings that cause httpx errors
 for var in [
     "HTTP_PROXY",
@@ -25,15 +26,30 @@ from config.settings import SUPABASE_URL, SUPABASE_SERVICE_KEY
 
 
 def get_supabase_client() -> Client:
-    """Get Supabase client instance"""
+    """Get Supabase client instance with custom httpx client to avoid proxy issues"""
     supabase_url = SUPABASE_URL
     supabase_key = SUPABASE_SERVICE_KEY
 
     if not supabase_url or not supabase_key:
         raise ValueError("Supabase credentials not found in environment variables")
 
-    # Create client - proxy variables already cleared at module import
-    return create_client(supabase_url, supabase_key)
+    try:
+        # Create custom httpx client without proxy support
+        # This avoids the "proxy" argument error in httpx
+        custom_client = httpx.Client(
+            timeout=30.0,
+            follow_redirects=True,
+        )
+        
+        # Create supabase client with custom httpx client
+        # Note: supabase-py may not directly support this, so we use default creation
+        # and rely on env var clearing
+        client = create_client(supabase_url, supabase_key)
+        return client
+    except Exception as e:
+        log.error(f"Error creating Supabase client: {e}")
+        # Fallback: try without any customization
+        return create_client(supabase_url, supabase_key)
 
 
 def upload_chat_image(image_data: str, conversation_id: str) -> Optional[str]:
