@@ -76,7 +76,9 @@ class AsyncPostgresDatabaseService:
 
                 # Check pgvector extension
                 result = await conn.execute(
-                    text("SELECT * FROM pg_extension WHERE extname = 'vector'").execution_options(compiled_cache=None)
+                    text(
+                        "SELECT * FROM pg_extension WHERE extname = 'vector'"
+                    ).execution_options(compiled_cache=None)
                 )
                 if result.fetchone():
                     log.info("✅ pgvector extension is installed")
@@ -85,7 +87,9 @@ class AsyncPostgresDatabaseService:
                         "⚠️ pgvector extension not found, attempting to create..."
                     )
                     await conn.execute(
-                        text("CREATE EXTENSION IF NOT EXISTS vector").execution_options(compiled_cache=None)
+                        text("CREATE EXTENSION IF NOT EXISTS vector").execution_options(
+                            compiled_cache=None
+                        )
                     )
                     log.info("✅ pgvector extension created")
 
@@ -143,11 +147,11 @@ class AsyncPostgresDatabaseService:
                     ON embeddings USING ivfflat (embedding vector_cosine_ops) 
                     WITH (lists = 100);
                 """
-                
+
                 # Execute as a single statement to minimize prepared statement usage
-                await conn.execute(text(ddl_script).execution_options(
-                    compiled_cache=None
-                ))
+                await conn.execute(
+                    text(ddl_script).execution_options(compiled_cache=None)
+                )
 
                 log.info("✅ Database tables and indexes created successfully")
 

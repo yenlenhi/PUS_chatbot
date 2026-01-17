@@ -5,48 +5,34 @@ Helper functions for uploading and managing chat images in Supabase Storage
 import base64
 import os
 import uuid
-from contextlib import contextmanager
 from typing import List, Optional
+
+# Clear proxy environment variables BEFORE importing supabase
+# This prevents supabase from trying to use proxy settings that cause httpx errors
+for var in [
+    "HTTP_PROXY",
+    "HTTPS_PROXY",
+    "http_proxy",
+    "https_proxy",
+    "ALL_PROXY",
+    "all_proxy",
+]:
+    os.environ.pop(var, None)
+
 from supabase import create_client, Client
 from src.utils.logger import log
 from config.settings import SUPABASE_URL, SUPABASE_SERVICE_KEY
 
 
-@contextmanager
-def _disable_proxy():
-    """Context manager to temporarily disable proxy environment variables"""
-    proxy_vars = [
-        "HTTP_PROXY",
-        "HTTPS_PROXY",
-        "http_proxy",
-        "https_proxy",
-        "ALL_PROXY",
-        "all_proxy",
-        "NO_PROXY",
-        "no_proxy",
-    ]
-    saved_vars = {}
-
-    # Save and remove proxy variables
-    for var in proxy_vars:
-        if var in os.environ:
-            saved_vars[var] = os.environ.pop(var)
-
-    try:
-        yield
-    finally:
-        # Restore proxy variables
-        os.environ.update(saved_vars)
-
-
 def get_supabase_client() -> Client:
-    """Get Supabase client instance - should be called within _disable_proxy() context"""
+    """Get Supabase client instance"""
     supabase_url = SUPABASE_URL
     supabase_key = SUPABASE_SERVICE_KEY
 
     if not supabase_url or not supabase_key:
         raise ValueError("Supabase credentials not found in environment variables")
 
+    # Create client - proxy variables already cleared at module import
     return create_client(supabase_url, supabase_key)
 
 
@@ -78,30 +64,29 @@ def upload_chat_image(image_data: str, conversation_id: str) -> Optional[str]:
         file_id = str(uuid.uuid4())
         filename = f"chat-images/{conversation_id}/{file_id}.{format}"
 
-        # Upload to Supabase Storage with proxy disabled
-        with _disable_proxy():
-            supabase = get_supabase_client()
+        # Upload to Supabase Storage (proxy already disabled at module level)
+        supabase = get_supabase_client()
 
-            response = supabase.storage.from_("chat-attachments").upload(
-                filename,
-                image_bytes,
-                {
-                    "content-type": f"image/{format}",
-                    "cache-control": "3600",
-                    "upsert": "false",
-                },
+        response = supabase.storage.from_("chat-attachments").upload(
+            filename,
+            image_bytes,
+            {
+                "content-type": f"image/{format}",
+                "cache-control": "3600",
+                "upsert": "false",
+            },
+        )
+
+        if response:
+            # Get public URL
+            public_url = supabase.storage.from_("chat-attachments").get_public_url(
+                filename
             )
-
-            if response:
-                # Get public URL
-                public_url = supabase.storage.from_("chat-attachments").get_public_url(
-                    filename
-                )
-                log.info(f"✅ Uploaded chat image: {filename}")
-                return public_url
-            else:
-                log.error(f"❌ Failed to upload image: {response}")
-                return None
+            log.info(f"✅ Uploaded chat image: {filename}")
+            return public_url
+        else:
+            log.error(f"❌ Failed to upload image: {response}")
+            return None
 
     except Exception as e:
         log.error(f"❌ Error uploading chat image: {e}")
@@ -140,26 +125,25 @@ def delete_chat_images(conversation_id: str) -> bool:
         True if successful, False otherwise
     """
     try:
-        with _disable_proxy():
-            supabase = get_supabase_client()
+        supabase = get_supabase_client()
 
-            # List all files in the conversation folder
-            files = supabase.storage.from_("chat-attachments").list(
-                f"chat-images/{conversation_id}"
+        # List all files in the conversation folder
+        files = supabase.storage.from_("chat-attachments").list(
+            f"chat-images/{conversation_id}"
+        )
+
+        if files:
+            # Delete all files
+            file_paths = [
+                f"chat-images/{conversation_id}/{file['name']}" for file in files
+            ]
+            supabase.storage.from_("chat-attachments").remove(file_paths)
+            log.info(
+                f"✅ Deleted {len(file_paths)} images for conversation: {conversation_id}"
             )
+            return True
 
-            if files:
-                # Delete all files
-                file_paths = [
-                    f"chat-images/{conversation_id}/{file['name']}" for file in files
-                ]
-                supabase.storage.from_("chat-attachments").remove(file_paths)
-                log.info(
-                    f"✅ Deleted {len(file_paths)} images for conversation: {conversation_id}"
-                )
-                return True
-
-            return True  # No files to delete
+        return True  # No files to delete
 
     except Exception as e:
         log.error(f"❌ Error deleting chat images: {e}")
