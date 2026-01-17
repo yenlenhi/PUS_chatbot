@@ -787,10 +787,10 @@ async def admin_delete_document(
         if success:
             # Try to delete from Supabase Storage
             try:
-                from supabase import create_client
+                from src.utils.chat_image_storage import get_supabase_client
 
                 if SUPABASE_URL and SUPABASE_SERVICE_KEY:
-                    supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+                    supabase = get_supabase_client()
                     # Delete from 'documents' bucket
                     result = supabase.storage.from_("documents").remove([safe_filename])
                     log.info(f"Deleted from Supabase Storage: {safe_filename}")

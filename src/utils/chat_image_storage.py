@@ -3,6 +3,7 @@ Helper functions for uploading and managing chat images in Supabase Storage
 """
 
 import base64
+import os
 import uuid
 from typing import List, Optional
 from supabase import create_client, Client
@@ -18,7 +19,20 @@ def get_supabase_client() -> Client:
     if not supabase_url or not supabase_key:
         raise ValueError("Supabase credentials not found in environment variables")
 
-    return create_client(supabase_url, supabase_key)
+    # Temporarily remove proxy environment variables to avoid httpx proxy issues
+    # This is needed because supabase-py 2.x uses httpx which auto-detects proxy
+    proxy_env_vars = {}
+    for var in ["HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy", "ALL_PROXY", "all_proxy"]:
+        if var in os.environ:
+            proxy_env_vars[var] = os.environ.pop(var)
+
+    try:
+        # Create client without proxy
+        client = create_client(supabase_url, supabase_key)
+        return client
+    finally:
+        # Restore proxy environment variables
+        os.environ.update(proxy_env_vars)
 
 
 def upload_chat_image(image_data: str, conversation_id: str) -> Optional[str]:
