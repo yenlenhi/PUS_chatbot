@@ -5,11 +5,15 @@ Async PostgreSQL database service for managing document chunks and embeddings wi
 from typing import List, Optional, Dict, Any, AsyncGenerator
 import numpy as np
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-from sqlalchemy import text
 from src.utils.logger import log
 from src.models.schemas import DocumentChunk
 from config.settings import DATABASE_URL
 from contextlib import asynccontextmanager
+
+
+def text_no_prepare(sql: str):
+    """Helper to create text_no_prepare() with prepare=False for pgbouncer compatibility"""
+    return text_no_prepare(sql)
 
 
 class AsyncPostgresDatabaseService:
@@ -55,9 +59,12 @@ class AsyncPostgresDatabaseService:
                 connect_args={
                     "statement_cache_size": 0,  # Disable statement cache
                     "prepared_statement_cache_size": 0,  # Disable prepared statement cache
-                    # This function returns None for statement names, which disables named prepared statements
-                    "prepared_statement_name_func": lambda: None,
+                    "prepared_statement_name_func": lambda: None,  # Disable named prepared statements
+                    "server_settings": {
+                        "jit": "off",  # Disable JIT to avoid some prepared statement issues
+                    },
                 },
+                pool_pre_ping=True,  # Verify connections before using
             )
 
             # Create async session factory
@@ -67,12 +74,14 @@ class AsyncPostgresDatabaseService:
 
             # Test connection
             async with self.engine.begin() as conn:
-                result = await conn.execute(text("SELECT 1"))
+                result = await conn.execute(text_no_prepare("SELECT 1"))
                 log.info("✅ Async PostgreSQL connection successful")
 
                 # Check pgvector extension
                 result = await conn.execute(
-                    text("SELECT * FROM pg_extension WHERE extname = 'vector'")
+                    text_no_prepare(
+                        "SELECT * FROM pg_extension WHERE extname = 'vector'"
+                    )
                 )
                 if result.fetchone():
                     log.info("✅ pgvector extension is installed")
@@ -80,7 +89,9 @@ class AsyncPostgresDatabaseService:
                     log.warning(
                         "⚠️ pgvector extension not found, attempting to create..."
                     )
-                    await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+                    await conn.execute(
+                        text_no_prepare("CREATE EXTENSION IF NOT EXISTS vector")
+                    )
                     log.info("✅ pgvector extension created")
 
             # Create tables
@@ -147,7 +158,7 @@ class AsyncPostgresDatabaseService:
                 ]
 
                 for statement in ddl_statements:
-                    await conn.execute(text(statement))
+                    await conn.execute(text_no_prepare(statement))
 
                 log.info("✅ Database tables and indexes created successfully")
 
@@ -196,7 +207,7 @@ class AsyncPostgresDatabaseService:
                 # Insert chunks
                 for chunk in chunks:
                     result = await session.execute(
-                        text(
+                        text_no_prepare(
                             """
                         INSERT INTO chunks (
                             content, source_file, page_number, chunk_index,
@@ -237,7 +248,7 @@ class AsyncPostgresDatabaseService:
                     embedding_list = embedding.tolist()
 
                     await session.execute(
-                        text(
+                        text_no_prepare(
                             """
                         INSERT INTO embeddings (chunk_id, embedding)
                         VALUES (:chunk_id, :embedding)
@@ -310,7 +321,7 @@ class AsyncPostgresDatabaseService:
                 LIMIT :top_k
                 """
 
-                result = await session.execute(text(query), params)
+                result = await session.execute(text_no_prepare(query), params)
                 rows = result.fetchall()
 
                 results = []
@@ -349,7 +360,7 @@ class AsyncPostgresDatabaseService:
         async with self.get_session() as session:
             try:
                 result = await session.execute(
-                    text(
+                    text_no_prepare(
                         """
                     SELECT 
                         id, content, source_file, page_number, chunk_index,
@@ -404,7 +415,7 @@ class AsyncPostgresDatabaseService:
             try:
                 # Delete embeddings first (due to foreign key constraint)
                 await session.execute(
-                    text(
+                    text_no_prepare(
                         """
                     DELETE FROM embeddings 
                     WHERE chunk_id IN (
@@ -417,7 +428,9 @@ class AsyncPostgresDatabaseService:
 
                 # Delete chunks
                 result = await session.execute(
-                    text("DELETE FROM chunks WHERE source_file = :source_file"),
+                    text_no_prepare(
+                        "DELETE FROM chunks WHERE source_file = :source_file"
+                    ),
                     {"source_file": source_file},
                 )
 
@@ -438,7 +451,7 @@ class AsyncPostgresDatabaseService:
             try:
                 # Get chunk count by source file
                 result = await session.execute(
-                    text(
+                    text_no_prepare(
                         """
                     SELECT 
                         source_file,
@@ -466,7 +479,9 @@ class AsyncPostgresDatabaseService:
                     total_chunks += row[1]
 
                 # Get total embedding count
-                result = await session.execute(text("SELECT COUNT(*) FROM embeddings"))
+                result = await session.execute(
+                    text_no_prepare("SELECT COUNT(*) FROM embeddings")
+                )
                 total_embeddings = result.fetchone()[0]
 
                 return {
@@ -487,7 +502,7 @@ class AsyncPostgresDatabaseService:
                 await self.initialize()
 
             async with self.engine.begin() as conn:
-                await conn.execute(text("SELECT 1"))
+                await conn.execute(text_no_prepare("SELECT 1"))
                 return True
         except Exception as e:
             log.error(f"❌ Database health check failed: {e}")

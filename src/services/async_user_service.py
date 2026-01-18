@@ -10,6 +10,11 @@ from src.models.user import UserCreate, UserUpdate, UserResponse, UserInDB
 from src.utils.logger import log
 
 
+def text_no_prepare(sql: str):
+    """Helper to create text() with prepare=False for pgbouncer compatibility"""
+    return text(sql).execution_options(prepare=False)
+
+
 class AsyncUserService:
     """Async service for user management operations"""
 
@@ -31,7 +36,7 @@ class AsyncUserService:
             async with self.db_service.engine.begin() as conn:
                 # Create users table
                 await conn.execute(
-                    text(
+                    text_no_prepare(
                         """
                     CREATE TABLE IF NOT EXISTS users (
                         id SERIAL PRIMARY KEY,
@@ -49,7 +54,7 @@ class AsyncUserService:
 
                 # Create user_roles table
                 await conn.execute(
-                    text(
+                    text_no_prepare(
                         """
                     CREATE TABLE IF NOT EXISTS user_roles (
                         user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
@@ -62,15 +67,17 @@ class AsyncUserService:
 
                 # Create indexes - one by one for asyncpg compatibility
                 await conn.execute(
-                    text(
+                    text_no_prepare(
                         "CREATE INDEX IF NOT EXISTS idx_users_username ON users(username)"
                     )
                 )
                 await conn.execute(
-                    text("CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)")
+                    text_no_prepare(
+                        "CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)"
+                    )
                 )
                 await conn.execute(
-                    text(
+                    text_no_prepare(
                         "CREATE INDEX IF NOT EXISTS idx_user_roles_user_id ON user_roles(user_id)"
                     )
                 )
@@ -89,7 +96,7 @@ class AsyncUserService:
             try:
                 # Check if username already exists
                 result = await session.execute(
-                    text("SELECT id FROM users WHERE username = :username"),
+                    text_no_prepare("SELECT id FROM users WHERE username = :username"),
                     {"username": user_data.username},
                 )
                 if result.fetchone():
@@ -97,7 +104,7 @@ class AsyncUserService:
 
                 # Check if email already exists
                 result = await session.execute(
-                    text("SELECT id FROM users WHERE email = :email"),
+                    text_no_prepare("SELECT id FROM users WHERE email = :email"),
                     {"email": user_data.email},
                 )
                 if result.fetchone():
@@ -108,7 +115,7 @@ class AsyncUserService:
 
                 # Insert user
                 result = await session.execute(
-                    text(
+                    text_no_prepare(
                         """
                         INSERT INTO users (username, email, hashed_password, full_name, disabled)
                         VALUES (:username, :email, :hashed_password, :full_name, :disabled)
@@ -131,7 +138,7 @@ class AsyncUserService:
                 if user_data.roles:
                     for role in user_data.roles:
                         await session.execute(
-                            text(
+                            text_no_prepare(
                                 "INSERT INTO user_roles (user_id, role) VALUES (:user_id, :role)"
                             ),
                             {"user_id": user_id, "role": role},
@@ -159,7 +166,7 @@ class AsyncUserService:
             try:
                 # Get user with hashed password
                 result = await session.execute(
-                    text(
+                    text_no_prepare(
                         """
                         SELECT id, username, email, hashed_password, full_name, disabled, created_at, updated_at
                         FROM users 
@@ -179,7 +186,9 @@ class AsyncUserService:
 
                 # Get user roles
                 result = await session.execute(
-                    text("SELECT role FROM user_roles WHERE user_id = :user_id"),
+                    text_no_prepare(
+                        "SELECT role FROM user_roles WHERE user_id = :user_id"
+                    ),
                     {"user_id": user_row[0]},
                 )
                 roles = [row[0] for row in result.fetchall()]
@@ -208,7 +217,7 @@ class AsyncUserService:
         async with self.db_service.get_session() as session:
             try:
                 result = await session.execute(
-                    text(
+                    text_no_prepare(
                         """
                         SELECT id, username, email, full_name, disabled, created_at, updated_at
                         FROM users 
@@ -224,7 +233,9 @@ class AsyncUserService:
 
                 # Get roles
                 result = await session.execute(
-                    text("SELECT role FROM user_roles WHERE user_id = :user_id"),
+                    text_no_prepare(
+                        "SELECT role FROM user_roles WHERE user_id = :user_id"
+                    ),
                     {"user_id": user_row[0]},
                 )
                 roles = [row[0] for row in result.fetchall()]
@@ -252,7 +263,7 @@ class AsyncUserService:
         async with self.db_service.get_session() as session:
             try:
                 result = await session.execute(
-                    text(
+                    text_no_prepare(
                         """
                         SELECT id, username, email, full_name, disabled, created_at, updated_at
                         FROM users 
@@ -268,7 +279,9 @@ class AsyncUserService:
 
                 # Get roles
                 result = await session.execute(
-                    text("SELECT role FROM user_roles WHERE user_id = :user_id"),
+                    text_no_prepare(
+                        "SELECT role FROM user_roles WHERE user_id = :user_id"
+                    ),
                     {"user_id": user_id},
                 )
                 roles = [row[0] for row in result.fetchall()]
@@ -309,7 +322,7 @@ class AsyncUserService:
                 if user_data.email is not None:
                     # Check if email already exists for another user
                     result = await session.execute(
-                        text(
+                        text_no_prepare(
                             "SELECT id FROM users WHERE email = :email AND id != :user_id"
                         ),
                         {"email": user_data.email, "user_id": user_id},
@@ -335,20 +348,22 @@ class AsyncUserService:
                         SET {', '.join(update_fields)}
                         WHERE id = :user_id
                     """
-                    await session.execute(text(query), params)
+                    await session.execute(text_no_prepare(query), params)
 
                 # Update roles if provided
                 if user_data.roles is not None:
                     # Delete existing roles
                     await session.execute(
-                        text("DELETE FROM user_roles WHERE user_id = :user_id"),
+                        text_no_prepare(
+                            "DELETE FROM user_roles WHERE user_id = :user_id"
+                        ),
                         {"user_id": user_id},
                     )
 
                     # Insert new roles
                     for role in user_data.roles:
                         await session.execute(
-                            text(
+                            text_no_prepare(
                                 "INSERT INTO user_roles (user_id, role) VALUES (:user_id, :role)"
                             ),
                             {"user_id": user_id, "role": role},
@@ -379,7 +394,8 @@ class AsyncUserService:
 
                 # Delete user (roles will be deleted automatically due to CASCADE)
                 result = await session.execute(
-                    text("DELETE FROM users WHERE id = :user_id"), {"user_id": user_id}
+                    text_no_prepare("DELETE FROM users WHERE id = :user_id"),
+                    {"user_id": user_id},
                 )
 
                 await session.commit()
@@ -402,7 +418,7 @@ class AsyncUserService:
         async with self.db_service.get_session() as session:
             try:
                 result = await session.execute(
-                    text(
+                    text_no_prepare(
                         """
                         SELECT id, username, email, full_name, disabled, created_at, updated_at
                         FROM users 
@@ -417,7 +433,9 @@ class AsyncUserService:
                 for row in result.fetchall():
                     # Get roles for each user
                     roles_result = await session.execute(
-                        text("SELECT role FROM user_roles WHERE user_id = :user_id"),
+                        text_no_prepare(
+                            "SELECT role FROM user_roles WHERE user_id = :user_id"
+                        ),
                         {"user_id": row[0]},
                     )
                     roles = [r[0] for r in roles_result.fetchall()]
@@ -451,7 +469,7 @@ class AsyncUserService:
 
                 # Update password
                 result = await session.execute(
-                    text(
+                    text_no_prepare(
                         """
                         UPDATE users 
                         SET hashed_password = :hashed_password, updated_at = NOW()
@@ -481,18 +499,20 @@ class AsyncUserService:
         async with self.db_service.get_session() as session:
             try:
                 # Total users
-                result = await session.execute(text("SELECT COUNT(*) FROM users"))
+                result = await session.execute(
+                    text_no_prepare("SELECT COUNT(*) FROM users")
+                )
                 total_users = result.fetchone()[0]
 
                 # Active users
                 result = await session.execute(
-                    text("SELECT COUNT(*) FROM users WHERE disabled = FALSE")
+                    text_no_prepare("SELECT COUNT(*) FROM users WHERE disabled = FALSE")
                 )
                 active_users = result.fetchone()[0]
 
                 # Users by role
                 result = await session.execute(
-                    text(
+                    text_no_prepare(
                         """
                         SELECT role, COUNT(*) 
                         FROM user_roles 
