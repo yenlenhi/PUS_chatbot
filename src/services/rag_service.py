@@ -1457,7 +1457,7 @@ Trả lời / Response:"""
                         score = SmartAttachmentMatcher.score_attachment_relevance(
                             att.keywords or [], query_keywords
                         )
-                        if score > 0.3:
+                        if score > 0.6:
                             attachment_ids_found.add(att.id)
                             attachments.append(
                                 {

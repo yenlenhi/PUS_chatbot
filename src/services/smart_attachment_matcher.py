@@ -35,15 +35,8 @@ class SmartAttachmentMatcher:
         # Normalize query
         query_lower = query.lower()
 
-        # Extract keywords that appear in query
-        keywords = []
-
-        # Check for form-related terms
-        for keyword in form_keywords:
-            if keyword in query_lower:
-                keywords.append(keyword)
-
-        # Extract specific phrases
+        # Extract specific phrases first
+        specific_keywords = []
         patterns = [
             r"(xin nghỉ|nghỉ học|nghỉ phép)",
             r"(học bổng|khuyến khích học tập)",
@@ -54,16 +47,27 @@ class SmartAttachmentMatcher:
             r"(gia hạn|miễn giảm)",
             r"(tiếp tục học|nhập học lại|quay lại học)",
             r"(xác nhận|chứng nhận)",
+            r"(phúc khảo|chấm lại)",
         ]
 
         for pattern in patterns:
             matches = re.findall(pattern, query_lower)
             if matches:
-                keywords.extend(
+                specific_keywords.extend(
                     matches if isinstance(matches, list) else [matches]
                 )
 
-        return list(set(keywords))  # Remove duplicates
+        # If specific keywords are found, return ONLY them to avoid broad matching
+        if specific_keywords:
+            return list(set(specific_keywords))
+
+        # Only if NO specific keywords found, look for generic form keywords
+        keywords = []
+        for keyword in form_keywords:
+            if keyword in query_lower:
+                keywords.append(keyword)
+
+        return list(set(keywords))
 
     @staticmethod
     def score_attachment_relevance(

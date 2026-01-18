@@ -3,7 +3,7 @@ Feedback Service for managing user feedback and evaluation metrics
 """
 
 from datetime import datetime, timedelta
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from sqlalchemy import text
 from src.services.postgres_database_service import PostgresDatabaseService
 from src.models.feedback import (
@@ -572,6 +572,84 @@ class FeedbackService:
 
         except Exception as e:
             log.error(f"❌ Error getting recent negative feedback: {e}")
+            raise
+        finally:
+            session.close()
+
+    def get_all_feedback(
+        self,
+        limit: int = 50,
+        offset: int = 0,
+        rating: Optional[str] = None,
+        search: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Get all feedback records with pagination and filtering
+
+        Args:
+            limit: Maximum number of records to return
+            offset: Number of records to skip
+            rating: Optional rating filter ('positive', 'negative', 'neutral')
+            search: Optional search term for query/answer/comment
+
+        Returns:
+            Dictionary with records and pagination info
+        """
+        try:
+            session = self.db_service.SessionLocal()
+
+            # Build query
+            query_str = "SELECT id, conversation_id, message_id, query, answer, rating, comment, chunk_ids, user_id, session_id, created_at FROM feedback WHERE 1=1"
+            count_query_str = "SELECT COUNT(*) FROM feedback WHERE 1=1"
+            params = {"limit": limit, "offset": offset}
+
+            if rating:
+                query_str += " AND rating = :rating"
+                count_query_str += " AND rating = :rating"
+                params["rating"] = rating
+
+            if search:
+                search_term = f"%{search}%"
+                query_str += " AND (query ILIKE :search OR answer ILIKE :search OR comment ILIKE :search)"
+                count_query_str += " AND (query ILIKE :search OR answer ILIKE :search OR comment ILIKE :search)"
+                params["search"] = search_term
+
+            query_str += " ORDER BY created_at DESC LIMIT :limit OFFSET :offset"
+
+            # Execute count query
+            total_result = session.execute(text(count_query_str), params)
+            total = total_result.fetchone()[0]
+
+            # Execute data query
+            result = session.execute(text(query_str), params)
+
+            records = []
+            for row in result.fetchall():
+                records.append(
+                    FeedbackRecord(
+                        id=row[0],
+                        conversation_id=row[1],
+                        message_id=row[2],
+                        query=row[3],
+                        answer=row[4],
+                        rating=FeedbackRating(row[5]),
+                        comment=row[6],
+                        chunk_ids=row[7] or [],
+                        user_id=row[8],
+                        session_id=row[9],
+                        created_at=row[10],
+                    )
+                )
+
+            return {
+                "records": records,
+                "total": total,
+                "limit": limit,
+                "offset": offset,
+            }
+
+        except Exception as e:
+            log.error(f"❌ Error getting all feedback: {e}")
             raise
         finally:
             session.close()

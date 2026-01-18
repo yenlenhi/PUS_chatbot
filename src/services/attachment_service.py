@@ -198,7 +198,7 @@ class AttachmentService:
                         keywords=row[6] if row[6] else [],
                         category=row[7] if len(row) > 7 else "Khác",
                         download_url=f"/api/v1/attachments/download/{row[0]}",
-                        public_url=self.supabase.get_public_url(row[3]),
+                        public_url=row[3] if str(row[3]).startswith(("http://", "https://")) else self.supabase.get_public_url(row[3]),
                     )
                 return None
         except Exception as e:
@@ -310,7 +310,7 @@ class AttachmentService:
                             keywords=row[6] if row[6] else [],
                             category=row[7] if len(row) > 7 else "Khác",
                             download_url=f"/api/v1/attachments/download/{row[0]}",
-                            public_url=self.supabase.get_public_url(row[3]),
+                            public_url=row[3] if str(row[3]).startswith(("http://", "https://")) else self.supabase.get_public_url(row[3]),
                         )
                     )
                 return attachments

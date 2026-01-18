@@ -1575,6 +1575,34 @@ async def get_recent_negative_feedback(
         )
 
 
+@router.get("/feedback/list")
+async def get_feedback_list(
+    limit: int = 50,
+    offset: int = 0,
+    rating: str = None,
+    search: str = None,
+    feedback_svc: FeedbackService = Depends(get_feedback_service),
+):
+    """
+    Get all feedback records with filtering and pagination
+    """
+    try:
+        result = feedback_svc.get_all_feedback(
+            limit=limit, offset=offset, rating=rating, search=search
+        )
+        return {
+            "records": [record.model_dump() for record in result["records"]],
+            "total": result["total"],
+            "limit": result["limit"],
+            "offset": result["offset"],
+        }
+    except Exception as e:
+        log.error(f"❌ Error listed feedback: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Error listing feedback: {str(e)}"
+        )
+
+
 @router.get("/feedback/export")
 async def export_feedback_report(
     days: int = 30,
