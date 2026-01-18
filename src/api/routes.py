@@ -51,6 +51,7 @@ from src.models.analytics import (
     DashboardOverview,
 )
 from src.services.rag_service import RAGService
+from src.services.async_rag_service import get_async_rag_service, AsyncRAGService
 from src.services.feedback_service import FeedbackService
 from src.services.analytics_service import AnalyticsService
 from src.services.attachment_service import AttachmentService
@@ -88,6 +89,11 @@ def get_rag_service() -> RAGService:
     return rag_service
 
 
+def get_async_rag() -> AsyncRAGService:
+    """Dependency to get Async RAG service instance for optimized chat."""
+    return get_async_rag_service()
+
+
 def get_feedback_service() -> FeedbackService:
     """Dependency to get Feedback service instance"""
     global feedback_service
@@ -119,7 +125,7 @@ async def chat_endpoint(
     request: Request,
     chat_request: ChatRequest,
     background_tasks: BackgroundTasks,
-    rag: RAGService = Depends(get_rag_service),
+    async_rag: AsyncRAGService = Depends(get_async_rag),
     analytics: AnalyticsService = Depends(get_analytics_service),
 ):
     start_time = time.time()
@@ -128,10 +134,10 @@ async def chat_endpoint(
         accept_header = request.headers.get("accept", "") or ""
         if "text/event-stream" in accept_header:
             log.info(
-                f"Starting streaming chat for request: {chat_request.message[:50]}..."
+                f"[ASYNC] Starting streaming chat: {chat_request.message[:50]}..."
             )
 
-            async def stream_generator():
+            async def async_stream_generator():
                 session_id = chat_request.conversation_id or "default"
                 conversation_id = chat_request.conversation_id
                 full_answer = ""
@@ -140,17 +146,13 @@ async def chat_endpoint(
                 start_stream = time.time()
 
                 try:
-                    if chat_request.conversation_id:
-                        conversation_id = chat_request.conversation_id
-
-                    stream_iterator = rag.generate_answer_stream(
+                    # Use TRUE ASYNC streaming from the new async_rag_service
+                    async for chunk in async_rag.generate_answer_stream_async(
                         query=chat_request.message,
                         conversation_id=conversation_id,
                         conversation_history=chat_request.conversation_history,
                         language=chat_request.language or "vi",
-                    )
-
-                    for chunk in stream_iterator:
+                    ):
                         # Update metadata
                         if chunk.get("type") == "metadata":
                             conversation_id = chunk.get("conversation_id")
@@ -161,7 +163,7 @@ async def chat_endpoint(
                         elif chunk.get("type") == "answer_chunk":
                             full_answer += chunk.get("content", "")
 
-                        # Yield chunk
+                        # Yield chunk as SSE
                         yield f"data: {json.dumps(chunk, ensure_ascii=False)}\n\n"
 
                     # Track analytics after stream finishes
@@ -188,31 +190,16 @@ async def chat_endpoint(
                             ip_address=request.client.host if request.client else None,
                             user_agent=request.headers.get("user-agent", ""),
                         )
-
-                        analytics.log_access(
-                            session_id=session_id,
-                            ip_address=request.client.host if request.client else None,
-                            user_agent=request.headers.get("user-agent", ""),
-                            endpoint="/api/v1/chat",
-                            method="POST",
-                            status_code=200,
-                            response_time_ms=processing_time_ms,
-                        )
                     except Exception as analytics_error:
-                        log.error(
-                            f"Error tracking analytics in stream: {analytics_error}"
-                        )
+                        log.error(f"Analytics error: {analytics_error}")
 
                 except Exception as e:
-                    log.error(f"Streaming error: {e}")
-                    error_chunk = {
-                        "type": "error",
-                        "message": "Có lỗi xảy ra khi xử lý yêu cầu.",
-                    }
+                    log.error(f"[ASYNC] Streaming error: {e}")
+                    error_chunk = {"type": "error", "message": "Có lỗi xảy ra."}
                     yield f"data: {json.dumps(error_chunk, ensure_ascii=False)}\n\n"
 
             return StreamingResponse(
-                stream_generator(),
+                async_stream_generator(),
                 media_type="text/event-stream",
                 headers={
                     "Cache-Control": "no-cache",
@@ -222,16 +209,15 @@ async def chat_endpoint(
             )
 
         log.info(
-            f"Received chat request: {chat_request.message[:50] if chat_request.message else '[Image only]'}..."
+            f"[ASYNC] Chat request: {chat_request.message[:50] if chat_request.message else '[Image only]'}..."
         )
         log.info(
             f"Images count: {len(chat_request.images) if chat_request.images else 0}"
         )
 
-        # Get RAG response (with images if provided)
-        # Wrap CPU-bound operations in thread pool for better concurrency
-        rag_response = await asyncio.to_thread(
-            rag.generate_answer,
+        # Use ASYNC RAG service (the key optimization!)
+        # This is truly async - no blocking, no thread pool wrapping
+        rag_response = await async_rag.generate_answer_async(
             query=chat_request.message,
             conversation_id=chat_request.conversation_id,
             conversation_history=chat_request.conversation_history,

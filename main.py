@@ -106,6 +106,15 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         log.warning(f"⚠️ Error closing async database service: {e}")
 
+    # Close async Gemini HTTP client
+    try:
+        from src.services.async_gemini_service import close_async_client
+
+        await close_async_client()
+        log.info("✅ Async Gemini HTTP client closed")
+    except Exception as e:
+        log.warning(f"⚠️ Error closing async Gemini client: {e}")
+
 
 app = FastAPI(
     title="University Chatbot API",
