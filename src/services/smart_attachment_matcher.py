@@ -52,13 +52,15 @@ class SmartAttachmentMatcher:
             r"(thôi học|rút hồ sơ)",
             r"(đăng ký môn|đăng ký học phần)",
             r"(gia hạn|miễn giảm)",
+            r"(tiếp tục học|nhập học lại|quay lại học)",
+            r"(xác nhận|chứng nhận)",
         ]
 
         for pattern in patterns:
             matches = re.findall(pattern, query_lower)
             if matches:
                 keywords.extend(
-                    matches[0] if isinstance(matches[0], list) else [matches[0]]
+                    matches if isinstance(matches, list) else [matches]
                 )
 
         return list(set(keywords))  # Remove duplicates
@@ -83,14 +85,31 @@ class SmartAttachmentMatcher:
         # Convert to lowercase sets
         att_set = set(kw.lower() for kw in attachment_keywords)
         query_set = set(kw.lower() for kw in query_keywords)
-
-        # Calculate overlap
+        
+        # Check for direct overlap first
         intersection = att_set.intersection(query_set)
-        if not intersection:
-            return 0.0
+        if intersection:
+            union = att_set.union(query_set)
+            return len(intersection) / len(union)
 
-        # Jaccard similarity
-        union = att_set.union(query_set)
-        score = len(intersection) / len(union) if union else 0.0
-
-        return min(score, 1.0)
+        # Check for partial matches (substrings)
+        partial_matches = 0
+        total_checks = 0
+        
+        for q_kw in query_set:
+            match_found = False
+            for att_kw in att_set:
+                # Check if query keyword is in attachment keyword or vice versa
+                if q_kw in att_kw or att_kw in q_kw:
+                    match_found = True
+                    break
+            
+            if match_found:
+                partial_matches += 1
+            total_checks += 1
+            
+        if partial_matches > 0:
+            # Return a score based on how many query keywords found a match
+            return (partial_matches / len(query_set)) * 0.9  # Slightly lower confidence than exact match
+            
+        return 0.0

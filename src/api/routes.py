@@ -2,8 +2,23 @@
 FastAPI routes for the chatbot API
 """
 
-from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Form, Query, Request, BackgroundTasks
-from fastapi.responses import JSONResponse, FileResponse, StreamingResponse, RedirectResponse
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    File,
+    UploadFile,
+    Form,
+    Query,
+    Request,
+    BackgroundTasks,
+)
+from fastapi.responses import (
+    JSONResponse,
+    FileResponse,
+    StreamingResponse,
+    RedirectResponse,
+)
 import time
 import asyncio
 import datetime
@@ -39,7 +54,10 @@ from src.services.feedback_service import FeedbackService
 from src.services.analytics_service import AnalyticsService
 from src.services.attachment_service import AttachmentService
 from src.services.postgres_database_service import PostgresDatabaseService
-from src.services.supabase_storage_service import get_supabase_storage_service, SupabaseStorageService
+from src.services.supabase_storage_service import (
+    get_supabase_storage_service,
+    SupabaseStorageService,
+)
 from src.services.upload_task_manager import get_task_manager, TaskStatus
 from src.middleware.rate_limit_middleware import rate_limit
 from src.utils.logger import log
@@ -519,7 +537,6 @@ async def get_document(filename: str, page: int = None):
         PDF file response
     """
     from pathlib import Path
-    from fastapi.responses import FileResponse
     from config.settings import DATA_DIR
     import urllib.parse
 
@@ -1988,18 +2005,20 @@ async def upload_attachment(
         max_size = 10 * 1024 * 1024  # 10MB
         # Save file to Supabase Storage
         file_content = await file.read()
-        
+
         # Determine content type
         content_type = file.content_type or "application/octet-stream"
-        
+
         # Upload to Supabase
         success, message, public_url = supabase.upload_file(
             file_content, file.filename, content_type
         )
-        
+
         if not success or not public_url:
-             raise HTTPException(status_code=500, detail=f"Failed to upload to storage: {message}")
-             
+            raise HTTPException(
+                status_code=500, detail=f"Failed to upload to storage: {message}"
+            )
+
         # Use public URL as file path
         file_path = public_url
 

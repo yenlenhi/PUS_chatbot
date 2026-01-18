@@ -1208,6 +1208,22 @@ Trả lời / Response:"""
                 }
                 source_references.append(source_ref)
 
+            # Create formatted context from chunks
+            context = self.create_context(relevant_chunks)
+
+            # Get attachments early to inject into context
+            attachments = self._retrieve_attachments_for_context(query, relevant_chunks)
+            if attachments:
+                attachment_context = "\n\n*** TÀI LIỆU ĐÍNH KÈM CÓ SẴN (HỆ THỐNG ĐÃ TÌM THẤY) ***:\n"
+                if language == 'en':
+                    attachment_context = "\n\n*** AVAILABLE ATTACHMENTS (SYSTEM FOUND) ***:\n"
+                
+                for att in attachments:
+                    attachment_context += f"- Tên file: {att['file_name']}\n  Mô tả: {att['description']}\n"
+                
+                attachment_context += "\n(Hãy nhắc người dùng tải xuống các tài liệu này ở phần đính kèm bên dưới / Please mention these attachments are available for download below)\n"
+                context += attachment_context
+
             # Create system prompt and user prompt with memory context
             system_prompt = self.create_system_prompt(language=language)
             user_prompt = self.create_user_prompt(
@@ -1354,83 +1370,14 @@ Trả lời / Response:"""
             if chart_data:
                 log.info(f"📊 Generated {len(chart_data)} chart(s) for visualization")
 
-            # Get attachments using hybrid approach: chunk linking + keyword matching
-            attachments = []
-            try:
-                log.info("🔍 Starting attachment retrieval...")
-                attachment_ids_found = set()
+            # Detect if chart visualization is needed
+            chart_data = self._detect_chart_request(query, answer)
+            if chart_data:
+                log.info(f"📊 Generated {len(chart_data)} chart(s) for visualization")
 
-                # Strategy 1: Get attachments linked to retrieved chunks
-                if relevant_chunks:
-                    log.info(
-                        f"Strategy 1: Checking {len(relevant_chunks)} chunks for linked attachments"
-                    )
-                    chunk_ids = [
-                        chunk.get("id") for chunk in relevant_chunks if chunk.get("id")
-                    ]
-                    if chunk_ids:
-                        chunk_attachments = (
-                            self.attachment_service.get_attachments_by_chunk_ids(
-                                chunk_ids
-                            )
-                        )
-                        for att in chunk_attachments:
-                            attachment_ids_found.add(att.id)
-                            attachments.append(
-                                {
-                                    "file_name": att.file_name,
-                                    "file_type": att.file_type,
-                                    "download_url": att.download_url,
-                                    "description": att.description,
-                                    "file_size": att.file_size,
-                                }
-                            )
+            # Attachments already retrieved earlier (step 3.5)
+            # Keeping the variable 'attachments'
 
-                # Strategy 2: Search attachments by keywords from query
-                from src.services.smart_attachment_matcher import SmartAttachmentMatcher
-
-                query_keywords = SmartAttachmentMatcher.extract_keywords_from_query(
-                    query
-                )
-                log.info(f"Strategy 2: Extracted keywords from query: {query_keywords}")
-                if query_keywords:
-                    keyword_attachments = self.attachment_service.search_attachments(
-                        keywords=query_keywords
-                    )
-                    log.info(
-                        f"Strategy 2: Found {len(keyword_attachments)} attachments by keyword search"
-                    )
-
-                    # Score and filter keyword-matched attachments
-                    for att in keyword_attachments:
-                        if att.id not in attachment_ids_found:
-                            # Calculate relevance score
-                            score = SmartAttachmentMatcher.score_attachment_relevance(
-                                att.keywords or [], query_keywords
-                            )
-
-                            # Only include if relevance score is high enough
-                            if score > 0.3:  # Threshold
-                                attachment_ids_found.add(att.id)
-                                attachments.append(
-                                    {
-                                        "file_name": att.file_name,
-                                        "file_type": att.file_type,
-                                        "download_url": att.download_url,
-                                        "description": att.description,
-                                        "file_size": att.file_size,
-                                    }
-                                )
-                                log.info(
-                                    f"📎 Found keyword-matched attachment: {att.file_name} (score: {score:.2f})"
-                                )
-
-                if attachments:
-                    log.info(
-                        f"📎 Found {len(attachments)} attachment(s) for this response"
-                    )
-            except Exception as att_error:
-                log.warning(f"Could not retrieve attachments: {att_error}")
 
             return {
                 "answer": answer,
@@ -1446,6 +1393,7 @@ Trả lời / Response:"""
                 "images": [],  # Will be populated if images are found in sources
             }
 
+
         except Exception as e:
             log.error(f"Error generating answer: {e}")
             return {
@@ -1458,6 +1406,77 @@ Trả lời / Response:"""
                 "chart_data": [],
                 "images": [],
             }
+
+    def _retrieve_attachments_for_context(
+        self, query: str, relevant_chunks: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
+        """
+        Helper to retrieve attachments based on query and chunks.
+        Used to inject attachment info into LLM context.
+        """
+        attachments = []
+        try:
+            log.info("🔍 Starting attachment retrieval...")
+            attachment_ids_found = set()
+
+            # Strategy 1: Get attachments linked to retrieved chunks
+            if relevant_chunks:
+                chunk_ids = [
+                    chunk.get("id") for chunk in relevant_chunks if chunk.get("id")
+                ]
+                if chunk_ids:
+                    chunk_attachments = (
+                        self.attachment_service.get_attachments_by_chunk_ids(
+                            chunk_ids
+                        )
+                    )
+                    for att in chunk_attachments:
+                        attachment_ids_found.add(att.id)
+                        attachments.append(
+                            {
+                                "file_name": att.file_name,
+                                "file_type": att.file_type,
+                                "download_url": att.download_url,
+                                "description": att.description,
+                                "file_size": att.file_size,
+                            }
+                        )
+
+            # Strategy 2: Search attachments by keywords from query
+            from src.services.smart_attachment_matcher import SmartAttachmentMatcher
+
+            query_keywords = SmartAttachmentMatcher.extract_keywords_from_query(
+                query
+            )
+            if query_keywords:
+                keyword_attachments = self.attachment_service.search_attachments(
+                    keywords=query_keywords
+                )
+                for att in keyword_attachments:
+                    if att.id not in attachment_ids_found:
+                        score = SmartAttachmentMatcher.score_attachment_relevance(
+                            att.keywords or [], query_keywords
+                        )
+                        if score > 0.3:
+                            attachment_ids_found.add(att.id)
+                            attachments.append(
+                                {
+                                    "file_name": att.file_name,
+                                    "file_type": att.file_type,
+                                    "download_url": att.download_url,
+                                    "description": att.description,
+                                    "file_size": att.file_size,
+                                }
+                            )
+            
+            if attachments:
+                log.info(f"📎 Found {len(attachments)} attachment(s) for context")
+                
+        except Exception as att_error:
+            log.warning(f"Could not retrieve attachments: {att_error}")
+            
+        return attachments
+
 
     def generate_answer_stream(
         self,
@@ -1614,7 +1633,23 @@ Trả lời / Response:"""
             else:
                 confidence = 0.0
 
+            # Step 5.5: Get attachments (Before LLM)
+            attachments = self._retrieve_attachments_for_context(query, relevant_chunks)
+            
+            # Inject attachment info into context
+            if attachments:
+                attachment_context = "\n\n*** TÀI LIỆU ĐÍNH KÈM CÓ SẴN (HỆ THỐNG ĐÃ TÌM THẤY) ***:\n"
+                if language == 'en':
+                    attachment_context = "\n\n*** AVAILABLE ATTACHMENTS (SYSTEM FOUND) ***:\n"
+                
+                for att in attachments:
+                    attachment_context += f"- Tên file: {att['file_name']}\n  Mô tả: {att['description']}\n"
+                
+                attachment_context += "\n(Hãy nhắc người dùng tải xuống các tài liệu này ở phần đính kèm bên dưới / Please mention these attachments are available for download below)\n"
+                context += attachment_context
+
             # Send sources before streaming answer
+
             yield {
                 "type": "sources",
                 "sources": sources,
@@ -1652,60 +1687,11 @@ Trả lời / Response:"""
                     yield {"type": "answer_chunk", "content": engagement_part}
                     full_answer = enhanced_answer
 
-            # Step 7: Get attachments
-            attachments = []
-            try:
-                attachment_ids_found = set()
+                    full_answer = enhanced_answer
 
-                if relevant_chunks:
-                    chunk_ids = [
-                        chunk.get("id") for chunk in relevant_chunks if chunk.get("id")
-                    ]
-                    if chunk_ids:
-                        chunk_attachments = (
-                            self.attachment_service.get_attachments_by_chunk_ids(
-                                chunk_ids
-                            )
-                        )
-                        for att in chunk_attachments:
-                            attachment_ids_found.add(att.id)
-                            attachments.append(
-                                {
-                                    "file_name": att.file_name,
-                                    "file_type": att.file_type,
-                                    "download_url": att.download_url,
-                                    "description": att.description,
-                                    "file_size": att.file_size,
-                                }
-                            )
+            # Step 7: (Attachments already retrieved in Step 5.5)
+            # Just keeping the variable 'attachments' 
 
-                from src.services.smart_attachment_matcher import SmartAttachmentMatcher
-
-                query_keywords = SmartAttachmentMatcher.extract_keywords_from_query(
-                    query
-                )
-                if query_keywords:
-                    keyword_attachments = self.attachment_service.search_attachments(
-                        keywords=query_keywords
-                    )
-                    for att in keyword_attachments:
-                        if att.id not in attachment_ids_found:
-                            score = SmartAttachmentMatcher.score_attachment_relevance(
-                                att.keywords or [], query_keywords
-                            )
-                            if score > 0.3:
-                                attachment_ids_found.add(att.id)
-                                attachments.append(
-                                    {
-                                        "file_name": att.file_name,
-                                        "file_type": att.file_type,
-                                        "download_url": att.download_url,
-                                        "description": att.description,
-                                        "file_size": att.file_size,
-                                    }
-                                )
-            except Exception as att_error:
-                log.warning(f"Could not retrieve attachments: {att_error}")
 
             # Step 8: Detect charts
             chart_data = self._detect_chart_request(query, full_answer)
