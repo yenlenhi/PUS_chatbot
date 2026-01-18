@@ -25,27 +25,27 @@ RUN pip install --timeout 300 --retries 5 \
 # Pre-download the Vietnamese SBERT model
 # This ensures the model is baked into the Docker image
 RUN python -c "\
-from sentence_transformers import SentenceTransformer; \
-import os; \
-os.environ['TRANSFORMERS_CACHE'] = '/models/cache'; \
-os.environ['HF_HOME'] = '/models/cache'; \
-print('📥 Downloading keepitreal/vietnamese-sbert...'); \
-model = SentenceTransformer('keepitreal/vietnamese-sbert', cache_folder='/models/cache'); \
-print('✅ Model downloaded successfully'); \
-print(f'   Embedding dimension: {model.get_sentence_embedding_dimension()}'); \
-"
+    from sentence_transformers import SentenceTransformer; \
+    import os; \
+    os.environ['TRANSFORMERS_CACHE'] = '/models/cache'; \
+    os.environ['HF_HOME'] = '/models/cache'; \
+    print('📥 Downloading keepitreal/vietnamese-sbert...'); \
+    model = SentenceTransformer('keepitreal/vietnamese-sbert', cache_folder='/models/cache'); \
+    print('✅ Model downloaded successfully'); \
+    print(f'   Embedding dimension: {model.get_sentence_embedding_dimension()}'); \
+    "
 
 # Also download the fallback model
 RUN python -c "\
-from sentence_transformers import SentenceTransformer; \
-import os; \
-os.environ['TRANSFORMERS_CACHE'] = '/models/cache'; \
-os.environ['HF_HOME'] = '/models/cache'; \
-print('📥 Downloading fallback model: all-MiniLM-L6-v2...'); \
-model = SentenceTransformer('all-MiniLM-L6-v2', cache_folder='/models/cache'); \
-print('✅ Fallback model downloaded successfully'); \
-print(f'   Embedding dimension: {model.get_sentence_embedding_dimension()}'); \
-"
+    from sentence_transformers import SentenceTransformer; \
+    import os; \
+    os.environ['TRANSFORMERS_CACHE'] = '/models/cache'; \
+    os.environ['HF_HOME'] = '/models/cache'; \
+    print('📥 Downloading fallback model: all-MiniLM-L6-v2...'); \
+    model = SentenceTransformer('all-MiniLM-L6-v2', cache_folder='/models/cache'); \
+    print('✅ Fallback model downloaded successfully'); \
+    print(f'   Embedding dimension: {model.get_sentence_embedding_dimension()}'); \
+    "
 
 # ============================================
 # Stage 2: Application Runtime Stage
@@ -97,4 +97,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
 
 # Run the application
 # Use shell form to properly expand $PORT environment variable
-CMD python -m uvicorn main:app --host 0.0.0.0 --port ${PORT:-8080} --workers 4 --log-level info
+CMD python -m uvicorn main:app --host 0.0.0.0 --port ${PORT:-8080} --workers 24 --log-level info

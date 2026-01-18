@@ -215,9 +215,10 @@ if __name__ == "__main__":
 
     # Run the application
     # Run the application
-    # Use 4 workers for production-like performance, but fallback to 1 if reload is enabled
-    workers = 4
+    # Use 24 workers as requested
+    workers = 24
     if API_RELOAD:
         workers = 1
+
         
     uvicorn.run("main:app", host=host, port=port, reload=API_RELOAD, workers=workers, log_level="info")
