@@ -5,6 +5,7 @@ Async PostgreSQL database service for managing document chunks and embeddings wi
 from typing import List, Optional, Dict, Any, AsyncGenerator
 import numpy as np
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+from sqlalchemy import text
 from src.utils.logger import log
 from src.models.schemas import DocumentChunk
 from config.settings import DATABASE_URL
