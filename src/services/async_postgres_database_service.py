@@ -12,8 +12,8 @@ from contextlib import asynccontextmanager
 
 
 def text_no_prepare(sql: str):
-    """Helper to create text_no_prepare() with prepare=False for pgbouncer compatibility"""
-    return text_no_prepare(sql)
+    """Helper to create text() with prepare=False for pgbouncer compatibility"""
+    return text(sql).execution_options(prepare=False)
 
 
 class AsyncPostgresDatabaseService:
