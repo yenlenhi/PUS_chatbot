@@ -8,6 +8,8 @@ import {
   ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight
 } from 'lucide-react';
 import { PieChart as RePieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
+import { AttachmentTable } from './attachments/AttachmentTable';
+import { AttachmentMobileList } from './attachments/AttachmentMobileList';
 
 interface Attachment {
   id: number;
@@ -328,57 +330,29 @@ export default function AttachmentManager() {
             </div>
           ) : attachments.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-64 text-gray-400">
-              <FileIcon size={48} className="mb-4 opacity-50" />
+              <HardDrive size={48} className="mb-4 opacity-50" />
               <p>Không tìm thấy tài liệu nào</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {attachments.map((file) => (
-                <div key={file.id} className="group relative bg-white border rounded-xl p-4 hover:shadow-md transition-all hover:border-blue-200">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className={`p-2 rounded-lg ${file.file_name.endsWith('.pdf') ? 'bg-red-50 text-red-600' :
-                        file.file_name.match(/\.(doc|docx)$/) ? 'bg-blue-50 text-blue-600' :
-                          file.file_name.match(/\.(xls|xlsx)$/) ? 'bg-green-50 text-green-600' :
-                            'bg-gray-50 text-gray-600'
-                      }`}>
-                      <FileText size={24} />
-                    </div>
-                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={() => handlePreview(file)}
-                        className="p-1.5 hover:bg-gray-100 rounded-md text-gray-600"
-                        title="Preview"
-                      >
-                        <Eye size={16} />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(file.id)}
-                        className="p-1.5 hover:bg-red-50 rounded-md text-red-600"
-                        title="Delete"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </div>
+            <>
+              {/* Desktop View */}
+              <div className="hidden md:block">
+                <AttachmentTable
+                  attachments={attachments}
+                  onPreview={handlePreview}
+                  onDelete={handleDelete}
+                />
+              </div>
 
-                  <h3 className="font-medium text-gray-800 truncate mb-1" title={file.file_name}>
-                    {file.file_name}
-                  </h3>
-
-                  <div className="flex items-center gap-2 text-xs text-gray-500 mb-3">
-                    <span className="bg-gray-100 px-2 py-0.5 rounded-full">
-                      {(file.file_size ? file.file_size / 1024 : 0).toFixed(1)} KB
-                    </span>
-                    <span>•</span>
-                    <span>{file.category || 'Khác'}</span>
-                  </div>
-
-                  <div className="text-xs text-gray-400">
-                    Updated: {file.created_at ? new Date(file.created_at).toLocaleDateString() : 'N/A'}
-                  </div>
-                </div>
-              ))}
-            </div>
+              {/* Mobile View */}
+              <div className="block md:hidden">
+                <AttachmentMobileList
+                  attachments={attachments}
+                  onPreview={handlePreview}
+                  onDelete={handleDelete}
+                />
+              </div>
+            </>
           )}
         </div>
 
@@ -416,8 +390,8 @@ export default function AttachmentManager() {
                   key={p}
                   onClick={() => setPage(p)}
                   className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${page === p
-                      ? 'bg-blue-600 text-white'
-                      : 'hover:bg-gray-100 text-gray-600'
+                    ? 'bg-blue-600 text-white'
+                    : 'hover:bg-gray-100 text-gray-600'
                     }`}
                 >
                   {p}
