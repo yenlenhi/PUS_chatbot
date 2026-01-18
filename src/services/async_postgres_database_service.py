@@ -55,10 +55,8 @@ class AsyncPostgresDatabaseService:
                 connect_args={
                     "statement_cache_size": 0,  # Disable statement cache
                     "prepared_statement_cache_size": 0,  # Disable prepared statement cache
-                },
-                # Disable SQLAlchemy's use of prepared statements
-                execution_options={
-                    "compiled_cache": None,
+                    # This function returns None for statement names, which disables named prepared statements
+                    "prepared_statement_name_func": lambda: None,
                 },
             )
 
