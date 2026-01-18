@@ -65,7 +65,10 @@ class AsyncPostgresDatabaseService:
                         "jit": "off",  # Disable JIT to avoid some prepared statement issues
                     },
                 },
-                pool_pre_ping=True,  # Verify connections before using
+                pool_pre_ping=False,  # Disable to avoid automatic prepared statements
+                execution_options={
+                    "postgresql_prepared_statement": False,  # Disable at engine level
+                },
             )
 
             # Create async session factory
