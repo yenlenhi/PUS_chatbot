@@ -49,6 +49,7 @@ from src.services.analytics_service import AnalyticsService
 from src.services.attachment_service import AttachmentService
 from src.services.postgres_database_service import PostgresDatabaseService
 from src.services.supabase_storage_service import get_supabase_storage_service
+from src.services.upload_task_manager import get_task_manager, TaskStatus
 from src.middleware.rate_limit_middleware import rate_limit
 from src.utils.logger import log
 
@@ -218,12 +219,14 @@ async def chat_endpoint(
         )
 
         # Get RAG response (with images if provided)
-        rag_response = rag.generate_answer(
+        # Wrap CPU-bound operations in thread pool for better concurrency
+        rag_response = await asyncio.to_thread(
+            rag.generate_answer,
             query=chat_request.message,
             conversation_id=chat_request.conversation_id,
             conversation_history=chat_request.conversation_history,
             images=chat_request.images,
-            language=chat_request.language or "vi",  # Pass language preference
+            language=chat_request.language or "vi",
         )
 
         # Calculate processing time
@@ -934,22 +937,18 @@ async def admin_upload_document(
     rag: RAGService = Depends(get_rag_service),
 ):
     """
-    Admin endpoint: Upload and process a PDF document
+    Admin endpoint: Upload and process a PDF document asynchronously
 
-    This endpoint:
-    1. Validates the uploaded file (PDF only, max 50MB)
-    2. Uploads the file to Supabase Storage
-    3. Saves a local copy for processing
-    4. Processes the PDF (extract text, chunk, create embeddings)
-    5. Stores chunks and embeddings in Supabase PostgreSQL
+    Returns 202 Accepted immediately with task_id for status tracking.
+    Processing happens in background.
 
     Args:
         file: PDF file to upload
         category: Document category (Đào tạo, Tuyển sinh, etc.)
-        use_gemini: Whether to use Gemini Vision API for OCR (recommended for scanned PDFs)
+        use_gemini: Whether to use Gemini Vision API for OCR
 
     Returns:
-        Processing result with chunk count and status
+        202 Accepted with task_id for checking progress
     """
     from config.settings import PDF_DIR
 
@@ -1002,10 +1001,9 @@ async def admin_upload_document(
         else:
             log.warning("⚠️ Supabase Storage not configured - saving locally only")
 
-        # Save a local copy for processing (using temp file or PDF_DIR)
+        # Save file locally
         pdf_dir = Path(PDF_DIR)
         pdf_dir.mkdir(parents=True, exist_ok=True)
-
         file_path = pdf_dir / safe_filename
 
         # If file exists, add timestamp to filename
@@ -1015,7 +1013,7 @@ async def admin_upload_document(
             safe_filename = f"{name_without_ext}_{timestamp}.pdf"
             file_path = pdf_dir / safe_filename
 
-        # Save file to disk for processing
+        # Save file to disk
         log.info(
             f"📤 Saving uploaded file locally: {safe_filename} ({file_size / 1024:.1f} KB)"
         )
@@ -1024,102 +1022,191 @@ async def admin_upload_document(
 
         log.info(f"✅ File saved to: {file_path}")
 
-        # Process the PDF
-        try:
-            log.info(f"🔄 Starting PDF processing: {safe_filename}")
+        # Create task for tracking
+        task_manager = get_task_manager()
+        task_id = task_manager.create_task(
+            filename=safe_filename,
+            original_filename=original_filename,
+            category=category,
+            use_gemini=use_gemini,
+            file_size=file_size,
+            supabase_url=supabase_url,
+        )
 
-            # Initialize PDF processor with Gemini setting
-            from src.services.pdf_processor import PDFProcessor
+        # Schedule background processing
+        background_tasks.add_task(
+            process_pdf_background,
+            task_id=task_id,
+            file_path=file_path,
+            safe_filename=safe_filename,
+            use_gemini=use_gemini,
+            rag=rag,
+        )
 
-            pdf_processor = PDFProcessor(use_gemini=use_gemini)
+        log.info(f"✅ File uploaded and queued for processing. Task ID: {task_id}")
 
-            # Extract text and create chunks
-            log.info(f"📖 Extracting text from {safe_filename}...")
-            chunks = pdf_processor.process_pdf_with_headings(file_path)
-
-            if not chunks:
-                log.warning(f"⚠️ No chunks extracted from {safe_filename}")
-                return JSONResponse(
-                    status_code=200,
-                    content={
-                        "success": True,
-                        "message": f"File '{safe_filename}' đã được lưu nhưng không trích xuất được nội dung. File có thể là PDF scan hoặc rỗng.",
-                        "filename": safe_filename,
-                        "original_filename": original_filename,
-                        "file_size": file_size,
-                        "chunks_created": 0,
-                        "supabase_url": supabase_url,
-                        "status": "warning",
-                    },
-                )
-
-            log.info(f"✂️ Created {len(chunks)} chunks from {safe_filename}")
-
-            # Insert chunks into database (Supabase PostgreSQL)
-            log.info(f"💾 Inserting {len(chunks)} chunks into Supabase database...")
-            chunk_ids = rag.db_service.insert_chunks(chunks)
-
-            # Generate embeddings
-            log.info(f"🧠 Generating embeddings for {len(chunks)} chunks...")
-            embeddings = rag.embedding_service.create_embeddings_batch(
-                [chunk.content for chunk in chunks], batch_size=16, show_progress=False
-            )
-
-            # Insert embeddings into database (Supabase PostgreSQL)
-            log.info("💾 Inserting embeddings into Supabase database...")
-            rag.db_service.insert_embeddings(chunk_ids, embeddings)
-
-            # Rebuild BM25 index for hybrid retrieval
-            if hasattr(rag, "retrieval_service") and rag.retrieval_service:
-                try:
-                    log.info("🔨 Rebuilding BM25 index...")
-                    rag.retrieval_service.rebuild_bm25_index()
-                    log.info("✅ BM25 index rebuilt successfully")
-                except Exception as e:
-                    log.warning(f"⚠️ Could not rebuild BM25 index: {e}")
-
-            log.info(
-                f"🎉 Successfully processed {safe_filename}: {len(chunks)} chunks, {len(embeddings)} embeddings"
-            )
-
-            return JSONResponse(
-                status_code=200,
-                content={
-                    "success": True,
-                    "message": f"File '{original_filename}' đã được xử lý và lưu vào Supabase thành công!",
-                    "filename": safe_filename,
-                    "original_filename": original_filename,
-                    "file_size": file_size,
-                    "chunks_created": len(chunks),
-                    "embeddings_created": len(embeddings),
-                    "category": category,
-                    "use_gemini": use_gemini,
-                    "supabase_url": supabase_url,
-                    "status": "success",
-                },
-            )
-
-        except Exception as e:
-            log.error(f"❌ Error processing PDF {safe_filename}: {e}")
-            # File was saved but processing failed
-            return JSONResponse(
-                status_code=500,
-                content={
-                    "success": False,
-                    "message": f"Lỗi khi xử lý file: {str(e)}",
-                    "filename": safe_filename,
-                    "original_filename": original_filename,
-                    "file_size": file_size,
-                    "supabase_url": supabase_url,
-                    "status": "error",
-                },
-            )
+        # Return 202 Accepted with task_id
+        return JSONResponse(
+            status_code=202,
+            content={
+                "success": True,
+                "message": f"File '{original_filename}' đã được tải lên và đang được xử lý. Sử dụng task_id để kiểm tra tiến trình.",
+                "task_id": task_id,
+                "filename": safe_filename,
+                "original_filename": original_filename,
+                "file_size": file_size,
+                "category": category,
+                "use_gemini": use_gemini,
+                "supabase_url": supabase_url,
+                "status_endpoint": f"/api/v1/admin/upload/status/{task_id}",
+            },
+        )
 
     except HTTPException:
         raise
     except Exception as e:
-        log.error(f"❌ Error uploading document: {e}")
-        raise HTTPException(status_code=500, detail=f"Lỗi khi upload file: {str(e)}")
+        log.error(f"❌ Error during file upload: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Lỗi khi tải file lên: {str(e)}")
+
+
+async def process_pdf_background(
+    task_id: str,
+    file_path: Path,
+    safe_filename: str,
+    use_gemini: bool,
+    rag: RAGService,
+):
+    """
+    Background task to process PDF file asynchronously.
+
+    Updates task progress throughout processing:
+    - 0%: Started
+    - 10-40%: Text extraction
+    - 40-70%: Embedding generation
+    - 70-90%: Database insertion
+    - 90-100%: BM25 index rebuild
+    """
+    task_manager = get_task_manager()
+
+    try:
+        log.info(
+            f"🔄 Background processing started for task {task_id}: {safe_filename}"
+        )
+        task_manager.update_task(task_id, status=TaskStatus.PROCESSING, progress=0)
+
+        # Initialize PDF processor
+        from src.services.pdf_processor import PDFProcessor
+
+        pdf_processor = PDFProcessor(use_gemini=use_gemini)
+
+        # Extract text and create chunks (10-40%)
+        log.info(f"📖 Extracting text from {safe_filename}...")
+        task_manager.update_task(task_id, progress=10)
+
+        chunks = await asyncio.to_thread(
+            pdf_processor.process_pdf_with_headings, file_path
+        )
+
+        task_manager.update_task(task_id, progress=40)
+
+        if not chunks:
+            log.warning(f"⚠️ No chunks extracted from {safe_filename}")
+            task_manager.update_task(
+                task_id,
+                status=TaskStatus.COMPLETED,
+                progress=100,
+                result={
+                    "success": True,
+                    "chunks_created": 0,
+                    "status": "warning",
+                    "message": "No content extracted from PDF",
+                },
+            )
+            return
+
+        log.info(f"✂️ Created {len(chunks)} chunks from {safe_filename}")
+
+        # Insert chunks into database (40-50%)
+        log.info(f"💾 Inserting {len(chunks)} chunks into database...")
+        chunk_ids = rag.db_service.insert_chunks(chunks)
+        task_manager.update_task(task_id, progress=50)
+
+        # Generate embeddings (50-70%)
+        log.info(f"🧠 Generating embeddings for {len(chunks)} chunks...")
+        embeddings = await asyncio.to_thread(
+            rag.embedding_service.create_embeddings_batch,
+            [chunk.content for chunk in chunks],
+            16,  # batch_size
+            False,  # show_progress
+        )
+        task_manager.update_task(task_id, progress=70)
+
+        # Insert embeddings (70-80%)
+        log.info("💾 Inserting embeddings into database...")
+        rag.db_service.insert_embeddings(chunk_ids, embeddings)
+        task_manager.update_task(task_id, progress=80)
+
+        # Rebuild BM25 index (80-100%)
+        if hasattr(rag, "retrieval_service") and rag.retrieval_service:
+            try:
+                log.info("🔨 Rebuilding BM25 index...")
+                task_manager.update_task(task_id, progress=90)
+                await asyncio.to_thread(rag.retrieval_service.rebuild_bm25_index)
+                log.info("✅ BM25 index rebuilt successfully")
+            except Exception as e:
+                log.warning(f"⚠️ Could not rebuild BM25 index: {e}")
+
+        # Mark as completed
+        log.info(
+            f"🎉 Successfully processed {safe_filename}: {len(chunks)} chunks, {len(embeddings)} embeddings"
+        )
+        task_manager.update_task(
+            task_id,
+            status=TaskStatus.COMPLETED,
+            progress=100,
+            result={
+                "success": True,
+                "chunks_created": len(chunks),
+                "embeddings_created": len(embeddings),
+                "status": "success",
+            },
+        )
+
+    except Exception as e:
+        log.error(f"❌ Error processing PDF {safe_filename}: {e}", exc_info=True)
+        task_manager.update_task(
+            task_id,
+            status=TaskStatus.FAILED,
+            progress=0,
+            result={
+                "success": False,
+                "error": str(e),
+                "status": "error",
+            },
+        )
+
+
+@router.get("/admin/upload/status/{task_id}")
+async def get_upload_status(task_id: str):
+    """
+    Get the status of a PDF upload/processing task
+
+    Args:
+        task_id: Task ID returned from upload endpoint
+
+    Returns:
+        Task status including progress, state, and results
+    """
+    task_manager = get_task_manager()
+    task = task_manager.get_task(task_id)
+
+    if not task:
+        raise HTTPException(status_code=404, detail=f"Task {task_id} not found")
+
+    return JSONResponse(
+        status_code=200,
+        content=task.to_dict(),
+    )
 
 
 @router.get("/admin/stats")
