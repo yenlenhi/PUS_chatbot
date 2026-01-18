@@ -5,7 +5,9 @@ RAG (Retrieval-Augmented Generation) service
 import uuid
 import re
 import time
-from typing import List, Dict, Any, Optional
+import hashlib
+from functools import lru_cache
+from typing import List, Dict, Any, Optional, Tuple
 from src.services.embedding_service import EmbeddingService
 from src.services.postgres_database_service import PostgresDatabaseService
 from src.services.hybrid_retrieval_service import HybridRetrievalService
@@ -84,36 +86,84 @@ class RAGService:
         log.info(
             "Ingestion service initialized (watchdog disabled - using background tasks)"
         )
+        
+        # Reranking cache for common queries (LRU with max 500 entries)
+        self._rerank_cache: Dict[str, List[Dict[str, Any]]] = {}
+        self._rerank_cache_max_size = 500
+
 
     def _rerank_chunks(
-        self, query: str, chunks: List[Dict[str, Any]]
+        self, query: str, chunks: List[Dict[str, Any]], max_rerank: int = 20
     ) -> List[Dict[str, Any]]:
         """
-        Reranks a list of chunks based on their relevance to the query using a Cross-Encoder model.
+        Optimized reranking with:
+        1. Limit chunks to max_rerank (default 20)
+        2. Skip reranking for high-score chunks (dense_score > 0.85)
+        3. Cache results for common queries
         """
         if not self.reranker or not chunks:
             return chunks
 
         try:
-            # Create pairs of [query, chunk_content] for the reranker
-            pairs = [[query, chunk["content"]] for chunk in chunks]
+            # Generate cache key from query + chunk IDs
+            chunk_ids = "_".join([str(c.get("chunk_id", ""))[:8] for c in chunks[:10]])
+            cache_key = hashlib.md5(f"{query}_{chunk_ids}".encode()).hexdigest()
+            
+            # Check cache first
+            if cache_key in self._rerank_cache:
+                log.info(f"⚡ Reranking cache hit for query")
+                return self._rerank_cache[cache_key]
 
-            # Predict the scores
-            scores = self.reranker.predict(pairs)
+            # Optimization 1: Separate high-score chunks (skip reranking)
+            high_score_threshold = 0.85
+            high_score_chunks = []
+            low_score_chunks = []
+            
+            for chunk in chunks:
+                dense_score = chunk.get("dense_score", 0) or chunk.get("score", 0)
+                if dense_score >= high_score_threshold:
+                    chunk["rerank_score"] = dense_score  # Use dense score directly
+                    high_score_chunks.append(chunk)
+                else:
+                    low_score_chunks.append(chunk)
+            
+            log.info(f"⚡ Skip reranking for {len(high_score_chunks)} high-score chunks (>0.85)")
+            
+            # Optimization 2: Limit low-score chunks to max_rerank
+            chunks_to_rerank = low_score_chunks[:max_rerank]
+            
+            if chunks_to_rerank:
+                # Create pairs of [query, chunk_content] for the reranker
+                pairs = [[query, chunk["content"]] for chunk in chunks_to_rerank]
 
-            # Assign scores to chunks
-            for chunk, score in zip(chunks, scores):
-                chunk["rerank_score"] = float(score)
+                # Predict the scores (batch processing)
+                scores = self.reranker.predict(pairs, show_progress_bar=False)
 
-            # Sort chunks by the new rerank score in descending order
-            chunks.sort(key=lambda x: x.get("rerank_score", 0.0), reverse=True)
+                # Assign scores to chunks
+                for chunk, score in zip(chunks_to_rerank, scores):
+                    chunk["rerank_score"] = float(score)
+                
+                log.info(f"Reranked {len(chunks_to_rerank)} chunks (skipped {len(chunks) - len(chunks_to_rerank) - len(high_score_chunks)})")
+            
+            # Combine high-score and reranked chunks
+            all_chunks = high_score_chunks + chunks_to_rerank
+            
+            # Sort by rerank_score
+            all_chunks.sort(key=lambda x: x.get("rerank_score", 0.0), reverse=True)
+            
+            # Cache the results
+            if len(self._rerank_cache) >= self._rerank_cache_max_size:
+                # Remove oldest entry (simple FIFO)
+                oldest_key = next(iter(self._rerank_cache))
+                del self._rerank_cache[oldest_key]
+            self._rerank_cache[cache_key] = all_chunks
 
-            log.info(f"Reranked {len(chunks)} chunks successfully.")
-            return chunks
+            return all_chunks
 
         except Exception as e:
             log.error(f"Error during chunk reranking: {e}")
             # Return original chunks in case of an error
+            return chunks
 
     def _detect_chart_request(self, query: str, answer: str) -> List[Dict[str, Any]]:
         """
@@ -237,8 +287,8 @@ class RAGService:
             # Generate query embedding
             query_embedding = self.embedding_service.create_embedding(query)
 
-            # Perform hybrid search using PostgreSQL + pgvector
-            initial_k = max(top_k * 3, 15)  # Get more candidates for reranking
+            # Optimization: Reduce initial_k from top_k*3 to top_k*2 (max 30)
+            initial_k = min(top_k * 2, 30)  # Cap at 30 candidates
             hybrid_results = self.retrieval_service.hybrid_search(
                 query=query, query_embedding=query_embedding, top_k=initial_k
             )
@@ -249,8 +299,8 @@ class RAGService:
 
             log.info(f"Hybrid search found {len(hybrid_results)} chunks.")
 
-            # Rerank results
-            reranked_chunks = self._rerank_chunks(query, hybrid_results)
+            # Optimized rerank: limit to 20 chunks, skip high-score
+            reranked_chunks = self._rerank_chunks(query, hybrid_results, max_rerank=20)
 
             # Context expansion
             expanded_chunks = self._expand_context(reranked_chunks[:top_k], query)
