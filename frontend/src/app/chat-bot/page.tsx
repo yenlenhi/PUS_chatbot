@@ -20,6 +20,7 @@ import GuidedFlow from '@/components/GuidedFlow';
 import ImageUpload, { UploadedImage as UploadedImageType } from '@/components/ImageUpload';
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 import { useSpeechSynthesis } from '@/hooks/useSpeechSynthesis';
+import { MobileSourceDrawer, SourceFAB, SuggestedQuestions } from '@/components/chat/MobileUI';
 
 // Gemini-style Processing Indicator - Shows REAL backend processing status
 interface ProcessingIndicatorProps {
@@ -1663,15 +1664,16 @@ const ChatBotPage = () => {
                         ? (language === 'vi' ? "💭 Mô tả hoặc hỏi về ảnh..." : "💭 Describe or ask about the image...")
                         : (language === 'vi' ? "💬 Nhập câu hỏi hoặc dán ảnh (Ctrl+V)..." : "💬 Type a question or paste an image (Ctrl+V)...")
                   }
-                  className="flex-1 min-w-0 h-8 sm:h-10 px-3 sm:px-4 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm font-medium bg-white/80 backdrop-blur-sm shadow-sm hover:shadow-md transition-all duration-300"
+                  className="flex-1 min-w-0 min-h-[44px] sm:min-h-[48px] px-4 sm:px-5 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 text-sm sm:text-base font-medium bg-white shadow-sm hover:shadow-md transition-all duration-300 placeholder:text-gray-400"
                   disabled={isTyping || isListening}
                 />
                 <button
                   onClick={() => handleSendMessage()}
                   disabled={(!inputMessage.trim() && uploadedImages.length === 0) || isTyping}
-                  className="group flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-600 hover:via-blue-700 hover:to-indigo-700 disabled:bg-gray-400 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transition-all duration-300 flex items-center justify-center shadow-lg hover:shadow-xl hover:scale-105 active:scale-95"
+                  className="group flex-shrink-0 w-11 h-11 sm:w-12 sm:h-12 bg-gradient-to-r from-red-500 via-red-600 to-red-700 text-white rounded-2xl hover:from-red-600 hover:via-red-700 hover:to-red-800 disabled:bg-gray-300 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed transition-all duration-300 flex items-center justify-center shadow-lg shadow-red-500/30 hover:shadow-xl hover:shadow-red-500/40 hover:scale-105 active:scale-95"
+                  aria-label="Gửi tin nhắn"
                 >
-                  <Send className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-0.5 transition-transform" />
+                  <Send className="w-5 h-5 sm:w-6 sm:h-6 group-hover:translate-x-0.5 transition-transform" />
                 </button>
               </div>
               {/* Ultra Compact Footer */}
@@ -1742,6 +1744,20 @@ const ChatBotPage = () => {
         onClose={() => setPreviewImage(null)}
         imageSrc={previewImage || ''}
         imageAlt="Preview image"
+      />
+
+      {/* Mobile Source Drawer - Bottom Sheet */}
+      <MobileSourceDrawer
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        sources={currentSourceReferences.filter(ref => (ref.relevance_score || 0) >= 0.8)}
+        onViewDocument={handleOpenDocument}
+      />
+
+      {/* Floating Action Button for Sources on Mobile */}
+      <SourceFAB
+        sourceCount={currentSourceReferences.filter(ref => (ref.relevance_score || 0) >= 0.8).length}
+        onClick={() => setSidebarOpen(true)}
       />
     </div>
   );
