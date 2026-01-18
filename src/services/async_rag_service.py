@@ -302,6 +302,18 @@ class AsyncRAGService:
                 relevant_chunks,
             )
 
+            # Inject attachments into context for the LLM
+            if attachments:
+                attachment_context = "\n\n*** TÀI LIỆU ĐÍNH KÈM CÓ SẴN (HỆ THỐNG ĐÃ TÌM THẤY) ***:\n"
+                if language == 'en':
+                    attachment_context = "\n\n*** AVAILABLE ATTACHMENTS (SYSTEM FOUND) ***:\n"
+                
+                for att in attachments:
+                    attachment_context += f"- Tên file: {att['file_name']}\n  Mô tả: {att['description']}\n"
+                
+                attachment_context += "\n(Hãy nhắc người dùng xem và tải xuống các tài liệu này ở phần đính kèm bên dưới)\n"
+                context += attachment_context
+
             # Send sources
             yield {
                 "type": "sources",
