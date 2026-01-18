@@ -184,4 +184,7 @@ class DocumentAttachment(BaseModel):
     category: Optional[str] = Field(
         "Khác", description="Category of the attachment (e.g., Tuyển sinh, Đào tạo)"
     )
+    public_url: Optional[str] = Field(
+        None, description="Direct public URL to the file on Supabase"
+    )
     is_active: bool = Field(True, description="Whether the attachment is active")
