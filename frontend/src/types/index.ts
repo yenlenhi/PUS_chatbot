@@ -35,6 +35,7 @@ export interface FileAttachment {
   download_url: string;
   description?: string;
   file_size?: number;
+  category?: string;
 }
 
 export interface Message {

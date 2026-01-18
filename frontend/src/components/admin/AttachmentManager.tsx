@@ -12,8 +12,11 @@ interface Attachment {
   description?: string;
   keywords?: string[];
   download_url: string;
+  category?: string;
   is_active: boolean;
 }
+
+const CATEGORIES = ['Tuyển sinh', 'Đào tạo', 'Công tác sinh viên', 'Hành chính', 'Khác'];
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -23,12 +26,14 @@ export default function AttachmentManager() {
   const [uploading, setUploading] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [filterCategory, setFilterCategory] = useState('All');
 
   // Upload form state
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [description, setDescription] = useState('');
   const [keywords, setKeywords] = useState('');
   const [chunkIds, setChunkIds] = useState('');
+  const [category, setCategory] = useState('Khác');
 
   useEffect(() => {
     fetchAttachments();
@@ -60,6 +65,7 @@ export default function AttachmentManager() {
       if (description) formData.append('description', description);
       if (keywords) formData.append('keywords', keywords);
       if (chunkIds) formData.append('chunk_ids', chunkIds);
+      if (category) formData.append('category', category);
 
       const response = await fetch(`${API_BASE}/api/v1/attachments/upload`, {
         method: 'POST',
@@ -103,12 +109,15 @@ export default function AttachmentManager() {
     setDescription('');
     setKeywords('');
     setChunkIds('');
+    setCategory('Khác');
   };
 
-  const filteredAttachments = attachments.filter(att =>
-    att.file_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    att.description?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredAttachments = attachments.filter(att => {
+    const matchesSearch = att.file_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      att.description?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = filterCategory === 'All' || att.category === filterCategory;
+    return matchesSearch && matchesCategory;
+  });
 
   const formatFileSize = (bytes?: number) => {
     if (!bytes) return 'N/A';
@@ -154,6 +163,19 @@ export default function AttachmentManager() {
             />
           </div>
         </div>
+
+        <div className="w-full xs:w-48 order-4 xs:order-4">
+          <select
+            value={filterCategory}
+            onChange={(e) => setFilterCategory(e.target.value)}
+            className="w-full px-3 py-2.5 xs:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm xs:text-base"
+          >
+            <option value="All">Tất cả danh mục</option>
+            {CATEGORIES.map(cat => (
+              <option key={cat} value={cat}>{cat}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* Attachments List */}
@@ -188,6 +210,11 @@ export default function AttachmentManager() {
                     <p className="text-xs text-gray-500">
                       {attachment.file_type.toUpperCase()} • {formatFileSize(attachment.file_size)}
                     </p>
+                    {attachment.category && (
+                      <span className="inline-block mt-1 px-2 py-0.5 bg-blue-50 text-blue-700 text-xs rounded-full">
+                        {attachment.category}
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -284,6 +311,21 @@ export default function AttachmentManager() {
                   placeholder="Mô tả ngắn về file này..."
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Danh mục
+                </label>
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                >
+                  {CATEGORIES.map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
               </div>
 
               <div>

@@ -4,7 +4,6 @@ FastAPI routes for the chatbot API
 
 from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Form, Query, Request, BackgroundTasks
 from fastapi.responses import JSONResponse, FileResponse, StreamingResponse, RedirectResponse
-from sse_starlette.sse import EventSourceResponse
 import time
 import asyncio
 import datetime

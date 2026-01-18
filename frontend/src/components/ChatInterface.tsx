@@ -8,6 +8,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import SourceSection from './SourceSection';
 import FeedbackButtons from './FeedbackButtons';
+import AttachmentList from './chat/AttachmentList';
 import { SSEParser } from '@/utils/sseUtils';
 
 const ChatInterface = () => {
@@ -69,12 +70,12 @@ const ChatInterface = () => {
     try {
       const response = await fetch('/api/chat-stream', {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'Accept': 'text/event-stream'
         },
-        body: JSON.stringify({ 
-          message: currentQuery, 
+        body: JSON.stringify({
+          message: currentQuery,
           conversation_id: conversationId,
           language: 'vi' // You can make this dynamic
         })
@@ -89,6 +90,7 @@ const ChatInterface = () => {
       const parser = new SSEParser();
       let fullContent = '';
       let sources: Source[] = [];
+      let attachments: any[] = [];
       let confidence = 0;
       let chunkIds: number[] = [];
       let sourceReferences: any[] = [];
@@ -105,16 +107,15 @@ const ChatInterface = () => {
             if (event.type === 'answer_chunk' && event.content) {
               fullContent += event.content;
               setCurrentStreamingContent(fullContent);
-              
+
               // Update the streaming message
-              setMessages(prev => 
-                prev.map(msg => 
-                  msg.id === botMessageId 
+              setMessages(prev =>
+                prev.map(msg =>
+                  msg.id === botMessageId
                     ? { ...msg, content: fullContent }
                     : msg
                 )
               );
-            } else if (event.type === 'sources') {
             } else if (event.type === 'sources') {
               sources = (event.sources || []).map((source: string) => ({
                 title: source,
@@ -123,12 +124,16 @@ const ChatInterface = () => {
               }));
               confidence = event.confidence || 0;
               sourceReferences = event.source_references || [];
-              
+
               // Extract chunk IDs
               chunkIds = sourceReferences
                 .map((ref: { chunk_id: string }) => parseInt(ref.chunk_id, 10))
                 .filter((id: number) => !isNaN(id));
             } else if (event.type === 'complete') {
+              // Get attachments if available
+              if (event.attachments) {
+                attachments = event.attachments;
+              }
               // Streaming completed
               break;
             } else if (event.type === 'error') {
@@ -140,7 +145,7 @@ const ChatInterface = () => {
             }
           }
         }
-        
+
         // Process any remaining buffered data
         const finalEvents = parser.flush();
         for (const event of finalEvents) {
@@ -151,34 +156,35 @@ const ChatInterface = () => {
       }
 
       // Final update with all metadata
-      setMessages(prev => 
-        prev.map(msg => 
-          msg.id === botMessageId 
-            ? { 
-                ...msg, 
-                content: fullContent || 'Xin lỗi, tôi không thể trả lời câu hỏi này lúc này.',
-                isStreaming: false,
-                sources,
-                confidence,
-                userQuery: currentQuery,
-                chunkIds
-              }
+      setMessages(prev =>
+        prev.map(msg =>
+          msg.id === botMessageId
+            ? {
+              ...msg,
+              content: fullContent || 'Xin lỗi, tôi không thể trả lời câu hỏi này lúc này.',
+              isStreaming: false,
+              sources,
+              attachments,
+              confidence,
+              userQuery: currentQuery,
+              chunkIds
+            }
             : msg
         )
       );
 
     } catch (error) {
       console.error('Error sending streaming message:', error);
-      
+
       // Update with error message
-      setMessages(prev => 
-        prev.map(msg => 
-          msg.id === botMessageId 
-            ? { 
-                ...msg, 
-                content: 'Xin lỗi, có lỗi xảy ra khi xử lý yêu cầu. Vui lòng thử lại sau.',
-                isStreaming: false
-              }
+      setMessages(prev =>
+        prev.map(msg =>
+          msg.id === botMessageId
+            ? {
+              ...msg,
+              content: 'Xin lỗi, có lỗi xảy ra khi xử lý yêu cầu. Vui lòng thử lại sau.',
+              isStreaming: false
+            }
             : msg
         )
       );
@@ -277,12 +283,17 @@ ${source.content ? `📝 Nội dung liên quan:\n${source.content.substring(0, 3
                         <span>{message.id === streamingMessageId && streamingStatus ? streamingStatus : 'Đang soạn câu trả lời'}</span>
                         <div className="flex space-x-1">
                           <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce"></div>
-                          <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-                          <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                          <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                          <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                         </div>
                       </div>
                     ) : null}
                   </div>
+
+                  {/* Attachments Section */}
+                  {message.sender === 'bot' && message.attachments && message.attachments.length > 0 && (
+                    <AttachmentList attachments={message.attachments} />
+                  )}
 
                   {/* Sources Section - only for bot messages and not streaming */}
                   {message.sender === 'bot' && message.sources && message.sources.length > 0 && !message.isStreaming && (

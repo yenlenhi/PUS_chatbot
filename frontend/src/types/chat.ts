@@ -1,9 +1,12 @@
+import type { Source, FileAttachment } from './index';
+
 export interface Message {
   id: string;
   role?: 'user' | 'assistant';
   content: string;
   timestamp: string | Date;
   sources?: Source[];
+  attachments?: FileAttachment[];
   confidence?: number;
   isStreaming?: boolean; // Thêm flag để đánh dấu đang streaming
   error?: boolean; // Thêm flag để đánh dấu lỗi
