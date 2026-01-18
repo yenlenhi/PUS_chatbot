@@ -466,7 +466,7 @@ class ConversationMemoryService:
 
             if summary:
                 # Generate embedding for the summary
-                embedding = self.embedding_service.generate_embedding(summary)
+                embedding = self.embedding_service.create_embedding(summary)
                 embedding_str = None
                 if embedding is not None:
                     embedding_str = (

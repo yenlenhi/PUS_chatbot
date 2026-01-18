@@ -81,7 +81,9 @@ class RAGService:
 
         # Ingestion service is available but watchdog is disabled
         # PDF processing now happens via background tasks in routes.py
-        log.info("Ingestion service initialized (watchdog disabled - using background tasks)")
+        log.info(
+            "Ingestion service initialized (watchdog disabled - using background tasks)"
+        )
 
     def _rerank_chunks(
         self, query: str, chunks: List[Dict[str, Any]]
@@ -1283,7 +1285,7 @@ Trả lời / Response:"""
                 log.debug(f"Raw answer from LLM: {repr(answer[:100])}...")
                 # Add engagement prompt if not already present
                 answer = self._add_engagement_prompt(answer, query, language)
-                log.debug(f"Answer with engagement prompt added")
+                log.debug("Answer with engagement prompt added")
 
             # Update conversation history (in-memory cache)
             self.conversations[conversation_id].append(
@@ -1640,8 +1642,10 @@ Trả lời / Response:"""
             if full_answer:
                 # Store original length before adding engagement
                 original_length = len(full_answer)
-                enhanced_answer = self._add_engagement_prompt(full_answer, query, language)
-                
+                enhanced_answer = self._add_engagement_prompt(
+                    full_answer, query, language
+                )
+
                 # If engagement was added, stream the additional part
                 if len(enhanced_answer) > original_length:
                     engagement_part = enhanced_answer[original_length:]
