@@ -166,41 +166,53 @@ export default function AttachmentManager() {
     ));
   };
 
+  // Ref to prevent double submission
+  const isUploadingRef = useRef(false);
+
   const handleUploadAll = async () => {
+    if (isUploadingRef.current) return;
+
     const pendingItems = uploadQueue.filter(item => item.status === 'pending');
+    if (pendingItems.length === 0) return;
 
-    for (const item of pendingItems) {
-      updateUploadItem(item.id, 'status', 'uploading');
+    isUploadingRef.current = true;
 
-      try {
-        const formData = new FormData();
-        formData.append('file', item.file);
-        formData.append('description', item.description);
-        formData.append('keywords', item.keywords);
-        formData.append('category', item.category);
+    try {
+      for (const item of pendingItems) {
+        updateUploadItem(item.id, 'status', 'uploading');
 
-        if (item.chunkIds) {
-          formData.append('chunk_ids', item.chunkIds);
-        }
+        try {
+          const formData = new FormData();
+          formData.append('file', item.file);
+          formData.append('description', item.description);
+          formData.append('keywords', item.keywords);
+          formData.append('category', item.category);
 
-        const response = await fetch(`${API_BASE}/api/v1/attachments/upload`, {
-          method: 'POST',
-          body: formData,
-        });
+          if (item.chunkIds) {
+            formData.append('chunk_ids', item.chunkIds);
+          }
 
-        if (response.ok) {
-          updateUploadItem(item.id, 'status', 'success');
-        } else {
+          const response = await fetch(`${API_BASE}/api/v1/attachments/upload`, {
+            method: 'POST',
+            body: formData,
+          });
+
+          if (response.ok) {
+            updateUploadItem(item.id, 'status', 'success');
+          } else {
+            updateUploadItem(item.id, 'status', 'error');
+            updateUploadItem(item.id, 'errorMessage', 'Upload failed');
+          }
+        } catch (error) {
           updateUploadItem(item.id, 'status', 'error');
-          updateUploadItem(item.id, 'errorMessage', 'Upload failed');
+          updateUploadItem(item.id, 'errorMessage', 'Network error');
         }
-      } catch (error) {
-        updateUploadItem(item.id, 'status', 'error');
-        updateUploadItem(item.id, 'errorMessage', 'Network error');
       }
-    }
 
-    fetchAttachments();
+      fetchAttachments();
+    } finally {
+      isUploadingRef.current = false;
+    }
   };
 
   const handleDelete = async (id: number) => {
