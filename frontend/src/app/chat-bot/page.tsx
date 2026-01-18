@@ -1754,11 +1754,11 @@ const ChatBotPage = () => {
         onViewDocument={handleOpenDocument}
       />
 
-      {/* Floating Action Button for Sources on Mobile */}
-      <SourceFAB
+      {/* Floating Action Button for Sources on Mobile - REMOVED as per user request to avoid overlap */}
+      {/* <SourceFAB
         sourceCount={currentSourceReferences.filter(ref => (ref.relevance_score || 0) >= 0.8).length}
         onClick={() => setSidebarOpen(true)}
-      />
+      /> */}
     </div>
   );
 };
