@@ -58,11 +58,10 @@ class AsyncPostgresDatabaseService:
                 echo=False,
                 poolclass=NullPool,  # Use NullPool for pgbouncer compatibility
                 connect_args={
-                    "statement_cache_size": 0,  # Disable statement cache
-                    "prepared_statement_cache_size": 0,  # Disable prepared statement cache
-                    "prepared_statement_name_func": lambda: None,  # Disable named prepared statements
+                    "statement_cache_size": 0,  # Disable statement cache for PgBouncer compatibility
+                    "prepared_statement_cache_size": 0,
                     "server_settings": {
-                        "jit": "off",  # Disable JIT to avoid some prepared statement issues
+                        "jit": "off",
                     },
                 },
                 pool_pre_ping=False,  # Disable to avoid automatic prepared statements
