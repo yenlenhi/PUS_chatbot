@@ -7,6 +7,7 @@ from sqlalchemy import text
 from pathlib import Path
 from src.utils.logger import log
 from src.services.postgres_database_service import PostgresDatabaseService
+from src.services.supabase_storage_service import get_supabase_storage_service
 from src.models.schemas import DocumentAttachment
 
 
@@ -16,6 +17,7 @@ class AttachmentService:
     def __init__(self, db_service: PostgresDatabaseService):
         """Initialize attachment service"""
         self.db = db_service
+        self.supabase = get_supabase_storage_service()
         self.forms_dir = Path("data/forms")
         self.forms_dir.mkdir(parents=True, exist_ok=True)
 
@@ -27,6 +29,7 @@ class AttachmentService:
         file_size: Optional[int] = None,
         description: Optional[str] = None,
         keywords: Optional[List[str]] = None,
+        category: Optional[str] = "Khác",
     ) -> int:
         """
         Create a new attachment record
@@ -34,10 +37,11 @@ class AttachmentService:
         Args:
             file_name: Name of the file
             file_type: File type (doc, docx, xlsx, etc.)
-            file_path: Path to the file
+            file_path: Path to the file (or Supabase URL)
             file_size: File size in bytes
             description: Description of the attachment
             keywords: Keywords for searching
+            category: Category of the attachment
 
         Returns:
             Attachment ID
@@ -48,8 +52,8 @@ class AttachmentService:
                     text(
                         """
                         INSERT INTO document_attachments 
-                        (filename, mime_type, file_path, file_size, description, keywords, is_active)
-                        VALUES (:filename, :mime_type, :file_path, :file_size, :description, :keywords, TRUE)
+                        (filename, mime_type, file_path, file_size, description, keywords, category, is_active)
+                        VALUES (:filename, :mime_type, :file_path, :file_size, :description, :keywords, :category, TRUE)
                         RETURNING id
                     """
                     ),
@@ -60,6 +64,7 @@ class AttachmentService:
                         "file_size": file_size,
                         "description": description,
                         "keywords": keywords or [],
+                        "category": category,
                     },
                 )
                 conn.commit()
@@ -128,7 +133,7 @@ class AttachmentService:
                     text(
                         """
                         SELECT DISTINCT a.id, a.filename, a.mime_type, a.file_path, 
-                               a.file_size, a.description, a.keywords
+                               a.file_size, a.description, a.keywords, a.category
                         FROM document_attachments a
                         JOIN chunk_attachments ca ON a.id = ca.attachment_id
                         WHERE ca.chunk_id = ANY(:chunk_ids) AND a.is_active = TRUE
@@ -149,6 +154,7 @@ class AttachmentService:
                             file_size=row[4],
                             description=row[5],
                             keywords=row[6] if row[6] else [],
+                            category=row[7] if len(row) > 7 else "Khác",
                             download_url=f"/api/v1/attachments/download/{row[0]}",
                         )
                     )
@@ -172,8 +178,7 @@ class AttachmentService:
                 result = conn.execute(
                     text(
                         """
-                        SELECT id, filename, mime_type, file_path, file_size, 
-                               description, keywords
+                        SELECT id, filename, mime_type, file_path, file_size, description, keywords, category
                         FROM document_attachments
                         WHERE id = :id AND is_active = TRUE
                     """
@@ -190,6 +195,7 @@ class AttachmentService:
                         file_size=row[4],
                         description=row[5],
                         keywords=row[6] if row[6] else [],
+                        category=row[7] if len(row) > 7 else "Khác",
                         download_url=f"/api/v1/attachments/download/{row[0]}",
                     )
                 return None
@@ -198,15 +204,19 @@ class AttachmentService:
             return None
 
     def search_attachments(
-        self, keywords: Optional[List[str]] = None, file_name: Optional[str] = None
+        self,
+        keywords: Optional[List[str]] = None,
+        file_name: Optional[str] = None,
+        category: Optional[str] = None,
     ) -> List[DocumentAttachment]:
         """
-        Search attachments by keywords or file name
+        Search attachments by keywords, file name or category
         Uses flexible matching: keywords overlap OR description contains keywords
 
         Args:
             keywords: List of keywords to search
             file_name: File name to search (partial match)
+            category: Category filter
 
         Returns:
             List of DocumentAttachment objects
@@ -214,31 +224,31 @@ class AttachmentService:
         try:
             with self.db.engine.connect() as conn:
                 query = """
-                    SELECT id, filename, mime_type, file_path, file_size, 
-                           description, keywords
+                    SELECT id, filename, mime_type, file_path, file_size, description, keywords, category
                     FROM document_attachments
                     WHERE is_active = TRUE
                 """
                 params = {}
 
                 if keywords:
-                    # Flexible search: match if ANY keyword overlaps OR appears in description/filename
                     keyword_conditions = []
                     for i, kw in enumerate(keywords):
-                        keyword_conditions.append(
-                            f"(keywords && ARRAY[:kw{i}]::text[] OR "
-                            f"description ILIKE :kw_desc{i} OR "
-                            f"filename ILIKE :kw_file{i})"
-                        )
-                        params[f"kw{i}"] = kw
-                        params[f"kw_desc{i}"] = f"%{kw}%"
+                        keyword_conditions.append(f"filename ILIKE :kw_file{i}")
+                        keyword_conditions.append(f"description ILIKE :kw_desc{i}")
+                        keyword_conditions.append(f":kw_key{i} = ANY(keywords)")
                         params[f"kw_file{i}"] = f"%{kw}%"
+                        params[f"kw_desc{i}"] = f"%{kw}%"
+                        params[f"kw_key{i}"] = kw
 
                     query += " AND (" + " OR ".join(keyword_conditions) + ")"
 
                 if file_name:
                     query += " AND filename ILIKE :filename"
                     params["filename"] = f"%{file_name}%"
+
+                if category and category != "All":
+                    query += " AND category = :category"
+                    params["category"] = category
 
                 query += " ORDER BY created_at DESC"
 
@@ -255,6 +265,7 @@ class AttachmentService:
                             file_size=row[4],
                             description=row[5],
                             keywords=row[6] if row[6] else [],
+                            category=row[7] if len(row) > 7 else "Khác",
                             download_url=f"/api/v1/attachments/download/{row[0]}",
                         )
                     )
@@ -275,8 +286,7 @@ class AttachmentService:
                 result = conn.execute(
                     text(
                         """
-                        SELECT id, filename, mime_type, file_path, file_size, 
-                               description, keywords
+                        SELECT id, filename, mime_type, file_path, file_size, description, keywords, category
                         FROM document_attachments
                         WHERE is_active = TRUE
                         ORDER BY created_at DESC
@@ -295,6 +305,7 @@ class AttachmentService:
                             file_size=row[4],
                             description=row[5],
                             keywords=row[6] if row[6] else [],
+                            category=row[7] if len(row) > 7 else "Khác",
                             download_url=f"/api/v1/attachments/download/{row[0]}",
                         )
                     )

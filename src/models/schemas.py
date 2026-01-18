@@ -181,4 +181,7 @@ class DocumentAttachment(BaseModel):
         default_factory=list, description="Keywords for searching"
     )
     download_url: Optional[str] = Field(None, description="URL to download the file")
+    category: Optional[str] = Field(
+        "Khác", description="Category of the attachment (e.g., Tuyển sinh, Đào tạo)"
+    )
     is_active: bool = Field(True, description="Whether the attachment is active")

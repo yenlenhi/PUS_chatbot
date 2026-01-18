@@ -2,18 +2,9 @@
 FastAPI routes for the chatbot API
 """
 
-from fastapi import (
-    APIRouter,
-    HTTPException,
-    Depends,
-    UploadFile,
-    File,
-    Form,
-    BackgroundTasks,
-    Query,
-    Request,
-)
-from fastapi.responses import JSONResponse, FileResponse, StreamingResponse
+from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Form, Query, Request, BackgroundTasks
+from fastapi.responses import JSONResponse, FileResponse, StreamingResponse, RedirectResponse
+from sse_starlette.sse import EventSourceResponse
 import time
 import asyncio
 import datetime
@@ -49,7 +40,7 @@ from src.services.feedback_service import FeedbackService
 from src.services.analytics_service import AnalyticsService
 from src.services.attachment_service import AttachmentService
 from src.services.postgres_database_service import PostgresDatabaseService
-from src.services.supabase_storage_service import get_supabase_storage_service
+from src.services.supabase_storage_service import get_supabase_storage_service, SupabaseStorageService
 from src.services.upload_task_manager import get_task_manager, TaskStatus
 from src.middleware.rate_limit_middleware import rate_limit
 from src.utils.logger import log
@@ -1971,7 +1962,9 @@ async def upload_attachment(
     description: Optional[str] = Form(None),
     keywords: Optional[str] = Form(None),
     chunk_ids: Optional[str] = Form(None),
+    category: Optional[str] = Form("Khác"),
     attachment_svc: AttachmentService = Depends(get_attachment_service),
+    supabase: SupabaseStorageService = Depends(get_supabase_storage_service),
 ):
     """
     Upload a new attachment (form, template, etc.)
@@ -1980,6 +1973,7 @@ async def upload_attachment(
     - **description**: Description of the file
     - **keywords**: Comma-separated keywords for searching
     - **chunk_ids**: Comma-separated chunk IDs to link this attachment to
+    - **category**: Category of the attachment (e.g., Tuyển sinh, Đào tạo)
     """
     try:
         # Validate file type
@@ -1993,16 +1987,22 @@ async def upload_attachment(
 
         # Validate file size (max 10MB)
         max_size = 10 * 1024 * 1024  # 10MB
+        # Save file to Supabase Storage
         file_content = await file.read()
-        if len(file_content) > max_size:
-            raise HTTPException(status_code=400, detail="File size exceeds 10MB limit")
-
-        # Save file
-        file_path = Path("data/forms") / file.filename
-        file_path.parent.mkdir(parents=True, exist_ok=True)
-
-        with open(file_path, "wb") as f:
-            f.write(file_content)
+        
+        # Determine content type
+        content_type = file.content_type or "application/octet-stream"
+        
+        # Upload to Supabase
+        success, message, public_url = supabase.upload_file(
+            file_content, file.filename, content_type
+        )
+        
+        if not success or not public_url:
+             raise HTTPException(status_code=500, detail=f"Failed to upload to storage: {message}")
+             
+        # Use public URL as file path
+        file_path = public_url
 
         # Parse keywords
         keywords_list = []
@@ -2017,6 +2017,7 @@ async def upload_attachment(
             file_size=len(file_content),
             description=description,
             keywords=keywords_list,
+            category=category,
         )
 
         # Link to chunks if provided
@@ -2057,15 +2058,8 @@ async def download_attachment(
         if not attachment:
             raise HTTPException(status_code=404, detail="Attachment not found")
 
-        file_path = Path(attachment.file_path)
-        if not file_path.exists():
-            raise HTTPException(status_code=404, detail="File not found on disk")
-
-        return FileResponse(
-            path=str(file_path),
-            filename=attachment.file_name,
-            media_type="application/octet-stream",
-        )
+        # Redirect to Supabase URL
+        return RedirectResponse(url=attachment.file_path)
 
     except HTTPException:
         raise
@@ -2078,6 +2072,7 @@ async def download_attachment(
 async def list_attachments(
     keywords: Optional[str] = Query(None, description="Comma-separated keywords"),
     file_name: Optional[str] = Query(None, description="File name to search"),
+    category: Optional[str] = Query(None, description="Category filter"),
     attachment_svc: AttachmentService = Depends(get_attachment_service),
 ):
     """
@@ -2085,16 +2080,17 @@ async def list_attachments(
 
     - **keywords**: Comma-separated keywords to search
     - **file_name**: File name to search (partial match)
+    - **category**: Category filter
     """
     try:
-        if keywords or file_name:
+        if keywords or file_name or category:
             keywords_list = (
                 [k.strip() for k in keywords.split(",") if k.strip()]
                 if keywords
                 else None
             )
             attachments = attachment_svc.search_attachments(
-                keywords=keywords_list, file_name=file_name
+                keywords=keywords_list, file_name=file_name, category=category
             )
         else:
             attachments = attachment_svc.get_all_attachments()
