@@ -15,6 +15,7 @@ from fastapi import (
 )
 from fastapi.responses import JSONResponse, FileResponse, StreamingResponse
 import time
+import asyncio
 import datetime
 from pathlib import Path
 import json
@@ -1164,12 +1165,8 @@ async def process_pdf_background(
             task_id,
             status=TaskStatus.COMPLETED,
             progress=100,
-            result={
-                "success": True,
-                "chunks_created": len(chunks),
-                "embeddings_created": len(embeddings),
-                "status": "success",
-            },
+            chunks_created=len(chunks),
+            embeddings_created=len(embeddings),
         )
 
     except Exception as e:
@@ -1178,11 +1175,7 @@ async def process_pdf_background(
             task_id,
             status=TaskStatus.FAILED,
             progress=0,
-            result={
-                "success": False,
-                "error": str(e),
-                "status": "error",
-            },
+            error=str(e),
         )
 
 

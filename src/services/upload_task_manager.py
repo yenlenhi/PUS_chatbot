@@ -6,7 +6,7 @@ import uuid
 from datetime import datetime
 from typing import Dict, Optional
 from enum import Enum
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 from src.utils.logger import log
 
 
@@ -41,10 +41,36 @@ class UploadTask:
 
     def to_dict(self):
         """Convert to dict for JSON serialization"""
-        data = asdict(self)
-        data["status"] = self.status.value
-        data["created_at"] = self.created_at.isoformat()
-        data["updated_at"] = self.updated_at.isoformat()
+        data = {
+            "task_id": self.task_id,
+            "filename": self.filename,
+            "original_filename": self.original_filename,
+            "status": self.status.value,
+            "progress": self.progress,
+            "message": self.message,
+            "category": self.category,
+            "use_gemini": self.use_gemini,
+            "file_size": self.file_size,
+            "created_at": self.created_at.isoformat(),
+            "updated_at": self.updated_at.isoformat(),
+            "supabase_url": self.supabase_url,
+        }
+        
+        # Add result information
+        if self.status == TaskStatus.COMPLETED:
+            data["result"] = {
+                "success": True,
+                "chunks_created": self.chunks_created,
+                "embeddings_created": self.embeddings_created,
+                "status": "success",
+            }
+        elif self.status == TaskStatus.FAILED:
+            data["result"] = {
+                "success": False,
+                "error": self.error,
+                "status": "error",
+            }
+        
         return data
 
 
