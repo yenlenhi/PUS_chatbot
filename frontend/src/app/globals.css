@@ -326,6 +326,22 @@ body {
   animation-duration: 0.3s;
 }
 
+/* FadeIn animation for loading states */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
 /* Mobile-specific utilities */
 @media (max-width: 640px) {
   /* Reduce chat bubble padding on mobile */

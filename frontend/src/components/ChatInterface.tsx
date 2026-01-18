@@ -10,6 +10,7 @@ import SourceSection from './SourceSection';
 import FeedbackButtons from './FeedbackButtons';
 import AttachmentList from './chat/AttachmentList';
 import { SSEParser } from '@/utils/sseUtils';
+import { ProcessingSteps, MessageSkeleton } from './chat/LoadingStates';
 
 const ChatInterface = () => {
   const [conversationId] = useState(() => `web-chat-${Date.now()}`);
@@ -327,19 +328,14 @@ ${source.content ? `📝 Nội dung liên quan:\n${source.content.substring(0, 3
           </div>
         ))}
 
-        {isTyping && (
-          <div className="flex justify-start">
-            <div className="bg-gray-100 text-gray-800 p-4 rounded-lg max-w-[85%] shadow-sm">
-              <div className="flex items-center space-x-3">
-                <Bot className="w-5 h-5" />
-                <div className="flex space-x-1">
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                </div>
-              </div>
-            </div>
-          </div>
+        {/* Enhanced Processing Steps - shows during streaming with no content yet */}
+        {isTyping && !currentStreamingContent && streamingStatus && (
+          <ProcessingSteps currentStep={streamingStatus} />
+        )}
+
+        {/* Skeleton Loading - shows when typing but no status yet */}
+        {isTyping && !currentStreamingContent && !streamingStatus && (
+          <MessageSkeleton status="Đang chuẩn bị..." />
         )}
 
         {messages.length === 1 && (

@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { Send, User, FolderOpen, Book, Copy, Check, RefreshCw, Volume2, VolumeX, Pause, Play, X, ImagePlus, Home, ArrowLeft, ZoomIn, ZoomOut, RotateCw, Download, Maximize2, Compass } from 'lucide-react';
+import { Send, User, FolderOpen, Book, Copy, Check, RefreshCw, Volume2, VolumeX, Pause, Play, X, ImagePlus, Home, ArrowLeft, ZoomIn, ZoomOut, RotateCw, Download, Maximize2, Compass, ChevronUp, ChevronDown, Sparkles } from 'lucide-react';
 import type { Message, SourceReference, ChartData, ImageData, UploadedImage, FileAttachment } from '@/types';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -20,6 +20,121 @@ import GuidedFlow from '@/components/GuidedFlow';
 import ImageUpload, { UploadedImage as UploadedImageType } from '@/components/ImageUpload';
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 import { useSpeechSynthesis } from '@/hooks/useSpeechSynthesis';
+
+// Gemini-style Processing Indicator - Shows REAL backend processing status
+interface ProcessingIndicatorProps {
+  currentStatus: string;
+  completedSteps: string[];
+}
+
+const ProcessingIndicator: React.FC<ProcessingIndicatorProps> = ({ currentStatus, completedSteps }) => {
+  const [isExpanded, setIsExpanded] = React.useState(true);
+
+  // Map status messages to step info with descriptions
+  const getStepInfo = (status: string) => {
+    if (status.includes('tìm kiếm') || status.includes('search')) {
+      return {
+        title: 'Đang tìm kiếm tài liệu liên quan',
+        description: 'Tôi đang tìm kiếm trong cơ sở dữ liệu tài liệu để tìm thông tin phù hợp với câu hỏi của bạn...'
+      };
+    }
+    if (status.includes('phân tích') || status.includes('context') || status.includes('ngữ cảnh')) {
+      return {
+        title: 'Đang phân tích ngữ cảnh',
+        description: 'Đang phân tích và so sánh các tài liệu tìm được với ngữ cảnh câu hỏi để đảm bảo độ chính xác...'
+      };
+    }
+    if (status.includes('soạn') || status.includes('tạo') || status.includes('generate') || status.includes('answer')) {
+      return {
+        title: 'Đang soạn câu trả lời',
+        description: 'Đang tổng hợp thông tin và soạn câu trả lời chi tiết, dễ hiểu cho câu hỏi của bạn...'
+      };
+    }
+    // Default
+    return {
+      title: currentStatus || 'Đang xử lý...',
+      description: 'Hệ thống đang xử lý yêu cầu của bạn...'
+    };
+  };
+
+  const allSteps = [
+    { key: 'search', title: 'Tìm kiếm tài liệu' },
+    { key: 'analyze', title: 'Phân tích ngữ cảnh' },
+    { key: 'generate', title: 'Soạn câu trả lời' },
+  ];
+
+  // Determine which step is active based on current status
+  const getCurrentStepIndex = () => {
+    if (currentStatus.includes('tìm kiếm') || currentStatus.includes('search')) return 0;
+    if (currentStatus.includes('phân tích') || currentStatus.includes('context')) return 1;
+    if (currentStatus.includes('soạn') || currentStatus.includes('tạo') || currentStatus.includes('generate')) return 2;
+    return 0;
+  };
+
+  const currentInfo = getStepInfo(currentStatus);
+  const activeStepIdx = getCurrentStepIndex();
+
+  return (
+    <div className="w-full">
+      {/* Collapsible Header */}
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition-colors mb-2 group"
+      >
+        <Sparkles className="w-4 h-4 text-amber-500 animate-pulse" />
+        <span className="font-medium">Hiện tiến trình tư duy</span>
+        {isExpanded ? (
+          <ChevronUp className="w-4 h-4 transition-transform group-hover:scale-110" />
+        ) : (
+          <ChevronDown className="w-4 h-4 transition-transform group-hover:scale-110" />
+        )}
+      </button>
+
+      {/* Thinking Content */}
+      {isExpanded && (
+        <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg p-4 border border-gray-200 animate-fadeIn">
+          {/* Step Title */}
+          <h4 className="text-sm font-semibold text-gray-800 mb-2 flex items-center gap-2">
+            <span className="inline-block w-2 h-2 bg-amber-500 rounded-full animate-pulse"></span>
+            {currentInfo.title}
+          </h4>
+
+          {/* Step Description */}
+          <p className="text-sm text-gray-600 leading-relaxed">
+            {currentInfo.description}
+          </p>
+
+          {/* Progress Steps */}
+          <div className="flex items-center gap-2 mt-3">
+            {allSteps.map((step, idx) => (
+              <div key={step.key} className="flex items-center gap-1">
+                <div
+                  className={`w-2 h-2 rounded-full transition-all duration-300 ${idx < activeStepIdx
+                    ? 'bg-green-500' // completed
+                    : idx === activeStepIdx
+                      ? 'bg-amber-500 animate-pulse' // active
+                      : 'bg-gray-300' // pending
+                    }`}
+                />
+                <span className={`text-xs ${idx < activeStepIdx
+                  ? 'text-green-600'
+                  : idx === activeStepIdx
+                    ? 'text-amber-600 font-medium'
+                    : 'text-gray-400'
+                  }`}>
+                  {step.title}
+                </span>
+                {idx < allSteps.length - 1 && (
+                  <span className="text-gray-300 mx-1">→</span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 // Image Modal Component for viewing images in detail
 interface ImageModalProps {
@@ -179,10 +294,11 @@ const ImageModal: React.FC<ImageModalProps> = ({ isOpen, onClose, imageSrc, imag
   );
 };
 
-// Custom hook for typewriter effect
-const useTypewriter = (text: string, speed: number = 0.4, enabled: boolean = true) => {
+// Custom hook for typewriter effect - optimized to prevent flickering
+const useTypewriter = (text: string, speed: number = 5, enabled: boolean = true) => {
   const [displayedText, setDisplayedText] = useState('');
   const [isComplete, setIsComplete] = useState(false);
+  const textRef = useRef(text);
 
   useEffect(() => {
     if (!enabled) {
@@ -191,16 +307,31 @@ const useTypewriter = (text: string, speed: number = 0.4, enabled: boolean = tru
       return;
     }
 
-    setDisplayedText('');
-    setIsComplete(false);
+    // Only reset if text actually changed significantly (not just appending)
+    if (text !== textRef.current) {
+      const isAppending = text.startsWith(textRef.current);
+      if (!isAppending) {
+        setDisplayedText('');
+        setIsComplete(false);
+      }
+      textRef.current = text;
+    }
 
     if (!text) return;
 
-    let index = 0;
+    // If already showing all text, just update
+    if (displayedText === text) {
+      setIsComplete(true);
+      return;
+    }
+
+    let index = displayedText.length;
     const timer = setInterval(() => {
       if (index < text.length) {
-        setDisplayedText(text.slice(0, index + 1));
-        index++;
+        // Update multiple characters at once for smoother rendering
+        const charsToAdd = Math.min(3, text.length - index);
+        setDisplayedText(text.slice(0, index + charsToAdd));
+        index += charsToAdd;
       } else {
         setIsComplete(true);
         clearInterval(timer);
@@ -208,7 +339,7 @@ const useTypewriter = (text: string, speed: number = 0.4, enabled: boolean = tru
     }, speed);
 
     return () => clearInterval(timer);
-  }, [text, speed, enabled]);
+  }, [text, speed, enabled, displayedText]);
 
   return { displayedText, isComplete };
 };
@@ -232,7 +363,9 @@ interface MessageBubbleProps {
   speechSupported: boolean;
   copiedId: string | null;
   copiedQAId: string | null;
-  onSendFollowUp: (question: string) => void; // New prop for sending follow-up questions
+  onSendFollowUp: (question: string) => void;
+  processingStatus: string; // Real backend processing status
+  completedSteps: string[]; // Completed processing steps
 }
 
 const MessageBubble: React.FC<MessageBubbleProps> = ({
@@ -253,12 +386,14 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   speechSupported,
   copiedId,
   copiedQAId,
-  onSendFollowUp
+  onSendFollowUp,
+  processingStatus,
+  completedSteps
 }) => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  // Typewriter animation enabled with 5x faster speed (0.08ms vs 0.4ms per character)
+  // Typewriter animation - use reasonable speed (5ms) and add 3 chars at a time
   const shouldAnimate = message.sender === 'bot' && isLatest && message.id !== '1';
-  const { displayedText, isComplete } = useTypewriter(message.content, 0.006, shouldAnimate);
+  const { displayedText, isComplete } = useTypewriter(message.content, 5, shouldAnimate);
 
   const contentToShow = shouldAnimate ? displayedText : message.content;
   const isCopied = copiedId === message.id;
@@ -391,56 +526,65 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
       {/* Message content */}
       <div className="max-w-[90%] sm:max-w-[85%] md:max-w-[80%] bg-white rounded-xl sm:rounded-2xl rounded-tl-sm p-3 sm:p-4 shadow-sm sm:shadow-md border border-gray-100">
         <div className="text-sm markdown-body leading-relaxed text-gray-800">
-          <ReactMarkdown
-            remarkPlugins={[remarkGfm]}
-            components={{
-              code({ node, className, children, ...props }) {
-                const match = /language-(\w+)/.exec(className || '');
-                const isInline = !match && (children?.toString().indexOf('\n') === -1);
-                return !isInline && match ? (
-                  <SyntaxHighlighter
-                    style={oneDark as Record<string, React.CSSProperties>}
-                    language={match[1]}
-                    PreTag="div"
-                    className="rounded-lg text-xs my-2"
-                  >
-                    {String(children).replace(/\n$/, '')}
-                  </SyntaxHighlighter>
-                ) : (
-                  <code className={`${className} bg-gray-200 text-red-600 px-1 py-0.5 rounded text-xs`} {...props}>
-                    {children}
-                  </code>
-                );
-              },
-              table({ children }) {
-                return (
-                  <div className="overflow-x-auto my-3">
-                    <table className="min-w-full border-collapse border border-gray-300 text-xs">
+          {/* Show Processing Indicator when content is empty (streaming just started) */}
+          {!mainContent && isLatest && (
+            <ProcessingIndicator currentStatus={processingStatus} completedSteps={completedSteps} />
+          )}
+
+          {/* Render markdown content when available */}
+          {mainContent && (
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              components={{
+                code({ node, className, children, ...props }) {
+                  const match = /language-(\w+)/.exec(className || '');
+                  const isInline = !match && (children?.toString().indexOf('\n') === -1);
+                  return !isInline && match ? (
+                    <SyntaxHighlighter
+                      style={oneDark as Record<string, React.CSSProperties>}
+                      language={match[1]}
+                      PreTag="div"
+                      className="rounded-lg text-xs my-2"
+                    >
+                      {String(children).replace(/\n$/, '')}
+                    </SyntaxHighlighter>
+                  ) : (
+                    <code className={`${className} bg-gray-200 text-red-600 px-1 py-0.5 rounded text-xs`} {...props}>
                       {children}
-                    </table>
-                  </div>
-                );
-              },
-              th({ children }) {
-                return (
-                  <th className="border border-gray-300 bg-gray-100 px-3 py-2 text-left font-semibold">
-                    {children}
-                  </th>
-                );
-              },
-              td({ children }) {
-                return (
-                  <td className="border border-gray-300 px-3 py-2">
-                    {children}
-                  </td>
-                );
-              },
-            }}
-          >
-            {mainContent}
-          </ReactMarkdown>
+                    </code>
+                  );
+                },
+                table({ children }) {
+                  return (
+                    <div className="overflow-x-auto my-3">
+                      <table className="min-w-full border-collapse border border-gray-300 text-xs">
+                        {children}
+                      </table>
+                    </div>
+                  );
+                },
+                th({ children }) {
+                  return (
+                    <th className="border border-gray-300 bg-gray-100 px-3 py-2 text-left font-semibold">
+                      {children}
+                    </th>
+                  );
+                },
+                td({ children }) {
+                  return (
+                    <td className="border border-gray-300 px-3 py-2">
+                      {children}
+                    </td>
+                  );
+                },
+              }}
+            >
+              {mainContent}
+            </ReactMarkdown>
+          )}
+
           {/* Typing cursor while streaming */}
-          {shouldAnimate && !isComplete && (
+          {shouldAnimate && !isComplete && mainContent && (
             <span className="inline-block w-2 h-4 bg-red-500 animate-pulse ml-1 align-middle"></span>
           )}
         </div>
@@ -648,6 +792,8 @@ const ChatBotPage = () => {
   ]);
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [processingStatus, setProcessingStatus] = useState<string>(''); // Real backend status
+  const [completedSteps, setCompletedSteps] = useState<string[]>([]); // Track completed steps
   const [latestMessageId, setLatestMessageId] = useState<string | null>(null);
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const [copiedQAMessageId, setCopiedQAMessageId] = useState<string | null>(null);
@@ -943,8 +1089,24 @@ const ChatBotPage = () => {
                 // Handle complete chunk with attachments and charts
                 streamedAttachments = chunk.attachments || [];
                 streamedChartData = chunk.chart_data || [];
+                // Clear processing status when complete
+                setProcessingStatus('');
+                setCompletedSteps([]);
+              } else if (chunk.type === 'status') {
+                // Track real processing status from backend
+                const statusMsg = chunk.message || '';
+                setCompletedSteps(prev => {
+                  // Add completed step if moving to new step
+                  if (prev.length === 0 || !prev.includes(statusMsg)) {
+                    return [...prev, statusMsg];
+                  }
+                  return prev;
+                });
+                setProcessingStatus(statusMsg);
               } else if (chunk.type === 'done') {
                 // Streaming complete
+                setProcessingStatus('');
+                setCompletedSteps([]);
                 break;
               } else if (chunk.type === 'error') {
                 throw new Error(chunk.message || 'Streaming error');
@@ -1200,6 +1362,8 @@ const ChatBotPage = () => {
                   copiedId={copiedMessageId}
                   copiedQAId={copiedQAMessageId}
                   onSendFollowUp={handleSendMessage}
+                  processingStatus={processingStatus}
+                  completedSteps={completedSteps}
                 />
               ))}
 
