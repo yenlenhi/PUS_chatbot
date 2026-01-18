@@ -97,8 +97,10 @@ class AsyncPostgresDatabaseService:
         """Create database tables if they don't exist"""
         try:
             async with self.engine.begin() as conn:
-                # Combine all DDL statements into one execution to avoid prepared statement issues
-                ddl_script = """
+                # Execute each DDL statement separately to avoid asyncpg's
+                # "cannot insert multiple commands into a prepared statement" error
+                ddl_statements = [
+                    """
                     CREATE TABLE IF NOT EXISTS chunks (
                         id SERIAL PRIMARY KEY,
                         content TEXT NOT NULL,
@@ -117,31 +119,37 @@ class AsyncPostgresDatabaseService:
                         char_count INTEGER,
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                    );
-
+                    )
+                    """,
+                    """
                     CREATE TABLE IF NOT EXISTS embeddings (
                         id SERIAL PRIMARY KEY,
                         chunk_id INTEGER NOT NULL REFERENCES chunks(id) ON DELETE CASCADE,
                         embedding vector(768) NOT NULL,
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                    );
-
+                    )
+                    """,
+                    """
                     CREATE INDEX IF NOT EXISTS idx_chunks_source_file 
-                    ON chunks(source_file);
-
+                    ON chunks(source_file)
+                    """,
+                    """
                     CREATE INDEX IF NOT EXISTS idx_chunks_heading_text 
-                    ON chunks(heading_text);
-
+                    ON chunks(heading_text)
+                    """,
+                    """
                     CREATE INDEX IF NOT EXISTS idx_embeddings_chunk_id 
-                    ON embeddings(chunk_id);
-
+                    ON embeddings(chunk_id)
+                    """,
+                    """
                     CREATE INDEX IF NOT EXISTS idx_embeddings_vector 
                     ON embeddings USING ivfflat (embedding vector_cosine_ops) 
-                    WITH (lists = 100);
-                """
+                    WITH (lists = 100)
+                    """,
+                ]
 
-                # Execute as a single statement to minimize prepared statement usage
-                await conn.execute(text(ddl_script))
+                for statement in ddl_statements:
+                    await conn.execute(text(statement))
 
                 log.info("✅ Database tables and indexes created successfully")
 
