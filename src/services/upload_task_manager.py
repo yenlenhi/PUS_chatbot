@@ -55,7 +55,7 @@ class UploadTask:
             "updated_at": self.updated_at.isoformat(),
             "supabase_url": self.supabase_url,
         }
-        
+
         # Add result information
         if self.status == TaskStatus.COMPLETED:
             data["result"] = {
@@ -70,7 +70,7 @@ class UploadTask:
                 "error": self.error,
                 "status": "error",
             }
-        
+
         return data
 
 

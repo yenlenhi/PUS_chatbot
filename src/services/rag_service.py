@@ -79,13 +79,9 @@ class RAGService:
             log.error(f"Error initializing Reranker model: {e}")
             self.reranker = None
 
-        # Start ingestion service
-        try:
-            log.info("Starting ingestion service...")
-            self.ingestion_service.start_watching()
-            log.info("Ingestion service started successfully.")
-        except Exception as e:
-            log.error(f"Error starting ingestion service: {e}")
+        # Ingestion service is available but watchdog is disabled
+        # PDF processing now happens via background tasks in routes.py
+        log.info("Ingestion service initialized (watchdog disabled - using background tasks)")
 
     def _rerank_chunks(
         self, query: str, chunks: List[Dict[str, Any]]
