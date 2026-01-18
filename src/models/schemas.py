@@ -188,3 +188,13 @@ class DocumentAttachment(BaseModel):
         None, description="Direct public URL to the file on Supabase"
     )
     is_active: bool = Field(True, description="Whether the attachment is active")
+
+
+class PaginatedAttachmentResponse(BaseModel):
+    """Response model for paginated attachments"""
+
+    items: List[DocumentAttachment] = Field(..., description="List of attachments")
+    total: int = Field(..., description="Total number of attachments")
+    page: int = Field(..., description="Current page number")
+    size: int = Field(..., description="Page size")
+

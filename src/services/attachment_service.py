@@ -2,7 +2,7 @@
 Service for managing document attachments (forms, templates, etc.)
 """
 
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from sqlalchemy import text
 from pathlib import Path
 from src.utils.logger import log
@@ -277,25 +277,62 @@ class AttachmentService:
             log.error(f"❌ Error searching attachments: {e}")
             return []
 
-    def get_all_attachments(self) -> List[DocumentAttachment]:
+    def get_all_attachments(
+        self,
+        skip: int = 0,
+        limit: int = 100,
+        search_query: Optional[str] = None,
+        category: Optional[str] = None,
+    ) -> Dict[str, Any]:
         """
-        Get all active attachments
+        Get all active attachments with pagination and filtering
+
+        Args:
+            skip: Number of items to skip
+            limit: Number of items to return
+            search_query: Optional search term for filename
+            category: Optional category filter
 
         Returns:
-            List of DocumentAttachment objects
+            Dict containing items (List[DocumentAttachment]) and total count
         """
         try:
             with self.db.engine.connect() as conn:
-                result = conn.execute(
-                    text(
-                        """
-                        SELECT id, filename, mime_type, file_path, file_size, description, keywords, category
-                        FROM document_attachments
-                        WHERE is_active = TRUE
-                        ORDER BY created_at DESC
-                    """
-                    )
-                )
+                # Build base query
+                query_str = """
+                    SELECT id, filename, mime_type, file_path, file_size, description, keywords, category
+                    FROM document_attachments
+                    WHERE is_active = TRUE
+                """
+                count_query_str = """
+                    SELECT COUNT(*)
+                    FROM document_attachments
+                    WHERE is_active = TRUE
+                """
+                
+                params = {"limit": limit, "skip": skip}
+                
+                # Add filters
+                if search_query:
+                    filter_condition = " AND LOWER(filename) LIKE :search_query"
+                    query_str += filter_condition
+                    count_query_str += filter_condition
+                    params["search_query"] = f"%{search_query.lower()}%"
+                
+                if category and category != "All":
+                    filter_condition = " AND category = :category"
+                    query_str += filter_condition
+                    count_query_str += filter_condition
+                    params["category"] = category
+
+                # Add pagination
+                query_str += " ORDER BY created_at DESC LIMIT :limit OFFSET :skip"
+
+                # Execute count query
+                total_count = conn.execute(text(count_query_str), params).scalar()
+
+                # Execute data query
+                result = conn.execute(text(query_str), params)
 
                 attachments = []
                 for row in result:
@@ -313,7 +350,16 @@ class AttachmentService:
                             public_url=row[3] if str(row[3]).startswith(("http://", "https://")) else self.supabase.get_public_url(row[3]),
                         )
                     )
-                return attachments
+                
+                return {
+                    "items": attachments,
+                    "total": total_count,
+                    "page": (skip // limit) + 1,
+                    "size": limit
+                }
+        except Exception as e:
+            log.error(f"❌ Error getting all attachments: {e}")
+            return {"items": [], "total": 0, "page": 1, "size": limit}
         except Exception as e:
             log.error(f"❌ Error getting all attachments: {e}")
             return []

@@ -33,6 +33,7 @@ from src.models.schemas import (
     HealthResponse,
     SearchResult,
     DocumentAttachment,
+    PaginatedAttachmentResponse,
 )
 from src.models.feedback import (
     FeedbackRequest,
@@ -2114,39 +2115,35 @@ async def download_attachment(
         raise HTTPException(status_code=500, detail=f"Download failed: {str(e)}")
 
 
-@router.get("/attachments", response_model=List[DocumentAttachment])
+@router.get(
+    "/attachments",
+    response_model=PaginatedAttachmentResponse,
+)
 async def list_attachments(
-    keywords: Optional[str] = Query(None, description="Comma-separated keywords"),
-    file_name: Optional[str] = Query(None, description="File name to search"),
-    category: Optional[str] = Query(None, description="Category filter"),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=100),
+    search: Optional[str] = None,
+    category: Optional[str] = None,
     attachment_svc: AttachmentService = Depends(get_attachment_service),
 ):
     """
-    List all attachments or search by keywords/file name
-
-    - **keywords**: Comma-separated keywords to search
-    - **file_name**: File name to search (partial match)
-    - **category**: Category filter
+    Get all active attachments paginated
     """
     try:
-        if keywords or file_name or category:
-            keywords_list = (
-                [k.strip() for k in keywords.split(",") if k.strip()]
-                if keywords
-                else None
-            )
-            attachments = attachment_svc.search_attachments(
-                keywords=keywords_list, file_name=file_name, category=category
-            )
-        else:
-            attachments = attachment_svc.get_all_attachments()
-
-        return attachments
-
+        if category == "All":
+            category = None
+            
+        result = attachment_svc.get_all_attachments(
+            skip=skip, 
+            limit=limit,
+            search_query=search,
+            category=category
+        )
+        return result
     except Exception as e:
         log.error(f"❌ Error listing attachments: {e}")
         raise HTTPException(
-            status_code=500, detail=f"Failed to list attachments: {str(e)}"
+            status_code=500, detail=f"Error listing attachments: {str(e)}"
         )
 
 
