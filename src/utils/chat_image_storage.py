@@ -40,7 +40,7 @@ def get_supabase_client() -> Client:
             timeout=30.0,
             follow_redirects=True,
         )
-        
+
         # Create supabase client with custom httpx client
         # Note: supabase-py may not directly support this, so we use default creation
         # and rely on env var clearing

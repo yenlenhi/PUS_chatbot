@@ -214,4 +214,10 @@ if __name__ == "__main__":
     host = os.environ.get("HOST", API_HOST)
 
     # Run the application
-    uvicorn.run("main:app", host=host, port=port, reload=API_RELOAD, log_level="info")
+    # Run the application
+    # Use 4 workers for production-like performance, but fallback to 1 if reload is enabled
+    workers = 4
+    if API_RELOAD:
+        workers = 1
+        
+    uvicorn.run("main:app", host=host, port=port, reload=API_RELOAD, workers=workers, log_level="info")

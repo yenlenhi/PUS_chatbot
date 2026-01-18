@@ -97,4 +97,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
 
 # Run the application
 # Use shell form to properly expand $PORT environment variable
-CMD python -m uvicorn main:app --host 0.0.0.0 --port ${PORT:-8080} --workers 1 --log-level info
+CMD python -m uvicorn main:app --host 0.0.0.0 --port ${PORT:-8080} --workers 4 --log-level info
