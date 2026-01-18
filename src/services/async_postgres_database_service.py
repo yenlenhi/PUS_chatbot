@@ -59,8 +59,11 @@ class AsyncPostgresDatabaseService:
                 poolclass=NullPool,  # Use NullPool for pgbouncer compatibility
                 connect_args={
                     "statement_cache_size": 0,  # Disable statement cache for PgBouncer compatibility
+                    "prepared_statement_cache_size": 0,  # Also disable prepared statement cache
                 },
                 pool_pre_ping=False,
+                # Create engine with prepared statements disabled at session level
+                execution_options={"postgresql_prepared_statement": False, "isolation_level": "AUTOCOMMIT"},
             )
 
             # Create async session factory
