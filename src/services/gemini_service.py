@@ -42,14 +42,28 @@ def _needs_realtime_info(query: str) -> bool:
         # Years (current and recent)
         "năm 2024", "nam 2024", "năm 2025", "nam 2025", 
         "năm 2026", "nam 2026", "2024", "2025", "2026",
-        # Leadership/personnel (có dấu + không dấu)
+        # Leadership - Top level (có dấu + không dấu)
         "hiệu trưởng", "hieu truong", 
-        "ban giám hiệu", "ban giam hieu",
-        "lãnh đạo", "lanh dao", 
-        "giám đốc", "giam doc",
         "phó hiệu trưởng", "pho hieu truong",
+        "ban giám hiệu", "ban giam hieu",
+        "giám đốc", "giam doc",
         "bí thư", "bi thu", 
         "bổ nhiệm", "bo nhiem",
+        # Leadership - Department/Faculty level (EXPANDED)
+        "trưởng khoa", "truong khoa",
+        "phó khoa", "pho khoa", "phó trưởng khoa", "pho truong khoa",
+        "trưởng phòng", "truong phong",
+        "phó phòng", "pho phong", "phó trưởng phòng", "pho truong phong",
+        "trưởng bộ môn", "truong bo mon",
+        "chủ nhiệm khoa", "chu nhiem khoa",
+        "chủ nhiệm bộ môn", "chu nhiem bo mon",
+        # General leadership terms
+        "lãnh đạo", "lanh dao", 
+        "cán bộ", "can bo",
+        "giảng viên", "giang vien",
+        "ai là", "ai la",  # Common question pattern about people
+        "ai đang", "ai dang",
+        "người đứng đầu", "nguoi dung dau",
         # News/events
         "thông báo mới", "thong bao moi",
         "tin tức", "tin tuc",
