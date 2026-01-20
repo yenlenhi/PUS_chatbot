@@ -5,10 +5,74 @@ from config.settings import (
     GEMINI_API_KEY,
     GEMINI_API_URL,
     ENABLE_GEMINI_NORMALIZATION,
+    ENABLE_GOOGLE_SEARCH_GROUNDING,
     GEMINI_MAX_OUTPUT_TOKENS,
     GEMINI_TEMPERATURE,
 )
 from src.utils.logger import log
+
+
+# ============================================
+# Google Search Grounding Helper
+# ============================================
+def _needs_realtime_info(query: str) -> bool:
+    """
+    Detect if query needs real-time web search for current affairs.
+    
+    This function checks if the query contains keywords that indicate
+    the user is asking about current/recent information that may not
+    be in the knowledge base.
+    
+    Args:
+        query: The user's question
+        
+    Returns:
+        True if the query likely needs real-time information
+    """
+    if not ENABLE_GOOGLE_SEARCH_GROUNDING:
+        return False
+        
+    realtime_keywords = [
+        # Time-related (có dấu + không dấu)
+        "hiện tại", "hien tai", "hiện nay", "hien nay", 
+        "bây giờ", "bay gio", "mới nhất", "moi nhat",
+        "gần đây", "gan day", "vừa qua", "vua qua",
+        "mới đây", "moi day", "hôm nay", "hom nay",
+        "tuần này", "tuan nay", "tháng này", "thang nay",
+        # Years (current and recent)
+        "năm 2024", "nam 2024", "năm 2025", "nam 2025", 
+        "năm 2026", "nam 2026", "2024", "2025", "2026",
+        # Leadership/personnel (có dấu + không dấu)
+        "hiệu trưởng", "hieu truong", 
+        "ban giám hiệu", "ban giam hieu",
+        "lãnh đạo", "lanh dao", 
+        "giám đốc", "giam doc",
+        "phó hiệu trưởng", "pho hieu truong",
+        "bí thư", "bi thu", 
+        "bổ nhiệm", "bo nhiem",
+        # News/events
+        "thông báo mới", "thong bao moi",
+        "tin tức", "tin tuc",
+        "sự kiện", "su kien",
+        "khai giảng", "khai giang",
+        "tốt nghiệp", "tot nghiep",
+        "lễ", "le",
+        "hội nghị", "hoi nghi",
+        # Updates
+        "cập nhật", "cap nhat",
+        "thay đổi mới", "thay doi moi",
+        "quy định mới", "quy dinh moi",
+    ]
+    
+    query_lower = query.lower()
+    
+    # Check for keyword matches
+    for keyword in realtime_keywords:
+        if keyword in query_lower:
+            log.debug(f"Realtime keyword detected: '{keyword}' in query")
+            return True
+    
+    return False
 
 
 def normalize_question(question: str) -> str:
@@ -110,7 +174,10 @@ Chỉ trả về câu hỏi đã chuẩn hóa, không giải thích:
 
 
 def generate_response(
-    prompt: str, conversation_history: list = None, temperature: float = 0.7
+    prompt: str, 
+    conversation_history: list = None, 
+    temperature: float = 0.7,
+    enable_grounding: bool = None,  # NEW: Override for Google Search Grounding
 ) -> str | None:
     """
     Generates a response from the Gemini API (non-streaming).
@@ -119,6 +186,8 @@ def generate_response(
         prompt (str): The user's prompt.
         conversation_history (list, optional): The history of the conversation.
         temperature (float): Temperature for generation.
+        enable_grounding (bool, optional): Force enable/disable Google Search Grounding.
+            If None, auto-detect based on query content.
 
     Returns:
         str | None: The generated text from Gemini, or None if an error occurs.
@@ -142,6 +211,14 @@ def generate_response(
             "topK": 40,
         },
     }
+    
+    # NEW: Add Google Search Grounding tool if needed for real-time info
+    if enable_grounding is None:
+        enable_grounding = _needs_realtime_info(prompt)
+    
+    if enable_grounding:
+        data["tools"] = [{"google_search": {}}]
+        log.info("🔍 Google Search Grounding ENABLED for real-time information")
 
     try:
         log.debug(f"Sending request to Gemini API...")
@@ -188,7 +265,10 @@ def generate_response(
 
 
 def generate_response_stream(
-    prompt: str, conversation_history: list = None, temperature: float = 0.7
+    prompt: str, 
+    conversation_history: list = None, 
+    temperature: float = 0.7,
+    enable_grounding: bool = None,  # NEW: Override for Google Search Grounding
 ):
     """
     Generates a streaming response from the Gemini API.
@@ -198,6 +278,8 @@ def generate_response_stream(
         prompt (str): The user's prompt.
         conversation_history (list, optional): The history of the conversation.
         temperature (float): Temperature for response generation.
+        enable_grounding (bool, optional): Force enable/disable Google Search Grounding.
+            If None, auto-detect based on query content.
 
     Yields:
         str: Text chunks from Gemini as they arrive
@@ -222,6 +304,14 @@ def generate_response_stream(
             "topK": 40,
         },
     }
+    
+    # NEW: Add Google Search Grounding tool if needed for real-time info
+    if enable_grounding is None:
+        enable_grounding = _needs_realtime_info(prompt)
+    
+    if enable_grounding:
+        data["tools"] = [{"google_search": {}}]
+        log.info("🔍 Google Search Grounding ENABLED (streaming) for real-time information")
 
     try:
         log.info("Sending streaming request to Gemini API...")

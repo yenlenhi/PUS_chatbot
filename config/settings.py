@@ -49,6 +49,13 @@ ENABLE_GEMINI_NORMALIZATION = (
     os.getenv("ENABLE_GEMINI_NORMALIZATION", "true").lower() == "true"
 )
 
+# Enable/disable Google Search Grounding for real-time information
+# When enabled, queries about current affairs (leaders, news, events) will
+# automatically use Google Search to get up-to-date information
+ENABLE_GOOGLE_SEARCH_GROUNDING = (
+    os.getenv("ENABLE_GOOGLE_SEARCH_GROUNDING", "true").lower() == "true"
+)
+
 # Ollama Configuration
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 OLLAMA_MODEL = os.getenv(
