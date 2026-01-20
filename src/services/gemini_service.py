@@ -267,15 +267,11 @@ def generate_response(
             "topP": 0.95,
             "topK": 40,
         },
+        # ALWAYS enable Google Search - Gemini will decide when to use it
+        "tools": [{"google_search": {}}],
     }
     
-    # NEW: Add Google Search Grounding tool if needed for real-time info
-    if enable_grounding is None:
-        enable_grounding = _needs_realtime_info(prompt)
-    
-    if enable_grounding:
-        data["tools"] = [{"google_search": {}}]
-        log.info("🔍 Google Search Grounding ENABLED for real-time information")
+    log.info("Google Search Grounding ALWAYS ENABLED (Gemini auto-decides)")
 
     try:
         log.debug(f"Sending request to Gemini API...")
@@ -360,15 +356,11 @@ def generate_response_stream(
             "topP": 0.95,
             "topK": 40,
         },
+        # ALWAYS enable Google Search - Gemini will decide when to use it
+        "tools": [{"google_search": {}}],
     }
     
-    # NEW: Add Google Search Grounding tool if needed for real-time info
-    if enable_grounding is None:
-        enable_grounding = _needs_realtime_info(prompt)
-    
-    if enable_grounding:
-        data["tools"] = [{"google_search": {}}]
-        log.info("🔍 Google Search Grounding ENABLED (streaming) for real-time information")
+    log.info("Google Search Grounding ALWAYS ENABLED (Gemini auto-decides)")
 
     try:
         log.info("Sending streaming request to Gemini API...")

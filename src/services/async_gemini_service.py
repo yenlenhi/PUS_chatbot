@@ -17,7 +17,6 @@ from config.settings import (
     GEMINI_TEMPERATURE,
 )
 from src.utils.logger import log
-from src.services.gemini_service import _needs_realtime_info
 
 
 # Shared async client with connection pooling (singleton pattern)
@@ -152,15 +151,11 @@ async def generate_response_async(
             "topP": 0.95,
             "topK": 40,
         },
+        # ALWAYS enable Google Search - Gemini will decide when to use it
+        "tools": [{"google_search": {}}],
     }
     
-    # NEW: Add Google Search Grounding tool if needed for real-time info
-    if enable_grounding is None:
-        enable_grounding = _needs_realtime_info(prompt)
-    
-    if enable_grounding:
-        data["tools"] = [{"google_search": {}}]
-        log.info("[ASYNC] Google Search Grounding ENABLED for real-time information")
+    log.info("[ASYNC] Google Search Grounding ALWAYS ENABLED (Gemini auto-decides)")
 
     try:
         client = await get_async_client()
@@ -236,15 +231,11 @@ async def generate_response_stream_async(
             "topP": 0.95,
             "topK": 40,
         },
+        # ALWAYS enable Google Search - Gemini will decide when to use it
+        "tools": [{"google_search": {}}],
     }
     
-    # NEW: Add Google Search Grounding tool if needed for real-time info
-    if enable_grounding is None:
-        enable_grounding = _needs_realtime_info(prompt)
-    
-    if enable_grounding:
-        data["tools"] = [{"google_search": {}}]
-        log.info("[ASYNC] Google Search Grounding ENABLED for real-time information")
+    log.info("[ASYNC] Google Search Grounding ALWAYS ENABLED (Gemini auto-decides)")
 
     try:
         # Use streaming endpoint with alt=sse
