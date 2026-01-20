@@ -75,6 +75,49 @@ def _needs_realtime_info(query: str) -> bool:
     return False
 
 
+def get_grounding_instruction(query: str, language: str = "vi") -> str:
+    """
+    Get special instruction to add to prompt when Google Search is enabled.
+    This tells the LLM to prioritize real-time search results over knowledge base.
+    
+    Args:
+        query: The user's question
+        language: Response language
+        
+    Returns:
+        Special instruction string, or empty string if not needed
+    """
+    if not _needs_realtime_info(query):
+        return ""
+    
+    if language == "en":
+        return """
+⚠️ **CRITICAL - REAL-TIME INFORMATION REQUIRED** ⚠️
+This question is about CURRENT/RECENT information (leadership, events, news).
+Google Search has been enabled to get the LATEST information.
+
+**YOU MUST:**
+1. PRIORITIZE information from Google Search results over the provided documents
+2. If Google Search shows different/newer information than the documents, USE THE GOOGLE SEARCH RESULTS
+3. Clearly state the current information (e.g., "As of 2025/2026...")
+4. If the documents contain outdated information, IGNORE IT for this specific question
+
+"""
+    else:
+        return """
+⚠️ **QUAN TRỌNG - CẦN THÔNG TIN THỜI SỰ** ⚠️
+Câu hỏi này liên quan đến thông tin HIỆN TẠI (lãnh đạo, sự kiện, tin tức).
+Google Search đã được bật để lấy thông tin MỚI NHẤT.
+
+**BẠN PHẢI:**
+1. ƯU TIÊN thông tin từ kết quả Google Search hơn là tài liệu được cung cấp
+2. Nếu Google Search cho kết quả KHÁC/MỚI HƠN tài liệu, HÃY DÙNG KẾT QUẢ TỪ GOOGLE
+3. Nêu rõ thông tin hiện tại (ví dụ: "Tính đến năm 2025/2026...")
+4. Nếu tài liệu chứa thông tin CŨ, HÃY BỎ QUA cho câu hỏi này
+
+"""
+
+
 def normalize_question(question: str) -> str:
     """
     Normalizes and standardizes a user question using Gemini AI before semantic search.

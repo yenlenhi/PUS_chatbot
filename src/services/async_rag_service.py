@@ -20,6 +20,7 @@ from src.services.async_gemini_service import (
     generate_vision_response_async,
     normalize_question_async,
 )
+from src.services.gemini_service import get_grounding_instruction
 from config.settings import (
     TOP_K_RESULTS,
     LLM_PROVIDER,
@@ -329,7 +330,14 @@ class AsyncRAGService:
             user_prompt = self.rag_service.create_user_prompt(
                 query, context, memory_context, language=language
             )
-            full_prompt = f"{system_prompt}\n\n{user_prompt}"
+            
+            # NEW: Add grounding instruction for real-time queries
+            grounding_instruction = get_grounding_instruction(query, language)
+            if grounding_instruction:
+                log.info("[ASYNC STREAM] Adding grounding instruction to prompt")
+                full_prompt = f"{grounding_instruction}\n\n{system_prompt}\n\n{user_prompt}"
+            else:
+                full_prompt = f"{system_prompt}\n\n{user_prompt}"
 
             # TRUE ASYNC STREAMING from Gemini
             full_answer = ""
