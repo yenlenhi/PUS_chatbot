@@ -17,6 +17,7 @@ from config.settings import (
     GEMINI_TEMPERATURE,
 )
 from src.utils.logger import log
+from src.services.gemini_service import _needs_realtime_info
 
 
 # Shared async client with connection pooling (singleton pattern)
@@ -124,6 +125,7 @@ async def generate_response_async(
     prompt: str,
     conversation_history: list = None,
     temperature: float = None,
+    enable_grounding: bool = None,  # NEW: Override for Google Search Grounding
 ) -> Optional[str]:
     """
     Async version: Generates a response from the Gemini API (non-streaming).
@@ -132,6 +134,8 @@ async def generate_response_async(
         prompt (str): The user's prompt.
         conversation_history (list, optional): The history of the conversation.
         temperature (float): Temperature for generation.
+        enable_grounding (bool, optional): Force enable/disable Google Search Grounding.
+            If None, auto-detect based on query content.
 
     Returns:
         str | None: The generated text from Gemini, or None if an error occurs.
@@ -149,6 +153,14 @@ async def generate_response_async(
             "topK": 40,
         },
     }
+    
+    # NEW: Add Google Search Grounding tool if needed for real-time info
+    if enable_grounding is None:
+        enable_grounding = _needs_realtime_info(prompt)
+    
+    if enable_grounding:
+        data["tools"] = [{"google_search": {}}]
+        log.info("[ASYNC] Google Search Grounding ENABLED for real-time information")
 
     try:
         client = await get_async_client()
@@ -195,6 +207,7 @@ async def generate_response_stream_async(
     prompt: str,
     conversation_history: list = None,
     temperature: float = None,
+    enable_grounding: bool = None,  # NEW: Override for Google Search Grounding
 ) -> AsyncGenerator[str, None]:
     """
     Async version: Generates a streaming response from the Gemini API.
@@ -204,6 +217,8 @@ async def generate_response_stream_async(
         prompt (str): The user's prompt.
         conversation_history (list, optional): The history of the conversation.
         temperature (float): Temperature for response generation.
+        enable_grounding (bool, optional): Force enable/disable Google Search Grounding.
+            If None, auto-detect based on query content.
 
     Yields:
         str: Text chunks from Gemini as they arrive
@@ -222,6 +237,14 @@ async def generate_response_stream_async(
             "topK": 40,
         },
     }
+    
+    # NEW: Add Google Search Grounding tool if needed for real-time info
+    if enable_grounding is None:
+        enable_grounding = _needs_realtime_info(prompt)
+    
+    if enable_grounding:
+        data["tools"] = [{"google_search": {}}]
+        log.info("[ASYNC] Google Search Grounding ENABLED for real-time information")
 
     try:
         # Use streaming endpoint with alt=sse
