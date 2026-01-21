@@ -4,18 +4,28 @@ export const SCHOOL_INFO = {
     english: "PEOPLE'S SECURITY UNIVERSITY"
   },
   contact: {
-    address: "125 Trần Phú, Văn Quán, Hà Đông, Hà Nội",
-    phone: "024.3854.2222",
-    email: "info@psu.edu.vn",
-    website: "www.psu.edu.vn"
+    address: "Km18 Xa lộ Hà Nội, Phường Linh Trung, Thành phố Thủ Đức, TP. Hồ Chí Minh",
+    phone: "0283.896.3883",
+    email: "info@dhannd.edu.vn",
+    website: "dhannd.bocongan.gov.vn"
   },
   stats: {
-    students: "15,000+",
-    faculty: "800+",
-    programs: "25+",
-    employmentRate: "98%"
-  }
+    students: "Hàng ngàn",
+    faculty: "Trình độ cao",
+    programs: "Đa dạng",
+    employmentRate: "Hầu hết có việc"
+  },
+  vision: "Đến năm 2030, Trường Đại học An ninh nhân dân cách mạng, chính quy, tinh nhuệ, hiện đại và hội nhập; là trung tâm giáo dục, đào tạo, bồi dưỡng, nghiên cứu khoa học, tham mưu chiến lược có uy tín cao của lực lượng Công an nhân dân.",
+  mission: "Đào tạo nguồn nhân lực chất lượng cao; là trung tâm nghiên cứu khoa học, tham mưu chiến lược có uy tín cao; là lực lượng dự bị, sẵn sàng chiến đấu của lực lượng Công an; là một trong các trung tâm hợp tác quốc tế về giáo dục, đào tạo của Bộ Công an."
 };
+
+export const HISTORY_MILESTONES = [
+  { year: 1963, event: "Thành lập Trường An ninh Trung ương Cục miền Nam (E1171)" },
+  { year: 1976, event: "Chuyển tên thành Trường Hạ sĩ quan An ninh II" },
+  { year: 1984, event: "Nâng cấp thành Trường Cao đẳng An ninh nhân dân II" },
+  { year: 1989, event: "Thành lập Phân hiệu Đại học An ninh nhân dân" },
+  { year: 2003, event: "Chính thức mang tên Trường Đại học An ninh nhân dân" }
+];
 
 export const MENU_ITEMS = [
   { title: 'GIỚI THIỆU', href: '/gioi-thieu' },
@@ -127,7 +137,7 @@ export const ADMISSION_PROGRAMS = [
   },
   {
     name: "An ninh kinh tế",
-    code: "7229002", 
+    code: "7229002",
     quota: 150,
     duration: "4 năm",
     degree: "Cử nhân"
@@ -136,7 +146,7 @@ export const ADMISSION_PROGRAMS = [
     name: "An ninh mạng",
     code: "7480201",
     quota: 180,
-    duration: "4 năm", 
+    duration: "4 năm",
     degree: "Cử nhân"
   },
   {

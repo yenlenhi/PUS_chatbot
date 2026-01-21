@@ -1,16 +1,18 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter, Playfair_Display } from "next/font/google"; // Premium fonts import
 import 'github-markdown-css/github-markdown-light.css';
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+const inter = Inter({
+  variable: "--font-sans",
+  subsets: ["latin", "vietnamese"], // Ensure Vietnamese support
+  display: 'swap',
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+const playfair = Playfair_Display({
+  variable: "--font-serif",
+  subsets: ["latin", "vietnamese"],
+  display: 'swap',
 });
 
 export const metadata: Metadata = {
@@ -32,7 +34,7 @@ export default function RootLayout({
   return (
     <html lang="vi">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${inter.variable} ${playfair.variable} font-sans antialiased`}
       >
         {children}
       </body>

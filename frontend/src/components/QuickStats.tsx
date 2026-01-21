@@ -1,67 +1,81 @@
+'use client';
+
 import React from 'react';
-import { Users, GraduationCap, BookOpen, Award } from 'lucide-react';
+import { Calendar, GraduationCap, Users, Award } from 'lucide-react';
+
+const QUICK_STATS = [
+    {
+        value: '1963',
+        label: 'Năm thành lập',
+        sublabel: 'Hơn 60 năm lịch sử',
+        icon: Calendar,
+        color: 'from-red-600 to-red-700'
+    },
+    {
+        value: '6',
+        label: 'Ngành đào tạo',
+        sublabel: 'Chuyên môn an ninh',
+        icon: GraduationCap,
+        color: 'from-yellow-500 to-orange-500'
+    },
+    {
+        value: 'GS, PGS, TS',
+        label: 'Đội ngũ giảng viên',
+        sublabel: 'Trình độ cao',
+        icon: Award,
+        color: 'from-green-600 to-emerald-600'
+    },
+    {
+        value: 'Hàng ngàn',
+        label: 'Sinh viên',
+        sublabel: 'Các hệ đào tạo',
+        icon: Users,
+        color: 'from-blue-600 to-indigo-600'
+    }
+];
 
 const QuickStats = () => {
-  const stats = [
-    {
-      icon: Users,
-      number: "15,000+",
-      label: "Sinh viên",
-      color: "text-blue-600"
-    },
-    {
-      icon: GraduationCap,
-      number: "800+",
-      label: "Giảng viên",
-      color: "text-green-600"
-    },
-    {
-      icon: BookOpen,
-      number: "25+",
-      label: "Ngành đào tạo",
-      color: "text-purple-600"
-    },
-    {
-      icon: Award,
-      number: "98%",
-      label: "Tỷ lệ việc làm",
-      color: "text-red-600"
-    }
-  ];
+    return (
+        <section className="py-16 bg-white border-t border-gray-100">
+            <div className="container mx-auto px-4">
+                {/* Stats Grid */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+                    {QUICK_STATS.map((stat, index) => (
+                        <div
+                            key={index}
+                            className="group relative bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 hover:-translate-y-1 overflow-hidden"
+                        >
+                            {/* Background Gradient on Hover */}
+                            <div className={`absolute inset-0 bg-gradient-to-br ${stat.color} opacity-0 group-hover:opacity-5 transition-opacity duration-300`}></div>
 
-  return (
-    <div className="bg-white py-12">
-      <div className="container mx-auto px-4">
-        <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-gray-900 mb-4">
-            Trường Đại học An ninh Nhân dân trong con số
-          </h2>
-          <p className="text-gray-600 max-w-2xl mx-auto">
-            Những con số ấn tượng thể hiện sự phát triển và chất lượng đào tạo của nhà trường
-          </p>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {stats.map((stat, index) => {
-            const IconComponent = stat.icon;
-            return (
-              <div key={index} className="text-center p-6 bg-gray-50 rounded-lg hover:shadow-lg transition-shadow duration-200">
-                <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full bg-white shadow-md mb-4 ${stat.color}`}>
-                  <IconComponent className="w-8 h-8" />
+                            {/* Icon */}
+                            <div className={`w-12 h-12 bg-gradient-to-br ${stat.color} rounded-xl flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                                <stat.icon className="w-6 h-6 text-white" />
+                            </div>
+
+                            {/* Value */}
+                            <div className="text-2xl lg:text-3xl font-black text-gray-900 mb-1">
+                                {stat.value}
+                            </div>
+
+                            {/* Label */}
+                            <div className="text-sm font-bold text-gray-700 mb-1">
+                                {stat.label}
+                            </div>
+
+                            {/* Sublabel */}
+                            <div className="text-xs text-gray-500">
+                                {stat.sublabel}
+                            </div>
+
+                            {/* Decorative corner */}
+                            <div className={`absolute bottom-0 right-0 w-16 h-16 bg-gradient-to-br ${stat.color} opacity-5 rounded-tl-full`}></div>
+                        </div>
+                    ))}
                 </div>
-                <div className="text-3xl font-bold text-gray-900 mb-2">
-                  {stat.number}
-                </div>
-                <div className="text-gray-600 font-medium">
-                  {stat.label}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
+            </div>
+        </section>
+    );
 };
 
 export default QuickStats;

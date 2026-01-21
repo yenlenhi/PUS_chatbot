@@ -11,14 +11,15 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-sans);
+  --font-serif: var(--font-serif);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family: var(--font-sans);
+  /* Use Inter as default */
   line-height: 1.6;
 }
 
@@ -128,12 +129,29 @@ body {
   margin-top: 0;
 }
 
-.markdown-content h1 { font-size: 1.5em; }
-.markdown-content h2 { font-size: 1.375em; }
-.markdown-content h3 { font-size: 1.25em; }
-.markdown-content h4 { font-size: 1.125em; }
-.markdown-content h5 { font-size: 1em; }
-.markdown-content h6 { font-size: 0.875em; }
+.markdown-content h1 {
+  font-size: 1.5em;
+}
+
+.markdown-content h2 {
+  font-size: 1.375em;
+}
+
+.markdown-content h3 {
+  font-size: 1.25em;
+}
+
+.markdown-content h4 {
+  font-size: 1.125em;
+}
+
+.markdown-content h5 {
+  font-size: 1em;
+}
+
+.markdown-content h6 {
+  font-size: 0.875em;
+}
 
 .markdown-content table {
   border-collapse: collapse;
@@ -173,9 +191,13 @@ body {
 
 /* Animation for loading dots */
 @keyframes bounce {
-  0%, 80%, 100% {
+
+  0%,
+  80%,
+  100% {
     transform: scale(0);
   }
+
   40% {
     transform: scale(1);
   }
@@ -192,8 +214,15 @@ body {
 }
 
 @keyframes blink {
-  from, to { opacity: 1; }
-  50% { opacity: 0; }
+
+  from,
+  to {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0;
+  }
 }
 
 /* Typing indicator animation */
@@ -221,8 +250,16 @@ body {
 }
 
 @keyframes bounce {
-  0%, 80%, 100% { transform: scale(0); }
-  40% { transform: scale(1); }
+
+  0%,
+  80%,
+  100% {
+    transform: scale(0);
+  }
+
+  40% {
+    transform: scale(1);
+  }
 }
 
 .markdown-body ul {
@@ -254,7 +291,12 @@ body {
   line-height: 1.6 !important;
 }
 
-.markdown-body h1, .markdown-body h2, .markdown-body h3, .markdown-body h4, .markdown-body h5, .markdown-body h6 {
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.markdown-body h4,
+.markdown-body h5,
+.markdown-body h6 {
   margin-top: 1rem !important;
   margin-bottom: 0.5rem !important;
   font-weight: 600 !important;
@@ -292,6 +334,7 @@ body {
     opacity: 0;
     transform: scale(0.95) translateY(-10px);
   }
+
   to {
     opacity: 1;
     transform: scale(1) translateY(0);
@@ -308,6 +351,7 @@ body {
     opacity: 0;
     transform: translateY(4px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -332,6 +376,7 @@ body {
     opacity: 0;
     transform: translateY(8px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -344,50 +389,319 @@ body {
 
 /* Mobile-specific utilities */
 @media (max-width: 640px) {
+
   /* Reduce chat bubble padding on mobile */
   .chat-bubble-mobile {
     padding: 0.75rem !important;
   }
-  
+
   /* Compact header on mobile */
   .header-mobile {
     height: 3.5rem !important;
     padding: 0.5rem !important;
   }
-  
+
   /* Smaller text on very small screens */
   .text-mobile {
     font-size: 0.875rem !important;
     line-height: 1.25rem !important;
   }
-  
+
   /* Touch-friendly buttons */
   .btn-mobile {
     min-height: 2rem;
     min-width: 2rem;
     padding: 0.5rem !important;
   }
-  
+
   /* Optimized spacing for mobile */
-  .space-mobile > * + * {
+  .space-mobile>*+* {
     margin-top: 0.75rem !important;
   }
 }
 
 /* Extra small screens */
 @media (max-width: 475px) {
+
   /* Even more compact layout */
   .ultra-compact {
     padding: 0.5rem !important;
     font-size: 0.8rem !important;
   }
-  
+
   /* Hide less important elements on very small screens */
   .hide-xs {
     display: none !important;
   }
 }
 
+/* ============================================
+   CHAT BOT SPECIFIC ANIMATIONS
+   ============================================ */
 
+/* Message Entrance Animation */
+@keyframes messageEntranceLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px) translateY(10px);
+  }
 
+  to {
+    opacity: 1;
+    transform: translateX(0) translateY(0);
+  }
+}
 
+@keyframes messageEntranceRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px) translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0) translateY(0);
+  }
+}
+
+.animate-message-left {
+  animation: messageEntranceLeft 0.35s ease-out forwards;
+}
+
+.animate-message-right {
+  animation: messageEntranceRight 0.35s ease-out forwards;
+}
+
+/* Typing Indicator - 3 bouncing dots */
+@keyframes typingBounce {
+
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+  }
+
+  30% {
+    transform: translateY(-8px);
+  }
+}
+
+.typing-dots {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 16px;
+}
+
+.typing-dots span {
+  width: 8px;
+  height: 8px;
+  background: linear-gradient(135deg, #dc2626 0%, #f59e0b 100%);
+  border-radius: 50%;
+  animation: typingBounce 1.4s ease-in-out infinite;
+}
+
+.typing-dots span:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.typing-dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typing-dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+/* Gold Ring Pulse for Bot Avatar */
+@keyframes goldRingPulse {
+
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7);
+  }
+
+  50% {
+    box-shadow: 0 0 0 12px rgba(245, 158, 11, 0);
+  }
+}
+
+.animate-gold-ring {
+  animation: goldRingPulse 2s ease infinite;
+}
+
+/* Shimmer Loading Skeleton */
+@keyframes shimmer {
+  0% {
+    background-position: -200px 0;
+  }
+
+  100% {
+    background-position: calc(200px + 100%) 0;
+  }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(90deg,
+      #f0f0f0 0px,
+      #e0e0e0 40px,
+      #f0f0f0 80px);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: 8px;
+}
+
+/* Input Focus Glow */
+@keyframes inputGlow {
+
+  0%,
+  100% {
+    box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.3);
+  }
+
+  50% {
+    box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.2);
+  }
+}
+
+.input-focus-glow:focus-within {
+  animation: inputGlow 2s ease infinite;
+}
+
+/* Send Button Ripple */
+@keyframes sendRipple {
+  0% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(0.95);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+.btn-send-ripple:active {
+  animation: sendRipple 0.2s ease-out;
+}
+
+/* Card Float Effect */
+@keyframes cardFloat {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+.hover-float:hover {
+  animation: cardFloat 0.6s ease-in-out;
+}
+
+/* Staggered Card Entrance */
+.stagger-1 {
+  animation-delay: 0ms;
+}
+
+.stagger-2 {
+  animation-delay: 100ms;
+}
+
+.stagger-3 {
+  animation-delay: 200ms;
+}
+
+.stagger-4 {
+  animation-delay: 300ms;
+}
+
+/* Scroll to Bottom FAB Bounce */
+@keyframes fabBounce {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  25% {
+    transform: translateY(-6px);
+  }
+
+  50% {
+    transform: translateY(0);
+  }
+
+  75% {
+    transform: translateY(-3px);
+  }
+}
+
+.fab-bounce {
+  animation: fabBounce 2s ease-in-out infinite;
+}
+
+/* Online Status Pulse */
+@keyframes onlinePulse {
+
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.6;
+    transform: scale(1.2);
+  }
+}
+
+.online-pulse {
+  animation: onlinePulse 2s ease-in-out infinite;
+}
+
+/* Glassmorphism Classes */
+.glass {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.glass-dark {
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Gradient Border Animation */
+@keyframes gradientBorder {
+
+  0%,
+  100% {
+    border-color: #dc2626;
+  }
+
+  50% {
+    border-color: #f59e0b;
+  }
+}
+
+.gradient-border-animate {
+  animation: gradientBorder 3s ease-in-out infinite;
+}
+
+/* Safe Area for Mobile */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.safe-area-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}

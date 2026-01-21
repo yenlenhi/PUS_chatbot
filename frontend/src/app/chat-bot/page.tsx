@@ -438,7 +438,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   if (message.sender === 'user') {
     return (
       <>
-        <div className="flex justify-end items-start gap-2 sm:gap-3">
+        <div className="flex justify-end items-start gap-2 sm:gap-3 animate-message-right">
           {/* Message content */}
           <div className="max-w-[85%] sm:max-w-[75%] md:max-w-[70%]">
             {/* Uploaded images - shown above text */}
@@ -511,17 +511,19 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
 
   // Bot message
   return (
-    <div className="flex justify-start items-start gap-2 sm:gap-3">
-      {/* Bot Avatar */}
+    <div className="flex justify-start items-start gap-2 sm:gap-3 animate-message-left">
+      {/* Bot Avatar with Gold Ring Pulse */}
       <div className="flex-shrink-0 relative">
-        <Image
-          src="/assests/chatbot_avatar.png"
-          alt="PSU ChatBot"
-          width={32}
-          height={32}
-          className="w-8 h-8 sm:w-10 sm:h-10 rounded-full shadow-sm sm:shadow-md"
-        />
-        <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-400 rounded-full border border-white"></div>
+        <div className={`rounded-full ${isLatest && !contentToShow ? 'animate-gold-ring' : ''}`}>
+          <Image
+            src="/assests/chatbot_avatar.png"
+            alt="PSU ChatBot"
+            width={32}
+            height={32}
+            className="w-8 h-8 sm:w-10 sm:h-10 rounded-full shadow-sm sm:shadow-md"
+          />
+        </div>
+        <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-400 rounded-full border border-white online-pulse"></div>
       </div>
 
       {/* Message content */}
@@ -1427,7 +1429,7 @@ const ChatBotPage = () => {
                           <button
                             key={index}
                             onClick={() => setInputMessage(question)}
-                            className="group text-left p-3 bg-gradient-to-r from-white to-blue-50 hover:from-blue-50 hover:to-indigo-100 rounded-lg border border-blue-200 hover:border-indigo-300 text-gray-700 hover:text-indigo-700 transition-all duration-300 shadow-sm hover:shadow-md hover:scale-[1.02] transform"
+                            className={`group text-left p-3 bg-gradient-to-r from-white to-blue-50 hover:from-blue-50 hover:to-indigo-100 rounded-lg border border-blue-200 hover:border-indigo-300 text-gray-700 hover:text-indigo-700 transition-all duration-300 shadow-sm hover:shadow-md hover:scale-[1.02] transform hover-float animate-fadeIn stagger-${(index % 4) + 1}`}
                           >
                             <div className="flex items-start gap-3">
                               <span className="text-blue-500 text-sm mt-0.5">💡</span>
@@ -1664,13 +1666,13 @@ const ChatBotPage = () => {
                         ? (language === 'vi' ? "💭 Mô tả hoặc hỏi về ảnh..." : "💭 Describe or ask about the image...")
                         : (language === 'vi' ? "💬 Nhập câu hỏi hoặc dán ảnh (Ctrl+V)..." : "💬 Type a question or paste an image (Ctrl+V)...")
                   }
-                  className="flex-1 min-w-0 min-h-[44px] sm:min-h-[48px] px-4 sm:px-5 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 text-sm sm:text-base font-medium bg-white shadow-sm hover:shadow-md transition-all duration-300 placeholder:text-gray-400"
+                  className="flex-1 min-w-0 min-h-[44px] sm:min-h-[48px] px-4 sm:px-5 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500 text-sm sm:text-base font-medium bg-white/90 backdrop-blur-sm shadow-sm hover:shadow-md transition-all duration-300 placeholder:text-gray-400 input-focus-glow"
                   disabled={isTyping || isListening}
                 />
                 <button
                   onClick={() => handleSendMessage()}
                   disabled={(!inputMessage.trim() && uploadedImages.length === 0) || isTyping}
-                  className="group flex-shrink-0 w-11 h-11 sm:w-12 sm:h-12 bg-gradient-to-r from-red-500 via-red-600 to-red-700 text-white rounded-2xl hover:from-red-600 hover:via-red-700 hover:to-red-800 disabled:bg-gray-300 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed transition-all duration-300 flex items-center justify-center shadow-lg shadow-red-500/30 hover:shadow-xl hover:shadow-red-500/40 hover:scale-105 active:scale-95"
+                  className="group flex-shrink-0 w-11 h-11 sm:w-12 sm:h-12 bg-gradient-to-r from-red-500 via-red-600 to-red-700 text-white rounded-2xl hover:from-red-600 hover:via-red-700 hover:to-red-800 disabled:bg-gray-300 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed transition-all duration-300 flex items-center justify-center shadow-lg shadow-red-500/30 hover:shadow-xl hover:shadow-red-500/40 hover:scale-105 btn-send-ripple"
                   aria-label="Gửi tin nhắn"
                 >
                   <Send className="w-5 h-5 sm:w-6 sm:h-6 group-hover:translate-x-0.5 transition-transform" />
