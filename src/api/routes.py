@@ -152,6 +152,7 @@ async def chat_endpoint(
                         conversation_id=conversation_id,
                         conversation_history=chat_request.conversation_history,
                         language=chat_request.language or "vi",
+                        skip_normalization=False,  # Force enable normalization
                     ):
                         # Update metadata
                         if chunk.get("type") == "metadata":

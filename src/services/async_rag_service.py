@@ -66,7 +66,7 @@ class AsyncRAGService:
         conversation_history: Optional[List[dict]] = None,
         images: Optional[List[Any]] = None,
         language: str = "vi",
-        skip_normalization: bool = True,  # NEW: Default to skip normalization
+        skip_normalization: bool = False,  # Enable normalization by default
     ) -> Dict[str, Any]:
         """
         Async version of generate_answer with optimized pipeline.
@@ -233,7 +233,7 @@ class AsyncRAGService:
         conversation_id: Optional[str] = None,
         conversation_history: Optional[List[dict]] = None,
         language: str = "vi",
-        skip_normalization: bool = True,
+        skip_normalization: bool = False,  # Enable normalization by default
     ) -> AsyncGenerator[Dict[str, Any], None]:
         """
         Async streaming version of generate_answer.
@@ -258,9 +258,15 @@ class AsyncRAGService:
             normalized_query = query
             normalization_applied = False
             
+            log.info(f"[DEBUG] skip_normalization={skip_normalization}, ENABLE_GEMINI_NORMALIZATION={ENABLE_GEMINI_NORMALIZATION}")
+            
             if not skip_normalization and ENABLE_GEMINI_NORMALIZATION:
+                log.info(f"[ASYNC STREAM] Normalizing query: {query[:50]}...")
                 normalized_query = await normalize_question_async(query)
                 normalization_applied = normalized_query != query
+                log.info(f"[ASYNC STREAM] Normalized: '{query[:30]}' -> '{normalized_query[:30]}'")
+            else:
+                log.info(f"[ASYNC STREAM] Skipping normalization (skip={skip_normalization}, enabled={ENABLE_GEMINI_NORMALIZATION})")
 
             # Get memory context
             memory_context = ""
