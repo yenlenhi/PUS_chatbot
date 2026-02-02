@@ -56,6 +56,19 @@ ENABLE_GOOGLE_SEARCH_GROUNDING = (
     os.getenv("ENABLE_GOOGLE_SEARCH_GROUNDING", "true").lower() == "true"
 )
 
+# ============================================
+# ACCURACY MODE CONFIGURATION
+# ============================================
+# STRICT_MODE: Only answer from official documents, fallback when confidence low
+STRICT_MODE = os.getenv("STRICT_MODE", "true").lower() == "true"
+
+# Minimum confidence threshold to provide an answer (0.0 - 1.0)
+# If confidence < threshold, bot will return fallback response
+CONFIDENCE_THRESHOLD = float(os.getenv("CONFIDENCE_THRESHOLD", "0.6"))
+
+# Require source citation in answers
+REQUIRE_SOURCE_CITATION = os.getenv("REQUIRE_SOURCE_CITATION", "true").lower() == "true"
+
 # Ollama Configuration
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 OLLAMA_MODEL = os.getenv(
@@ -161,10 +174,10 @@ SIMILARITY_THRESHOLD = float(os.getenv("SIMILARITY_THRESHOLD", "0.35"))
 # ============================================
 # Weight for dense retrieval (0-1), sparse gets (1 - DENSE_WEIGHT)
 DENSE_WEIGHT = float(os.getenv("DENSE_WEIGHT", "0.7"))
-# Minimum similarity score for dense retrieval
-DENSE_SIMILARITY_THRESHOLD = float(os.getenv("DENSE_SIMILARITY_THRESHOLD", "0.35"))
-# Minimum BM25 score for sparse retrieval
-SPARSE_SIMILARITY_THRESHOLD = float(os.getenv("SPARSE_SIMILARITY_THRESHOLD", "0.1"))
+# Minimum similarity score for dense retrieval (increased for accuracy)
+DENSE_SIMILARITY_THRESHOLD = float(os.getenv("DENSE_SIMILARITY_THRESHOLD", "0.5"))
+# Minimum BM25 score for sparse retrieval (increased for accuracy)
+SPARSE_SIMILARITY_THRESHOLD = float(os.getenv("SPARSE_SIMILARITY_THRESHOLD", "0.2"))
 
 # ============================================
 # Ingestion Service Configuration (NEW)
