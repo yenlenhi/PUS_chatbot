@@ -180,6 +180,14 @@ DENSE_SIMILARITY_THRESHOLD = float(os.getenv("DENSE_SIMILARITY_THRESHOLD", "0.5"
 SPARSE_SIMILARITY_THRESHOLD = float(os.getenv("SPARSE_SIMILARITY_THRESHOLD", "0.2"))
 
 # ============================================
+# Attachment Retrieval Configuration (NEW)
+# ============================================
+# Maximum number of attachments to include in context
+MAX_ATTACHMENTS_IN_CONTEXT = int(os.getenv("MAX_ATTACHMENTS_IN_CONTEXT", "3"))
+# Minimum relevance score threshold for attachments (0.0-1.0)
+MIN_ATTACHMENT_SCORE_THRESHOLD = float(os.getenv("MIN_ATTACHMENT_SCORE_THRESHOLD", "0.75"))
+
+# ============================================
 # Ingestion Service Configuration (NEW)
 # ============================================
 # Directory to watch for new PDFs

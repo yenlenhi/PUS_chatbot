@@ -1463,12 +1463,16 @@ Trả lời / Response:"""
         """
         Helper to retrieve attachments based on query and chunks.
         Used to inject attachment info into LLM context.
+        Returns top N most relevant attachments sorted by score.
         """
-        attachments = []
+        from config.settings import MAX_ATTACHMENTS_IN_CONTEXT, MIN_ATTACHMENT_SCORE_THRESHOLD
+        
+        attachments_with_scores = []  # Store (attachment_dict, score) tuples
+        attachment_ids_found = set()
+        
         try:
             log.info("🔍 Starting attachment retrieval...")
-            attachment_ids_found = set()
-
+            
             # Strategy 1: Get attachments linked to retrieved chunks
             if relevant_chunks:
                 chunk_ids = [
@@ -1481,16 +1485,20 @@ Trả lời / Response:"""
                         )
                     )
                     for att in chunk_attachments:
-                        attachment_ids_found.add(att.id)
-                        attachments.append(
-                            {
-                                "file_name": att.file_name,
-                                "file_type": att.file_type,
-                                "download_url": att.download_url,
-                                "description": att.description,
-                                "file_size": att.file_size,
-                            }
-                        )
+                        if att.id not in attachment_ids_found:
+                            # For chunk-based attachments, use a high default score
+                            # since they're directly linked to relevant content
+                            attachment_ids_found.add(att.id)
+                            attachments_with_scores.append((
+                                {
+                                    "file_name": att.file_name,
+                                    "file_type": att.file_type,
+                                    "download_url": att.download_url,
+                                    "description": att.description,
+                                    "file_size": att.file_size,
+                                },
+                                0.9  # High score for chunk-linked attachments
+                            ))
 
             # Strategy 2: Search attachments by keywords from query
             from src.services.smart_attachment_matcher import SmartAttachmentMatcher
@@ -1507,23 +1515,35 @@ Trả lời / Response:"""
                         score = SmartAttachmentMatcher.score_attachment_relevance(
                             att.keywords or [], query_keywords
                         )
-                        if score > 0.6:
+                        # Apply stricter threshold
+                        if score >= MIN_ATTACHMENT_SCORE_THRESHOLD:
                             attachment_ids_found.add(att.id)
-                            attachments.append(
+                            attachments_with_scores.append((
                                 {
                                     "file_name": att.file_name,
                                     "file_type": att.file_type,
                                     "download_url": att.download_url,
                                     "description": att.description,
                                     "file_size": att.file_size,
-                                }
-                            )
+                                },
+                                score
+                            ))
             
-            if attachments:
-                log.info(f"📎 Found {len(attachments)} attachment(s) for context")
+            # Sort by score (highest first) and limit to top N
+            if attachments_with_scores:
+                attachments_with_scores.sort(key=lambda x: x[1], reverse=True)
+                attachments = [att for att, score in attachments_with_scores[:MAX_ATTACHMENTS_IN_CONTEXT]]
+                
+                log.info(f"📎 Found {len(attachments_with_scores)} attachment(s), returning top {len(attachments)} most relevant")
+                if len(attachments) > 0:
+                    log.debug(f"Top attachment scores: {[round(score, 3) for _, score in attachments_with_scores[:MAX_ATTACHMENTS_IN_CONTEXT]]}")
+            else:
+                attachments = []
+                log.info("📎 No attachments met the minimum relevance threshold")
                 
         except Exception as att_error:
             log.warning(f"Could not retrieve attachments: {att_error}")
+            attachments = []
             
         return attachments
 
