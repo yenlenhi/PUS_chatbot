@@ -93,7 +93,7 @@ class RAGService:
 
 
     def _rerank_chunks(
-        self, query: str, chunks: List[Dict[str, Any]], max_rerank: int = 20
+        self, query: str, chunks: List[Dict[str, Any]], max_rerank: int = 10
     ) -> List[Dict[str, Any]]:
         """
         Optimized reranking with:

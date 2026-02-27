@@ -44,9 +44,9 @@ GEMINI_API_URL = os.getenv(
 )
 GEMINI_MAX_OUTPUT_TOKENS = int(os.getenv("GEMINI_MAX_OUTPUT_TOKENS", "8192"))
 GEMINI_TEMPERATURE = float(os.getenv("GEMINI_TEMPERATURE", "0.7"))
-# Enable/disable Gemini question normalization
+# Enable/disable Gemini question normalization (disabled: saves 2-3s, always hits MAX_TOKENS)
 ENABLE_GEMINI_NORMALIZATION = (
-    os.getenv("ENABLE_GEMINI_NORMALIZATION", "true").lower() == "true"
+    os.getenv("ENABLE_GEMINI_NORMALIZATION", "false").lower() == "true"
 )
 
 # Enable/disable Google Search Grounding for real-time information

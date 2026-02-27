@@ -117,29 +117,44 @@ class AsyncRAGService:
             # Rewrite query using conversation history for context (fixes context loss)
             current_history = self.rag_service.conversations.get(conversation_id, [])
             if current_history:
-                rewritten_query = await self._run_in_executor(
-                    self.rag_service._rewrite_query_with_history,
-                    normalized_query,
-                    current_history,
-                )
-                if rewritten_query and rewritten_query != normalized_query:
-                    log.info(f"[ASYNC] Rewritten query: '{rewritten_query[:80]}'")
-                    normalized_query = rewritten_query
+                try:
+                    from src.services.async_gemini_service import generate_response_async as _rewrite_async
+                    # Build rewrite prompt (same logic as sync version but async)
+                    formatted_history = "\n".join([f"{msg['role']}: {msg['content']}" for msg in current_history[-6:]])
+                    rewrite_prompt = f"""Dựa vào lịch sử trò chuyện sau đây, hãy viết lại câu hỏi cuối cùng của người dùng thành một câu hỏi độc lập, đầy đủ ngữ cảnh để có thể dùng cho việc tìm kiếm thông tin.
 
-            # Get memory context (run in thread pool as it's sync)
+### Lịch sử trò chuyện:
+{formatted_history}
+
+### Câu hỏi cuối cùng của người dùng:
+{normalized_query}
+
+### Câu hỏi độc lập, đầy đủ ngữ cảnh:"""
+                    rewritten_query = await _rewrite_async(prompt=rewrite_prompt)
+                    if rewritten_query and rewritten_query.strip() and rewritten_query.strip() != normalized_query:
+                        log.info(f"[ASYNC] Rewritten query: '{rewritten_query.strip()[:80]}'")
+                        normalized_query = rewritten_query.strip()
+                except Exception as rw_err:
+                    log.warning(f"[ASYNC] Query rewrite failed: {rw_err}")
+
+            # Get memory context — skip for new conversations (saves 15-25s)
             memory_context = ""
-            try:
-                conv_context = await self._run_in_executor(
-                    self.rag_service.memory_service.get_conversation_context,
-                    conversation_id,
-                    normalized_query,
-                    True,  # include_memory_search
-                )
-                if conv_context.has_long_term_memory or conv_context.recent_messages:
-                    memory_context = self.rag_service.memory_service.format_context_for_prompt(conv_context)
-                    log.info(f"🧠 [ASYNC] Loaded memory context")
-            except Exception as mem_error:
-                log.warning(f"Could not load memory context: {mem_error}")
+            conv_turn_count = len(self.rag_service.conversations.get(conversation_id, []))
+            if conv_turn_count > 4:  # Only load memory after 2+ exchanges
+                try:
+                    conv_context = await self._run_in_executor(
+                        self.rag_service.memory_service.get_conversation_context,
+                        conversation_id,
+                        normalized_query,
+                        True,  # include_memory_search
+                    )
+                    if conv_context.has_long_term_memory or conv_context.recent_messages:
+                        memory_context = self.rag_service.memory_service.format_context_for_prompt(conv_context)
+                        log.info(f"🧠 [ASYNC] Loaded memory context")
+                except Exception as mem_error:
+                    log.warning(f"Could not load memory context: {mem_error}")
+            else:
+                log.info(f"[ASYNC] Skipping memory search for new conversation (turns={conv_turn_count})")
 
             # Retrieve relevant chunks (CPU-bound, run in thread pool)
             log.info("[ASYNC] Running retrieval in thread pool...")
@@ -293,28 +308,42 @@ class AsyncRAGService:
             # Rewrite query using conversation history for context (fixes context loss)
             current_history = self.rag_service.conversations.get(conversation_id, [])
             if current_history:
-                rewritten_query = await self._run_in_executor(
-                    self.rag_service._rewrite_query_with_history,
-                    normalized_query,
-                    current_history,
-                )
-                if rewritten_query and rewritten_query != normalized_query:
-                    log.info(f"[ASYNC STREAM] Rewritten: '{normalized_query[:30]}' -> '{rewritten_query[:50]}'")
-                    normalized_query = rewritten_query
+                try:
+                    from src.services.async_gemini_service import generate_response_async as _rewrite_async
+                    formatted_history = "\n".join([f"{msg['role']}: {msg['content']}" for msg in current_history[-6:]])
+                    rewrite_prompt = f"""Dựa vào lịch sử trò chuyện sau đây, hãy viết lại câu hỏi cuối cùng của người dùng thành một câu hỏi độc lập, đầy đủ ngữ cảnh để có thể dùng cho việc tìm kiếm thông tin.
 
-            # Get memory context
+### Lịch sử trò chuyện:
+{formatted_history}
+
+### Câu hỏi cuối cùng của người dùng:
+{normalized_query}
+
+### Câu hỏi độc lập, đầy đủ ngữ cảnh:"""
+                    rewritten_query = await _rewrite_async(prompt=rewrite_prompt)
+                    if rewritten_query and rewritten_query.strip() and rewritten_query.strip() != normalized_query:
+                        log.info(f"[ASYNC STREAM] Rewritten: '{normalized_query[:30]}' -> '{rewritten_query.strip()[:50]}'")
+                        normalized_query = rewritten_query.strip()
+                except Exception as rw_err:
+                    log.warning(f"[ASYNC STREAM] Query rewrite failed: {rw_err}")
+
+            # Get memory context — skip for new conversations (saves 15-25s)
             memory_context = ""
-            try:
-                conv_context = await self._run_in_executor(
-                    self.rag_service.memory_service.get_conversation_context,
-                    conversation_id,
-                    normalized_query,
-                    True,
-                )
-                if conv_context.has_long_term_memory or conv_context.recent_messages:
-                    memory_context = self.rag_service.memory_service.format_context_for_prompt(conv_context)
-            except Exception as mem_error:
-                log.warning(f"Memory context error: {mem_error}")
+            conv_turn_count = len(self.rag_service.conversations.get(conversation_id, []))
+            if conv_turn_count > 4:  # Only load memory after 2+ exchanges
+                try:
+                    conv_context = await self._run_in_executor(
+                        self.rag_service.memory_service.get_conversation_context,
+                        conversation_id,
+                        normalized_query,
+                        True,
+                    )
+                    if conv_context.has_long_term_memory or conv_context.recent_messages:
+                        memory_context = self.rag_service.memory_service.format_context_for_prompt(conv_context)
+                except Exception as mem_error:
+                    log.warning(f"Memory context error: {mem_error}")
+            else:
+                log.info(f"[ASYNC STREAM] Skipping memory search (turns={conv_turn_count})")
 
             # Retrieval (thread pool)
             yield {"type": "status", "message": "Đang tìm kiếm tài liệu..."}
