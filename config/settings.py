@@ -165,7 +165,7 @@ LOG_FILE = os.getenv("LOG_FILE", "logs/chatbot.log")
 # RAG Configuration
 CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", "500"))
 CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", "50"))
-TOP_K_RESULTS = int(os.getenv("TOP_K_RESULTS", "15"))
+TOP_K_RESULTS = int(os.getenv("TOP_K_RESULTS", "10"))
 # Set a stricter threshold to filter out irrelevant results
 SIMILARITY_THRESHOLD = float(os.getenv("SIMILARITY_THRESHOLD", "0.35"))
 

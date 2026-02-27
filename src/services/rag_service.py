@@ -95,74 +95,63 @@ class RAGService:
     def _rerank_chunks(
         self, query: str, chunks: List[Dict[str, Any]], max_rerank: int = 10
     ) -> List[Dict[str, Any]]:
-        """
-        Optimized reranking with:
-        1. Limit chunks to max_rerank (default 20)
-        2. Skip reranking for high-score chunks (dense_score > 0.85)
-        3. Cache results for common queries
-        """
+        """Smart reranking: skip when top results are already confident."""
         if not self.reranker or not chunks:
             return chunks
 
         try:
-            # Generate cache key from query + chunk IDs
+            # Cache check
             chunk_ids = "_".join([str(c.get("chunk_id", ""))[:8] for c in chunks[:10]])
             cache_key = hashlib.md5(f"{query}_{chunk_ids}".encode()).hexdigest()
-            
-            # Check cache first
             if cache_key in self._rerank_cache:
-                log.info(f"⚡ Reranking cache hit for query")
+                log.info("⚡ Reranking cache hit")
                 return self._rerank_cache[cache_key]
 
-            # Optimization 1: Separate high-score chunks (skip reranking)
-            high_score_threshold = 0.85
+            # Smart skip: if top 3 results are confident, skip reranking entirely (saves 9-12s)
+            SMART_SKIP_THRESHOLD = 0.6
+            top_scores = [c.get("dense_score", 0) or c.get("score", 0) for c in chunks[:3]]
+            if len(top_scores) >= 3 and all(s >= SMART_SKIP_THRESHOLD for s in top_scores):
+                log.info(f"⚡ Smart skip reranking: top 3 scores {[f'{s:.2f}' for s in top_scores]} >= {SMART_SKIP_THRESHOLD}")
+                for chunk in chunks:
+                    chunk["rerank_score"] = chunk.get("dense_score", 0) or chunk.get("score", 0)
+                chunks.sort(key=lambda x: x.get("rerank_score", 0.0), reverse=True)
+                self._rerank_cache[cache_key] = chunks
+                return chunks
+
+            # Separate high-score chunks (skip individual reranking)
             high_score_chunks = []
             low_score_chunks = []
-            
             for chunk in chunks:
                 dense_score = chunk.get("dense_score", 0) or chunk.get("score", 0)
-                if dense_score >= high_score_threshold:
-                    chunk["rerank_score"] = dense_score  # Use dense score directly
+                if dense_score >= 0.85:
+                    chunk["rerank_score"] = dense_score
                     high_score_chunks.append(chunk)
                 else:
                     low_score_chunks.append(chunk)
-            
+
             log.info(f"⚡ Skip reranking for {len(high_score_chunks)} high-score chunks (>0.85)")
-            
-            # Optimization 2: Limit low-score chunks to max_rerank
+
+            # Limit and rerank remaining chunks
             chunks_to_rerank = low_score_chunks[:max_rerank]
-            
             if chunks_to_rerank:
-                # Create pairs of [query, chunk_content] for the reranker
                 pairs = [[query, chunk["content"]] for chunk in chunks_to_rerank]
-
-                # Predict the scores (batch processing)
                 scores = self.reranker.predict(pairs, show_progress_bar=False)
-
-                # Assign scores to chunks
                 for chunk, score in zip(chunks_to_rerank, scores):
                     chunk["rerank_score"] = float(score)
-                
                 log.info(f"Reranked {len(chunks_to_rerank)} chunks (skipped {len(chunks) - len(chunks_to_rerank) - len(high_score_chunks)})")
-            
-            # Combine high-score and reranked chunks
+
             all_chunks = high_score_chunks + chunks_to_rerank
-            
-            # Sort by rerank_score
             all_chunks.sort(key=lambda x: x.get("rerank_score", 0.0), reverse=True)
-            
-            # Cache the results
+
+            # Cache
             if len(self._rerank_cache) >= self._rerank_cache_max_size:
-                # Remove oldest entry (simple FIFO)
                 oldest_key = next(iter(self._rerank_cache))
                 del self._rerank_cache[oldest_key]
             self._rerank_cache[cache_key] = all_chunks
-
             return all_chunks
 
         except Exception as e:
             log.error(f"Error during chunk reranking: {e}")
-            # Return original chunks in case of an error
             return chunks
 
     def _detect_chart_request(self, query: str, answer: str) -> List[Dict[str, Any]]:
