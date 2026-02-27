@@ -975,6 +975,10 @@ const ChatBotPage = () => {
             message: currentQuery,
             conversation_id: conversationId,
             language: language,
+            conversation_history: messages
+              .filter(m => m.id !== '1')
+              .slice(-6)
+              .map(m => ({ role: m.role, content: m.content })),
             images: currentImages.map(img => ({
               base64: img.base64,
               mimeType: img.mimeType,
@@ -1031,6 +1035,10 @@ const ChatBotPage = () => {
           message: currentQuery,
           conversation_id: conversationId,
           language: language,
+          conversation_history: messages
+            .filter(m => m.id !== '1')
+            .slice(-6)
+            .map(m => ({ role: m.role, content: m.content })),
         })
       });
 

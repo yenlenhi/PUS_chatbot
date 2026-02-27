@@ -114,6 +114,18 @@ class AsyncRAGService:
             else:
                 log.info("[ASYNC] Skipping normalization step for faster response")
 
+            # Rewrite query using conversation history for context (fixes context loss)
+            current_history = self.rag_service.conversations.get(conversation_id, [])
+            if current_history:
+                rewritten_query = await self._run_in_executor(
+                    self.rag_service._rewrite_query_with_history,
+                    normalized_query,
+                    current_history,
+                )
+                if rewritten_query and rewritten_query != normalized_query:
+                    log.info(f"[ASYNC] Rewritten query: '{rewritten_query[:80]}'")
+                    normalized_query = rewritten_query
+
             # Get memory context (run in thread pool as it's sync)
             memory_context = ""
             try:
@@ -247,6 +259,16 @@ class AsyncRAGService:
             elif conversation_id not in self.rag_service.conversations:
                 self.rag_service.conversations[conversation_id] = []
 
+            # Populate conversation history from request if provided (fixes stateless problem)
+            if conversation_history and not self.rag_service.conversations[conversation_id]:
+                for message in conversation_history:
+                    if isinstance(message, dict) and "role" in message and "content" in message:
+                        if message["role"] in ["user", "assistant"]:
+                            self.rag_service.conversations[conversation_id].append(
+                                {"role": message["role"], "content": message["content"]}
+                            )
+                log.info(f"[ASYNC STREAM] Loaded {len(self.rag_service.conversations[conversation_id])} history messages")
+
             # Initial metadata
             yield {
                 "type": "metadata",
@@ -267,6 +289,18 @@ class AsyncRAGService:
                 log.info(f"[ASYNC STREAM] Normalized: '{query[:30]}' -> '{normalized_query[:30]}'")
             else:
                 log.info(f"[ASYNC STREAM] Skipping normalization (skip={skip_normalization}, enabled={ENABLE_GEMINI_NORMALIZATION})")
+
+            # Rewrite query using conversation history for context (fixes context loss)
+            current_history = self.rag_service.conversations.get(conversation_id, [])
+            if current_history:
+                rewritten_query = await self._run_in_executor(
+                    self.rag_service._rewrite_query_with_history,
+                    normalized_query,
+                    current_history,
+                )
+                if rewritten_query and rewritten_query != normalized_query:
+                    log.info(f"[ASYNC STREAM] Rewritten: '{normalized_query[:30]}' -> '{rewritten_query[:50]}'")
+                    normalized_query = rewritten_query
 
             # Get memory context
             memory_context = ""
