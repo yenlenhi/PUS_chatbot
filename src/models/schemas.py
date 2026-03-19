@@ -2,7 +2,7 @@
 Pydantic models for request/response schemas
 """
 
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
 
 
@@ -61,6 +61,28 @@ class FileAttachment(BaseModel):
     file_size: Optional[int] = Field(None, description="File size in bytes")
 
 
+class ChartData(BaseModel):
+    """Model for chart payloads in chat responses."""
+
+    type: str = Field(..., description="Chart type")
+    title: Optional[str] = Field(None, description="Chart title")
+    data: List[Dict[str, Any]] = Field(default_factory=list, description="Chart data")
+    xKey: Optional[str] = Field(None, description="X-axis key")
+    yKeys: List[str] = Field(default_factory=list, description="Y-axis keys")
+    labels: List[str] = Field(default_factory=list, description="Label set")
+    description: Optional[str] = Field(None, description="Chart description")
+
+
+class ChatImage(BaseModel):
+    """Model for images returned in chat responses."""
+
+    src: str = Field(..., description="Image URL or base64 string")
+    alt: Optional[str] = Field(None, description="Alt text")
+    caption: Optional[str] = Field(None, description="Image caption")
+    source_file: Optional[str] = Field(None, description="Source filename")
+    page_number: Optional[int] = Field(None, description="Source page number")
+
+
 class ChatResponse(BaseModel):
     """Response model for chat endpoint"""
 
@@ -73,6 +95,12 @@ class ChatResponse(BaseModel):
     )
     attachments: List[FileAttachment] = Field(
         default_factory=list, description="File attachments (forms, templates, etc.)"
+    )
+    chart_data: List[ChartData] = Field(
+        default_factory=list, description="Chart data for frontend visualizations"
+    )
+    images: List[ChatImage] = Field(
+        default_factory=list, description="Image payloads for frontend rendering"
     )
     confidence: float = Field(..., description="Confidence score")
     conversation_id: str = Field(..., description="Conversation ID")
@@ -115,7 +143,6 @@ class HealthResponse(BaseModel):
 
     status: str = Field(..., description="Service status")
     version: str = Field(..., description="API version")
-    ollama_status: str = Field(..., description="Ollama service status")
     database_status: str = Field(..., description="Database status")
 
 
@@ -197,4 +224,3 @@ class PaginatedAttachmentResponse(BaseModel):
     total: int = Field(..., description="Total number of attachments")
     page: int = Field(..., description="Current page number")
     size: int = Field(..., description="Page size")
-

@@ -7,8 +7,7 @@ the event loop and improve concurrency in FastAPI.
 
 import httpx
 import json
-import gzip
-from typing import Optional, List, Dict, Any, AsyncGenerator
+from typing import Optional, List, Dict, AsyncGenerator
 from config.settings import (
     GEMINI_API_KEY,
     GEMINI_API_URL,
@@ -109,7 +108,9 @@ Chỉ trả về câu hỏi đã chuẩn hóa, không giải thích:
                 if "parts" in content and content["parts"]:
                     normalized = content["parts"][0].get("text", "").strip()
                     if normalized:
-                        log.info(f"[ASYNC] Normalized: '{question[:30]}...' -> '{normalized[:30]}...'")
+                        log.info(
+                            f"[ASYNC] Normalized: '{question[:30]}...' -> '{normalized[:30]}...'"
+                        )
                         return normalized
 
         log.warning(f"Normalization failed (status={response.status_code})")
@@ -146,16 +147,20 @@ async def generate_response_async(
     data = {
         "contents": [{"parts": [{"text": prompt}]}],
         "generationConfig": {
-            "temperature": temperature if temperature is not None else GEMINI_TEMPERATURE,
+            "temperature": (
+                temperature if temperature is not None else GEMINI_TEMPERATURE
+            ),
             "maxOutputTokens": GEMINI_MAX_OUTPUT_TOKENS,
             "topP": 0.95,
             "topK": 40,
         },
-        # ALWAYS enable Google Search - Gemini will decide when to use it
-        "tools": [{"google_search": {}}],
     }
-    
-    log.info("[ASYNC] Google Search Grounding ALWAYS ENABLED (Gemini auto-decides)")
+
+    if enable_grounding:
+        data["tools"] = [{"google_search": {}}]
+        log.info("[ASYNC] Google Search Grounding ENABLED (real-time query)")
+    else:
+        log.info("[ASYNC] Google Search Grounding DISABLED (using internal documents)")
 
     try:
         client = await get_async_client()
@@ -179,7 +184,10 @@ async def generate_response_async(
                     if "parts" in content and content["parts"]:
                         partial_text = content["parts"][0].get("text", "").strip()
                         if partial_text:
-                            return partial_text + "\n\n[Câu trả lời đã bị cắt ngắn do giới hạn độ dài.]"
+                            return (
+                                partial_text
+                                + "\n\n[Câu trả lời đã bị cắt ngắn do giới hạn độ dài.]"
+                            )
 
                 if "parts" in content and content["parts"]:
                     generated_text = content["parts"][0].get("text", "").strip()
@@ -190,7 +198,9 @@ async def generate_response_async(
             log.warning(f"Gemini response format unexpected: {result}")
             return None
         else:
-            log.error(f"Gemini API error: {response.status_code} - {response.text[:200]}")
+            log.error(
+                f"Gemini API error: {response.status_code} - {response.text[:200]}"
+            )
             return None
 
     except Exception as e:
@@ -226,24 +236,36 @@ async def generate_response_stream_async(
     data = {
         "contents": [{"parts": [{"text": prompt}]}],
         "generationConfig": {
-            "temperature": temperature if temperature is not None else GEMINI_TEMPERATURE,
+            "temperature": (
+                temperature if temperature is not None else GEMINI_TEMPERATURE
+            ),
             "maxOutputTokens": GEMINI_MAX_OUTPUT_TOKENS,
             "topP": 0.95,
             "topK": 40,
         },
-        # ALWAYS enable Google Search - Gemini will decide when to use it
-        "tools": [{"google_search": {}}],
     }
-    
-    log.info("[ASYNC] Google Search Grounding ALWAYS ENABLED (Gemini auto-decides)")
+
+    if enable_grounding:
+        data["tools"] = [{"google_search": {}}]
+        log.info(
+            "[ASYNC] Google Search Grounding ENABLED for streaming (real-time query)"
+        )
+    else:
+        log.info(
+            "[ASYNC] Google Search Grounding DISABLED for streaming (using internal documents)"
+        )
 
     try:
         # Use streaming endpoint with alt=sse
-        stream_url = GEMINI_API_URL.replace(":generateContent", ":streamGenerateContent")
+        stream_url = GEMINI_API_URL.replace(
+            ":generateContent", ":streamGenerateContent"
+        )
 
         log.info("[ASYNC] Sending streaming request to Gemini API...")
 
-        async with httpx.AsyncClient(timeout=httpx.Timeout(180.0, connect=10.0)) as client:
+        async with httpx.AsyncClient(
+            timeout=httpx.Timeout(180.0, connect=10.0)
+        ) as client:
             async with client.stream(
                 "POST",
                 f"{stream_url}?key={GEMINI_API_KEY}&alt=sse",
@@ -258,15 +280,15 @@ async def generate_response_stream_async(
 
                     async for chunk in response.aiter_text():
                         buffer += chunk
-                        
+
                         # Process complete SSE events (lines ending with \n\n)
                         while "\n" in buffer:
                             line, buffer = buffer.split("\n", 1)
                             line = line.strip()
-                            
+
                             if not line:
                                 continue
-                            
+
                             # Handle SSE format "data: {...}"
                             json_str = line
                             if line.startswith("data: "):
@@ -276,8 +298,11 @@ async def generate_response_stream_async(
 
                             try:
                                 chunk_data = json.loads(json_str)
-                                
-                                if "candidates" in chunk_data and chunk_data["candidates"]:
+
+                                if (
+                                    "candidates" in chunk_data
+                                    and chunk_data["candidates"]
+                                ):
                                     candidate = chunk_data["candidates"][0]
                                     content = candidate.get("content", {})
 
@@ -288,7 +313,9 @@ async def generate_response_stream_async(
 
                                     finish_reason = candidate.get("finishReason", "")
                                     if finish_reason:
-                                        log.info(f"[ASYNC] Stream finished: {finish_reason}")
+                                        log.info(
+                                            f"[ASYNC] Stream finished: {finish_reason}"
+                                        )
                                         if finish_reason == "MAX_TOKENS":
                                             yield "\n\n[Câu trả lời đã bị cắt ngắn do giới hạn độ dài.]"
                                         return
@@ -336,12 +363,14 @@ async def generate_vision_response_async(
     # Build parts with images and text
     parts = []
     for img in images:
-        parts.append({
-            "inline_data": {
-                "mime_type": img.get("mime_type", "image/jpeg"),
-                "data": img.get("data", ""),
+        parts.append(
+            {
+                "inline_data": {
+                    "mime_type": img.get("mime_type", "image/jpeg"),
+                    "data": img.get("data", ""),
+                }
             }
-        })
+        )
     parts.append({"text": prompt})
 
     data = {
@@ -354,7 +383,9 @@ async def generate_vision_response_async(
 
     try:
         client = await get_async_client()
-        log.info(f"[ASYNC] Sending request to Gemini Vision API with {len(images)} images...")
+        log.info(
+            f"[ASYNC] Sending request to Gemini Vision API with {len(images)} images..."
+        )
 
         response = await client.post(
             f"{vision_api_url}?key={GEMINI_API_KEY}",
@@ -369,13 +400,17 @@ async def generate_vision_response_async(
                 if "parts" in content and content["parts"]:
                     generated_text = content["parts"][0].get("text", "").strip()
                     if generated_text:
-                        log.info("[ASYNC] Successfully received response from Gemini Vision.")
+                        log.info(
+                            "[ASYNC] Successfully received response from Gemini Vision."
+                        )
                         return generated_text
 
             log.warning(f"Gemini Vision response format unexpected: {result}")
             return None
         else:
-            log.error(f"Gemini Vision API error: {response.status_code} - {response.text[:200]}")
+            log.error(
+                f"Gemini Vision API error: {response.status_code} - {response.text[:200]}"
+            )
             return None
 
     except Exception as e:
@@ -397,7 +432,9 @@ class AsyncGeminiService:
     async def generate_response_stream(
         prompt: str, conversation_history: list = None, temperature: float = None
     ):
-        async for chunk in generate_response_stream_async(prompt, conversation_history, temperature):
+        async for chunk in generate_response_stream_async(
+            prompt, conversation_history, temperature
+        ):
             yield chunk
 
     @staticmethod

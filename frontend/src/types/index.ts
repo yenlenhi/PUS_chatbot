@@ -89,8 +89,11 @@ export interface ChatApiResponse {
   confidence: number;
   sources: string[];
   source_references: SourceReference[];
+  attachments?: FileAttachment[];
   conversation_id?: string;
   processing_time?: number;
   chart_data?: ChartData[]; // Charts from backend
   images?: ImageData[]; // Images from backend
+  error?: string;
+  detail?: string;
 }

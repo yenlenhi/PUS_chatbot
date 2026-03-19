@@ -90,12 +90,12 @@ const REQUIREMENTS = {
 export default function TuyenSinh() {
   return (
     <Layout>
-      {/* Hero Section - Green/Teal Theme (khác với gioi-thieu) */}
-      <section className="relative bg-gradient-to-br from-emerald-600 via-teal-700 to-cyan-800 text-white overflow-hidden">
+      {/* Hero Section - Unified Red-Navy Theme */}
+      <section className="relative bg-gradient-to-br from-red-800 via-red-900 to-[#1E3A5F] text-white overflow-hidden">
         {/* Background Decorations */}
         <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute -top-40 -right-40 w-80 h-80 bg-yellow-400/10 rounded-full blur-3xl"></div>
-          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-emerald-400/20 rounded-full blur-3xl"></div>
+          <div className="absolute -top-40 -right-40 w-80 h-80 bg-yellow-500/10 rounded-full blur-3xl"></div>
+          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-red-500/20 rounded-full blur-3xl"></div>
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-white/5 rounded-full blur-3xl"></div>
         </div>
 
@@ -119,21 +119,21 @@ export default function TuyenSinh() {
             <div className="flex flex-wrap justify-center gap-8 mb-10">
               <div className="text-center">
                 <div className="text-5xl font-black text-yellow-400">~800</div>
-                <div className="text-teal-200 text-sm font-medium">Chỉ tiêu dự kiến</div>
+                <div className="text-red-200 text-sm font-medium">Chỉ tiêu dự kiến</div>
               </div>
               <div className="text-center">
                 <div className="text-5xl font-black text-yellow-400">6</div>
-                <div className="text-teal-200 text-sm font-medium">Ngành đào tạo</div>
+                <div className="text-red-200 text-sm font-medium">Ngành đào tạo</div>
               </div>
               <div className="text-center">
                 <div className="text-5xl font-black text-yellow-400">3</div>
-                <div className="text-teal-200 text-sm font-medium">Phương thức xét tuyển</div>
+                <div className="text-red-200 text-sm font-medium">Phương thức xét tuyển</div>
               </div>
             </div>
 
             {/* CTA Buttons */}
             <div className="flex flex-wrap gap-4 justify-center">
-              <button className="group inline-flex items-center gap-2 px-8 py-4 bg-white text-teal-700 font-bold rounded-full hover:bg-yellow-400 hover:text-teal-800 transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-1">
+              <button className="group inline-flex items-center gap-2 px-8 py-4 bg-white text-red-700 font-bold rounded-full hover:bg-yellow-400 hover:text-red-800 transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-1">
                 <FileCheck className="w-5 h-5" />
                 Đăng ký xét tuyển
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
@@ -158,13 +158,13 @@ export default function TuyenSinh() {
         <div className="container mx-auto px-4">
           {/* Section Header */}
           <div className="text-center mb-16">
-            <div className="inline-block px-6 py-2 rounded-full bg-emerald-100 border border-emerald-200 shadow-sm mb-4">
-              <span className="text-emerald-800 text-sm font-bold tracking-widest uppercase">Phương thức xét tuyển</span>
+            <div className="inline-block px-6 py-2 rounded-full bg-red-100 border border-red-200 shadow-sm mb-4">
+              <span className="text-red-800 text-sm font-bold tracking-widest uppercase">Phương thức xét tuyển</span>
             </div>
             <h2 className="text-4xl md:text-5xl font-black text-gray-900 mb-4">
-              03 Phương Thức <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-600">Xét Tuyển</span>
+              03 Phương Thức <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-amber-600">Xét Tuyển</span>
             </h2>
-            <div className="w-24 h-1 bg-gradient-to-r from-emerald-600 to-teal-500 mx-auto rounded-full"></div>
+            <div className="w-24 h-1 bg-gradient-to-r from-red-600 to-amber-500 mx-auto rounded-full"></div>
           </div>
 
           {/* Methods Cards */}
@@ -190,7 +190,7 @@ export default function TuyenSinh() {
                   <div className="space-y-2 pt-4 border-t border-gray-100">
                     {method.details.map((detail, idx) => (
                       <div key={idx} className="flex items-center gap-2 text-sm text-gray-600">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                        <CheckCircle2 className="w-4 h-4 text-red-500 flex-shrink-0" />
                         <span>{detail}</span>
                       </div>
                     ))}
@@ -213,34 +213,34 @@ export default function TuyenSinh() {
             <h2 className="text-4xl md:text-5xl font-black text-gray-900 mb-4">
               Các Mốc <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-600 to-cyan-600">Thời Gian</span>
             </h2>
-            <div className="w-24 h-1 bg-gradient-to-r from-teal-600 to-cyan-500 mx-auto rounded-full"></div>
+            <div className="w-24 h-1 bg-gradient-to-r from-red-600 to-amber-500 mx-auto rounded-full"></div>
           </div>
 
           {/* Timeline Stepper */}
           <div className="relative">
             {/* Connecting Line */}
-            <div className="absolute top-16 left-0 right-0 h-1 bg-gradient-to-r from-emerald-200 via-teal-300 to-cyan-200 rounded-full hidden lg:block"></div>
+            <div className="absolute top-16 left-0 right-0 h-1 bg-gradient-to-r from-red-200 via-amber-300 to-yellow-200 rounded-full hidden lg:block"></div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
               {IMPORTANT_DATES.map((item, index) => (
                 <div key={index} className="group relative">
                   {/* Connector Dot */}
-                  <div className="hidden lg:flex absolute top-14 left-1/2 -translate-x-1/2 w-8 h-8 bg-white rounded-full border-4 border-teal-500 group-hover:border-cyan-500 transition-all duration-300 z-20 shadow-lg items-center justify-center">
-                    <div className="w-3 h-3 rounded-full bg-teal-500 group-hover:bg-cyan-500 animate-pulse"></div>
+                  <div className="hidden lg:flex absolute top-14 left-1/2 -translate-x-1/2 w-8 h-8 bg-white rounded-full border-4 border-red-500 group-hover:border-amber-500 transition-all duration-300 z-20 shadow-lg items-center justify-center">
+                    <div className="w-3 h-3 rounded-full bg-red-500 group-hover:bg-amber-500 animate-pulse"></div>
                   </div>
 
                   {/* Card */}
-                  <div className="mt-4 lg:mt-24 bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 group-hover:border-teal-200 group-hover:-translate-y-2">
+                  <div className="mt-4 lg:mt-24 bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 group-hover:border-red-200 group-hover:-translate-y-2">
                     {/* Step Number */}
                     <div className="flex items-center justify-between mb-4">
-                      <div className="w-10 h-10 bg-gradient-to-br from-teal-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-md">
+                      <div className="w-10 h-10 bg-gradient-to-br from-red-600 to-amber-600 rounded-xl flex items-center justify-center shadow-md">
                         <span className="text-white font-bold">{index + 1}</span>
                       </div>
                       <Calendar className="w-5 h-5 text-gray-400" />
                     </div>
 
                     {/* Date */}
-                    <div className="text-lg font-black text-teal-600 mb-2">
+                    <div className="text-lg font-black text-red-600 mb-2">
                       {item.date}
                     </div>
 
@@ -269,32 +269,32 @@ export default function TuyenSinh() {
         <div className="container mx-auto px-4">
           {/* Section Header */}
           <div className="text-center mb-16">
-            <div className="inline-block px-6 py-2 rounded-full bg-cyan-100 border border-cyan-200 shadow-sm mb-4">
-              <span className="text-cyan-800 text-sm font-bold tracking-widest uppercase">Ngành đào tạo</span>
+            <div className="inline-block px-6 py-2 rounded-full bg-red-100 border border-red-200 shadow-sm mb-4">
+              <span className="text-red-800 text-sm font-bold tracking-widest uppercase">Ngành đào tạo</span>
             </div>
             <h2 className="text-4xl md:text-5xl font-black text-gray-900 mb-4">
-              06 Ngành <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-600 to-blue-600">Đào Tạo</span>
+              06 Ngành <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-amber-600">Đào Tạo</span>
             </h2>
-            <div className="w-24 h-1 bg-gradient-to-r from-cyan-600 to-blue-500 mx-auto rounded-full"></div>
+            <div className="w-24 h-1 bg-gradient-to-r from-red-600 to-amber-500 mx-auto rounded-full"></div>
           </div>
 
           {/* Program Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {ADMISSION_PROGRAMS.map((program, index) => (
-              <div key={index} className="group bg-gradient-to-br from-white to-gray-50 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-cyan-200 hover:-translate-y-2">
+              <div key={index} className="group bg-gradient-to-br from-white to-gray-50 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-red-200 hover:-translate-y-2">
                 {/* Header */}
                 <div className="flex items-start justify-between mb-4">
-                  <div className="w-14 h-14 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-cyan-500/30 group-hover:scale-110 transition-transform">
+                  <div className="w-14 h-14 bg-gradient-to-br from-red-600 to-red-700 rounded-2xl flex items-center justify-center shadow-lg shadow-red-500/30 group-hover:scale-110 transition-transform">
                     <GraduationCap className="w-7 h-7 text-white" />
                   </div>
                   <div className="text-right">
                     <div className="text-xs font-bold text-gray-400 uppercase">Mã ngành</div>
-                    <div className="text-lg font-black text-cyan-600">{program.code}</div>
+                    <div className="text-lg font-black text-red-600">{program.code}</div>
                   </div>
                 </div>
 
                 {/* Name */}
-                <h3 className="text-xl font-bold text-gray-900 mb-4 group-hover:text-cyan-700 transition-colors">
+                <h3 className="text-xl font-bold text-gray-900 mb-4 group-hover:text-red-700 transition-colors">
                   {program.name}
                 </h3>
 
@@ -315,7 +315,7 @@ export default function TuyenSinh() {
                 </div>
 
                 {/* CTA */}
-                <button className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold rounded-xl hover:from-cyan-600 hover:to-blue-700 transition-all duration-300 group-hover:shadow-lg">
+                <button className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white font-bold rounded-xl hover:from-red-700 hover:to-red-800 transition-all duration-300 group-hover:shadow-lg">
                   Xem chi tiết
                   <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </button>
@@ -326,25 +326,25 @@ export default function TuyenSinh() {
       </section>
 
       {/* Điều kiện xét tuyển */}
-      <section className="py-20 bg-gradient-to-br from-teal-50 to-cyan-50 border-t border-teal-100">
+      <section className="py-20 bg-gradient-to-br from-red-50 to-amber-50 border-t border-red-100">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
             {/* Điều kiện chung */}
-            <div className="bg-white rounded-3xl p-8 shadow-xl border border-teal-100">
+            <div className="bg-white rounded-3xl p-8 shadow-xl border border-red-100">
               <div className="flex items-center gap-4 mb-6">
-                <div className="w-14 h-14 bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl flex items-center justify-center shadow-lg">
+                <div className="w-14 h-14 bg-gradient-to-br from-red-600 to-red-700 rounded-2xl flex items-center justify-center shadow-lg">
                   <CheckCircle2 className="w-7 h-7 text-white" />
                 </div>
                 <div>
-                  <div className="text-xs font-bold text-teal-600 uppercase tracking-wider">Bắt buộc</div>
+                  <div className="text-xs font-bold text-red-600 uppercase tracking-wider">Bắt buộc</div>
                   <h3 className="text-2xl font-black text-gray-900">Điều kiện chung</h3>
                 </div>
               </div>
               <div className="space-y-4">
                 {REQUIREMENTS.general.map((req, idx) => (
-                  <div key={idx} className="flex items-start gap-4 p-4 bg-teal-50 rounded-xl border border-teal-100">
+                  <div key={idx} className="flex items-start gap-4 p-4 bg-red-50 rounded-xl border border-red-100">
                     <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm flex-shrink-0">
-                      <req.icon className="w-5 h-5 text-teal-600" />
+                      <req.icon className="w-5 h-5 text-red-600" />
                     </div>
                     <p className="text-gray-700 font-medium pt-2">{req.text}</p>
                   </div>
@@ -353,21 +353,21 @@ export default function TuyenSinh() {
             </div>
 
             {/* Điều kiện riêng */}
-            <div className="bg-white rounded-3xl p-8 shadow-xl border border-cyan-100">
+            <div className="bg-white rounded-3xl p-8 shadow-xl border border-amber-100">
               <div className="flex items-center gap-4 mb-6">
-                <div className="w-14 h-14 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
+                <div className="w-14 h-14 bg-gradient-to-br from-amber-500 to-amber-600 rounded-2xl flex items-center justify-center shadow-lg">
                   <FileText className="w-7 h-7 text-white" />
                 </div>
                 <div>
-                  <div className="text-xs font-bold text-cyan-600 uppercase tracking-wider">Đặc thù</div>
+                  <div className="text-xs font-bold text-amber-600 uppercase tracking-wider">Đặc thù</div>
                   <h3 className="text-2xl font-black text-gray-900">Điều kiện riêng</h3>
                 </div>
               </div>
               <div className="space-y-4">
                 {REQUIREMENTS.specific.map((req, idx) => (
-                  <div key={idx} className="flex items-start gap-4 p-4 bg-cyan-50 rounded-xl border border-cyan-100">
+                  <div key={idx} className="flex items-start gap-4 p-4 bg-amber-50 rounded-xl border border-amber-100">
                     <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm flex-shrink-0">
-                      <req.icon className="w-5 h-5 text-cyan-600" />
+                      <req.icon className="w-5 h-5 text-amber-600" />
                     </div>
                     <p className="text-gray-700 font-medium pt-2">{req.text}</p>
                   </div>
@@ -383,13 +383,13 @@ export default function TuyenSinh() {
         <div className="container mx-auto px-4">
           {/* Section Header */}
           <div className="text-center mb-16">
-            <div className="inline-block px-6 py-2 rounded-full bg-indigo-100 border border-indigo-200 shadow-sm mb-4">
-              <span className="text-indigo-800 text-sm font-bold tracking-widest uppercase">Quy trình</span>
+            <div className="inline-block px-6 py-2 rounded-full bg-red-100 border border-red-200 shadow-sm mb-4">
+              <span className="text-red-800 text-sm font-bold tracking-widest uppercase">Quy trình</span>
             </div>
             <h2 className="text-4xl md:text-5xl font-black text-gray-900 mb-4">
-              04 Bước <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">Xét Tuyển</span>
+              04 Bước <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-amber-600">Xét Tuyển</span>
             </h2>
-            <div className="w-24 h-1 bg-gradient-to-r from-indigo-600 to-purple-500 mx-auto rounded-full"></div>
+            <div className="w-24 h-1 bg-gradient-to-r from-red-600 to-amber-500 mx-auto rounded-full"></div>
           </div>
 
           {/* Process Steps */}
@@ -399,19 +399,19 @@ export default function TuyenSinh() {
                 {/* Arrow connector (hidden on last item) */}
                 {item.step < 4 && (
                   <div className="hidden lg:block absolute top-1/2 -right-3 transform -translate-y-1/2 z-10">
-                    <ChevronRight className="w-6 h-6 text-indigo-300" />
+                    <ChevronRight className="w-6 h-6 text-red-300" />
                   </div>
                 )}
 
-                <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl p-6 border border-indigo-100 hover:shadow-xl transition-all duration-300 hover:-translate-y-2 h-full">
+                <div className="bg-gradient-to-br from-red-50 to-amber-50 rounded-2xl p-6 border border-red-100 hover:shadow-xl transition-all duration-300 hover:-translate-y-2 h-full">
                   {/* Step Number */}
-                  <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-500/30 mb-4 group-hover:scale-110 transition-transform">
+                  <div className="w-12 h-12 bg-gradient-to-br from-red-600 to-red-700 rounded-2xl flex items-center justify-center shadow-lg shadow-red-500/30 mb-4 group-hover:scale-110 transition-transform">
                     <span className="text-xl font-black text-white">{item.step}</span>
                   </div>
 
                   {/* Icon */}
                   <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center mb-4 shadow-sm">
-                    <item.icon className="w-6 h-6 text-indigo-600" />
+                    <item.icon className="w-6 h-6 text-red-600" />
                   </div>
 
                   {/* Content */}
@@ -425,13 +425,13 @@ export default function TuyenSinh() {
       </section>
 
       {/* Contact & CTA Section */}
-      <section className="py-16 bg-gradient-to-r from-emerald-700 via-teal-700 to-cyan-800 text-white">
+      <section className="py-16 bg-gradient-to-r from-red-800 via-red-900 to-[#1E3A5F] text-white">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             {/* Left - Contact Info */}
             <div>
               <h2 className="text-3xl font-bold mb-6">Hỗ trợ tuyển sinh</h2>
-              <p className="text-teal-200 mb-8">
+              <p className="text-red-200 mb-8">
                 Liên hệ ngay với chúng tôi để được tư vấn chi tiết về tuyển sinh năm 2025
               </p>
 
@@ -441,7 +441,7 @@ export default function TuyenSinh() {
                     <Phone className="w-6 h-6 text-white" />
                   </div>
                   <div>
-                    <div className="text-teal-200 text-sm">Hotline</div>
+                    <div className="text-red-200 text-sm">Hotline</div>
                     <div className="font-bold text-lg">{SCHOOL_INFO.contact.phone}</div>
                   </div>
                 </div>
@@ -451,7 +451,7 @@ export default function TuyenSinh() {
                     <Mail className="w-6 h-6 text-white" />
                   </div>
                   <div>
-                    <div className="text-teal-200 text-sm">Email</div>
+                    <div className="text-red-200 text-sm">Email</div>
                     <div className="font-bold text-lg">{SCHOOL_INFO.contact.email}</div>
                   </div>
                 </div>
@@ -461,12 +461,12 @@ export default function TuyenSinh() {
             {/* Right - CTA */}
             <div className="bg-white/10 backdrop-blur-sm rounded-3xl p-8 border border-white/20">
               <h3 className="text-2xl font-bold mb-4">Sẵn sàng đăng ký?</h3>
-              <p className="text-teal-200 mb-6">
+              <p className="text-red-200 mb-6">
                 Đừng bỏ lỡ cơ hội trở thành sinh viên của Trường Đại học An ninh Nhân dân
               </p>
 
               <div className="space-y-3">
-                <button className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-white text-teal-700 font-bold rounded-xl hover:bg-yellow-400 hover:text-teal-800 transition-all duration-300 shadow-lg">
+                <button className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-white text-red-700 font-bold rounded-xl hover:bg-yellow-400 hover:text-red-800 transition-all duration-300 shadow-lg">
                   <FileCheck className="w-5 h-5" />
                   Đăng ký xét tuyển online
                 </button>

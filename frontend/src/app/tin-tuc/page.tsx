@@ -111,12 +111,12 @@ export default function TinTucPage() {
   if (loading) {
     return (
       <Layout>
-        <div className="min-h-screen bg-gradient-to-br from-rose-50 to-pink-50 flex justify-center items-center">
+        <div className="min-h-screen bg-gradient-to-br from-red-50 to-amber-50 flex justify-center items-center">
           <div className="text-center">
-            <div className="w-20 h-20 bg-gradient-to-br from-rose-500 to-pink-600 rounded-2xl flex items-center justify-center mx-auto mb-6 animate-pulse">
+            <div className="w-20 h-20 bg-gradient-to-br from-red-600 to-red-700 rounded-2xl flex items-center justify-center mx-auto mb-6 animate-pulse">
               <Newspaper className="w-10 h-10 text-white" />
             </div>
-            <Loader2 className="w-8 h-8 text-rose-600 animate-spin mx-auto mb-4" />
+            <Loader2 className="w-8 h-8 text-red-600 animate-spin mx-auto mb-4" />
             <p className="text-gray-600 font-medium">Đang cập nhật tin tức mới nhất...</p>
           </div>
         </div>
@@ -126,12 +126,12 @@ export default function TinTucPage() {
 
   return (
     <Layout>
-      {/* Hero Section - Rose/Pink Theme */}
-      <section className="relative bg-gradient-to-br from-rose-600 via-pink-700 to-fuchsia-800 text-white overflow-hidden">
+      {/* Hero Section - Unified Red-Navy Theme */}
+      <section className="relative bg-gradient-to-br from-red-800 via-red-900 to-[#1E3A5F] text-white overflow-hidden">
         {/* Background Decorations */}
         <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute -top-40 -right-40 w-80 h-80 bg-pink-400/10 rounded-full blur-3xl"></div>
-          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-rose-400/20 rounded-full blur-3xl"></div>
+          <div className="absolute -top-40 -right-40 w-80 h-80 bg-yellow-500/10 rounded-full blur-3xl"></div>
+          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-red-500/20 rounded-full blur-3xl"></div>
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-white/5 rounded-full blur-3xl"></div>
         </div>
 
@@ -139,20 +139,20 @@ export default function TinTucPage() {
           <div className="max-w-4xl mx-auto text-center">
             {/* Badge */}
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full mb-6">
-              <Sparkles className="w-4 h-4 text-pink-300" />
-              <span className="text-sm font-bold text-pink-200 uppercase tracking-wider">Cập nhật liên tục</span>
+              <Sparkles className="w-4 h-4 text-yellow-400" />
+              <span className="text-sm font-bold text-yellow-400 uppercase tracking-wider">Cập nhật liên tục</span>
             </div>
 
             {/* Title */}
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-black mb-6 leading-tight">
               Tin Tức &
-              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-pink-300 to-white">
+              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-yellow-200">
                 Sự Kiện
               </span>
             </h1>
 
             {/* Subtitle */}
-            <p className="text-lg md:text-xl text-rose-100 max-w-2xl mx-auto leading-relaxed">
+            <p className="text-lg md:text-xl text-red-100 max-w-2xl mx-auto leading-relaxed">
               Cập nhật những tin tức mới nhất về hoạt động đào tạo, nghiên cứu khoa học
               và các sự kiện của Trường Đại học An ninh Nhân dân
             </p>
@@ -169,7 +169,7 @@ export default function TinTucPage() {
           <div className="container mx-auto px-4">
             {/* Section Header */}
             <div className="flex items-center gap-3 mb-8">
-              <div className="w-10 h-10 bg-gradient-to-br from-rose-500 to-pink-600 rounded-xl flex items-center justify-center">
+              <div className="w-10 h-10 bg-gradient-to-br from-red-600 to-red-700 rounded-xl flex items-center justify-center">
                 <TrendingUp className="w-5 h-5 text-white" />
               </div>
               <h2 className="text-2xl font-bold text-gray-900">Tin nổi bật</h2>
@@ -189,7 +189,7 @@ export default function TinTucPage() {
                   <span className={`inline-block bg-gradient-to-r ${getCategoryColor(featuredNews[0].category)} px-4 py-1.5 rounded-full text-xs font-bold mb-4 shadow-lg`}>
                     {featuredNews[0].category}
                   </span>
-                  <h3 className="text-2xl font-bold mb-3 group-hover:text-pink-300 transition-colors">
+                  <h3 className="text-2xl font-bold mb-3 group-hover:text-yellow-400 transition-colors">
                     {featuredNews[0].url ? (
                       <a href={featuredNews[0].url} target="_blank" rel="noopener noreferrer">{featuredNews[0].title}</a>
                     ) : featuredNews[0].title}
@@ -224,7 +224,7 @@ export default function TinTucPage() {
                       <span className={`inline-block w-fit bg-gradient-to-r ${getCategoryColor(item.category)} px-3 py-1 rounded-full text-xs font-bold mb-2`}>
                         {item.category}
                       </span>
-                      <h3 className="text-sm font-bold group-hover:text-pink-300 transition-colors line-clamp-2">
+                      <h3 className="text-sm font-bold group-hover:text-yellow-400 transition-colors line-clamp-2">
                         {item.url ? (
                           <a href={item.url} target="_blank" rel="noopener noreferrer">{item.title}</a>
                         ) : item.title}
@@ -258,7 +258,7 @@ export default function TinTucPage() {
                         setSearchQuery(e.target.value);
                         setCurrentPage(1);
                       }}
-                      className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-rose-500 focus:border-transparent transition-all"
+                      className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
                     />
                   </div>
 
@@ -271,7 +271,7 @@ export default function TinTucPage() {
                         setSelectedCategory(e.target.value);
                         setCurrentPage(1);
                       }}
-                      className="px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-rose-500 focus:border-transparent bg-white font-medium"
+                      className="px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent bg-white font-medium"
                     >
                       {CATEGORIES.map((cat) => (
                         <option key={cat.value} value={cat.value}>
@@ -285,9 +285,9 @@ export default function TinTucPage() {
 
               {/* Results count */}
               <div className="mb-6 flex items-center gap-2">
-                <Newspaper className="w-5 h-5 text-rose-600" />
+                <Newspaper className="w-5 h-5 text-red-600" />
                 <span className="text-gray-600">
-                  Tìm thấy <span className="font-bold text-rose-600">{filteredNews.length}</span> bài viết
+                  Tìm thấy <span className="font-bold text-red-600">{filteredNews.length}</span> bài viết
                 </span>
               </div>
 
@@ -319,7 +319,7 @@ export default function TinTucPage() {
                         </span>
                       </div>
 
-                      <h3 className="font-bold text-gray-900 mb-2 group-hover:text-rose-600 transition-colors line-clamp-2">
+                      <h3 className="font-bold text-gray-900 mb-2 group-hover:text-red-600 transition-colors line-clamp-2">
                         {item.url ? (
                           <a href={item.url} target="_blank" rel="noopener noreferrer">{item.title}</a>
                         ) : item.title}
@@ -334,7 +334,7 @@ export default function TinTucPage() {
                           href={item.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center text-rose-600 hover:text-rose-700 font-medium text-sm group/btn"
+                          className="inline-flex items-center text-red-600 hover:text-red-700 font-medium text-sm group/btn"
                         >
                           Đọc tiếp
                           <ArrowRight className="w-4 h-4 ml-1 group-hover/btn:translate-x-1 transition-transform" />
@@ -351,7 +351,7 @@ export default function TinTucPage() {
                   <button
                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
-                    className="p-3 rounded-xl bg-white border border-gray-200 hover:bg-rose-50 hover:border-rose-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+                    className="p-3 rounded-xl bg-white border border-gray-200 hover:bg-red-50 hover:border-red-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
                   >
                     <ChevronLeft className="w-5 h-5" />
                   </button>
@@ -372,8 +372,8 @@ export default function TinTucPage() {
                         key={page}
                         onClick={() => setCurrentPage(page)}
                         className={`w-12 h-12 rounded-xl font-bold transition-all ${currentPage === page
-                          ? 'bg-gradient-to-r from-rose-500 to-pink-600 text-white shadow-lg'
-                          : 'bg-white border border-gray-200 hover:bg-rose-50 hover:border-rose-300 shadow-sm'
+                          ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg'
+                          : 'bg-white border border-gray-200 hover:bg-red-50 hover:border-red-300 shadow-sm'
                           }`}
                       >
                         {page}
@@ -384,7 +384,7 @@ export default function TinTucPage() {
                   <button
                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                     disabled={currentPage === totalPages}
-                    className="p-3 rounded-xl bg-white border border-gray-200 hover:bg-rose-50 hover:border-rose-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+                    className="p-3 rounded-xl bg-white border border-gray-200 hover:bg-red-50 hover:border-red-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
                   >
                     <ChevronRight className="w-5 h-5" />
                   </button>
@@ -397,7 +397,7 @@ export default function TinTucPage() {
               {/* Categories */}
               <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
                 <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-                  <Tag className="w-5 h-5 text-rose-600" />
+                  <Tag className="w-5 h-5 text-red-600" />
                   Danh mục
                 </h3>
                 <div className="space-y-2">
@@ -409,8 +409,8 @@ export default function TinTucPage() {
                         setCurrentPage(1);
                       }}
                       className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition-all ${selectedCategory === cat.value
-                        ? 'bg-gradient-to-r from-rose-500 to-pink-600 text-white shadow-lg'
-                        : 'bg-gray-50 hover:bg-rose-50 text-gray-700 hover:text-rose-600'
+                        ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg'
+                        : 'bg-gray-50 hover:bg-red-50 text-gray-700 hover:text-red-600'
                         }`}
                     >
                       <span>{cat.name}</span>
@@ -422,7 +422,7 @@ export default function TinTucPage() {
               {/* Most Viewed */}
               <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
                 <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-                  <Eye className="w-5 h-5 text-rose-600" />
+                  <Eye className="w-5 h-5 text-red-600" />
                   Xem nhiều nhất
                 </h3>
                 <div className="space-y-4">
@@ -439,7 +439,7 @@ export default function TinTucPage() {
                         </div>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h4 className="text-sm font-medium text-gray-900 group-hover:text-rose-600 transition-colors line-clamp-2">
+                        <h4 className="text-sm font-medium text-gray-900 group-hover:text-red-600 transition-colors line-clamp-2">
                           {item.url ? (
                             <a href={item.url} target="_blank" rel="noopener noreferrer">{item.title}</a>
                           ) : item.title}
@@ -455,18 +455,18 @@ export default function TinTucPage() {
               </div>
 
               {/* CTA - Chatbot */}
-              <div className="bg-gradient-to-br from-rose-600 via-pink-600 to-fuchsia-700 rounded-2xl p-6 text-white shadow-xl">
+              <div className="bg-gradient-to-br from-red-800 via-red-900 to-[#1E3A5F] rounded-2xl p-6 text-white shadow-xl">
                 <div className="text-center">
                   <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mx-auto mb-4">
                     <MessageCircle className="w-8 h-8 text-white" />
                   </div>
                   <h3 className="font-bold text-xl mb-2">Cần hỗ trợ?</h3>
-                  <p className="text-pink-100 text-sm mb-5">
+                  <p className="text-red-100 text-sm mb-5">
                     Chatbot AI sẵn sàng giải đáp thắc mắc 24/7
                   </p>
                   <Link
                     href="/chat-bot"
-                    className="inline-flex items-center gap-2 bg-white text-rose-600 hover:bg-pink-100 font-bold py-3 px-6 rounded-xl transition-all shadow-lg hover:shadow-xl"
+                    className="inline-flex items-center gap-2 bg-white text-red-600 hover:bg-yellow-400 hover:text-red-800 font-bold py-3 px-6 rounded-xl transition-all shadow-lg hover:shadow-xl"
                   >
                     <MessageCircle className="w-5 h-5" />
                     Chat ngay

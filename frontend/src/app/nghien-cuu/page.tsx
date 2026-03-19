@@ -94,12 +94,12 @@ const RESEARCH_FIELDS = [
 export default function NghienCuu() {
   return (
     <Layout>
-      {/* Hero Section - Purple/Violet Theme */}
-      <section className="relative bg-gradient-to-br from-violet-700 via-purple-800 to-indigo-900 text-white overflow-hidden">
+      {/* Hero Section - Unified Red-Navy Theme */}
+      <section className="relative bg-gradient-to-br from-red-800 via-red-900 to-[#1E3A5F] text-white overflow-hidden">
         {/* Background Decorations */}
         <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute -top-40 -right-40 w-80 h-80 bg-pink-400/10 rounded-full blur-3xl"></div>
-          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-violet-400/20 rounded-full blur-3xl"></div>
+          <div className="absolute -top-40 -right-40 w-80 h-80 bg-yellow-500/10 rounded-full blur-3xl"></div>
+          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-red-500/20 rounded-full blur-3xl"></div>
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-white/5 rounded-full blur-3xl"></div>
           {/* Animated grid background */}
           <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxjaXJjbGUgY3g9IjIwIiBjeT0iMjAiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4xKSIvPjwvZz48L3N2Zz4=')] opacity-30"></div>
@@ -109,20 +109,20 @@ export default function NghienCuu() {
           <div className="max-w-4xl mx-auto text-center">
             {/* Badge */}
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full mb-6">
-              <FlaskConical className="w-4 h-4 text-pink-400" />
-              <span className="text-sm font-bold text-pink-300 uppercase tracking-wider">Nghiên cứu & Phát triển</span>
+              <FlaskConical className="w-4 h-4 text-yellow-400" />
+              <span className="text-sm font-bold text-yellow-400 uppercase tracking-wider">Nghiên cứu & Phát triển</span>
             </div>
 
             {/* Title */}
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-black mb-6 leading-tight">
               Hệ Thống AI Chatbot
-              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-violet-300">
+              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-yellow-200">
                 Hỗ Trợ Tuyển Sinh
               </span>
             </h1>
 
             {/* Subtitle */}
-            <p className="text-lg md:text-xl text-purple-200 max-w-2xl mx-auto leading-relaxed mb-10">
+            <p className="text-lg md:text-xl text-red-100 max-w-2xl mx-auto leading-relaxed mb-10">
               Ứng dụng công nghệ RAG (Retrieval-Augmented Generation) và mô hình ngôn ngữ lớn (LLM)
               để tự động hóa và nâng cao chất lượng tư vấn tuyển sinh
             </p>
@@ -130,16 +130,16 @@ export default function NghienCuu() {
             {/* Stats */}
             <div className="flex flex-wrap justify-center gap-8 mb-10">
               <div className="text-center">
-                <div className="text-5xl font-black text-pink-400">v2.0</div>
-                <div className="text-purple-300 text-sm font-medium">Phiên bản</div>
+                <div className="text-5xl font-black text-yellow-400">v2.0</div>
+                <div className="text-red-200 text-sm font-medium">Phiên bản</div>
               </div>
               <div className="text-center">
-                <div className="text-5xl font-black text-pink-400">1000+</div>
-                <div className="text-purple-300 text-sm font-medium">Trang tài liệu</div>
+                <div className="text-5xl font-black text-yellow-400">1000+</div>
+                <div className="text-red-200 text-sm font-medium">Trang tài liệu</div>
               </div>
               <div className="text-center">
-                <div className="text-5xl font-black text-pink-400">95%+</div>
-                <div className="text-purple-300 text-sm font-medium">Độ chính xác</div>
+                <div className="text-5xl font-black text-yellow-400">95%+</div>
+                <div className="text-red-200 text-sm font-medium">Độ chính xác</div>
               </div>
             </div>
 
@@ -147,7 +147,7 @@ export default function NghienCuu() {
             <div className="flex flex-wrap gap-4 justify-center">
               <Link
                 href="/chat-bot"
-                className="group inline-flex items-center gap-2 px-8 py-4 bg-white text-purple-700 font-bold rounded-full hover:bg-pink-400 hover:text-white transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-1"
+                className="group inline-flex items-center gap-2 px-8 py-4 bg-white text-red-700 font-bold rounded-full hover:bg-yellow-400 hover:text-red-800 transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-1"
               >
                 <MessageSquare className="w-5 h-5" />
                 Trải nghiệm ngay
@@ -166,13 +166,13 @@ export default function NghienCuu() {
         <div className="container mx-auto px-4">
           {/* Section Header */}
           <div className="text-center mb-16">
-            <div className="inline-block px-6 py-2 rounded-full bg-violet-100 border border-violet-200 shadow-sm mb-4">
-              <span className="text-violet-800 text-sm font-bold tracking-widest uppercase">Tính năng</span>
+            <div className="inline-block px-6 py-2 rounded-full bg-red-100 border border-red-200 shadow-sm mb-4">
+              <span className="text-red-800 text-sm font-bold tracking-widest uppercase">Tính năng</span>
             </div>
             <h2 className="text-4xl md:text-5xl font-black text-gray-900 mb-4">
-              Công Nghệ <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-600 to-purple-600">Tiên Tiến</span>
+              Công Nghệ <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-amber-600">Tiên Tiến</span>
             </h2>
-            <div className="w-24 h-1 bg-gradient-to-r from-violet-600 to-purple-500 mx-auto rounded-full"></div>
+            <div className="w-24 h-1 bg-gradient-to-r from-red-600 to-amber-500 mx-auto rounded-full"></div>
           </div>
 
           {/* Feature Cards */}
@@ -202,9 +202,9 @@ export default function NghienCuu() {
               <span className="text-gray-800 text-sm font-bold tracking-widest uppercase">Hướng dẫn</span>
             </div>
             <h2 className="text-4xl md:text-5xl font-black text-gray-900 mb-4">
-              Cách <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600">Sử Dụng</span>
+              Cách <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-amber-600">Sử Dụng</span>
             </h2>
-            <div className="w-24 h-1 bg-gradient-to-r from-purple-600 to-pink-500 mx-auto rounded-full"></div>
+            <div className="w-24 h-1 bg-gradient-to-r from-red-600 to-amber-500 mx-auto rounded-full"></div>
           </div>
 
           {/* Steps */}
@@ -214,13 +214,13 @@ export default function NghienCuu() {
                 {/* Arrow connector */}
                 {item.step < 4 && (
                   <div className="hidden lg:block absolute top-1/2 -right-3 transform -translate-y-1/2 z-10">
-                    <ChevronRight className="w-6 h-6 text-purple-300" />
+                    <ChevronRight className="w-6 h-6 text-red-300" />
                   </div>
                 )}
 
                 <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 hover:-translate-y-2 h-full">
                   {/* Step Number */}
-                  <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-violet-600 rounded-2xl flex items-center justify-center shadow-lg shadow-purple-500/30 mb-4 group-hover:scale-110 transition-transform">
+                  <div className="w-14 h-14 bg-gradient-to-br from-red-600 to-red-700 rounded-2xl flex items-center justify-center shadow-lg shadow-red-500/30 mb-4 group-hover:scale-110 transition-transform">
                     <span className="text-2xl font-black text-white">{item.step}</span>
                   </div>
 
@@ -239,13 +239,13 @@ export default function NghienCuu() {
         <div className="container mx-auto px-4">
           {/* Section Header */}
           <div className="text-center mb-16">
-            <div className="inline-block px-6 py-2 rounded-full bg-indigo-100 border border-indigo-200 shadow-sm mb-4">
-              <span className="text-indigo-800 text-sm font-bold tracking-widest uppercase">Công nghệ</span>
+            <div className="inline-block px-6 py-2 rounded-full bg-red-100 border border-red-200 shadow-sm mb-4">
+              <span className="text-red-800 text-sm font-bold tracking-widest uppercase">Công nghệ</span>
             </div>
             <h2 className="text-4xl md:text-5xl font-black text-gray-900 mb-4">
-              Tech <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-blue-600">Stack</span>
+              Tech <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-amber-600">Stack</span>
             </h2>
-            <div className="w-24 h-1 bg-gradient-to-r from-indigo-600 to-blue-500 mx-auto rounded-full"></div>
+            <div className="w-24 h-1 bg-gradient-to-r from-red-600 to-amber-500 mx-auto rounded-full"></div>
           </div>
 
           {/* Tech Cards */}
@@ -268,17 +268,17 @@ export default function NghienCuu() {
       </section>
 
       {/* Lĩnh vực nghiên cứu của Trường */}
-      <section className="py-20 bg-gradient-to-br from-violet-50 to-purple-50 border-t border-violet-100">
+      <section className="py-20 bg-gradient-to-br from-red-50 to-amber-50 border-t border-red-100">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             {/* Left - Info */}
             <div>
-              <div className="inline-block px-6 py-2 rounded-full bg-white border border-violet-200 shadow-sm mb-6">
-                <span className="text-violet-800 text-sm font-bold tracking-widest uppercase">Nghiên cứu khoa học</span>
+              <div className="inline-block px-6 py-2 rounded-full bg-white border border-red-200 shadow-sm mb-6">
+                <span className="text-red-800 text-sm font-bold tracking-widest uppercase">Nghiên cứu khoa học</span>
               </div>
               <h2 className="text-3xl md:text-4xl font-black text-gray-900 mb-6">
                 Trung Tâm Nghiên Cứu
-                <span className="block text-transparent bg-clip-text bg-gradient-to-r from-violet-600 to-purple-600">
+                <span className="block text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-amber-600">
                   Chiến Lược
                 </span>
               </h2>
@@ -291,8 +291,8 @@ export default function NghienCuu() {
               {/* Research Fields */}
               <div className="grid grid-cols-2 gap-4">
                 {RESEARCH_FIELDS.map((field, index) => (
-                  <div key={index} className="flex items-center gap-3 p-4 bg-white rounded-xl shadow-sm border border-violet-100">
-                    <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-purple-600 rounded-lg flex items-center justify-center">
+                  <div key={index} className="flex items-center gap-3 p-4 bg-white rounded-xl shadow-sm border border-red-100">
+                    <div className="w-10 h-10 bg-gradient-to-br from-red-600 to-red-700 rounded-lg flex items-center justify-center">
                       <field.icon className="w-5 h-5 text-white" />
                     </div>
                     <span className="font-medium text-gray-800 text-sm">{field.name}</span>
@@ -302,13 +302,13 @@ export default function NghienCuu() {
             </div>
 
             {/* Right - Journal */}
-            <div className="bg-white rounded-3xl p-8 shadow-xl border border-violet-100">
+            <div className="bg-white rounded-3xl p-8 shadow-xl border border-red-100">
               <div className="flex items-center gap-4 mb-6">
-                <div className="w-16 h-16 bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
+                <div className="w-16 h-16 bg-gradient-to-br from-red-600 to-red-700 rounded-2xl flex items-center justify-center shadow-lg">
                   <BookOpen className="w-8 h-8 text-white" />
                 </div>
                 <div>
-                  <div className="text-xs font-bold text-violet-600 uppercase tracking-wider">Xuất bản định kỳ</div>
+                  <div className="text-xs font-bold text-red-600 uppercase tracking-wider">Xuất bản định kỳ</div>
                   <h3 className="text-xl font-black text-gray-900">Tạp chí Khoa học</h3>
                 </div>
               </div>
@@ -317,7 +317,7 @@ export default function NghienCuu() {
                 công bố các công trình nghiên cứu, bài báo khoa học của giảng viên, nghiên cứu sinh
                 và cộng tác viên trong lĩnh vực an ninh, luật học và khoa học liên quan.
               </p>
-              <div className="flex items-center gap-2 text-violet-600 font-bold">
+              <div className="flex items-center gap-2 text-red-600 font-bold">
                 <Globe className="w-5 h-5" />
                 <span>Hợp tác quốc tế rộng rãi</span>
               </div>
@@ -331,13 +331,13 @@ export default function NghienCuu() {
         <div className="container mx-auto px-4">
           {/* Section Header */}
           <div className="text-center mb-16">
-            <div className="inline-block px-6 py-2 rounded-full bg-pink-100 border border-pink-200 shadow-sm mb-4">
-              <span className="text-pink-800 text-sm font-bold tracking-widest uppercase">Đội ngũ phát triển</span>
+            <div className="inline-block px-6 py-2 rounded-full bg-red-100 border border-red-200 shadow-sm mb-4">
+              <span className="text-red-800 text-sm font-bold tracking-widest uppercase">Đội ngũ phát triển</span>
             </div>
             <h2 className="text-4xl md:text-5xl font-black text-gray-900 mb-4">
-              Nhóm <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-600 to-rose-600">Tác Giả</span>
+              Nhóm <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-amber-600">Tác Giả</span>
             </h2>
-            <div className="w-24 h-1 bg-gradient-to-r from-pink-600 to-rose-500 mx-auto rounded-full"></div>
+            <div className="w-24 h-1 bg-gradient-to-r from-red-600 to-amber-500 mx-auto rounded-full"></div>
           </div>
 
           {/* Team Cards */}
@@ -367,20 +367,20 @@ export default function NghienCuu() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-16 bg-gradient-to-r from-violet-700 via-purple-700 to-indigo-800 text-white">
+      <section className="py-16 bg-gradient-to-r from-red-800 via-red-900 to-[#1E3A5F] text-white">
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto text-center">
             <h2 className="text-3xl md:text-4xl font-bold mb-6">
               Sẵn sàng trải nghiệm?
             </h2>
-            <p className="text-purple-200 mb-10 text-lg">
+            <p className="text-red-200 mb-10 text-lg">
               Bắt đầu trò chuyện với AI chatbot để được tư vấn thông tin tuyển sinh 24/7
             </p>
 
             <div className="flex flex-wrap gap-4 justify-center">
               <Link
                 href="/chat-bot"
-                className="group inline-flex items-center gap-2 px-10 py-5 bg-white text-purple-700 font-bold rounded-full hover:bg-pink-400 hover:text-white transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-1 text-lg"
+                className="group inline-flex items-center gap-2 px-10 py-5 bg-white text-red-700 font-bold rounded-full hover:bg-yellow-400 hover:text-red-800 transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-1 text-lg"
               >
                 <MessageSquare className="w-6 h-6" />
                 Chat với AI ngay
@@ -390,12 +390,12 @@ export default function NghienCuu() {
 
             {/* Contact Info */}
             <div className="mt-12 pt-8 border-t border-white/20">
-              <p className="text-purple-300 mb-4">Hỗ trợ kỹ thuật</p>
+              <p className="text-red-200 mb-4">Hỗ trợ kỹ thuật</p>
               <div className="flex flex-wrap gap-6 justify-center text-sm">
                 <span className="text-white">{SCHOOL_INFO.contact.email}</span>
-                <span className="text-purple-400">|</span>
+                <span className="text-red-300">|</span>
                 <span className="text-white">{SCHOOL_INFO.contact.phone}</span>
-                <span className="text-purple-400">|</span>
+                <span className="text-red-300">|</span>
                 <span className="text-white">24/7 (AI tự động)</span>
               </div>
             </div>

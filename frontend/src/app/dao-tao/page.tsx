@@ -124,11 +124,11 @@ export default function DaoTao() {
   return (
     <Layout>
       {/* Hero Section - Blue/Sky Theme */}
-      <section className="relative bg-gradient-to-br from-blue-600 via-sky-700 to-indigo-800 text-white overflow-hidden">
+      <section className="relative bg-gradient-to-br from-red-800 via-red-900 to-[#1E3A5F] text-white overflow-hidden">
         {/* Background Decorations */}
         <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute -top-40 -right-40 w-80 h-80 bg-cyan-400/10 rounded-full blur-3xl"></div>
-          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-400/20 rounded-full blur-3xl"></div>
+          <div className="absolute -top-40 -right-40 w-80 h-80 bg-yellow-500/10 rounded-full blur-3xl"></div>
+          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-red-500/20 rounded-full blur-3xl"></div>
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-white/5 rounded-full blur-3xl"></div>
         </div>
 
@@ -136,20 +136,20 @@ export default function DaoTao() {
           <div className="max-w-4xl mx-auto text-center">
             {/* Badge */}
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full mb-6">
-              <GraduationCap className="w-4 h-4 text-cyan-300" />
-              <span className="text-sm font-bold text-cyan-200 uppercase tracking-wider">Đào tạo chất lượng cao</span>
+              <GraduationCap className="w-4 h-4 text-yellow-400" />
+              <span className="text-sm font-bold text-yellow-400 uppercase tracking-wider">Đào tạo chất lượng cao</span>
             </div>
 
             {/* Title */}
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-black mb-6 leading-tight">
               Chương Trình
-              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-white">
+              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-yellow-200">
                 Đào Tạo
               </span>
             </h1>
 
             {/* Subtitle */}
-            <p className="text-lg md:text-xl text-blue-100 max-w-2xl mx-auto leading-relaxed mb-10">
+            <p className="text-lg md:text-xl text-red-100 max-w-2xl mx-auto leading-relaxed mb-10">
               Đào tạo nguồn nhân lực chất lượng cao cho lực lượng Công an nhân dân với
               chương trình chuẩn quốc gia và phương pháp giảng dạy hiện đại
             </p>
@@ -158,8 +158,8 @@ export default function DaoTao() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto">
               {HIGHLIGHTS.map((item, index) => (
                 <div key={index} className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20">
-                  <div className="text-3xl font-black text-cyan-300">{item.value}</div>
-                  <div className="text-blue-200 text-sm font-medium">{item.sublabel}</div>
+                  <div className="text-3xl font-black text-yellow-400">{item.value}</div>
+                  <div className="text-red-200 text-sm font-medium">{item.sublabel}</div>
                 </div>
               ))}
             </div>
@@ -175,13 +175,13 @@ export default function DaoTao() {
         <div className="container mx-auto px-4">
           {/* Section Header */}
           <div className="text-center mb-16">
-            <div className="inline-block px-6 py-2 rounded-full bg-blue-100 border border-blue-200 shadow-sm mb-4">
-              <span className="text-blue-800 text-sm font-bold tracking-widest uppercase">Hệ đào tạo</span>
+            <div className="inline-block px-6 py-2 rounded-full bg-red-100 border border-red-200 shadow-sm mb-4">
+              <span className="text-red-800 text-sm font-bold tracking-widest uppercase">Hệ đào tạo</span>
             </div>
             <h2 className="text-4xl md:text-5xl font-black text-gray-900 mb-4">
-              03 Bậc <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-sky-600">Đào Tạo</span>
+              03 Bậc <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-amber-600">Đào Tạo</span>
             </h2>
-            <div className="w-24 h-1 bg-gradient-to-r from-blue-600 to-sky-500 mx-auto rounded-full"></div>
+            <div className="w-24 h-1 bg-gradient-to-r from-red-600 to-amber-500 mx-auto rounded-full"></div>
           </div>
 
           {/* Level Cards */}
@@ -201,7 +201,7 @@ export default function DaoTao() {
                   <span className="px-3 py-1 bg-gray-100 rounded-full text-sm text-gray-600">
                     {level.duration}
                   </span>
-                  <span className="px-3 py-1 bg-blue-100 rounded-full text-sm text-blue-700 font-medium">
+                  <span className="px-3 py-1 bg-red-100 rounded-full text-sm text-red-700 font-medium">
                     {level.degree}
                   </span>
                 </div>
@@ -222,9 +222,9 @@ export default function DaoTao() {
               <span className="text-gray-800 text-sm font-bold tracking-widest uppercase">Ngành đào tạo</span>
             </div>
             <h2 className="text-4xl md:text-5xl font-black text-gray-900 mb-4">
-              06 Ngành <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-600 to-indigo-600">Chuyên Môn</span>
+              06 Ngành <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-amber-600">Chuyên Môn</span>
             </h2>
-            <div className="w-24 h-1 bg-gradient-to-r from-sky-600 to-indigo-500 mx-auto rounded-full"></div>
+            <div className="w-24 h-1 bg-gradient-to-r from-red-600 to-amber-500 mx-auto rounded-full"></div>
           </div>
 
           {/* Program Cards */}
@@ -238,12 +238,12 @@ export default function DaoTao() {
                   </div>
                   <div className="text-right">
                     <div className="text-xs font-bold text-gray-400 uppercase">Mã ngành</div>
-                    <div className="text-lg font-black text-blue-600">{program.code}</div>
+                    <div className="text-lg font-black text-red-600">{program.code}</div>
                   </div>
                 </div>
 
                 {/* Name */}
-                <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-blue-700 transition-colors">
+                <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-red-700 transition-colors">
                   {program.name}
                 </h3>
 
@@ -252,7 +252,7 @@ export default function DaoTao() {
 
                 {/* Tags */}
                 <div className="flex flex-wrap gap-2">
-                  <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-medium">4 năm</span>
+                  <span className="px-3 py-1 bg-red-50 text-red-700 rounded-full text-xs font-medium">4 năm</span>
                   <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-medium">Cử nhân</span>
                 </div>
               </div>
@@ -266,20 +266,20 @@ export default function DaoTao() {
         <div className="container mx-auto px-4">
           {/* Section Header */}
           <div className="text-center mb-16">
-            <div className="inline-block px-6 py-2 rounded-full bg-indigo-100 border border-indigo-200 shadow-sm mb-4">
-              <span className="text-indigo-800 text-sm font-bold tracking-widest uppercase">Phương pháp</span>
+            <div className="inline-block px-6 py-2 rounded-full bg-red-100 border border-red-200 shadow-sm mb-4">
+              <span className="text-red-800 text-sm font-bold tracking-widest uppercase">Phương pháp</span>
             </div>
             <h2 className="text-4xl md:text-5xl font-black text-gray-900 mb-4">
-              Đào Tạo <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">Toàn Diện</span>
+              Đào Tạo <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-amber-600">Toàn Diện</span>
             </h2>
-            <div className="w-24 h-1 bg-gradient-to-r from-indigo-600 to-purple-500 mx-auto rounded-full"></div>
+            <div className="w-24 h-1 bg-gradient-to-r from-red-600 to-amber-500 mx-auto rounded-full"></div>
           </div>
 
           {/* Method Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
             {TRAINING_METHODS.map((method, index) => (
-              <div key={index} className="group text-center p-6 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl border border-indigo-100 hover:shadow-lg transition-all duration-300 hover:-translate-y-2">
-                <div className="w-14 h-14 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg group-hover:scale-110 transition-transform">
+              <div key={index} className="group text-center p-6 bg-gradient-to-br from-red-50 to-amber-50 rounded-2xl border border-red-100 hover:shadow-lg transition-all duration-300 hover:-translate-y-2">
+                <div className="w-14 h-14 bg-gradient-to-br from-red-600 to-red-700 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg group-hover:scale-110 transition-transform">
                   <method.icon className="w-7 h-7 text-white" />
                 </div>
                 <h3 className="text-lg font-bold text-gray-900 mb-2">{method.title}</h3>
@@ -291,17 +291,17 @@ export default function DaoTao() {
       </section>
 
       {/* Đội ngũ giảng viên */}
-      <section className="py-20 bg-gradient-to-br from-blue-50 to-sky-50 border-t border-blue-100">
+      <section className="py-20 bg-gradient-to-br from-red-50 to-amber-50 border-t border-red-100">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center max-w-6xl mx-auto">
             {/* Left - Info */}
             <div>
-              <div className="inline-block px-6 py-2 rounded-full bg-white border border-blue-200 shadow-sm mb-6">
-                <span className="text-blue-800 text-sm font-bold tracking-widest uppercase">Đội ngũ giảng viên</span>
+              <div className="inline-block px-6 py-2 rounded-full bg-white border border-red-200 shadow-sm mb-6">
+                <span className="text-red-800 text-sm font-bold tracking-widest uppercase">Đội ngũ giảng viên</span>
               </div>
               <h2 className="text-3xl md:text-4xl font-black text-gray-900 mb-6">
                 Trình Độ Cao,
-                <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-sky-600">
+                <span className="block text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-amber-600">
                   Tâm Huyết
                 </span>
               </h2>
@@ -335,7 +335,7 @@ export default function DaoTao() {
             </div>
 
             {/* Right - Features */}
-            <div className="bg-white rounded-3xl p-8 shadow-xl border border-blue-100">
+            <div className="bg-white rounded-3xl p-8 shadow-xl border border-red-100">
               <h3 className="text-xl font-bold text-gray-900 mb-6">Điểm nổi bật</h3>
               <div className="space-y-4">
                 {[
@@ -345,8 +345,8 @@ export default function DaoTao() {
                   'Cập nhật kiến thức mới, phương pháp hiện đại',
                   'Hướng dẫn sinh viên tận tình, chu đáo'
                 ].map((item, idx) => (
-                  <div key={idx} className="flex items-start gap-3 p-3 bg-blue-50 rounded-xl">
-                    <CheckCircle2 className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                  <div key={idx} className="flex items-start gap-3 p-3 bg-red-50 rounded-xl">
+                    <CheckCircle2 className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
                     <span className="text-gray-700">{item}</span>
                   </div>
                 ))}
@@ -357,19 +357,19 @@ export default function DaoTao() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-16 bg-gradient-to-r from-blue-700 via-sky-700 to-indigo-800 text-white">
+      <section className="py-16 bg-gradient-to-r from-red-800 via-red-900 to-[#1E3A5F] text-white">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center max-w-5xl mx-auto">
             {/* Left */}
             <div>
               <h2 className="text-3xl font-bold mb-4">Quan tâm đến chương trình đào tạo?</h2>
-              <p className="text-blue-200 mb-6">
+              <p className="text-red-200 mb-6">
                 Liên hệ ngay để được tư vấn chi tiết về các ngành đào tạo và điều kiện tuyển sinh
               </p>
               <div className="flex items-center gap-4">
                 <Link
                   href="/tuyen-sinh"
-                  className="group inline-flex items-center gap-2 px-6 py-3 bg-white text-blue-700 font-bold rounded-full hover:bg-cyan-300 hover:text-blue-800 transition-all duration-300 shadow-lg"
+                  className="group inline-flex items-center gap-2 px-6 py-3 bg-white text-red-700 font-bold rounded-full hover:bg-yellow-400 hover:text-red-800 transition-all duration-300 shadow-lg"
                 >
                   <GraduationCap className="w-5 h-5" />
                   Tuyển sinh 2025
@@ -393,7 +393,7 @@ export default function DaoTao() {
                   <span className="font-medium text-white">Hotline:</span>
                   {SCHOOL_INFO.contact.phone}
                 </p>
-                <p className="flex items-center gap-3 text-blue-100">
+                <p className="flex items-center gap-3 text-red-100">
                   <span className="font-medium text-white">Email:</span>
                   daotao@dhannd.edu.vn
                 </p>

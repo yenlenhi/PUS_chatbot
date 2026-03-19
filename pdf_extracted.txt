@@ -1,0 +1,791 @@
+
+=== SLIDE 1 ===
+PSU CHATBOT
+Nhóm nghiên cứu:
+VŨ QUỐC HƯNG - VB2 D5
+TRƯƠNG VĂN KHẢI - VB2 D5
+NGUYỄN HỮU TẤN DŨNG - D32C
+Tháng 1  2026
+CUỘC THI UNITECH
+Trường Đại học 
+An ninh nhân dân
+
+
+=== SLIDE 2 ===
+Mục tiêu
+Cơ sở lý thuyết
+Kiến trúc tổng thể
+sss
+Vấn đề thực tế
+Chương trình minh họa
+Kết luận
+CÁC NỘI DUNG CHÍNH
+Trường Đại học 
+An ninh nhân dân
+
+
+=== SLIDE 3 ===
+Bối cảnh - Hệ quả
+Mục tiêu đề tài
+Giải pháp
+VẤN ĐỀ THỰC TẾ
+Trường Đại học 
+An ninh nhân dân
+
+
+=== SLIDE 4 ===
+Bối cảnh chung: 
+Ngành Công an đẩy mạnh chuyển đổi số,
+người học cần tra cứu nhanh và chính xác.
+Chuyển đổi số và trí tuệ nhân tạo đang tác
+động mạnh mẽ đến giáo dục đại học.
+Bối cảnh tại trường Đại Học An Ninh Nhân
+Dân: 
+Nhu cầu hỏi đáp học vụ ngày càng lớn
+Hỗ trợ chủ yếu thủ công (trực tiếp, email,
+điện thoại)
+BỐI CẢNH
+Trường Đại học 
+An ninh nhân dân
+
+
+=== SLIDE 5 ===
+Cán bộ quá tải
+Phản hồi chậm, thiếu nhất quán
+Học viên khó tiếp cận thông tin đúng lúc
+HỆ QUẢ
+Trường Đại học 
+An ninh nhân dân
+ → Đặt ra nhu cầu về một giải pháp AI có kiểm soát tri
+thức để hỗ trợ 24/7, đảm bảo chính xác, an toàn
+thông tin và giảm tải cho cán bộ đào tạo.
+
+
+=== SLIDE 6 ===
+Xây dựng chatbot AI hỗ trợ tra cứu học vụ 24/7 cho ĐH ANND
+Đảm bảo trả lời chính xác từ tài liệu chính thống
+Giảm tải công việc cho cán bộ đào tạo
+Nâng cao trải nghiệm tra cứu thông tin cho học viên
+Góp phần hiện thực hóa định hướng chuyển đổi số trong nhà
+trường
+MỤC TIÊU
+ĐỀ TÀI
+Trường Đại học 
+An ninh nhân dân
+
+
+=== SLIDE 7 ===
+- Sinh viên phải đọc nhiều tài liệu dài
+- Phòng ban quá tải câu hỏi lặp lại
+- Thông tin phân tán nhiều nguồn
+- Khó tìm forms mẫu phù hợp
+Trước
+- Trả lời tức thì 24/7
+- Câu trả lời chính xác từ tài liệu chính thức
+- Tự động đính kèm forms phù hợp
+- Giảm tải công việc cho phòng ban, cán bộ đào tạo
+Sau
+PSU Chatbot – Hệ thống hỗ trợ tra cứu học vụ thông minh
+Hỗ trợ học viên tra cứu 24/7
+Trả lời dựa trên tài liệu chính thống của nhà trường
+Hiển thị nguồn trích dẫn để kiểm chứng
+Tự động gợi ý biểu mẫu phù hợp
+Giảm tải cho cán bộ đào tạo
+GIẢI PHÁP
+Trường Đại học 
+An ninh nhân dân
+
+
+=== SLIDE 8 ===
+RAG - Retrieval-Augmented Generation
+Vector Embeddings và Semantic Search
+Sparse Search (BM25), Hybrid Search
+Cross-Encoder Reranking
+LLM - Large Language Model
+CƠ SỞ LÝ THUYẾT
+Trường Đại học 
+An ninh nhân dân
+
+
+=== SLIDE 9 ===
+Công nghệ
+Tên kỹ thuật
+Công dụng
+Vai trò trong hệ thống
+RAG
+Retrieval-Augmented Generation
+Kỹ thuật kết hợp tìm kiếm tài liệu
+với AI sinh văn bản
+Tìm thông tin liên quan → AI soạn
+câu trả lời
+Embedding
+Vietnamese SBERT
+Phương pháp biểu diễn văn bản
+dưới dạng vector số trong không
+gian ngữ nghĩa
+Mã hóa câu hỏi và tài liệu thành
+vector 384 chiều
+Dense Search
+pgvector + Cosine Similarity
+Tìm kiếm dựa trên độ tương đồng
+ngữ nghĩa
+Tìm tài liệu có ý nghĩa giống câu hỏi
+Sparse Search
+BM25 Algorithm
+Thuật toán xếp hạng dựa trên từ
+khóa
+Tìm tài liệu chứa chính xác từ khóa
+Hybrid Search
+RRF - Reciprocal Rank Fusion
+Phương pháp kết hợp tìm kiếm ngữ
+nghĩa + từ khóa
+Đảm bảo tìm đúng cả ý nghĩa lẫn từ
+chính xác
+Reranker
+Cross-Encoder MS-MARCO
+Mô hình xếp hạng lại kết quả tìm
+kiếm
+Đưa kết quả liên quan nhất lên đầu
+LLM
+Google Gemini 2.0 Flash
+Mô hình ngôn ngữ lớn của Google
+Đọc hiểu ngữ cảnh và soạn câu trả
+lời tự nhiên
+
+
+=== SLIDE 10 ===
+ Kiến trúc tổng thể
+Quy trình hệ thống
+Quy trình RAG Retrieval
+Bảo mật vận hành
+KIẾN TRÚC HỆ THỐNG
+Trường Đại học 
+An ninh nhân dân
+
+
+=== SLIDE 11 ===
+Hệ thống áp dụng kiến trúc 4 tầng để dễ
+bảo trì, mở rộng và tối ưu hiệu suất.
+4 tầng gồm: Frontend (Giao diện) –
+Backend (Ứng dụng) – Database (Dữ liệu) –
+AI/ML.
+Lợi ích chính:
+Mô-đun & dễ nâng cấp (đổi
+LLM/Embedding không ảnh hưởng
+giao diện).
+Hiệu năng & mở rộng tốt nhờ phân tải
+xử lý giữa các tầng.
+Bảo mật cao hơn: dữ liệu nhạy cảm lưu
+ở Database, truy cập qua Backend.
+Tích hợp AI hiệu quả: RAG +
+embeddings + reranking + vector
+search, tối ưu tiếng Việt.
+Thực tế triển khai: độ chính xác cao nhờ
+reranking và vector search.
+KIẾN TRÚC TỔNG THỂ
+4-TIER ARCHITECTURE
+Trường Đại học 
+An ninh nhân dân
+
+
+=== SLIDE 12 ===
+Quy trình tổng quát
+Người dùng gửi câu hỏi qua cổng tra cứu
+Hệ thống xác thực và điều phối tra cứu
+AI tìm thông tin từ dữ liệu chính thống
+Kết quả được tổng hợp và trả về người dùng
+QUY TRÌNH HỆ THỐNG
+Trường Đại học 
+An ninh nhân dân
+
+
+=== SLIDE 13 ===
+Quy trình RAG Retrieval (Lõi hệ thống)
+Mục tiêu: Tìm ra Top-N chunks liên quan nhất để làm context cho LLM
+sinh câu trả lời (thay vì chỉ full-text search).
+Pipeline tổng quát:
+Query → Chuẩn hóa → Dense (Vector Search) → Sparse (BM25) → Hybrid
+Fusion → Cross-Encoder Rerank → Chọn Context → LLM → Câu trả lời
+QUY TRÌNH RAG RETRIEVAL
+Trường Đại học 
+An ninh nhân dân
+
+
+=== SLIDE 14 ===
+Lớp bảo về
+Công Nghệ & Cơ Chế
+Tác Dụng Bảo Mật
+1. Xác thực
+JWT (HS256): Token định danh
+RBAC: Phân quyền theo vai trò
+Bcrypt: Mã hóa mật khẩu
+ Đảm bảo đúng người, đúng quyền
+ Token hết hạn sau 30 phút
+ Chống lộ mật khẩu người dùng
+2. Mạng
+HTTPS/TLS 1.2+: Mã hóa đường
+truyền
+Security Headers: HSTS, X-Frame...
+CORS: Chặn domain lạ
+ Mã hóa 100% dữ liệu truyền đi
+ Chống nghe lén (Man-in-the-
+Middle)
+ Chống nhúng web (Clickjacking)
+3. Dữ liệu
+Checksum (SHA256): Kiểm tra file
+Input Validation: Pydantic
+ File không bị thay đổi/cài mã độc
+ Dữ liệu đầu vào luôn sạch và đúng
+4. Chống tấn công
+Rate Limiting: Giới hạn tần suất
+Redis Blacklist: Chặn token
+ Chống Spam / DDoS / Brute-force
+ Thu hồi quyền truy cập tức thì
+Trường Đại học 
+An ninh nhân dân
+BẢO MẬT
+VẬN HÀNH 
+
+
+=== SLIDE 15 ===
+Giao diện Chatbot người dùng
+Bảng điều khiển (Admin Dashboard)
+Trang Quản lý tài liệu
+Trang Lịch sử chat
+Trang Quản lý File đính kèm
+Trang Phản hồi người dùng
+CHƯƠNG TRÌNH
+MINH HỌA
+Trường Đại học 
+An ninh nhân dân
+www.psuchatbot.com
+Website :
+
+
+=== SLIDE 16 ===
+- Giao diện chatbot thân thiện, dễ sử dụng cho học viên và cán bộ.
+- Thích hợp đa nền tảng: sử dụng được trên cả máy tính và điện thoại
+- Hiển thị các trích dẫn nguồn, trích đoạn nội dung gốc từ các văn bản
+chính thức để đảm bảo tính xác thực của câu trả lời 
+- Hỗ trợ:
+Văn bản
+Giọng nói
+Hình ảnh trong câu hỏi
+GIAO DIỆN CHATBOT
+NGƯỜI DÙNG
+Trường Đại học 
+An ninh nhân dân
+www.psuchatbot.com
+
+
+=== SLIDE 17 ===
+Trường Đại học 
+An ninh nhân dân
+Hình 1: Bắt đầu phiên chat
+Hình 2: Các tính năng hỗ trợ (Copy phiên đối thoại, đánh
+giá, upload hình ảnh, text-to-speech, speech-to-text,..)
+
+
+=== SLIDE 18 ===
+Trường Đại học 
+An ninh nhân dân
+Hình 3: Phản hồi của Chatbot kèm tài liệu tham khảo
+Hình 4: Xem văn bản tham khảo, đảm bảo tính xác thực
+
+
+=== SLIDE 19 ===
+Theo dõi:
+Hiệu suất hệ thống: lượt truy cập, chi phí token, an ninh và lỗi phát
+sinh
+Hành vi người dùng: Tần suất quay lại, user funnel, chủ đề quan
+tâm, câu hỏi phổ biến
+Dữ liệu chat: Số lượt tin nhắn, feedbacks, câu hỏi chưa trả lời được
+Dữ liệu tài liệu: số lượng, dung lượng tài liệu theo danh mục; tài liệu
+được truy xuất nhiều,
+Hiệu năng: số câu hỏi đã xử lý, thời gian phản hồi trung bình,  số giờ
+tiết kiệm, điểm chất lượng
+Đây là công cụ đánh giá toàn diện hiệu quả Chatbot. Đồng thời cung
+cấp, phân tích nhu cầu của học viên kịp thời cho ban lãnh đạo 
+ADMIN DASHBOARD
+www.psuchatbot.com
+Trường Đại học 
+An ninh nhân dân
+
+
+=== SLIDE 20 ===
+Trường Đại học 
+An ninh nhân dân
+Hình 1:  Tổng quan sức khỏe hệ thống
+Hình 2: Chỉ số về người dùng
+
+
+=== SLIDE 21 ===
+Trường Đại học 
+An ninh nhân dân
+Hình 3:  Chỉ số về dữ liệu Chat
+Hình 4: Chỉ số về tài liệu
+
+
+=== SLIDE 22 ===
+Trường Đại học 
+An ninh nhân dân
+Hình 5: Chỉ số về Hiệu suất
+Hình 6: Một số tính năng phụ
+
+
+=== SLIDE 23 ===
+Quản lý tập trung kho tri thức của Chatbot
+Theo dõi và thao tác:
+Số lượng, trạng thái hoạt động của tài liệu
+Phân loại và tìm kiếm theo tên, danh mục, nội dung
+Cung cấp thống kê cơ bản: số trang, số chunks, thời gian xử lý,
+dung lượng…
+Cập nhật linh hoạt:
+Thêm tài liệu đơn lẻ hoặc hàng loạt trực tiếp từ dashboard
+Bật/tắt/xóa vĩnh viễn tài liệu mà không cần huấn luyện lại mô hình
+Có thể xem và tải xuống tài liệu.
+Đây là công cụ để đảm bảo Chatbot chỉ trả lời từ tài liệu chính thống, đã
+kiểm duyệt. Đồng thời, giữ thông tin luôn mới và chính xác nhất. 
+TRANG QUẢN LÝ TÀI LIỆU
+Trường Đại học 
+An ninh nhân dân
+www.psuchatbot.com
+
+
+=== SLIDE 24 ===
+Trường Đại học 
+An ninh nhân dân
+Hình 1:  Hiển thị, phân loại, thống kê cơ
+bản tài liệu đã đăng tải
+Hình 2:  Bật/tắt/xóa vĩnh viễn/xem/tải
+xuống tài liệu đã đăng tải
+
+
+=== SLIDE 25 ===
+Trường Đại học 
+An ninh nhân dân
+Hình 3: Chức năng upload tài liệu
+Hình 4: Chức năng bật/tắt dữ liệu Chatbot được
+học
+
+
+=== SLIDE 26 ===
+Theo dõi toàn bộ tương tác giữa người dùng và Chatbot
+Tổng số cuộc hội thoại, trạng thái và thời gian phát sinh
+Số tin nhắn, câu hỏi đầu tiên của mỗi phiên chat
+Tìm kiếm, xem chi tiết từng hội thoại
+Hỗ trợ xuất dữ liệu để phục vụ công tác tổng hợp, báo cáo
+Mục đích:
+Đánh giá chất lượng trả lời và hiệu quả RAG
+Phát hiện câu hỏi lặp lại, câu hỏi chưa xử lý tốt
+Cơ sở cải tiến tài liệu, prompt và báo cáo cho lãnh đạo
+Từ đó, nhà trường có thể điều chỉnh tài liệu, cập nhật quy chế hoặc
+bổ sung hướng dẫn cho phù hợp với nhu cầu của học viên
+TRANG LỊCH SỬ CHAT
+Trường Đại học 
+An ninh nhân dân
+www.psuchatbot.com
+
+
+=== SLIDE 27 ===
+Trường Đại học 
+An ninh nhân dân
+Hình 1:  Hiển thị nội dung, phân loại,
+thống kê cơ bản các đoạn hội thoại 
+Hình 2:  Xem chi tiết cuộc hội thoại
+
+
+=== SLIDE 28 ===
+TRANG FILE ĐÍNH KÈM
+Trường Đại học 
+An ninh nhân dân
+www.psuchatbot.com
+Quản lý tập trung kho tri thức của Chatbot
+Theo dõi và thao tác:
+Số lượng, trạng thái hoạt động của tài liệu
+Phân loại và tìm kiếm theo tên, danh mục, nội dung
+Cung cấp thống kê cơ bản: số trang, số chunks, thời gian xử lý,
+dung lượng…
+Cập nhật linh hoạt:
+Thêm tài liệu đơn lẻ hoặc hàng loạt trực tiếp từ dashboard
+Bật/tắt/xóa vĩnh viễn tài liệu mà không cần huấn luyện lại mô hình
+Có thể xem và tải xuống tài liệu.
+Đây là công cụ để đảm bảo Chatbot chỉ trả lời từ tài liệu chính thống, đã
+kiểm duyệt. Đồng thời, giữ thông tin luôn mới và chính xác nhất. 
+
+
+=== SLIDE 29 ===
+Trường Đại học 
+An ninh nhân dân
+Hình 1:  Hiển thị nội dung, phân loại,
+thống kê cơ bản các đoạn hội thoại 
+Hình 2:  Xem chi tiết cuộc hội thoại
+
+
+=== SLIDE 30 ===
+TRANG PHẢN HỒI 
+NGƯỜI DÙNG
+Trường Đại học 
+An ninh nhân dân
+www.psuchatbot.com
+
+
+=== SLIDE 31 ===
+Kết quả
+So sánh với ChatGPT, Gemini
+Hướng phát triển
+KẾT LUẬN
+Trường Đại học 
+An ninh nhân dân
+
+
+=== SLIDE 32 ===
+Hệ thống hoạt động ổn định 24/7.
+Độ chính xác câu trả lời ≥ 85%.
+Tỷ lệ xử lý thành công ≥ 95%.
+Thời gian phản hồi trung bình ≤ 2 giây.
+Về hiệu quả hệ thống
+Minh chứng tính khả thi của mô hình RAG trong môi trường giáo dục đặc thù
+Kết hợp hiệu quả nhiều kỹ thuật AI/ML để nâng cao độ chính xác của chatbot
+Kiến trúc 4 tầng được vận hành hiệu quả, sẵn sàng cho việc nâng cấp và mở
+rộng.
+Về mặt khoa học
+Xử lý 30–50% câu hỏi thường gặp, giảm tải công việc cho cán bộ đào tạo
+Tiết kiệm khoảng 130 giờ lao động mỗi tháng.
+Hình thành quy trình quản lý và truy xuất dữ liệu đào tạo mới
+Nâng cao trải nghiệm và khả năng tiếp cận thông tin của người học
+Về hiệu quả thực tiễn
+Triển khai thử nghiệm thành công một hệ thống chatbot RAG
+hỗ trợ đào tạo cho Trường ĐH ANND, hiện thực hóa đầy đủ
+một kiến trúc RAG end-to-end, hệ thống được tổ chức với quy
+trình làm việc rõ ràng và có khả năng quản lý qua giao diện.
+KẾT QUẢ
+Trường Đại học 
+An ninh nhân dân
+
+
+=== SLIDE 33 ===
+Tiêu chí
+PSU Chatbot
+ChatGPT, Gemini
+Độ chính xác pháp lý
+Cao. Chỉ trả lời dựa trên văn bản quy định của
+nhà trường. Không "sáng tác".
+Rủi ro. Có thể trả lời chung chung hoặc sai
+lệch do học từ internet.
+Nguồn chứng minh
+Minh bạch. Trích dẫn rõ ràng: "Thông tin này lấy
+từ Điều 5, trang 12, Sổ tay Sinh viên".
+Hộp đen. Không biết tại sao AI lại trả lời như
+vậy.
+Tính cập nhật
+Tức thời. Tải file quy định mới lên → Hệ thống
+hiểu ngay lập tức.
+Chậm. Dữ liệu thường bị cũ (Knowledge
+Cutoff), cần huấn luyện lại rất lâu.
+Tích hợp quy trình
+Hành động được. Cung cấp file/biểu mẫu để tải
+về ngay.
+Chỉ Text. Chỉ hướng dẫn lý thuyết, không đưa
+được file nội bộ.
+An ninh dữ liệu
+Kiểm soát. Dữ liệu nằm trong server quản lý, có
+thể triển khai Offline/Local.
+Phụ thuộc. Dữ liệu nhạy cảm có thể bị gửi lên
+đám mây công cộng.
+SO SÁNH VỚI CHATGPT, GEMINI
+ →  Hệ thống này không chỉ sử dụng AI để trả lời câu hỏi, mà còn “thuần hóa” nó để phục vụ các tác vụ chuyên biệt,
+chính xác và an toàn trong khi vận hành.
+
+
+=== SLIDE 34 ===
+SO SÁNH VỚI CHATGPT, GEMINI
+PSU Chatbot
+ChatGPT
+Gemini
+
+
+=== SLIDE 35 ===
+Cải thiện xử lý tài liệu bằng cách kết hợp OCR
+đám mây và OCR cục bộ, giảm chi phí và độ trễ.
+Hoàn thiện chiến lược chunking theo đoạn/tiêu
+đề/ngữ nghĩa để tăng chất lượng ngữ cảnh.
+Điều chỉnh tham số retrieval dựa trên quan sát
+thực tế từ các truy vấn người dùng.
+Ngắn hạn
+Bổ sung cơ chế đo lường hiệu suất, xây dựng bộ
+tập kiểm thử cho từng mảng nội dung
+Mở rộng tính năng quản trị và quan sát hệ thống 
+Thêm một số tính năng nâng cao như lọc theo
+chuyên đề, ưu tiên nguồn theo đơn vị/khoa,
+hoặc hỗ trợ thêm ngôn ngữ khác 
+Trung hạn
+Tinh chỉnh các mô hình embedding/reranking trên
+tập dữ liệu riêng của Trường ĐH ANND để tăng độ
+chính xác theo domain.
+Nâng cấp hạ tầng để đáp ứng yêu cầu vận hành ở
+quy mô lớn hơn, bền vững hơn.
+Mở rộng thành trợ giảng ảo; công cụ cung cấp và
+phân tích nhu cầu của học viên cho ban lãnh đạo
+Dài hạn
+Sản phẩm hiện tại tập trung chủ yếu vào việc thiết kế kiến trúc, xây dựng
+prototype và hiện thực hóa pipeline RAG end-to-end, chứ chưa triển khai
+đầy đủ phần đo lường, đánh giá và tối ưu hiệu suất hệ thống. Đồng thời,
+chưa hoàn thiện cơ chế tự động cập nhật dữ liệu từ các khoa, phòng,
+website để làm dồi dào kho tri thức.
+HƯỚNG PHÁT TRIỂN
+Trường Đại học 
+An ninh nhân dân
+
+
+=== SLIDE 36 ===
+CẢM ƠN QUÝ THẦY CÔ
+ĐÃ LẮNG NGHE
+www.psuchatbot.com
+Website :
+Nhóm nghiên cứu:
+VŨ QUỐC HƯNG - VB2 D5
+TRƯƠNG VĂN KHẢI - VB2 D5
+NGUYỄN HỮU TẤN DŨNG - D32C
+info@dhannd.edu.vn
+Email Address :
+Trường Đại học 
+An ninh nhân dân
+
+
+=== SLIDE 37 ===
+PHỤ LỤC
+Trường Đại học 
+An ninh nhân dân
+
+
+=== SLIDE 38 ===
+RAG (Retrieval-Augmented Generation) là kiến trúc kết hợp Retrieval (truy
+xuất) và Generation (sinh câu trả lời). Trong đó:
+Retrieval: Tìm các thông tin liên quan từ knowledge base (tài liệu nội bộ,
+quy định, CSDL chuyên ngành…) để tạo ngữ cảnh cho mô hình.
+Generation: LLM dùng ngữ cảnh đã truy xuất để sinh câu trả lời mạch
+lạc và chính xác hơn, thay vì chỉ dựa vào kiến thức có sẵn trong mô hình.
+→ Vì sao cần RAG: LLM thuần có hạn chế như cutoff date, không biết dữ liệu
+nội bộ, dễ hallucination, khó tự cập nhật theo thời gian thực.
+→ Lợi ích RAG: Truy cập kho tri thức luôn cập nhật & chuyên sâu, giảm
+hallucination, và hỗ trợ trích dẫn nguồn giúp tăng độ tin cậy và minh bạch.
+RAG - RETRIEVAL-
+AUGMENTED
+GENERATION
+Trường Đại học 
+An ninh nhân dân
+
+
+=== SLIDE 39 ===
+VECTOR EMBEDDINGS VÀ
+SEMANTIC SEARCH
+cosine_similarity (A, B) = 
+A . B
+||A|| x ||B||
+Embedding là kỹ thuật biến văn bản thành vector số nhiều
+chiều (ví dụ 384-d).
+Các câu cùng ý nghĩa → vector gần nhau; câu khác nghĩa →
+vector xa nhau.
+Là nền tảng cho tìm kiếm ngữ nghĩa, so khớp câu hỏi–tài liệu
+và nhiều ứng dụng AI.
+Ví dụ:
+Tôi thích học AI → Vector: [0.21, 0.45, -0.32, …]
+Tôi yêu trí tuệ nhân tạo → Vector: [0.22, 0.47, -0.31, …]
+Tôi thích ăn phở → [-0.88, 0.13, 0.75, …]
+→ Hai câu đầu nằm gần nhau → tương đồng ngữ nghĩa → Câu
+“ăn phở” lệch hẳn → khác nội dung
+Vector Embeddings
+Semantic Search tìm theo ý nghĩa, không chỉ khớp từ
+khóa.
+Indexing (offline): Mã hóa các đoạn tài liệu thành vector
+và lưu trong vector DB (vd: pgvector).
+Query (online): Mã hóa câu hỏi thành vector → vector
+search lấy Top-K tài liệu gần nhất.
+Độ tương đồng đo bằng cosine similarity:
+Semantic Search
+Giá trị gần 1 = rất giống nghĩa, gần 0 = ít liên quan, gần -1 = đối lập.
+Trường Đại học 
+An ninh nhân dân
+
+
+=== SLIDE 40 ===
+www.reallygreatsite.com
+Xếp hạng theo từ khóa, cải tiến TF-IDF nhờ
+giảm bão hòa tần suất (TF saturation) + chuẩn
+hóa độ dài văn bản; điều chỉnh bằng k₁, b →
+mạnh khi cần khớp chính xác (mã biểu mẫu,
+mã SV, ký hiệu).
+BM25 (keyword-based)
+Kết hợp Vector Search (ngữ nghĩa) + BM25
+(từ khóa) để xử lý truy vấn “vừa hiểu nghĩa,
+vừa khớp chuẩn”.
+ → Vector mạnh với paraphrase/đồng nghĩa;
+BM25 mạnh với chuỗi ký tự cụ thể.
+Hybrid Search
+BM25, HYBRID SEARCH
+Trường Đại học 
+An ninh nhân dân
+
+
+=== SLIDE 41 ===
+Bi-Encoder vs Cross-Encoder:
+Bi-Encoder: Encode query/doc tách biệt → nhanh,
+scale lớn, dùng cho retrieval thô.
+Cross-Encoder: Encode chung [Query + Doc] → chính
+xác cao nhưng tốn compute, dùng cho rerank Top-K.
+Reranking (Cross-Encoder):
+Chấm điểm lại các ứng viên sau retrieval để đẩy tài liệu
+“đúng ý” lên top → tăng precision, giảm nhiễu context, giúp
+LLM trả lời chính xác hơn và tiết kiệm token/chi phí.
+CROSS-ENCODER
+RERANKING
+Trường Đại học 
+An ninh nhân dân
+
+
+=== SLIDE 42 ===
+LLM: Mô hình ngôn ngữ lớn, có khả năng hiểu & sinh văn bản tự nhiên (Q&A, tóm tắt,
+dịch, reasoning).
+Mô hình dùng: Gemini 2.0 Flash Experimental (gemini-2.0-flash-exp, 12/2024) –
+context ~1M tokens, output 8.192 tokens, đa phương thức (text+image, hỗ trợ
+PDF/OCR), phản hồi nhanh, hỗ trợ tiếng Việt tốt → phù hợp RAG.
+Prompt engineering: System prompt cố định định danh trợ lý AI của trường; chỉ trả
+lời về quy chế/tuyển sinh/học bổng/thủ tục; ưu tiên CONTEXT truy xuất; thiếu thông
+tin thì nói rõ; luôn trích dẫn nguồn (file, trang); trả lời tiếng Việt rõ ràng, có thể dùng
+markdown theo khung CONTEXT–QUESTION–ANSWER.
+Ví dụ: 
+1.Câu hỏi trong phạm vi (vd: thời gian tuyển sinh VB2) → trả lời đúng chuẩn (liệt kê điều
+kiện + trích dẫn).
+2.Câu hỏi ngoài phạm vi (vd: thời tiết) → từ chối lịch sự và nêu giới hạn.
+LLM - LARGE
+LANGUAGE
+MODEL
+Trường Đại học 
+An ninh nhân dân
+
+
+=== SLIDE 43 ===
+www.psuchatbot.com
+Người dùng gõ câu hỏi bằng tiếng Việt vào ô chat và nhấn nút Gửi
+(hoặc Enter) để gửi yêu cầu tới hệ thống
+Bước 1 – Nhập câu hỏi
+Khi có kết quả, hệ thống render nội dung câu trả lời lên màn hình,
+đồng thời hiển thị kèm theo danh sách các nguồn tham chiếu (Top-
+N), mỗi nguồn thể hiện tên tài liệu và số trang liên quan.
+Bước 3 – Nhận và hiển thị câu trả lời
+Ngay sau khi gửi, giao diện hiển thị spinner/trạng thái “Đang truy
+vấn…” để báo cho người dùng biết hệ thống đang xử lý câu hỏi.
+Bước 2 – Hiển thị trạng thái xử lý
+HƯỚNG DẪN
+SỬ DỤNG
+Người dùng có thể nhấp vào từng nguồn trong danh sách; hệ thống
+sẽ mở popover hoặc hộp thoại (dialog) hiển thị trích đoạn nội dung
+đầy đủ hơn từ tài liệu gốc để người dùng đối chiếu.
+Bước 4 – Xem chi tiết nguồn trích dẫn
+Sau khi trả lời, hệ thống có thể lưu lại câu hỏi và câu trả lời vào lịch
+sử của phiên hiện tại, giúp người dùng dễ dàng xem lại hoặc tiếp tục
+đặt các câu hỏi liên quan.
+Bước 5 – Lưu lịch sử câu hỏi (tùy chọn)
+Trường Đại học 
+An ninh nhân dân
+
+
+=== SLIDE 44 ===
+www.psuchatbot.com
+Admin đăng nhập và truy cập vào trang /admin/dashboard. Ngay
+khi tải trang, đây sẽ là nơi cung cấp cái nhìn tổng thể về tình trạng
+dữ liệu và hoạt động của hệ thống chatbot.
+Bước 1 – Mở trang tổng quan
+Hệ thống tự động lấy dữ liệu thống kê và trạng thái sức khỏe của
+các thành phần, rồi hiển thị dưới dạng các biểu đồ: số tài liệu, số truy
+vấn gần đây, thời gian phản hồi trung bình, số người dùng,...
+Bước 2 – Hiển thị thống kê, sức khỏe hệ thống
+HƯỚNG DẪN
+SỬ DỤNG
+Admin có thể bấm vào từng card để điều hướng tới các trang chi
+tiết tương ứng như: Chỉ số hệ thống, Chỉ số người dùng, Chỉ số chat,
+Chỉ số tài liệu, Chỉ số hiệu năng,... nhằm phân tích sâu hơn và thực
+hiện các thao tác quản trị cụ thể. 
+Bước 3 – Xem xu hướng chi tiết theo
+từng mảng
+Trường Đại học 
+An ninh nhân dân
+Sau khi nắm bắt các chỉ số về hệ thống, người dùng, tài liệu; admin
+có thể đưa ra các hành động điều chỉnh cụ thể như: cập nhật, bổ
+sung và tối ưu tài liệu nhằm nâng cao độ chính xác trong phản hồi
+của chatbot; đồng thời phân tích các phản hồi chưa tích cực để cải
+thiện chất lượng trả lời; theo dõi xu hướng và nhu cầu của học viên,
+từ đó tổng hợp báo cáo, phục vụ công tác tham mưu và hỗ trợ ban
+lãnh đạo trong việc ra quyết định.
+Bước 4 – Triển khai hành động
+
+
+=== SLIDE 45 ===
+www.psuchatbot.com
+HƯỚNG DẪN
+SỬ DỤNG
+Trường Đại học 
+An ninh nhân dân
+Admin đăng nhập → truy cập /admin/documents. Đây là nơi quản lý
+tập trung tất cả files dùng làm nguồn tri thức cho Chatbot.
+Bước 1 – Mở Trang Quản lý tài liệu
+Dùng thanh tìm kiếm, bộ lọc danh mục hoặc chế độ hiển thị để tìm
+file theo tên, nội dung, danh mục hoặc trạng thái xử lý.
+Bước 2 – Tìm kiếm & Lọc nhanh
+Thêm file đơn lẻ hoặc hàng loạt: Nhấn vào button “Thêm mới”
+→ Chọn file cần upload → Phân loại danh mục →  Upload
+Hệ thống sẽ bắt đầu auto-ingest: trích xuất văn bản → chia
+chunk → sinh embedding → lập chỉ mục.
+Bước 3 – Thêm tài liệu
+Bật/tắt/xóa vĩnh viễn tài liệu để điều chỉnh phạm vi trả lời mà
+không cần huấn luyện lại.
+Kiểm tra log lỗi nếu ingest thất bại, sửa file nguồn rồi thử lại.
+Xem và tải xuống tài liệu đăng tải.
+Bước 4 – Vận hành & xử lý sự cố
+Kiểm tra tổng số tài liệu, dung lượng, trạng thái (Hoạt động / Đang
+xử lý / Lỗi ), tần suất truy xuất của từng file và thống kê truy vấn để:
+ưu tiên cập nhật tài liệu quan trọng, loại bỏ nguồn không chính xác,
+và xuất báo cáo phục vụ lãnh đạo.
+Bước 5 – Kiểm soát chất lượng & báo cáo
+
+
+=== SLIDE 46 ===
+www.psuchatbot.com
+HƯỚNG DẪN
+SỬ DỤNG
+Trường Đại học 
+An ninh nhân dân
+Admin đăng nhập và vào /admin/chat-history. Trang này hiển thị toàn
+bộ cuộc hội thoại đã và đang diễn ra giữa người dùng và Chatbot.
+Bước 1 – Mở Trang Lịch sử chat
+Hệ thống hiển thị các chỉ số tổng hợp như: tổng số cuộc hội thoại, số
+phiên đang hoạt động, số hội thoại trong ngày và tổng số tin nhắn,
+giúp admin nhanh chóng nắm bắt mức độ sử dụng Chatbot.
+Bước 2 – Xem tổng quan hoạt động hội thoại
+Tìm kiếm theo nội dung câu hỏi, lọc danh sách hội thoại để nhanh
+chóng truy xuất các phiên chat theo chủ đề hoặc thời điểm.
+Bước 3 – Tìm kiếm và lọc hội thoại
+Trong màn hình chi tiết, admin xem lại câu hỏi – câu trả lời – nguồn
+trích dẫn kèm theo các chỉ số như độ tin cậy. Từ đó, admin đánh giá
+chatbot có trả lời đúng trọng tâm, bám sát tài liệu và trích dẫn chính
+xác hay không.
+Bước 4 – Kiểm tra chi tiết chất lượng trả lời
+Từ dữ liệu lịch sử chat, admin có thể phát hiện câu hỏi lặp lại,
+câu hỏi chưa xử lý tốt hoặc chưa đầy đủ nguồn trích dẫn; từ đó
+điều chỉnh tài liệu, tối ưu RAG và nâng cao chất lượng phản hồi.
+Đồng thời, Trang hỗ trợ xuất dữ liệu hội thoại, phục vụ thống kê,
+đánh giá hiệu quả hệ thống.
+Bước 5 – Phân tích và cải thiện chất lượng
+
+
+=== SLIDE 47 ===
+www.psuchatbot.com
+HƯỚNG DẪN
+SỬ DỤNG
+Trường Đại học 
+An ninh nhân dân
+Admin đăng nhập và vào /admin/chat-history. Trang này hiển thị toàn
+bộ cuộc hội thoại đã và đang diễn ra giữa người dùng và Chatbot.
+Bước 1 – Mở Trang Lịch sử chat
+

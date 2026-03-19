@@ -16,7 +16,7 @@ const Navigation = () => {
   const [searchQuery, setSearchQuery] = useState('');
 
   return (
-    <nav className="bg-green-700 shadow-lg">
+    <nav className="bg-[#1E3A5F] shadow-lg">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-14">
           {/* Desktop Menu */}
@@ -25,11 +25,10 @@ const Navigation = () => {
               <Link
                 key={index}
                 href={item.href}
-                className={`px-3 py-2 text-sm font-medium transition-colors duration-200 rounded flex items-center gap-1 ${
-                  item.highlight 
-                    ? 'bg-yellow-500 text-red-800 hover:bg-yellow-400' 
-                    : 'text-white hover:bg-green-600'
-                }`}
+                className={`px-3 py-2 text-sm font-medium transition-colors duration-200 rounded flex items-center gap-1 ${item.highlight
+                    ? 'bg-yellow-500 text-red-800 hover:bg-yellow-400'
+                    : 'text-white hover:bg-white/10'
+                  }`}
               >
                 {item.highlight && <MessageCircle className="w-4 h-4" />}
                 {item.title}
@@ -38,7 +37,7 @@ const Navigation = () => {
             {/* Admin Link - ẩn trên desktop, chỉ hiện icon */}
             <Link
               href="/admin"
-              className="px-2 py-2 text-white/70 hover:text-white hover:bg-green-600 transition-colors duration-200 rounded ml-2"
+              className="px-2 py-2 text-white/70 hover:text-white hover:bg-white/10 transition-colors duration-200 rounded ml-2"
               title="Quản trị viên"
             >
               <Settings className="w-4 h-4" />
@@ -53,7 +52,7 @@ const Navigation = () => {
                 placeholder="TÌM KIẾM"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-48 px-3 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className="w-48 px-3 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
               />
               <Search className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
             </div>
@@ -72,17 +71,16 @@ const Navigation = () => {
 
         {/* Mobile Menu */}
         {isMenuOpen && (
-          <div className="lg:hidden bg-green-800 border-t border-green-600">
+          <div className="lg:hidden bg-[#162D4A] border-t border-white/10">
             <div className="px-2 pt-2 pb-3 space-y-1">
               {(MENU_ITEMS as MenuItem[]).map((item, index) => (
                 <Link
                   key={index}
                   href={item.href}
-                  className={`flex items-center gap-2 px-3 py-2 text-sm font-medium transition-colors duration-200 rounded ${
-                    item.highlight 
-                      ? 'bg-yellow-500 text-red-800' 
-                      : 'text-white hover:bg-green-600'
-                  }`}
+                  className={`flex items-center gap-2 px-3 py-2 text-sm font-medium transition-colors duration-200 rounded ${item.highlight
+                      ? 'bg-yellow-500 text-red-800'
+                      : 'text-white hover:bg-white/10'
+                    }`}
                   onClick={() => setIsMenuOpen(false)}
                 >
                   {item.highlight && <MessageCircle className="w-4 h-4" />}
@@ -92,7 +90,7 @@ const Navigation = () => {
               {/* Admin Link for mobile */}
               <Link
                 href="/admin"
-                className="flex items-center gap-2 px-3 py-2 text-white/70 text-sm font-medium hover:bg-green-600 transition-colors duration-200 rounded border-t border-green-600 mt-2 pt-3"
+                className="flex items-center gap-2 px-3 py-2 text-white/70 text-sm font-medium hover:bg-white/10 transition-colors duration-200 rounded border-t border-white/10 mt-2 pt-3"
                 onClick={() => setIsMenuOpen(false)}
               >
                 <Settings className="w-4 h-4" />

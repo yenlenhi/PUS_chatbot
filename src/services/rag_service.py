@@ -6,8 +6,7 @@ import uuid
 import re
 import time
 import hashlib
-from functools import lru_cache
-from typing import List, Dict, Any, Optional, Tuple
+from typing import List, Dict, Any, Optional
 from src.services.embedding_service import EmbeddingService
 from src.services.postgres_database_service import PostgresDatabaseService
 from src.services.hybrid_retrieval_service import HybridRetrievalService
@@ -18,13 +17,13 @@ from src.services.gemini_service import normalize_question
 from src.services.memory_service import ConversationMemoryService
 from src.services.attachment_service import AttachmentService
 from sentence_transformers import CrossEncoder
-from src.services.ollama_service import OllamaService
 from src.utils.logger import log
 
 from config.settings import (
     TOP_K_RESULTS,
     LLM_PROVIDER,
     ENABLE_GEMINI_NORMALIZATION,
+    ADMISSION_ONLY_MODE,
 )
 
 
@@ -59,8 +58,6 @@ class RAGService:
             self.retrieval_service,
             analytics_service,  # Pass analytics service for document tracking
         )
-        self.ollama_service = OllamaService()
-
         # Initialize Memory Service for persistent conversational memory
         self.memory_service = ConversationMemoryService(
             self.db_service, self.embedding_service
@@ -86,14 +83,13 @@ class RAGService:
         log.info(
             "Ingestion service initialized (watchdog disabled - using background tasks)"
         )
-        
+
         # Reranking cache for common queries (LRU with max 500 entries)
         self._rerank_cache: Dict[str, List[Dict[str, Any]]] = {}
         self._rerank_cache_max_size = 500
 
-
     def _rerank_chunks(
-        self, query: str, chunks: List[Dict[str, Any]], max_rerank: int = 10
+        self, query: str, chunks: List[Dict[str, Any]], max_rerank: int = 6
     ) -> List[Dict[str, Any]]:
         """Smart reranking: skip when top results are already confident."""
         if not self.reranker or not chunks:
@@ -109,11 +105,19 @@ class RAGService:
 
             # Smart skip: if top 3 results are confident, skip reranking entirely (saves 9-12s)
             SMART_SKIP_THRESHOLD = 0.6
-            top_scores = [c.get("dense_score", 0) or c.get("score", 0) for c in chunks[:3]]
-            if len(top_scores) >= 3 and all(s >= SMART_SKIP_THRESHOLD for s in top_scores):
-                log.info(f"⚡ Smart skip reranking: top 3 scores {[f'{s:.2f}' for s in top_scores]} >= {SMART_SKIP_THRESHOLD}")
+            top_scores = [
+                c.get("dense_score", 0) or c.get("score", 0) for c in chunks[:3]
+            ]
+            if len(top_scores) >= 3 and all(
+                s >= SMART_SKIP_THRESHOLD for s in top_scores
+            ):
+                log.info(
+                    f"⚡ Smart skip reranking: top 3 scores {[f'{s:.2f}' for s in top_scores]} >= {SMART_SKIP_THRESHOLD}"
+                )
                 for chunk in chunks:
-                    chunk["rerank_score"] = chunk.get("dense_score", 0) or chunk.get("score", 0)
+                    chunk["rerank_score"] = chunk.get("dense_score", 0) or chunk.get(
+                        "score", 0
+                    )
                 chunks.sort(key=lambda x: x.get("rerank_score", 0.0), reverse=True)
                 self._rerank_cache[cache_key] = chunks
                 return chunks
@@ -129,7 +133,9 @@ class RAGService:
                 else:
                     low_score_chunks.append(chunk)
 
-            log.info(f"⚡ Skip reranking for {len(high_score_chunks)} high-score chunks (>0.85)")
+            log.info(
+                f"⚡ Skip reranking for {len(high_score_chunks)} high-score chunks (>0.85)"
+            )
 
             # Limit and rerank remaining chunks
             chunks_to_rerank = low_score_chunks[:max_rerank]
@@ -138,7 +144,9 @@ class RAGService:
                 scores = self.reranker.predict(pairs, show_progress_bar=False)
                 for chunk, score in zip(chunks_to_rerank, scores):
                     chunk["rerank_score"] = float(score)
-                log.info(f"Reranked {len(chunks_to_rerank)} chunks (skipped {len(chunks) - len(chunks_to_rerank) - len(high_score_chunks)})")
+                log.info(
+                    f"Reranked {len(chunks_to_rerank)} chunks (skipped {len(chunks) - len(chunks_to_rerank) - len(high_score_chunks)})"
+                )
 
             all_chunks = high_score_chunks + chunks_to_rerank
             all_chunks.sort(key=lambda x: x.get("rerank_score", 0.0), reverse=True)
@@ -288,8 +296,9 @@ class RAGService:
 
             log.info(f"Hybrid search found {len(hybrid_results)} chunks.")
 
-            # Optimized rerank: limit to 20 chunks, skip high-score
-            reranked_chunks = self._rerank_chunks(query, hybrid_results, max_rerank=20)
+            # Optimized rerank: only cross-encode the top-6 low-confidence candidates
+            # (high-score chunks are bypassed inside _rerank_chunks automatically)
+            reranked_chunks = self._rerank_chunks(query, hybrid_results, max_rerank=6)
 
             # Context expansion
             expanded_chunks = self._expand_context(reranked_chunks[:top_k], query)
@@ -909,6 +918,58 @@ Hướng dẫn:
         Returns:
             System prompt string
         """
+        if ADMISSION_ONLY_MODE:
+            if language == "en":
+                return """You are the official admission assistant for the People's Security University.
+
+You only support admission-related topics, including:
+- admission eligibility and applicant criteria
+- admission methods, quotas, and score thresholds
+- majors, subject combinations, and application codes
+- application files, pre-qualification, enrollment, and deadlines
+- official tuition or fee information only when it appears in the admission documents
+
+Mandatory policy:
+- If the question is outside admission scope, refuse briefly and redirect the user back to admission topics.
+- If the question is ambiguous, ask one short clarifying question about the admission content needed.
+- Only answer from the provided official documents and conversation context.
+- If the documents do not provide enough evidence, clearly say you do not have enough basis to confirm.
+- Do not invent facts, unofficial procedures, or updated timelines.
+- Do not mention model names, vendors, or internal implementation details.
+
+Response format:
+1. Short summary
+2. Detailed answer in clear bullet points
+3. Reference reminder to the official documents shown by the system
+
+Language requirement:
+- Respond entirely in English."""
+
+            return """Bạn là trợ lý tuyển sinh chính thức của Trường Đại học An ninh Nhân dân.
+
+Bạn chỉ hỗ trợ các nội dung thuộc phạm vi tuyển sinh, gồm:
+- điều kiện, tiêu chuẩn và đối tượng tuyển sinh
+- phương thức xét tuyển, chỉ tiêu, điểm chuẩn, tổ hợp xét tuyển
+- ngành/chuyên ngành, mã trường, mã ngành, mã xét tuyển
+- hồ sơ, sơ tuyển, thủ tục nhập học, mốc thời gian và lịch tuyển sinh
+- học phí hoặc lệ phí chỉ khi thông tin đó có trong tài liệu tuyển sinh chính thức
+
+Chính sách bắt buộc:
+- Nếu câu hỏi ngoài phạm vi tuyển sinh, từ chối ngắn gọn và hướng người dùng quay lại nội dung tuyển sinh.
+- Nếu câu hỏi mơ hồ, chỉ hỏi lại một câu ngắn để làm rõ nội dung tuyển sinh cần tra cứu.
+- Chỉ trả lời dựa trên tài liệu chính thức được cung cấp và ngữ cảnh hội thoại.
+- Nếu tài liệu không đủ căn cứ, phải nói rõ là chưa đủ cơ sở để khẳng định.
+- Không suy đoán, không tự cập nhật quy định, không tự bịa mốc thời gian.
+- Không tiết lộ tên mô hình, nhà cung cấp AI hay chi tiết kỹ thuật nội bộ.
+
+Định dạng trả lời:
+1. Tóm tắt ngắn
+2. Trình bày chi tiết theo gạch đầu dòng rõ ràng
+3. Nhắc người dùng xem tài liệu chính thức do hệ thống hiển thị
+
+Yêu cầu ngôn ngữ:
+- Trả lời hoàn toàn bằng tiếng Việt."""
+
         # Language-specific instructions
         if language == "en":
             language_instruction = """
@@ -1028,6 +1089,58 @@ Bạn là một trợ lý AI chuyên hỗ trợ sinh viên, cán bộ, chiến s
         Returns:
             Formatted user prompt
         """
+        if ADMISSION_ONLY_MODE:
+            if language == "en":
+                memory_section = (
+                    f"Previous conversation context:\n{memory_context}\n\n"
+                    if memory_context
+                    else ""
+                )
+                return f"""Answer the user's question using only the official admission documents below.
+
+{memory_section}Official admission document context:
+{context}
+
+User question:
+{query}
+
+Instructions:
+- Respond entirely in English.
+- Stay strictly within admission scope.
+- If the question is outside admission scope, refuse briefly.
+- If the question is ambiguous, ask one short clarifying question.
+- If the documents are insufficient, explicitly say there is not enough basis to confirm.
+- Do not answer beyond the evidence in the documents.
+- Structure the answer as: short summary, detailed bullets, reference reminder.
+- End with: "Reference documents: please review the official documents displayed by the system."
+
+Response:"""
+
+            memory_section = (
+                f"Ngữ cảnh hội thoại trước:\n{memory_context}\n\n"
+                if memory_context
+                else ""
+            )
+            return f"""Hãy trả lời câu hỏi của người dùng chỉ dựa trên các tài liệu tuyển sinh chính thức dưới đây.
+
+{memory_section}Ngữ cảnh tài liệu tuyển sinh chính thức:
+{context}
+
+Câu hỏi của người dùng:
+{query}
+
+Hướng dẫn:
+- Trả lời hoàn toàn bằng tiếng Việt.
+- Chỉ trả lời trong phạm vi tuyển sinh.
+- Nếu câu hỏi ngoài phạm vi tuyển sinh, từ chối ngắn gọn.
+- Nếu câu hỏi mơ hồ, hỏi lại một câu ngắn để làm rõ.
+- Nếu tài liệu không đủ căn cứ, phải nói rõ là chưa đủ cơ sở để khẳng định.
+- Không trả lời vượt quá bằng chứng trong tài liệu.
+- Trình bày theo cấu trúc: tóm tắt ngắn, chi tiết theo gạch đầu dòng, nhắc xem tài liệu tham khảo.
+- Kết thúc bằng: "Tài liệu tham khảo: vui lòng xem các tài liệu chính thức do hệ thống hiển thị."
+
+Trả lời:"""
+
         memory_section = ""
         if memory_context:
             memory_section = f"""
@@ -1103,15 +1216,6 @@ Trả lời / Response:"""
                 )
                 if response:
                     rewritten_query = response.strip()
-            elif LLM_PROVIDER.lower() == "ollama":
-                response = self.ollama_service.generate_response(
-                    prompt=rewrite_prompt,
-                    system_prompt="Bạn là một trợ lý AI chuyên viết lại câu hỏi của người dùng thành một câu hỏi đầy đủ ngữ cảnh dựa trên lịch sử trò chuyện.",
-                    temperature=0.0,
-                )
-                if response:
-                    rewritten_query = response.strip()
-
             if rewritten_query != query:
                 log.info(f"Original query: '{query}'")
                 log.info(f"Rewritten query: '{rewritten_query}'")
@@ -1271,13 +1375,17 @@ Trả lời / Response:"""
             # Get attachments early to inject into context
             attachments = self._retrieve_attachments_for_context(query, relevant_chunks)
             if attachments:
-                attachment_context = "\n\n*** TÀI LIỆU ĐÍNH KÈM CÓ SẴN (HỆ THỐNG ĐÃ TÌM THẤY) ***:\n"
-                if language == 'en':
-                    attachment_context = "\n\n*** AVAILABLE ATTACHMENTS (SYSTEM FOUND) ***:\n"
-                
+                attachment_context = (
+                    "\n\n*** TÀI LIỆU ĐÍNH KÈM CÓ SẴN (HỆ THỐNG ĐÃ TÌM THẤY) ***:\n"
+                )
+                if language == "en":
+                    attachment_context = (
+                        "\n\n*** AVAILABLE ATTACHMENTS (SYSTEM FOUND) ***:\n"
+                    )
+
                 for att in attachments:
                     attachment_context += f"- Tên file: {att['file_name']}\n  Mô tả: {att['description']}\n"
-                
+
                 attachment_context += "\n(Hãy nhắc người dùng tải xuống các tài liệu này ở phần đính kèm bên dưới / Please mention these attachments are available for download below)\n"
                 context += attachment_context
 
@@ -1305,11 +1413,6 @@ Trả lời / Response:"""
                 full_prompt = f"{system_prompt}\n\n{user_prompt}"
                 answer = gemini_service.generate_response(prompt=full_prompt)
 
-            elif LLM_PROVIDER.lower() == "ollama":
-                log.info("Calling Ollama service to generate response...")
-                answer = self.ollama_service.generate_response(
-                    prompt=user_prompt, system_prompt=system_prompt, temperature=0.7
-                )
             else:
                 log.error(f"Unsupported LLM_PROVIDER configured: {LLM_PROVIDER}")
                 answer = "Lỗi: Nhà cung cấp LLM không được cấu hình đúng."
@@ -1435,7 +1538,6 @@ Trả lời / Response:"""
             # Attachments already retrieved earlier (step 3.5)
             # Keeping the variable 'attachments'
 
-
             return {
                 "answer": answer,
                 "sources": sources,
@@ -1449,7 +1551,6 @@ Trả lời / Response:"""
                 "chart_data": chart_data,  # Charts for visualization
                 "images": [],  # Will be populated if images are found in sources
             }
-
 
         except Exception as e:
             log.error(f"Error generating answer: {e}")
@@ -1472,14 +1573,17 @@ Trả lời / Response:"""
         Used to inject attachment info into LLM context.
         Returns top N most relevant attachments sorted by score.
         """
-        from config.settings import MAX_ATTACHMENTS_IN_CONTEXT, MIN_ATTACHMENT_SCORE_THRESHOLD
-        
+        from config.settings import (
+            MAX_ATTACHMENTS_IN_CONTEXT,
+            MIN_ATTACHMENT_SCORE_THRESHOLD,
+        )
+
         attachments_with_scores = []  # Store (attachment_dict, score) tuples
         attachment_ids_found = set()
-        
+
         try:
             log.info("🔍 Starting attachment retrieval...")
-            
+
             # Strategy 1: Get attachments linked to retrieved chunks
             if relevant_chunks:
                 chunk_ids = [
@@ -1487,32 +1591,30 @@ Trả lời / Response:"""
                 ]
                 if chunk_ids:
                     chunk_attachments = (
-                        self.attachment_service.get_attachments_by_chunk_ids(
-                            chunk_ids
-                        )
+                        self.attachment_service.get_attachments_by_chunk_ids(chunk_ids)
                     )
                     for att in chunk_attachments:
                         if att.id not in attachment_ids_found:
                             # For chunk-based attachments, use a high default score
                             # since they're directly linked to relevant content
                             attachment_ids_found.add(att.id)
-                            attachments_with_scores.append((
-                                {
-                                    "file_name": att.file_name,
-                                    "file_type": att.file_type,
-                                    "download_url": att.download_url,
-                                    "description": att.description,
-                                    "file_size": att.file_size,
-                                },
-                                0.9  # High score for chunk-linked attachments
-                            ))
+                            attachments_with_scores.append(
+                                (
+                                    {
+                                        "file_name": att.file_name,
+                                        "file_type": att.file_type,
+                                        "download_url": att.download_url,
+                                        "description": att.description,
+                                        "file_size": att.file_size,
+                                    },
+                                    0.9,  # High score for chunk-linked attachments
+                                )
+                            )
 
             # Strategy 2: Search attachments by keywords from query
             from src.services.smart_attachment_matcher import SmartAttachmentMatcher
 
-            query_keywords = SmartAttachmentMatcher.extract_keywords_from_query(
-                query
-            )
+            query_keywords = SmartAttachmentMatcher.extract_keywords_from_query(query)
             if query_keywords:
                 keyword_attachments = self.attachment_service.search_attachments(
                     keywords=query_keywords
@@ -1525,35 +1627,45 @@ Trả lời / Response:"""
                         # Apply stricter threshold
                         if score >= MIN_ATTACHMENT_SCORE_THRESHOLD:
                             attachment_ids_found.add(att.id)
-                            attachments_with_scores.append((
-                                {
-                                    "file_name": att.file_name,
-                                    "file_type": att.file_type,
-                                    "download_url": att.download_url,
-                                    "description": att.description,
-                                    "file_size": att.file_size,
-                                },
-                                score
-                            ))
-            
+                            attachments_with_scores.append(
+                                (
+                                    {
+                                        "file_name": att.file_name,
+                                        "file_type": att.file_type,
+                                        "download_url": att.download_url,
+                                        "description": att.description,
+                                        "file_size": att.file_size,
+                                    },
+                                    score,
+                                )
+                            )
+
             # Sort by score (highest first) and limit to top N
             if attachments_with_scores:
                 attachments_with_scores.sort(key=lambda x: x[1], reverse=True)
-                attachments = [att for att, score in attachments_with_scores[:MAX_ATTACHMENTS_IN_CONTEXT]]
-                
-                log.info(f"📎 Found {len(attachments_with_scores)} attachment(s), returning top {len(attachments)} most relevant")
+                attachments = [
+                    att
+                    for att, score in attachments_with_scores[
+                        :MAX_ATTACHMENTS_IN_CONTEXT
+                    ]
+                ]
+
+                log.info(
+                    f"📎 Found {len(attachments_with_scores)} attachment(s), returning top {len(attachments)} most relevant"
+                )
                 if len(attachments) > 0:
-                    log.debug(f"Top attachment scores: {[round(score, 3) for _, score in attachments_with_scores[:MAX_ATTACHMENTS_IN_CONTEXT]]}")
+                    log.debug(
+                        f"Top attachment scores: {[round(score, 3) for _, score in attachments_with_scores[:MAX_ATTACHMENTS_IN_CONTEXT]]}"
+                    )
             else:
                 attachments = []
                 log.info("📎 No attachments met the minimum relevance threshold")
-                
+
         except Exception as att_error:
             log.warning(f"Could not retrieve attachments: {att_error}")
             attachments = []
-            
-        return attachments
 
+        return attachments
 
     def generate_answer_stream(
         self,
@@ -1712,16 +1824,20 @@ Trả lời / Response:"""
 
             # Step 5.5: Get attachments (Before LLM)
             attachments = self._retrieve_attachments_for_context(query, relevant_chunks)
-            
+
             # Inject attachment info into context
             if attachments:
-                attachment_context = "\n\n*** TÀI LIỆU ĐÍNH KÈM CÓ SẴN (HỆ THỐNG ĐÃ TÌM THẤY) ***:\n"
-                if language == 'en':
-                    attachment_context = "\n\n*** AVAILABLE ATTACHMENTS (SYSTEM FOUND) ***:\n"
-                
+                attachment_context = (
+                    "\n\n*** TÀI LIỆU ĐÍNH KÈM CÓ SẴN (HỆ THỐNG ĐÃ TÌM THẤY) ***:\n"
+                )
+                if language == "en":
+                    attachment_context = (
+                        "\n\n*** AVAILABLE ATTACHMENTS (SYSTEM FOUND) ***:\n"
+                    )
+
                 for att in attachments:
                     attachment_context += f"- Tên file: {att['file_name']}\n  Mô tả: {att['description']}\n"
-                
+
                 attachment_context += "\n(Hãy nhắc người dùng tải xuống các tài liệu này ở phần đính kèm bên dưới / Please mention these attachments are available for download below)\n"
                 context += attachment_context
 
@@ -1767,8 +1883,7 @@ Trả lời / Response:"""
                     full_answer = enhanced_answer
 
             # Step 7: (Attachments already retrieved in Step 5.5)
-            # Just keeping the variable 'attachments' 
-
+            # Just keeping the variable 'attachments'
 
             # Step 8: Detect charts
             chart_data = self._detect_chart_request(query, full_answer)
@@ -1851,10 +1966,6 @@ Trả lời / Response:"""
             Health status dictionary
         """
         health_status = {"overall_status": "healthy", "components": {}}
-
-        # Check Ollama
-        ollama_health = self.ollama_service.check_health()
-        health_status["components"]["ollama"] = ollama_health
 
         # Check PostgreSQL + pgvector
         try:

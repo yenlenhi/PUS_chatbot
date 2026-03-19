@@ -22,6 +22,8 @@ import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 import { useSpeechSynthesis } from '@/hooks/useSpeechSynthesis';
 import { MobileSourceDrawer, SourceFAB, SuggestedQuestions } from '@/components/chat/MobileUI';
 
+const SOURCE_REFERENCE_DISPLAY_THRESHOLD = 0.65;
+
 // Gemini-style Processing Indicator - Shows REAL backend processing status
 interface ProcessingIndicatorProps {
   currentStatus: string;
@@ -667,16 +669,16 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
         )}
 
         {/* Source indicator */}
-        {message.sourceReferences && message.sourceReferences.filter(ref => (ref.relevance_score || 0) >= 0.8).length > 0 && isComplete && (
+        {message.sourceReferences && message.sourceReferences.filter(ref => (ref.relevance_score || 0) >= SOURCE_REFERENCE_DISPLAY_THRESHOLD).length > 0 && isComplete && (
           <button
             onClick={() => {
-              const filteredSources = message.sourceReferences?.filter(ref => (ref.relevance_score || 0) >= 0.8) || [];
+              const filteredSources = message.sourceReferences?.filter(ref => (ref.relevance_score || 0) >= SOURCE_REFERENCE_DISPLAY_THRESHOLD) || [];
               onViewSources(filteredSources);
             }}
             className="mt-3 text-xs text-red-600 hover:text-red-700 flex items-center gap-1 bg-red-50 px-2.5 py-1.5 rounded-full transition-colors"
           >
             <Book className="w-3 h-3" />
-            {message.sourceReferences.filter(ref => (ref.relevance_score || 0) >= 0.8).length} nguồn tham khảo (≥80%)
+            {message.sourceReferences.filter(ref => (ref.relevance_score || 0) >= SOURCE_REFERENCE_DISPLAY_THRESHOLD).length} nguồn tham khảo (≥{Math.round(SOURCE_REFERENCE_DISPLAY_THRESHOLD * 100)}%)
           </button>
         )}
 
@@ -788,7 +790,7 @@ const ChatBotPage = () => {
     {
       id: '1',
       role: 'assistant',
-      content: 'Xin chào! Tôi là PSU ChatBot của Trường Đại học An ninh Nhân dân. Tôi có thể giúp bạn tìm hiểu các quy định về tuyển sinh; quy chế đào tạo; quy định thi, kiểm tra, đánh giá; quy định về quản lý, giáo dục học viên và hệ thống bảo đảm chất lượng giáo dục, đào tạo của Nhà trường. Bạn cần tôi hỗ trợ gì?',
+      content: 'Xin chào! Tôi là PSU ChatBot của Trường Đại học An ninh Nhân dân. Tôi chỉ hỗ trợ tra cứu thông tin tuyển sinh chính thức như điều kiện tuyển sinh, phương thức xét tuyển, chỉ tiêu, hồ sơ, lịch tuyển sinh và thủ tục nhập học. Bạn cần tôi tra cứu nội dung tuyển sinh nào?',
       sender: 'bot',
       timestamp: new Date()
     }
@@ -991,7 +993,7 @@ const ChatBotPage = () => {
           const data = await response.json();
           const allSourceReferences: SourceReference[] = data.source_references || [];
           const sourceReferences: SourceReference[] = allSourceReferences
-            .filter(ref => (ref.relevance_score || 0) >= 0.8)
+            .filter(ref => (ref.relevance_score || 0) >= SOURCE_REFERENCE_DISPLAY_THRESHOLD)
             .sort((a, b) => (b.relevance_score || 0) - (a.relevance_score || 0))
             .slice(0, 5);
 
@@ -1019,7 +1021,8 @@ const ChatBotPage = () => {
               : msg
           ));
         } else {
-          throw new Error('API call failed');
+          const errorPayload = await response.json().catch(() => null);
+          throw new Error(errorPayload?.detail || errorPayload?.error || 'API call failed');
         }
         return;
       }
@@ -1055,6 +1058,7 @@ const ChatBotPage = () => {
       let buffer = '';
       let streamedAttachments: FileAttachment[] = [];
       let streamedChartData: ChartData[] = [];
+      let streamedImages: ImageData[] = [];
 
       while (true) {
         const { done, value } = await reader.read();
@@ -1079,7 +1083,7 @@ const ChatBotPage = () => {
                 // Backend sends source_references, not sources
                 const allSourceReferences: SourceReference[] = chunk.source_references || [];
                 streamedSources = allSourceReferences
-                  .filter((ref: SourceReference) => (ref.relevance_score || 0) >= 0.8)
+                  .filter((ref: SourceReference) => (ref.relevance_score || 0) >= SOURCE_REFERENCE_DISPLAY_THRESHOLD)
                   .sort((a: SourceReference, b: SourceReference) => (b.relevance_score || 0) - (a.relevance_score || 0))
                   .slice(0, 5);
                 streamedConfidence = chunk.confidence || 0;
@@ -1100,6 +1104,7 @@ const ChatBotPage = () => {
                 // Handle complete chunk with attachments and charts
                 streamedAttachments = chunk.attachments || [];
                 streamedChartData = chunk.chart_data || [];
+                streamedImages = chunk.images || [];
                 // Clear processing status when complete
                 setProcessingStatus('');
                 setCompletedSteps([]);
@@ -1145,6 +1150,7 @@ const ChatBotPage = () => {
             chunkIds: chunkIds,
             attachments: streamedAttachments,
             chartData: streamedChartData,
+            images: streamedImages,
           }
           : msg
       ));
@@ -1172,17 +1178,17 @@ const ChatBotPage = () => {
 
   // Fallback suggested questions
   const fallbackQuestions = language === 'vi' ? [
-    "Điều kiện tuyển sinh và các phương thức xét tuyển của trường?",
-    "Quy chế đào tạo theo tín chỉ là gì?",
-    "Quy định về thi, kiểm tra và đánh giá kết quả học tập?",
-    "Các quy định về quản lý và chế độ chính sách học viên?",
-    "Tiêu chuẩn và quy trình bảo đảm chất lượng đào tạo?"
+    "Điều kiện tuyển sinh và các phương thức xét tuyển của trường là gì?",
+    "Chỉ tiêu tuyển sinh theo từng ngành hoặc nhóm ngành hiện nay như thế nào?",
+    "Hồ sơ sơ tuyển hoặc hồ sơ đăng ký xét tuyển cần chuẩn bị những gì?",
+    "Mốc thời gian nộp hồ sơ, sơ tuyển và nhập học diễn ra khi nào?",
+    "Tiêu chuẩn sức khỏe, độ tuổi và đối tượng tuyển sinh được quy định ra sao?"
   ] : [
-    "What are the admission requirements and methods?",
-    "What is the credit-based training regulation?",
-    "What are the examination and assessment regulations?",
-    "What are the student management regulations and policies?",
-    "What are the quality assurance standards and processes?"
+    "What are the admission requirements and admission methods?",
+    "What are the admission quotas by major or program?",
+    "Which application or pre-qualification documents are required?",
+    "What is the timeline for application, pre-qualification, and enrollment?",
+    "What are the health, age, and applicant eligibility standards?"
   ];
 
   // Fetch suggested questions from API
@@ -1289,7 +1295,7 @@ const ChatBotPage = () => {
               {/* Guided Flow Button - Hidden on very small screens */}
               <button
                 onClick={() => setGuidedFlowOpen(true)}
-                className="hidden xs:flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg transition-colors text-xs sm:text-sm font-medium"
+                className="hidden"
                 title={language === 'vi' ? 'Hướng dẫn thủ tục' : 'Procedure Guide'}
               >
                 <Compass className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
@@ -1302,9 +1308,9 @@ const ChatBotPage = () => {
               >
                 <Book className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover:scale-110 transition-transform" />
                 <span className="hidden sm:inline">{language === 'vi' ? 'Nguồn' : 'Sources'}</span>
-                {currentSourceReferences.filter(ref => (ref.relevance_score || 0) >= 0.8).length > 0 && (
+                {currentSourceReferences.filter(ref => (ref.relevance_score || 0) >= SOURCE_REFERENCE_DISPLAY_THRESHOLD).length > 0 && (
                   <span className="absolute -top-1 -right-1 bg-gradient-to-r from-red-500 to-red-600 text-white text-xs rounded-full w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center animate-pulse shadow-lg">
-                    {currentSourceReferences.filter(ref => (ref.relevance_score || 0) >= 0.8).length}
+                    {currentSourceReferences.filter(ref => (ref.relevance_score || 0) >= SOURCE_REFERENCE_DISPLAY_THRESHOLD).length}
                   </span>
                 )}
               </button>
@@ -1704,7 +1710,7 @@ const ChatBotPage = () => {
 
       {/* Document Sidebar */}
       <DocumentSidebar
-        sourceReferences={currentSourceReferences.filter(ref => (ref.relevance_score || 0) >= 0.8)}
+        sourceReferences={currentSourceReferences.filter(ref => (ref.relevance_score || 0) >= SOURCE_REFERENCE_DISPLAY_THRESHOLD)}
         isOpen={sidebarOpen}
         onToggle={() => setSidebarOpen(!sidebarOpen)}
         onOpenDocument={handleOpenDocument}
@@ -1719,7 +1725,7 @@ const ChatBotPage = () => {
       />
 
       {/* Guided Flow Modal */}
-      {guidedFlowOpen && (
+      {false && guidedFlowOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
           <div className="w-full max-w-lg max-h-[90vh] overflow-auto">
             <GuidedFlow
@@ -1760,13 +1766,13 @@ const ChatBotPage = () => {
       <MobileSourceDrawer
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
-        sources={currentSourceReferences.filter(ref => (ref.relevance_score || 0) >= 0.8)}
+        sources={currentSourceReferences.filter(ref => (ref.relevance_score || 0) >= SOURCE_REFERENCE_DISPLAY_THRESHOLD)}
         onViewDocument={handleOpenDocument}
       />
 
       {/* Floating Action Button for Sources on Mobile - REMOVED as per user request to avoid overlap */}
       {/* <SourceFAB
-        sourceCount={currentSourceReferences.filter(ref => (ref.relevance_score || 0) >= 0.8).length}
+        sourceCount={currentSourceReferences.filter(ref => (ref.relevance_score || 0) >= SOURCE_REFERENCE_DISPLAY_THRESHOLD).length}
         onClick={() => setSidebarOpen(true)}
       /> */}
     </div>

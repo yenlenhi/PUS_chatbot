@@ -53,33 +53,33 @@ const QUICK_LINKS = [
 export default function LienHe() {
   return (
     <Layout>
-      {/* Hero Section - Orange/Amber Theme */}
-      <section className="relative bg-gradient-to-br from-orange-500 via-amber-600 to-yellow-600 text-white overflow-hidden">
+      {/* Hero Section - Unified Red-Navy Theme */}
+      <section className="relative bg-gradient-to-br from-red-800 via-red-900 to-[#1E3A5F] text-white overflow-hidden">
         {/* Background Decorations */}
         <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute -top-40 -right-40 w-80 h-80 bg-white/10 rounded-full blur-3xl"></div>
-          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-orange-400/20 rounded-full blur-3xl"></div>
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-yellow-400/10 rounded-full blur-3xl"></div>
+          <div className="absolute -top-40 -right-40 w-80 h-80 bg-yellow-500/10 rounded-full blur-3xl"></div>
+          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-red-500/20 rounded-full blur-3xl"></div>
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-white/5 rounded-full blur-3xl"></div>
         </div>
 
         <div className="container mx-auto px-4 py-20 relative z-10">
           <div className="max-w-4xl mx-auto text-center">
             {/* Badge */}
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full mb-6">
-              <Headphones className="w-4 h-4 text-yellow-300" />
-              <span className="text-sm font-bold text-yellow-200 uppercase tracking-wider">Hỗ trợ 24/7</span>
+              <Headphones className="w-4 h-4 text-yellow-400" />
+              <span className="text-sm font-bold text-yellow-400 uppercase tracking-wider">Hỗ trợ 24/7</span>
             </div>
 
             {/* Title */}
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-black mb-6 leading-tight">
               Liên Hệ
-              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 to-white">
+              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-yellow-200">
                 Với Chúng Tôi
               </span>
             </h1>
 
             {/* Subtitle */}
-            <p className="text-lg md:text-xl text-orange-100 max-w-2xl mx-auto leading-relaxed mb-10">
+            <p className="text-lg md:text-xl text-red-100 max-w-2xl mx-auto leading-relaxed mb-10">
               Chúng tôi sẵn sàng hỗ trợ và giải đáp mọi thắc mắc của bạn.
               Liên hệ ngay để được tư vấn chi tiết!
             </p>
@@ -88,7 +88,7 @@ export default function LienHe() {
             <div className="flex flex-wrap gap-4 justify-center">
               <Link
                 href="/chat-bot"
-                className="group inline-flex items-center gap-2 px-8 py-4 bg-white text-orange-600 font-bold rounded-full hover:bg-yellow-300 hover:text-orange-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-1"
+                className="group inline-flex items-center gap-2 px-8 py-4 bg-white text-red-700 font-bold rounded-full hover:bg-yellow-400 hover:text-red-800 transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-1"
               >
                 <MessageCircle className="w-5 h-5" />
                 Chat với AI 24/7
@@ -114,20 +114,20 @@ export default function LienHe() {
         <div className="container mx-auto px-4">
           {/* Section Header */}
           <div className="text-center mb-16">
-            <div className="inline-block px-6 py-2 rounded-full bg-orange-100 border border-orange-200 shadow-sm mb-4">
-              <span className="text-orange-800 text-sm font-bold tracking-widest uppercase">Thông tin liên hệ</span>
+            <div className="inline-block px-6 py-2 rounded-full bg-red-100 border border-red-200 shadow-sm mb-4">
+              <span className="text-red-800 text-sm font-bold tracking-widest uppercase">Thông tin liên hệ</span>
             </div>
             <h2 className="text-4xl md:text-5xl font-black text-gray-900 mb-4">
-              Kết Nối <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-600 to-amber-600">Ngay</span>
+              Kết Nối <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-amber-600">Ngay</span>
             </h2>
-            <div className="w-24 h-1 bg-gradient-to-r from-orange-600 to-amber-500 mx-auto rounded-full"></div>
+            <div className="w-24 h-1 bg-gradient-to-r from-red-600 to-amber-500 mx-auto rounded-full"></div>
           </div>
 
           {/* Contact Cards Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-5xl mx-auto">
             {/* Address */}
-            <div className="group bg-gradient-to-br from-orange-50 to-amber-50 rounded-3xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 border border-orange-100 hover:-translate-y-2">
-              <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-amber-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-orange-500/30 group-hover:scale-110 transition-transform">
+            <div className="group bg-gradient-to-br from-red-50 to-amber-50 rounded-3xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 border border-red-100 hover:-translate-y-2">
+              <div className="w-16 h-16 bg-gradient-to-br from-red-600 to-red-700 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-red-500/30 group-hover:scale-110 transition-transform">
                 <MapPin className="w-8 h-8 text-white" />
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-3">Địa chỉ</h3>
@@ -137,8 +137,8 @@ export default function LienHe() {
             </div>
 
             {/* Phone */}
-            <div className="group bg-gradient-to-br from-blue-50 to-indigo-50 rounded-3xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 border border-blue-100 hover:-translate-y-2">
-              <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-blue-500/30 group-hover:scale-110 transition-transform">
+            <div className="group bg-gradient-to-br from-red-50 to-amber-50 rounded-3xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 border border-red-100 hover:-translate-y-2">
+              <div className="w-16 h-16 bg-gradient-to-br from-red-600 to-red-700 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-red-500/30 group-hover:scale-110 transition-transform">
                 <Phone className="w-8 h-8 text-white" />
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-3">Điện thoại</h3>
@@ -153,8 +153,8 @@ export default function LienHe() {
             </div>
 
             {/* Email */}
-            <div className="group bg-gradient-to-br from-purple-50 to-violet-50 rounded-3xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 border border-purple-100 hover:-translate-y-2">
-              <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-violet-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-purple-500/30 group-hover:scale-110 transition-transform">
+            <div className="group bg-gradient-to-br from-red-50 to-amber-50 rounded-3xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 border border-red-100 hover:-translate-y-2">
+              <div className="w-16 h-16 bg-gradient-to-br from-red-600 to-red-700 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-red-500/30 group-hover:scale-110 transition-transform">
                 <Mail className="w-8 h-8 text-white" />
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-3">Email</h3>
@@ -169,8 +169,8 @@ export default function LienHe() {
             </div>
 
             {/* Working Hours */}
-            <div className="group bg-gradient-to-br from-emerald-50 to-teal-50 rounded-3xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 border border-emerald-100 hover:-translate-y-2">
-              <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-emerald-500/30 group-hover:scale-110 transition-transform">
+            <div className="group bg-gradient-to-br from-red-50 to-amber-50 rounded-3xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 border border-red-100 hover:-translate-y-2">
+              <div className="w-16 h-16 bg-gradient-to-br from-amber-500 to-amber-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-amber-500/30 group-hover:scale-110 transition-transform">
                 <Clock className="w-8 h-8 text-white" />
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-3">Giờ làm việc</h3>
@@ -205,8 +205,8 @@ export default function LienHe() {
             </div>
 
             {/* Social Media */}
-            <div className="group bg-gradient-to-br from-cyan-50 to-blue-50 rounded-3xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 border border-cyan-100 hover:-translate-y-2">
-              <div className="w-16 h-16 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-cyan-500/30 group-hover:scale-110 transition-transform">
+            <div className="group bg-gradient-to-br from-red-50 to-amber-50 rounded-3xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 border border-red-100 hover:-translate-y-2">
+              <div className="w-16 h-16 bg-gradient-to-br from-[#1E3A5F] to-[#162D4A] rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-blue-500/30 group-hover:scale-110 transition-transform">
                 <MessageCircle className="w-8 h-8 text-white" />
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-3">Mạng xã hội</h3>
@@ -234,9 +234,9 @@ export default function LienHe() {
               <span className="text-gray-800 text-sm font-bold tracking-widest uppercase">Các phòng ban</span>
             </div>
             <h2 className="text-4xl md:text-5xl font-black text-gray-900 mb-4">
-              Liên Hệ <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-600 to-orange-600">Trực Tiếp</span>
+              Liên Hệ <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-amber-600">Trực Tiếp</span>
             </h2>
-            <div className="w-24 h-1 bg-gradient-to-r from-amber-600 to-orange-500 mx-auto rounded-full"></div>
+            <div className="w-24 h-1 bg-gradient-to-r from-red-600 to-amber-500 mx-auto rounded-full"></div>
           </div>
 
           {/* Department Cards */}
@@ -275,7 +275,7 @@ export default function LienHe() {
             {/* Map */}
             <div>
               <h3 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-amber-500 rounded-xl flex items-center justify-center">
+                <div className="w-10 h-10 bg-gradient-to-br from-red-600 to-red-700 rounded-xl flex items-center justify-center">
                   <MapPin className="w-5 h-5 text-white" />
                 </div>
                 Bản đồ
@@ -301,12 +301,12 @@ export default function LienHe() {
             {/* Contact Form */}
             <div>
               <h3 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl flex items-center justify-center">
+                <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl flex items-center justify-center">
                   <Send className="w-5 h-5 text-white" />
                 </div>
                 Gửi tin nhắn
               </h3>
-              <form className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-2xl p-8 shadow-lg border border-orange-100">
+              <form className="bg-gradient-to-br from-red-50 to-amber-50 rounded-2xl p-8 shadow-lg border border-red-100">
                 <div className="space-y-5">
                   <div>
                     <label className="block text-sm font-bold text-gray-700 mb-2">
@@ -314,7 +314,7 @@ export default function LienHe() {
                     </label>
                     <input
                       type="text"
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
                       placeholder="Nhập họ tên của bạn"
                     />
                   </div>
@@ -324,7 +324,7 @@ export default function LienHe() {
                     </label>
                     <input
                       type="email"
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
                       placeholder="Nhập email của bạn"
                     />
                   </div>
@@ -334,7 +334,7 @@ export default function LienHe() {
                     </label>
                     <input
                       type="tel"
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
                       placeholder="Nhập số điện thoại"
                     />
                   </div>
@@ -344,13 +344,13 @@ export default function LienHe() {
                     </label>
                     <textarea
                       rows={4}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all resize-none"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all resize-none"
                       placeholder="Nhập nội dung tin nhắn"
                     ></textarea>
                   </div>
                   <button
                     type="submit"
-                    className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold rounded-xl hover:from-orange-600 hover:to-amber-600 transition-all duration-300 shadow-lg hover:shadow-xl"
+                    className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-red-600 to-red-700 text-white font-bold rounded-xl hover:from-red-700 hover:to-red-800 transition-all duration-300 shadow-lg hover:shadow-xl"
                   >
                     <Send className="w-5 h-5" />
                     Gửi tin nhắn
@@ -363,11 +363,11 @@ export default function LienHe() {
       </section>
 
       {/* Quick Links */}
-      <section className="py-16 bg-gradient-to-r from-orange-600 via-amber-600 to-yellow-600 text-white">
+      <section className="py-16 bg-gradient-to-r from-red-800 via-red-900 to-[#1E3A5F] text-white">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold mb-4">Khám phá thêm</h2>
-            <p className="text-orange-200">Tìm hiểu chi tiết về các hoạt động của Nhà trường</p>
+            <p className="text-red-200">Tìm hiểu chi tiết về các hoạt động của Nhà trường</p>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
@@ -397,7 +397,7 @@ export default function LienHe() {
             </div>
             <Link
               href="/chat-bot"
-              className="group inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold rounded-full hover:from-orange-600 hover:to-amber-600 transition-all duration-300 shadow-lg hover:shadow-xl"
+              className="group inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-red-600 to-red-700 text-white font-bold rounded-full hover:from-red-700 hover:to-red-800 transition-all duration-300 shadow-lg hover:shadow-xl"
             >
               <MessageCircle className="w-5 h-5" />
               Chat ngay với AI

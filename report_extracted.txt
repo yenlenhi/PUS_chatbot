@@ -1,0 +1,4748 @@
+
+=== PAGE 1 ===
+BỘ CÔNG AN 
+TRƯỜNG ĐẠI HỌC AN NINH NHÂN DÂN 
+ 
+ 
+CÔNG TRÌNH THAM DỰ CUỘC THI 
+SINH VIÊN NGHIÊN CỨU KHOA HỌC - UNITECH 
+NĂM HỌC 2025 - 2026 
+ 
+ 
+ 
+ 
+ỨNG DỤNG TRÍ TUỆ NHÂN TẠO (AI) PHÁT TRIỂN HỆ 
+THỐNG CHATBOT NHẰM TỐI ƯU HÓA CÔNG TÁC HỖ 
+TRỢ ĐÀO TẠO VÀ TƯ VẤN NGƯỜI HỌC TẠI TRƯỜNG 
+ĐẠI HỌC AN NINH NHÂN DÂN 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+THÀNH PHỐ HỒ CHÍ MINH, 2026 
+
+
+=== PAGE 2 ===
+ 
+ 
+ 
+BỘ CÔNG AN 
+TRƯỜNG ĐẠI HỌC AN NINH NHÂN DÂN 
+ 
+ 
+CÔNG TRÌNH THAM DỰ CUỘC THI 
+SINH VIÊN NGHIÊN CỨU KHOA HỌC - UNITECH 
+NĂM HỌC 2025 - 2026 
+ 
+ 
+ 
+ 
+ỨNG DỤNG TRÍ TUỆ NHÂN TẠO (AI) PHÁT TRIỂN HỆ 
+THỐNG CHATBOT NHẰM TỐI ƯU HÓA CÔNG TÁC HỖ 
+TRỢ ĐÀO TẠO VÀ TƯ VẤN NGƯỜI HỌC TẠI TRƯỜNG 
+ĐẠI HỌC AN NINH NHÂN DÂN 
+ 
+ 
+NHÓM SINH VIÊN THỰC HIỆN: 
+1) VŨ QUỐC HƯNG 
+ 
+ 
+VB2 D5 
+2) TRƯƠNG VĂN KHẢI  
+ 
+VB2 D5 
+3) NGUYỄN HỮU TẤN DŨNG 
+D32C 
+ 
+ 
+ 
+ 
+THÀNH PHỐ HỒ CHÍ MINH, 2026 
+
+
+=== PAGE 3 ===
+ 
+ 
+ 
+LỜI CẢM ƠN 
+Trong suốt quá trình nghiên cứu, xây dựng và hoàn thiện đề tài “Ứng 
+dụng trí tuệ nhân tạo (AI) phát triển hệ thống Chatbot nhằm tối ưu hóa 
+công tác hỗ trợ đào tạo và tư vấn người học tại trường Đại học An Ninh 
+Nhân Dân”, nhóm nghiên cứu đã nhận được sự quan tâm, giúp đỡ và hỗ trợ 
+quý báu từ nhiều tập thể và cá nhân. 
+Trước hết, nhóm xin bày tỏ lòng biết ơn sâu sắc đến Ban Giám hiệu 
+Trường Đại học An ninh Nhân dân, đã tạo điều kiện thuận lợi về cơ sở vật chất, 
+hạ tầng kỹ thuật và môi trường nghiên cứu để nhóm có thể triển khai, thử 
+nghiệm và hoàn thiện đề tài. 
+Nhóm nghiên cứu xin chân thành cảm ơn các phòng ban, khoa chuyên 
+môn trong nhà trường cùng các giảng viên hướng dẫn và cán bộ kỹ thuật đã 
+cung cấp tài liệu, phối hợp, góp ý và tham gia đánh giá, giúp hoàn thiện hệ 
+thống PSU Chatbot về cả kỹ thuật lẫn tính ứng dụng. 
+Trong quá trình thực hiện đề tài, nhóm khó tránh khỏi những thiếu sót 
+do kiến thức chuyên môn và kỹ năng còn hạn chế. Vì vậy, nhóm rất mong nhận 
+được ý kiến đóng góp quý báu từ quý Thầy, Cô để nhóm có thể rút kinh nghiệm, 
+hoàn thiện bản thân và đáp ứng được kỳ vọng của quý Thầy, Cô và nhà trường. 
+Nhóm nghiên cứu xin trân trọng cảm ơn! 
+ TP. Hồ Chí Minh, ngày 20 tháng 1 năm 2026 
+    Nhóm nghiên cứu đề tài 
+ 
+ 
+Vũ Quốc Hưng 
+Trương Văn Khải 
+Nguyễn Hữu Tấn Dũng 
+
+
+=== PAGE 4 ===
+ 
+ 
+ 
+LỜI CAM ĐOAN 
+Tôi xin cam đoan đề tài “Ứng dụng trí tuệ nhân tạo (AI) phát triển hệ 
+thống Chatbot nhằm tối ưu hóa công tác hỗ trợ đào tạo và tư vấn người học tại 
+trường Đại học An Ninh Nhân Dân” là công trình nghiên cứu do nhóm tác giả 
+tự thực hiện. 
+Các kết quả, số liệu, mô hình, hình ảnh và nội dung trình bày trong đề tài 
+đều được thu thập, xử lý và phân tích một cách trung thực, khách quan, đúng 
+với thực tế. Đề tài không sao chép, không trùng lặp với bất kỳ công trình nghiên 
+cứu nào đã được công bố trước đây. Mọi tài liệu, dữ liệu, công trình của các tác 
+giả khác (nếu có sử dụng trong quá trình nghiên cứu) đều được trích dẫn rõ 
+ràng và tuân thủ quy định về bản quyền, trích dẫn khoa học. 
+Tôi xin hoàn toàn chịu trách nhiệm trước pháp luật, trước Trường Đại 
+học An ninh Nhân dân và các cơ quan quản lý khoa học về tính trung thực, 
+chính xác và toàn vẹn của nội dung trong đề tài này. 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+
+=== PAGE 5 ===
+ 
+ 
+ 
+MỤC LỤC 
+LỜI CẢM ƠN ................................................................................................... 3 
+LỜI CAM ĐOAN ............................................................................................. 4 
+MỤC LỤC ......................................................................................................... 5 
+DANH MỤC HÌNH ẢNH .............................................................................. 11 
+TÓM TẮT ĐỀ TÀI ........................................................................................... 2 
+CHƯƠNG I. THÔNG TIN CHUNG ................................................................ 2 
+1.1. Tên đề tài ................................................................................................ 2 
+1.2. Tên phầm mềm/sản phẩm công nghệ của đề tài..................................... 2 
+1.3. Nhóm tác giả, lớp ................................................................................... 2 
+1.4. Đơn vị thụ hưởng .................................................................................... 3 
+1.5. Lý do thực hiện đề tài ............................................................................. 3 
+1.6. Mục tiêu, phạm vi ứng dụng .................................................................. 5 
+1.6.1. Mục tiêu ........................................................................................... 5 
+1.6.2. Dự kiến kết quả, khả năng áp dụng vào thực tế và địa chỉ áp dụng 6 
+1.7. Thuật ngữ và từ viết tắt .......................................................................... 9 
+CHƯƠNG II. THÔNG TIN VỀ THIẾT KẾ, XÂY DỰNG PHẦN MỀM/SẢN 
+PHẨM CÔNG NGHỆ ..................................................................................... 21 
+2.1. Tổng quan về giải pháp ........................................................................ 21 
+2.1.1. Mô tả về sản phẩm công nghệ ....................................................... 21 
+2.1.2. Đóng góp mới của đề tài ................................................................ 21 
+
+
+=== PAGE 6 ===
+ 
+ 
+ 
+2.1.3. Chức năng chính ............................................................................ 24 
+2.1.4. Đối tượng sử dụng ......................................................................... 25 
+2.2. Kiến trúc hệ thống và Công nghệ sử dụng ........................................... 26 
+2.2.1. Kiến trúc tổng thể (4-tier Architecture) ......................................... 26 
+2.2.2. Tầng Frontend ................................................................................ 29 
+2.2.3. Tầng Backend ................................................................................ 30 
+2.2.4. Tầng Database ............................................................................... 32 
+2.2.5. Tầng AI/Machine Learning ........................................................... 33 
+2.3. Thiết kế chi tiết và API/Giao tiếp hệ thống .......................................... 35 
+2.3.1. Luồng dữ liệu toàn hệ thống .......................................................... 35 
+2.3.1.1. Luồng truy vấn từ người dùng (User → Chat UI → /chat → 
+RAGService) ......................................................................................... 35 
+2.3.1.2. Luồng ingest tài liệu (Admin → Upload PDF/Drop folder → 
+IngestionService) .................................................................................. 37 
+2.3.2. Quy trình xử lý dữ liệu .................................................................. 40 
+2.3.2.1. Tổng quan quy trình xử lý tài liệu ........................................... 40 
+2.3.2.2. Giai đoạn 1 – Tiếp nhận và kiểm tra tài liệu (Document 
+Ingestion) .............................................................................................. 41 
+2.3.2.3. Giai đoạn 2 – Trích xuất văn bản (Text Extraction) ................ 41 
+2.3.2.4. Giai đoạn 3 – Chiến lược chia nhỏ nội dung (Chunking 
+Strategy) ................................................................................................ 42 
+2.3.2.5. Giai đoạn 4 – Sinh vector đặc trưng (Embedding Generation) 42 
+2.3.2.6. Giai đoạn 5 – Lưu trữ và lập chỉ mục (Storage & Indexing) .. 43 
+2.3.2.7. Dịch vụ Auto-Ingestion và quản lý tài liệu .............................. 43 
+
+
+=== PAGE 7 ===
+ 
+ 
+ 
+2.3.2.8. Giám sát, thống kê và xử lý sự cố ........................................... 44 
+2.3.3. Quy trình RAG Retrieval ............................................................... 44 
+2.3.3.1. Tổng quan quy trình RAG Retrieval ....................................... 44 
+2.3.3.2. Bước 1 – Chuẩn hóa truy vấn (Query Normalization) ............ 46 
+2.3.3.3. Bước 2 – Dense Retrieval (Vector Search) .............................. 46 
+2.3.3.4. Bước 3 – Sparse Retrieval (BM25) ......................................... 47 
+2.3.3.5. Bước 4 – Hybrid Fusion (Kết hợp Dense + Sparse) ................ 47 
+2.3.3.6. Bước 5 – Reranking bằng Cross-Encoder ............................... 48 
+2.3.3.7. Bước 6 – Lựa chọn context cuối cùng cho LLM ..................... 49 
+2.3.4. Thiết kế cơ sở dữ liệu .................................................................... 50 
+2.3.4.1. Danh sách bảng ........................................................................ 50 
+2.3.4.2. Mô tả các trường dữ liệu, quan hệ ........................................... 51 
+CHƯƠNG III. CƠ SỞ LÝ THUYẾT ............................................................. 54 
+3.1. RAG - Retrieval-Augmented Generation ............................................. 54 
+3.2. Vector Embeddings và Semantic Search ............................................. 55 
+3.2.1. Khái niệm Vector Embeddings...................................................... 55 
+3.2.2. Semantic Search ............................................................................. 56 
+3.3. BM25 .................................................................................................... 56 
+3.4. Hybrid Search ....................................................................................... 57 
+3.5. Cross-Encoder Reranking ..................................................................... 58 
+3.5.1. Bi-Encoder vs Cross-Encoder ....................................................... 58 
+3.5.2. Reranking ....................................................................................... 60 
+
+
+=== PAGE 8 ===
+ 
+ 
+ 
+3.6. LLM - Large Language Model ............................................................. 61 
+CHƯƠNG IV. THÔNG TIN VỀ TRIỂN KHAI ỨNG DỤNG PHẦN 
+MỀM/SẢN PHẨM CÔNG NGHỆ ................................................................. 62 
+4.1. Cài đặt và Triển khai ............................................................................ 62 
+4.1.1. Yêu cầu phần cứng/phần mềm ...................................................... 62 
+4.1.1.1. Yêu cầu phần cứng ................................................................... 62 
+4.1.1.2. Yêu cầu phần mềm ................................................................... 63 
+4.1.2. Các bước cài đặt ............................................................................ 64 
+4.1.3. Cấu hình hệ thống .......................................................................... 65 
+4.2. An toàn và bảo mật ............................................................................... 67 
+4.2.1. Cơ chế xác thực dựa trên JWT (JWT Authentication) .................. 67 
+4.2.2. Lớp trung gian bảo mật (Security Middleware) ............................ 69 
+4.2.3. Cấu hình CORS (Cross-Origin Resource Sharing) ....................... 70 
+4.2.4. Phân quyền người dùng ................................................................. 71 
+4.2.5. Quản lý phiên đăng nhập ............................................................... 72 
+4.2.6. Mã hóa, sao lưu dữ liệu ................................................................. 73 
+4.2.7. Toàn Vẹn Dữ Liệu và Chống Lạm Dụng (Rate Limiting) ............ 73 
+4.2.8. Bảo Mật Triển Khai (Deployment Security) ................................. 74 
+CHƯƠNG V. HƯỚNG DẪN SỬ DỤNG PHẦN MỀM/SẢN PHẨM CÔNG 
+NGHỆ .............................................................................................................. 75 
+5.1. Tổng quan hệ thống .............................................................................. 75 
+5.2. Trang Chatbot người dùng ................................................................... 78 
+
+
+=== PAGE 9 ===
+ 
+ 
+ 
+5.2.1. Mục tiêu chức năng ....................................................................... 78 
+5.2.2. Bố cục giao diện và thành phần ..................................................... 80 
+5.2.3. Luồng thao tác ............................................................................... 80 
+5.3. Bảng điều khiển (Admin Dashboard) ................................................... 81 
+5.3.1. Mục tiêu chức năng ....................................................................... 81 
+5.3.2. Bố cục giao diện và thành phần ..................................................... 82 
+5.3.3. Luồng thao tác ............................................................................... 83 
+5.4. Trang Lịch sử chat ................................................................................ 84 
+5.4.1. Mục tiêu chức năng ....................................................................... 84 
+5.4.2. Bố cục giao diện và thành phần ..................................................... 85 
+5.4.3. Luồng thao tác ............................................................................... 86 
+5.5. Trang Phản hồi người dùng .................................................................. 86 
+5.5.1. Mục tiêu chức năng ....................................................................... 87 
+5.5.2. Bố cục giao diện và thành phần ..................................................... 88 
+5.5.3. Luồng thao tác ............................................................................... 88 
+5.6. Trang Quản lý tài liệu ........................................................................... 89 
+5.6.1. Mục tiêu chức năng ....................................................................... 90 
+5.6.2. Bố cục giao diện và thành phần ..................................................... 91 
+5.6.3. Luồng thao tác ............................................................................... 92 
+5.7. Trang File đính kèm (Attachments) ..................................................... 93 
+
+
+=== PAGE 10 ===
+ 
+ 
+ 
+5.7.1. Mục tiêu chức năng Trang ............................................................. 95 
+5.7.2. Bố cục giao diện và thành phần ..................................................... 95 
+5.7.3. Luồng thao tác ............................................................................... 96 
+CHƯƠNG VI. KẾT LUẬN VÀ HƯỚNG PHÁT TRIỂN ............................. 98 
+6.1. Kết luận ................................................................................................ 98 
+6.2. Hạn chế ................................................................................................. 99 
+6.3. Hướng phát triển ................................................................................... 99 
+TÀI LIỆU THAM KHẢO ............................................................................. 102 
+PHỤ LỤC ...................................................................................................... 108 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+
+=== PAGE 11 ===
+ 
+ 
+ 
+DANH MỤC HÌNH ẢNH 
+Hình 1: Thị trường AI trong giáo dục toàn cầu từ 2016 dự đoán đến 2027 ..... 4 
+Hình 2: Hệ thống Dashboard phân tích hoạt động theo thời gian thực. ........... 8 
+Hình 3: Chatbot của ĐH Tôn Đức Thắng còn trả lời theo rule-based, không 
+chính xác. ........................................................................................................ 22 
+Hình 4: Chatbot Công an Thành phố Hà Nội hoạt động tốt, tuy nhiên giao diện 
+còn cơ bản, không thân thiện với người dùng. ................................................ 24 
+Hình 5: Kiến trúc 4 tầng. ................................................................................. 27 
+Hình 6: Sơ đồ từng tầng. ................................................................................. 28 
+Hình 7: Next.js ................................................................................................ 29 
+Hình 8: FastAPI. .............................................................................................. 30 
+Hình 9: PostgreSQL. ....................................................................................... 34 
+Hình 10: Luồng truy vấn người dùng. ............................................................ 37 
+Hình 11: Luồng nhúng dữ liệu. ....................................................................... 40 
+Hình 12: Quy trình xử lý dữ liệu. .................................................................... 41 
+Hình 13: Quy trình truy vấn RAG. ................................................................. 46 
+Hình 14: Hybrid Search Fusion. ..................................................................... 48 
+Hình 15: Kiến trúc RAG tổng thể. .................................................................. 55 
+Hình 16: So sánh Cross-Encoder và Bi-Encoder. ........................................... 59 
+Hình 17: JWT. ................................................................................................. 67 
+Hình 18: Quy trình bảo mật JWT. ................................................................... 69 
+
+
+=== PAGE 12 ===
+ 
+ 
+ 
+Hình 19: Sơ đồ Use-case ................................................................................. 75 
+Hình 20: Trang chủ của hệ thống PSU Chatbot. ............................................. 77 
+Hình 21: Trang chat của hệ thống PSU Chatbot. ............................................ 78 
+Hình 22: Trang bảng điều khiển của hệ thống PSU Chatbot. ......................... 81 
+Hình 23: Trang lịch sử chat của hệ thống PSU Chatbot. ................................ 84 
+Hình 24: Trang Phản hồi người dùng của hệ thống PSU Chatbot. ................. 87 
+Hình 25: Trang Quản lý tài liệu của hệ thống PSU Chatbot. .......................... 90 
+Hình 26: Trang Quản lý File đính kèm của hệ thống PSU Chatbot. .............. 94 
+Hình 27: Người dùng hỏi về mẫu đơn và được trả về mẫu đơn mong muốn. 94 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+
+=== PAGE 13 ===
+ 
+ 
+ 
+ 
+TÓM TẮT ĐỀ TÀI 
+Trong bối cảnh chuyển đổi số đang diễn ra mạnh mẽ trong lĩnh vực giáo 
+dục và đào tạo, việc ứng dụng trí tuệ nhân tạo (AI) nhằm nâng cao hiệu quả 
+công tác hỗ trợ đào tạo và tư vấn người học trở thành xu hướng tất yếu. Tại 
+Trường Đại học An ninh Nhân dân, các hoạt động tư vấn và hỗ trợ học vụ hiện 
+nay vẫn chủ yếu dựa trên các phương thức truyền thống, dẫn đến tình trạng quá 
+tải, phản hồi chậm và chưa đáp ứng đầy đủ nhu cầu ngày càng đa dạng của học 
+viên, thí sinh và phụ huynh. 
+Xuất phát từ thực tiễn đó, đề tài “Ứng dụng trí tuệ nhân tạo (AI) phát 
+triển hệ thống Chatbot nhằm tối ưu hóa công tác hỗ trợ đào tạo và tư vấn người 
+học tại trường Đại học An Ninh Nhân Dân” tập trung nghiên cứu, xây dựng và 
+triển khai thử nghiệm hệ thống PSU Chatbot – một chatbot thông minh ứng 
+dụng mô hình Retrieval-Augmented Generation (RAG [1], [2]). Hệ thống được 
+thiết kế nhằm cung cấp thông tin đào tạo chính xác, chính thống và kịp thời cho 
+học viên, thí sinh, và cán bộ đào tạo dựa trên kho dữ liệu đã được kiểm duyệt 
+của nhà trường. 
+PSU Chatbot được xây dựng trên kiến trúc RAG [1], [2] kết hợp nhiều 
+kỹ thuật truy xuất và xử lý ngôn ngữ hiện đại như Vector Embedding [3], BM25 
+[4], Hybrid Search [5], [6], [7], Reciprocal Rank Fusion (RRF) [5] và Cross-
+Encoder Reranking [8], cùng mô hình ngôn ngữ lớn (LLM [9]). Hệ thống cho 
+phép truy xuất thông tin hiệu quả, giảm hiện tượng sinh nội dung sai lệch, đồng 
+thời nâng cao độ chính xác và tính phù hợp của câu trả lời tùy theo ngữ cảnh. 
+Bên cạnh đó, đề tài xây dựng cơ chế quản lý dữ liệu tập trung, dashboard phân 
+tích hoạt động theo thời gian thực và giao diện người dùng thân thiện, hỗ trợ 
+đa nền tảng, bảo đảm an toàn thông tin theo yêu cầu của ngành Công An. 
+Kết quả triển khai thử nghiệm cho thấy PSU Chatbot vận hành ổn định, 
+đạt độ chính xác cao, thời gian phản hồi nhanh và có khả năng xử lý hiệu quả 
+phần lớn các câu hỏi thường gặp, qua đó góp phần giảm tải đáng kể cho cán bộ 
+đào tạo và nâng cao trải nghiệm của người học. Đề tài có ý nghĩa thực tiễn cao, 
+
+
+=== PAGE 14 ===
+ 
+ 
+ 
+ 
+không chỉ phù hợp để áp dụng tại Trường Đại học An ninh Nhân dân mà còn 
+có khả năng mở rộng cho các cơ sở đào tạo trong lực lượng Công an nhân dân, 
+góp phần thúc đẩy chuyển đổi số và hiện đại hóa công tác giáo dục – đào tạo 
+trong giai đoạn hiện nay. 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+
+=== PAGE 15 ===
+2 
+ 
+ 
+ 
+CHƯƠNG I. THÔNG TIN CHUNG 
+1.1. Tên đề tài 
+Đề tài “Ứng dụng trí tuệ nhân tạo (AI) phát triển hệ thống Chatbot 
+nhằm tối ưu hóa công tác hỗ trợ đào tạo và tư vấn người học tại Trường 
+Đại học An ninh Nhân dân” tập trung nghiên cứu và xây dựng một hệ thống 
+chatbot thông minh, góp phần nâng cao hiệu quả cung cấp thông tin, hỗ trợ học 
+tập và tư vấn kịp thời cho người học, đồng thời giảm tải công việc cho các đơn 
+vị chức năng trong nhà trường. 
+1.2. Tên phầm mềm/sản phẩm công nghệ của đề tài  
+Sản phẩm công nghệ cốt lõi của đề tài là hệ thống PSU Chatbot, một 
+nền tảng ứng dụng trí tuệ nhân tạo (AI) tiên tiến được phát triển chuyên biệt 
+nhằm số hóa và nâng cao hiệu quả công tác tư vấn tuyển sinh, cũng như hỗ trợ 
+đào tạo tại Trường Đại học An ninh Nhân dân. 
+Hiện tại, hệ thống đã được triển khai thực tế và vận hành trực tuyến tại 
+địa chỉ chính thức: https://psuchatbot.com/. Website này đóng vai trò là cổng 
+thông tin tập trung, cho phép người dùng (thí sinh, sinh viên, phụ huynh) truy 
+cập và tương tác 24/7 để tra cứu quy chế, biểu mẫu và các thông báo mới nhất. 
+Đồng thời, đây cũng là môi trường vận hành các phân hệ quản trị tri thức và 
+phân tích dữ liệu chuyên sâu, hỗ trợ đắc lực cho cán bộ Nhà trường trong việc 
+hiện đại hóa quy trình tiếp nhận và xử lý thông tin. 
+1.3. Nhóm tác giả, lớp 
+Nhóm tác giả của đề tài gồm: 
+1. Vũ Quốc Hưng; sinh viên lớp VB2 D5 
+2. Trương Văn Khải; sinh viên lớp VB2 D5 
+3. Nguyễn Hữu Tấn Dũng, sinh viên lớp D32C.  
+
+
+=== PAGE 16 ===
+3 
+ 
+ 
+ 
+Các thành viên trong nhóm cùng phối hợp nghiên cứu, trao đổi và triển khai 
+đề tài với mục tiêu xây dựng sản phẩm có tính ứng dụng cao và phù hợp với 
+thực tiễn đào tạo của nhà trường. 
+1.4. Đơn vị thụ hưởng 
+Đề tài được triển khai nhằm phục vụ trực tiếp Trường Đại học An ninh 
+Nhân dân và Phòng Đảm Bảo Chất Lượng Đào Tạo. Kết quả nghiên cứu 
+đóng góp giải pháp công nghệ hỗ trợ cung cấp và tra cứu thông tin về tuyển 
+sinh, đào tạo, quy chế và học vụ một cách nhanh chóng, chính xác và thống 
+nhất. 
+1.5. Lý do thực hiện đề tài 
+Cuộc Cách mạng công nghiệp lần thứ tư, đặc biệt là sự bứt phá của công 
+nghệ trí tuệ nhân tạo (AI), đang làm thay đổi sâu sắc cách thức con người học 
+tập, làm việc và quản lý tri thức. Trong lĩnh vực giáo dục đại học, AI không chỉ 
+là xu hướng công nghệ mà đã trở thành công cụ chiến lược, hỗ trợ các cơ sở 
+đào tạo nâng cao chất lượng giảng dạy, tối ưu hóa công tác quản lý và cải thiện 
+trải nghiệm của người học. 
+ 
+
+
+=== PAGE 17 ===
+4 
+ 
+ 
+ 
+Hình 1: Thị trường AI trong giáo dục toàn cầu từ 2016 dự đoán đến 2027 
+(Nguồn: www.gminsights.com) 
+Tại Trường Đại học An ninh nhân dân, các hoạt động hỗ trợ đào tạo và 
+tư vấn người học hiện nay vẫn chủ yếu được triển khai thông qua gặp trực tiếp, 
+email hoặc điện thoại. Những phương thức truyền thống này tuy bảo đảm tính 
+chính thống, nhưng đang bộc lộ nhiều hạn chế: tạo áp lực lớn lên đội ngũ cán 
+bộ, thời gian xử lý yêu cầu còn chậm, khó bảo đảm tính thống nhất trong nội 
+dung giải đáp và khó theo dõi, tổng hợp nhu cầu thông tin thực tế của người 
+học. Khi quy mô tuyển sinh và số lượng học viên ngày càng tăng, khối lượng 
+công việc đặt lên vai giảng viên và cán bộ quản lý đào tạo cũng tăng theo, tiềm 
+ẩn nguy cơ ảnh hưởng đến chất lượng giáo dục và hiệu quả quản lý. 
+Trong bối cảnh đó, ứng dụng AI để xây dựng hệ thống chatbot hỗ trợ đào 
+tạo trở thành một nhu cầu cấp thiết. Một chatbot được thiết kế bài bản có thể 
+vận hành liên tục 24/7, cung cấp thông tin nhanh chóng, chính xác và nhất quán 
+dựa trên các văn bản, quy chế, thông báo chính thức của Nhà trường. Nhờ đó, 
+người học có thể chủ động tra cứu thông tin mọi lúc, mọi nơi, trong khi cán bộ 
+đào tạo giảm được đáng kể khối lượng công việc lặp lại, có thêm thời gian tập 
+trung cho các nhiệm vụ mang tính chuyên sâu và chiến lược hơn. 
+Không chỉ dừng lại ở việc “trả lời tự động”, chatbot AI còn sở hữu nhiều 
+ưu điểm nổi bật: khả năng học hỏi và cải thiện dần theo thời gian dựa trên phản 
+hồi và lịch sử tương tác; khả năng cá nhân hóa theo ngữ cảnh, cung cấp câu trả 
+lời phù hợp với từng loại đối tượng (thí sinh, sinh viên, phụ huynh…); và khả 
+năng tự động hóa các tác vụ lặp lại, từ đó tối ưu nguồn lực, giảm tải cho bộ 
+phận tư vấn và nâng cao chất lượng phục vụ người học. 
+Với những lý do trên, việc nghiên cứu và phát triển một hệ thống chatbot 
+hỗ trợ đào tạo dựa trên công nghệ AI, phù hợp với đặc thù Trường Đại học An 
+ninh nhân dân, không chỉ đáp ứng yêu cầu thực tiễn của Nhà trường mà còn 
+bám sát chủ trương chuyển đổi số trong ngành Công an và xu thế hiện đại hóa 
+
+
+=== PAGE 18 ===
+5 
+ 
+ 
+ 
+giáo dục đại học. Đây chính là định hướng và nội dung trọng tâm của công trình 
+nghiên cứu mà chúng tôi triển khai trong luận văn này. 
+1.6. Mục tiêu, phạm vi ứng dụng  
+1.6.1. Mục tiêu 
+Mục tiêu chung: Xây dựng và triển khai thử nghiệm một hệ thống 
+chatbot ứng dụng trí tuệ nhân tạo theo hướng RAG [1], [2], hỗ trợ công tác 
+đào tạo và tư vấn người học tại Trường Đại học An ninh Nhân dân. Hệ thống 
+nhằm góp phần nâng cao hiệu quả quản lý đào tạo, cải thiện chất lượng phục 
+vụ và trải nghiệm tra cứu thông tin của thí sinh, sinh viên, phụ huynh và cán 
+bộ nhà trường. 
+Mục tiêu cụ thể: 
+• Mục tiêu 1: Thu thập, số hóa và chuẩn hóa kho tài liệu chuyên sâu 
+phục vụ đào tạo: Trọng tâm là hệ thống hóa và số hóa toàn bộ hệ thống 
+văn bản quy chế, quy định, quyết định, thông báo, các biểu mẫu và cẩm 
+nang đào tạo của Trường Đại học An ninh Nhân dân từ các nguồn chính 
+thống. Quá trình này nhằm xây dựng một cơ sở tri thức chuẩn hóa, có 
+cấu trúc và dữ liệu "sạch", đóng vai trò là nền tảng cốt lõi cho việc huấn 
+luyện và truy xuất thông tin của hệ thống chatbot. 
+• Mục tiêu 2: Xây dựng cơ chế quản trị dữ liệu thông minh và đảm 
+bảo độ tin cậy thông tin: Thiết kế hệ thống quản lý dữ liệu tập trung với 
+quy trình tự động hóa nạp liệu cho phép cập nhật liên tục (upload PDF, 
+xử lý lại tài liệu). Hệ thống đảm bảo tính nhất quán bằng cách luôn truy 
+xuất từ phiên bản mới nhất, đồng thời ứng dụng công nghệ RAG [1], [2] 
+để giải quyết hiện tượng "ảo giác" của AI. Mọi câu trả lời phải kèm theo 
+trích dẫn nguồn minh bạch (tên văn bản, số trang, điều khoản), giúp nâng 
+cao độ chính xác và sự tin tưởng của người dùng. 
+• Mục tiêu 3: Phát triển nền tảng Web tích hợp đa giao diện đáp ứng 
+nhu cầu đa phương diện: Xây dựng hệ thống web đồng bộ với hai phân 
+hệ chính: 
+
+
+=== PAGE 19 ===
+6 
+ 
+ 
+ 
+o (i) Giao diện Chatbot (Giao diện người dùng): Cung cấp trải 
+nghiệm thân thiện, tốc độ phản hồi nhanh cho thí sinh, sinh viên 
+và phụ huynh tra cứu tuyển sinh, học phí, thủ tục hành chính 24/7; 
+o (ii) Dashboard Quản trị (Giao diện quản trị): Công cụ dành cho 
+cán bộ quản lý để giám sát hoạt động, quản lý vòng đời tài liệu và 
+khai thác thống kê tương tác, định hướng hệ thống trở thành một 
+"trợ lý ảo" đắc lực trong công tác quản lý đào tạo. 
+• Mục tiêu 4: Thử nghiệm diện rộng và đánh giá hiệu quả vận hành 
+thực tế: Tổ chức đánh giá thực nghiệm để so sánh hiệu quả của chatbot 
+với các kênh hỗ trợ truyền thống (Hotline, Email, tư vấn trực tiếp). Việc 
+đánh giá được định lượng qua các chỉ số trên dashboard như: thời gian 
+phản hồi, tỷ lệ hài lòng của người dùng và độ chính xác trong truy xuất 
+tri thức. Kết quả thực nghiệm sẽ là cơ sở quan trọng để đề xuất các 
+phương án tối ưu hóa thuật toán RAG [1], [2] và cải thiện giao diện trong 
+các giai đoạn tiếp theo. 
+• Mục tiêu 5: Xây dựng cơ chế phân tích hành vi và tối ưu hóa hệ 
+thống liên tục: Tích hợp module phân tích để theo dõi lịch sử truy vấn, 
+nhận diện các chủ đề đang được quan tâm và thu thập phản hồi trực tiếp 
+(Thích /Không thích /Báo cáo) từ người dùng. Thông qua vòng lặp phản 
+hồi, hệ thống sẽ liên tục được tinh chỉnh về tham số truy xuất và cập nhật 
+nội dung tri thức, đảm bảo chatbot luôn thích ứng linh hoạt với nhu cầu 
+thực tế và sự thay đổi của các quy định đào tạo theo thời gian. 
+1.6.2. Dự kiến kết quả, khả năng áp dụng vào thực tế và địa chỉ áp dụng 
+Đề tài dự kiến xây dựng và triển khai thử nghiệm thành công hệ thống 
+chatbot ứng dụng trí tuệ nhân tạo phục vụ công tác hỗ trợ đào tạo tại Trường 
+Đại học An ninh Nhân dân, với tên gọi PSU Chatbot. Hệ thống khai thác tập 
+dữ liệu được thu thập từ các phòng ban và khoa chuyên môn của nhà trường 
+(như Phòng Công tác Sinh viên, Phòng Đào tạo, Ban Tuyển sinh, Khoa Luật…), 
+bao gồm các quy trình, quy định, hướng dẫn và văn bản liên quan đến đào tạo, 
+tuyển sinh,... PSU Chatbot được phát triển dựa trên kỹ thuật RAG [1], [2] 
+(Retrieval-Augmented Generation) kết hợp với vector database để cung cấp câu 
+
+
+=== PAGE 20 ===
+7 
+ 
+ 
+ 
+trả lời chính xác từ kho tài liệu của trường. Trên cơ sở phương pháp nghiên cứu 
+đã xác định và mô hình hệ thống được xây dựng, đề tài dự kiến đạt được các 
+kết quả chính như sau: 
+Thứ nhất, xây dựng và hoàn thiện hệ thống Chatbot ứng dụng trí tuệ nhân 
+tạo phục vụ đào tạo: hệ thống chatbot có khả năng tiếp nhận, phân tích và trả 
+lời câu hỏi liên quan đến quy chế, quy định, thủ tục hành chính, đào tạo và học 
+vụ của Trường Đại học An ninh Nhân dân. PSU Chatbot được trang bị cơ chế 
+học hỏi liên tục, phân tích hành vi người dùng và cá nhân hóa phản hồi theo 
+ngữ cảnh, giúp nâng cao độ chính xác và chất lượng tương tác. Hệ thống vận 
+hành ổn định 24/7 với các chỉ số hiệu năng thỏa yêu cầu cao: độ chính xác ≥ 
+80%, tỷ lệ trả lời thành công ≥ 95%, thời gian phản hồi ≤ 2 giây; đồng thời bảo 
+đảm an toàn thông tin và tuân thủ các quy định của Bộ Công an. 
+Thứ hai, xây dựng bộ dữ liệu đào tạo được số hóa, chuẩn hóa và quản lý 
+tập trung: đề tài hình thành kho dữ liệu gồm quy chế, quy định, văn bản hướng 
+dẫn, thông báo và tài liệu đào tạo, được thu thập từ các phòng/khoa và kiểm 
+duyệt chặt chẽ bởi nhà trường. Dữ liệu được chuẩn hóa, phân loại, gán nhãn và 
+tích hợp vào kho tri thức thống nhất, bảo đảm chatbot truy xuất nhanh và chính 
+xác. Hệ thống cho phép cập nhật dữ liệu dễ dàng và chủ động, giúp các đơn vị 
+tự quản lý và bổ sung tri thức mới mà không cần đào tạo lại toàn bộ mô hình, 
+tạo nền tảng cho việc duy trì và mở rộng bền vững. 
+Thứ ba, xây dựng Dashboard phân tích hoạt động theo thời gian thực: 
+dashboard được thiết kế trực quan, đáp ứng yêu cầu quản lý đào tạo của nhà 
+trường, cho phép theo dõi: trạng thái hệ thống, số lượng người dùng, hành vi 
+người dùng, tỷ lệ câu hỏi thành công, mức độ hài lòng, tỷ lệ lỗi, cũng như các 
+chủ đề được quan tâm theo thời gian thực. Các dữ liệu này không chỉ phục vụ 
+công tác giám sát an ninh mạng mà còn là cơ sở quan trọng để đánh giá hiệu 
+quả hệ thống và đề xuất phương án cải tiến trong tương lai. 
+
+
+=== PAGE 21 ===
+8 
+ 
+ 
+ 
+ 
+Hình 2: Hệ thống Dashboard phân tích hoạt động theo thời gian thực. 
+Thứ tư, xây dựng giao diện người dùng thân thiện, hỗ trợ đa nền tảng: hệ 
+thống hỗ trợ truy cập qua cả máy tính và điện thoại, với giao diện thân thiện, 
+dễ sử dụng. PSU Chatbot tích hợp tính năng chuyển đổi giọng nói – văn bản, 
+hỗ trợ đăng tải hình ảnh trong câu hỏi, khả năng chuyển đổi đa ngôn ngữ, giúp 
+học viên, cán bộ thao tác nhanh và thuận tiện. Thiết kế phù hợp tiêu chuẩn nhận 
+diện của Trường ĐH An ninh Nhân dân. 
+Thứ năm, tự động hóa quy trình tư vấn, giảm tải công việc cho cán bộ 
+đào tạo: hệ thống được kỳ vọng xử lý 40–50% số lượng câu hỏi thường gặp, 
+góp phần giảm đáng kể thời gian phản hồi và nâng cao tính nhất quán trong giải 
+đáp. Việc triển khai chatbot giúp tiết kiệm khoảng rất nhiều giờ lao động mỗi 
+tháng, đồng thời định hình một quy trình mới về quản lý và truy xuất dữ liệu 
+trong nhà trường, giúp cán bộ giảm phần lớn thời gian dành cho các tác vụ lặp 
+lại (tìm hồ sơ, giải đáp học vụ, làm báo cáo...) và tập trung nhiều hơn vào công 
+tác chuyên môn. 
+Về khả năng áp dụng vào thực tiễn, đề tài có thể triển khai trực tiếp tại 
+Trường Đại học An ninh Nhân dân. Hệ thống được thiết kế phù hợp với hạ tầng 
+
+
+=== PAGE 22 ===
+9 
+ 
+ 
+ 
+công nghệ thông tin hiện có của nhà trường và tuân thủ các quy định tại Thông 
+tư 02/2021/TT-BTTTT ngày 21/6/2021 của Bộ Thông tin và Truyền thông. 
+PSU Chatbot có thể được cài đặt và vận hành tại Phòng Quản lý Đào tạo, các 
+khoa chuyên môn và các đơn vị hỗ trợ học viên mà không yêu cầu hạ tầng phức 
+tạp; chi phí tích hợp thấp. 
+Bên cạnh đó, kiến trúc module hóa cho phép hệ thống dễ dàng mở rộng 
+sang các trường, học viện thuộc lực lượng Công an nhân dân. Các đơn vị có thể 
+bổ sung kho dữ liệu riêng mà không cần thay đổi nền tảng, qua đó triển khai 
+chatbot cho nhiều mục đích như tư vấn tuyển sinh, hỗ trợ công tác học vụ của 
+các khoa giảng dạy, truyền thông số,… 
+Cuối cùng, hệ thống có tiềm năng phát triển thành nền tảng hỗ trợ đào 
+tạo và chuyển đổi số trong tương lai. PSU Chatbot có thể mở rộng thành trợ 
+giảng ảo, hỗ trợ giải đáp bài học, bài tập; là công cụ cung cấp và phân tích nhu 
+cầu của học viên cho lãnh đạo nhà trường; hoặc tích hợp với kho tài liệu số hóa. 
+Những khả năng phát triển này góp phần thúc đẩy tiến trình chuyển đổi số của 
+ngành Công an và hiện đại hóa công tác giáo dục đào tạo. 
+1.7. Thuật ngữ và từ viết tắt 
+Bảng Từ viết tắt và thuật ngữ tiếng Anh của nhóm được xây dựng nhằm 
+hệ thống hóa các khái niệm, công nghệ và thuật ngữ chuyên môn thường xuyên 
+sử dụng trong quá trình nghiên cứu và phát triển hệ thống PSU Chatbot, bao 
+gồm các lĩnh vực trí tuệ nhân tạo, xử lý ngôn ngữ tự nhiên, kiến trúc phần mềm 
+và cơ sở dữ liệu. Việc tổng hợp và giải thích rõ ràng các thuật ngữ giúp người 
+đọc dễ dàng tiếp cận nội dung đề tài, đảm bảo tính thống nhất trong cách hiểu 
+và thuận tiện cho việc theo dõi, đánh giá và ứng dụng kết quả nghiên cứu. 
+ 
+ 
+
+
+=== PAGE 23 ===
+10 
+ 
+ 
+ 
+Từ viết tắt / Thuật 
+ngữ 
+Tiếng Anh / Viết đầy 
+đủ 
+Nghĩa tiếng Việt 
+4-Tier Arch 
+4-Tier Architecture 
+Kiến trúc phần mềm 4 
+tầng 
+ACL 
+Annual Meeting of the 
+Association for 
+Computational 
+Linguistics 
+Hội nghị thường niên 
+về Ngôn ngữ học Tính 
+toán 
+Admin Dashboard 
+Admin Dashboard 
+Bảng điều khiển quản 
+trị viên 
+AI 
+Artificial Intelligence 
+Trí tuệ nhân tạo 
+ANND 
+An Ninh Nhân Dân 
+Lực lượng An ninh 
+Nhân dân 
+API 
+Application 
+Programming Interface 
+Giao diện lập trình ứng 
+dụng 
+Async 
+Asynchronous 
+Cơ chế xử lý bất đồng 
+bộ 
+Auto-ingest 
+Automatic Data 
+Ingestion 
+Tự động nạp/tiếp nhận 
+dữ liệu 
+
+
+=== PAGE 24 ===
+11 
+ 
+ 
+ 
+Axios 
+Axios Library 
+Thư viện HTTP Client 
+cho trình duyệt/Node.js 
+Backend 
+Backend Layer 
+Tầng xử lý nghiệp vụ 
+(phía máy chủ) 
+BERT 
+Bidirectional Encoder 
+Representations from 
+Transformers 
+Mô hình ngôn ngữ biểu 
+diễn hai chiều 
+BM25 
+Best Matching 25 
+Thuật toán xếp hạng 
+tìm kiếm dựa trên tần 
+suất từ khóa 
+Cache 
+Cache Memory 
+Bộ nhớ đệm 
+CAND 
+Công an Nhân dân 
+Lực lượng Công an 
+Nhân dân 
+Chat UI 
+Chat User Interface 
+Giao diện tương tác trò 
+chuyện 
+Chunk 
+Chunk 
+Đoạn văn bản (đơn vị 
+dữ liệu sau khi chia 
+nhỏ) 
+Chunking 
+Chunking Strategy 
+Chiến lược/Quá trình 
+chia nhỏ tài liệu 
+
+
+=== PAGE 25 ===
+12 
+ 
+ 
+ 
+Context Builder 
+Context Builder 
+Module 
+Bộ xây dựng ngữ cảnh 
+cho AI 
+Core Intent 
+Core Intent 
+Ý định/Mục đích cốt 
+lõi của câu hỏi 
+CORS 
+Cross-Origin Resource 
+Sharing 
+Cơ chế chia sẻ tài 
+nguyên khác nguồn 
+(tên miền) 
+Cosine 
+Cosine Similarity 
+Độ đo tương đồng 
+Cosine (góc giữa 2 
+vector) 
+Cross-Encoder 
+Cross Encoder Model 
+Mô hình mã hóa chéo 
+(so khớp trực tiếp 
+query-doc) 
+Dashboard 
+Dashboard 
+Bảng thông tin tổng 
+quan 
+DB 
+Database 
+Cơ sở dữ liệu 
+Docker 
+Docker 
+Nền tảng container hóa 
+ứng dụng 
+Dot Product 
+Dot Product 
+Tích vô hướng (phép 
+tính vector) 
+
+
+=== PAGE 26 ===
+13 
+ 
+ 
+ 
+Embedding 
+Vector Embedding 
+Biểu diễn ngữ nghĩa 
+văn bản dưới dạng 
+vector số 
+FAB 
+Floating Action Button 
+Nút tác vụ nổi (trên 
+giao diện) 
+FAISS 
+Facebook AI Similarity 
+Search 
+Thư viện tìm kiếm 
+tương đồng vector tốc 
+độ cao 
+Fallback 
+Fallback Mechanism 
+Cơ chế dự phòng (khi 
+phương án chính thất 
+bại) 
+FastAPI 
+FastAPI Framework 
+Framework lập trình 
+web hiệu năng cao cho 
+Python 
+Few-shot 
+Few-shot Examples / 
+Prompting 
+Kỹ thuật huấn 
+luyện/gợi ý dùng ít 
+mẫu ví dụ 
+File 
+File 
+Tệp tin / Tập tin 
+Frequency Saturation 
+Frequency Saturation 
+Bão hòa tần suất (trong 
+thuật toán BM25) 
+
+
+=== PAGE 27 ===
+14 
+ 
+ 
+ 
+Frontend 
+Frontend Layer 
+Tầng giao diện người 
+dùng 
+Full-text 
+Full-text Search 
+Tìm kiếm toàn văn 
+Gibberish 
+Gibberish Text 
+Văn bản vô nghĩa / Ký 
+tự rác 
+GiN 
+Generalized Inverted 
+Index 
+Chỉ mục đảo ngược 
+tổng quát 
+(PostgreSQL) 
+Hallucination 
+AI Hallucination 
+Hiện tượng ảo giác (AI 
+bịa đặt thông tin) 
+Heading 
+Heading / Section 
+Header 
+Tiêu đề / Mục lớn 
+trong văn bản 
+HTTP 
+HyperText Transfer 
+Protocol 
+Giao thức truyền tải 
+siêu văn bản 
+Hybrid Search 
+Hybrid Search 
+Tìm kiếm kết hợp (Từ 
+khóa + Ngữ nghĩa) 
+Ingest 
+Data Ingestion 
+Quá trình nạp và xử lý 
+dữ liệu đầu vào 
+IVFFlat 
+Inverted File Flat Index Chỉ mục tệp đảo ngược 
+(cấu trúc index vector) 
+
+
+=== PAGE 28 ===
+15 
+ 
+ 
+ 
+JSON 
+JavaScript Object 
+Notation 
+Định dạng trao đổi dữ 
+liệu JSON 
+JWT 
+JSON Web Token 
+Mã thông báo định 
+danh (dùng để xác 
+thực) 
+KB 
+Knowledge Base 
+Cơ sở tri thức 
+Keyword Matching 
+Keyword Matching 
+Cơ chế khớp từ khóa 
+chính xác 
+LLM 
+Large Language Model 
+Mô hình ngôn ngữ lớn 
+Load Balancer 
+Load Balancer 
+Bộ cân bằng tải 
+Log 
+System Log 
+Nhật ký hoạt động hệ 
+thống 
+Low-latency 
+Low-latency 
+Độ trễ thấp (tốc độ 
+phản hồi nhanh) 
+Metadata 
+Metadata 
+Siêu dữ liệu (dữ liệu 
+mô tả thông tin khác) 
+Microservice 
+Microservice 
+Architecture 
+Kiến trúc vi dịch vụ 
+Monitoring 
+System Monitoring 
+Giám sát hệ thống 
+
+
+=== PAGE 29 ===
+16 
+ 
+ 
+ 
+Next.js 
+Next.js Framework 
+Framework phát triển 
+Frontend (React) 
+NLP 
+Natural Language 
+Processing 
+Xử lý ngôn ngữ tự 
+nhiên 
+Normalization 
+Data/Query 
+Normalization 
+Chuẩn hóa dữ liệu/truy 
+vấn 
+OCR 
+Optical Character 
+Recognition 
+Nhận dạng ký tự quang 
+học (chuyển ảnh sang 
+chữ) 
+Overlap 
+Chunk Overlap 
+Phần chồng lấp (giữa 
+các đoạn chia nhỏ) 
+Overhead 
+Computational 
+Overhead 
+Chi phí/Tải trọng xử lý 
+phát sinh 
+Paraphrase 
+Paraphrasing 
+Diễn giải / Viết lại câu 
+(giữ nguyên ý) 
+PDF 
+Portable Document 
+Format 
+Định dạng tài liệu di 
+động 
+Pgvector 
+PostgreSQL Vector 
+Extension 
+Tiện ích mở rộng lưu 
+trữ vector cho 
+PostgreSQL 
+
+
+=== PAGE 30 ===
+17 
+ 
+ 
+ 
+Pipeline 
+Processing Pipeline 
+Quy trình/Đường ống 
+xử lý dữ liệu tuần tự 
+PostgreSQL 
+PostgreSQL Database 
+Hệ quản trị cơ sở dữ 
+liệu quan hệ 
+Precision@K 
+Precision at K 
+Độ chính xác tại top K 
+kết quả đầu tiên 
+Prompt 
+Prompt 
+Câu lệnh nhắc / Đầu 
+vào cho mô hình AI 
+PSU 
+People’s Security 
+University 
+Trường Đại học An 
+ninh Nhân dân 
+RAG 
+Retrieval-Augmented 
+Generation 
+Kiến trúc tạo sinh tăng 
+cường truy xuất 
+Rate Limit 
+Rate Limiting 
+Giới hạn tần suất truy 
+cập 
+RBAC 
+Role-Based Access 
+Control 
+Kiểm soát truy cập dựa 
+trên vai trò 
+Relevance Score 
+Relevance Score 
+Điểm số tương đồng / 
+Mức độ liên quan 
+Reprocess 
+Reprocess 
+Xử lý lại dữ liệu 
+
+
+=== PAGE 31 ===
+18 
+ 
+ 
+ 
+Responsive 
+Responsive Design 
+Thiết kế đáp ứng 
+(tương thích đa thiết bị) 
+Reranking 
+Reranking 
+Xếp hạng lại kết quả 
+tìm kiếm 
+REST 
+Representational State 
+Transfer 
+Kiến trúc chuyển giao 
+trạng thái đại diện 
+(API) 
+Retrieval 
+Information Retrieval 
+Truy xuất thông tin 
+Rollback 
+Transaction Rollback 
+Hoàn tác giao dịch 
+(quay lui trạng thái) 
+RRF 
+Reciprocal Rank 
+Fusion 
+Hợp nhất thứ hạng 
+tương hỗ 
+Rule-based 
+Rule-based System 
+Hệ thống dựa trên 
+luật/quy tắc định sẵn 
+SBERT 
+Sentence-BERT 
+Mô hình BERT huấn 
+luyện cho mức câu 
+Schema 
+Data Schema 
+Lược đồ dữ liệu 
+Semantic Search 
+Semantic Search 
+Tìm kiếm theo ngữ 
+nghĩa 
+
+
+=== PAGE 32 ===
+19 
+ 
+ 
+ 
+SQLAlchemy 
+SQLAlchemy 
+Thư viện ORM (Object 
+Relational Mapper) cho 
+Python 
+Synonyms 
+Synonyms 
+Từ đồng nghĩa 
+System Prompt 
+System Prompt 
+Lệnh nhắc hệ thống 
+(định hình vai trò AI) 
+Tailwind CSS 
+Tailwind CSS 
+Framework CSS tiện 
+ích 
+Tokens 
+Tokens 
+Đơn vị từ vựng nhỏ 
+nhất (khi xử lý NLP) 
+Transaction 
+Database Transaction 
+Giao dịch cơ sở dữ liệu 
+Troubleshooting 
+Troubleshooting 
+Chẩn đoán và khắc 
+phục sự cố 
+UI 
+User Interface 
+Giao diện người dùng 
+Upload 
+Upload 
+Tải lên (dữ liệu/tệp tin) 
+UUID 
+Universally Unique 
+Identifier 
+Mã định danh duy nhất 
+toàn cầu 
+UX 
+User Experience 
+Trải nghiệm người 
+dùng 
+
+
+=== PAGE 33 ===
+20 
+ 
+ 
+ 
+Validation 
+Data Validation 
+Kiểm chuẩn/Xác thực 
+dữ liệu 
+Vector DB 
+Vector Database 
+Cơ sở dữ liệu vector 
+Vector Search 
+Vector Search 
+Tìm kiếm dựa trên 
+vector 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+
+=== PAGE 34 ===
+21 
+ 
+ 
+ 
+CHƯƠNG II. THÔNG TIN VỀ THIẾT KẾ, XÂY DỰNG PHẦN 
+MỀM/SẢN PHẨM CÔNG NGHỆ 
+2.1. Tổng quan về giải pháp 
+2.1.1. Mô tả về sản phẩm công nghệ 
+Sản phẩm công nghệ của đề tài là PSU Chatbot – một hệ thống chatbot 
+thông minh ứng dụng trí tuệ nhân tạo theo hướng Retrieval-Augmented 
+Generation (RAG [1], [2]), được thiết kế nhằm hỗ trợ công tác đào tạo và tư 
+vấn người học tại Trường Đại học An ninh Nhân dân. Hệ thống cho phép người 
+dùng tra cứu thông tin liên quan đến tuyển sinh, quy chế đào tạo, học vụ và thủ 
+tục hành chính dựa trên kho tài liệu chính thống đã được kiểm duyệt của Nhà 
+trường. 
+PSU Chatbot kết hợp các kỹ thuật truy xuất hiện đại như tìm kiếm ngữ 
+nghĩa (vector embedding), BM25 và Hybrid Search, cùng cơ chế reranking 
+bằng Cross-Encoder, nhằm nâng cao độ chính xác và mức độ phù hợp của thông 
+tin trả lời. Mỗi câu trả lời đều kèm trích dẫn nguồn rõ ràng từ tài liệu gốc, góp 
+phần giảm thiểu sai lệch thông tin và nâng cao tính minh bạch. 
+Hệ thống được triển khai dưới dạng nền tảng web, bao gồm giao diện 
+chat dành cho người dùng cuối và giao diện quản trị dành cho cán bộ, hỗ trợ 
+quản lý tài liệu, theo dõi hoạt động và thống kê sử dụng. PSU Chatbot hướng 
+tới vai trò như một công cụ hỗ trợ tư vấn tự động, hoạt động liên tục 24/7, góp 
+phần giảm tải cho cán bộ đào tạo và nâng cao hiệu quả phục vụ người học. 
+2.1.2. Đóng góp mới của đề tài 
+Trong những năm gần đây, trong và ngoài nước đã có nhiều công trình 
+nghiên cứu lẫn ứng dụng thực tiễn triển khai chatbot trong các lĩnh vực như 
+chăm sóc khách hàng, thương mại điện tử, y tế và giáo dục. Các hệ thống này 
+đã chứng minh được khả năng hỗ trợ tự động hóa quy trình nghiệp vụ, giảm tải 
+áp lực lao động thủ công và cải thiện trải nghiệm của người dùng trong môi 
+trường số hóa. 
+
+
+=== PAGE 35 ===
+22 
+ 
+ 
+ 
+Trong bối cảnh giáo dục đại học tại Việt Nam, một số trường đã bắt đầu 
+thử nghiệm sử dụng chatbot cho các hoạt động như tư vấn tuyển sinh, đăng ký 
+học phần hay giải đáp thắc mắc liên quan đến công tác học vụ. Tuy nhiên, phần 
+lớn các hệ thống hiện có vẫn chủ yếu hoạt động dựa trên cơ chế truy vấn – phản 
+hồi đơn giản theo kịch bản định sẵn (rule-based), chưa khai thác sâu các mô 
+hình AI hiện đại có khả năng học hỏi, thích ứng và phân tích ngữ cảnh nâng 
+cao. Điều này khiến chatbot chưa thực sự đóng vai trò một công cụ hỗ trợ đào 
+tạo thông minh mà mới chỉ đáp ứng mức độ hỗ trợ cơ bản. 
+ 
+Hình 3: Chatbot của ĐH Tôn Đức Thắng còn trả lời theo rule-based, không 
+chính xác. 
+Khác với những chatbot thông thường, đề tài này hướng đến việc phát 
+triển một hệ thống chatbot mang tính chủ động, thông minh và linh hoạt hơn. 
+Cụ thể, chatbot được thiết kế có khả năng lưu trữ, phân tích và tự học hỏi từ 
+lịch sử hội thoại theo thời gian, giúp cải thiện độ chính xác và chất lượng phản 
+hồi. Bên cạnh đó, hệ thống còn có thể nhận diện xu hướng quan tâm của người 
+
+
+=== PAGE 36 ===
+23 
+ 
+ 
+ 
+dùng và chủ động gợi ý những nội dung phù hợp theo thời điểm. Ví dụ, vào 
+khoảng tháng 3 – thời gian trường bắt đầu nhận hồ sơ tuyển sinh văn bằng 2 
+(VB2), chatbot có thể tự động ưu tiên hoặc gợi ý người dùng tìm hiểu các thông 
+tin liên quan đến VB2 để đáp ứng nhu cầu tăng cao của học viên. 
+Ngoài ra, dữ liệu phục vụ chatbot được quản lý và cập nhật theo cơ chế 
+khoa học, giúp các khoa, phòng, đơn vị chức năng chủ động bổ sung, chỉnh sửa 
+và công bố thông tin mới tới hệ thống mà không cần huấn luyện lại từ đầu. Điều 
+này đảm bảo rằng chatbot luôn học hỏi liên tục mà vẫn giữ được tính ổn định 
+trong tri thức chuyên môn. Đặc biệt, thay vì dựa vào nguồn dữ liệu không kiểm 
+soát từ Internet, chatbot sẽ cung cấp tài liệu tham khảo và giải đáp dựa trên kho 
+dữ liệu đã được phê duyệt chính thức bởi các bộ môn và các phòng ban liên 
+quan, nhằm đảm bảo nội dung chính xác, đầy đủ và phù hợp với tính chất đặc 
+thù trong môi trường giáo dục Công an nhân dân. 
+Hệ thống còn được tích hợp dashboard trực quan giúp nhà trường theo 
+dõi hành vi và nhu cầu của người dùng theo thời gian thực, từ đó hỗ trợ công 
+tác quản lý, đồng thời kiểm soát an ninh thông tin, tối ưu tài nguyên và hạn chế 
+rủi ro tấn công mạng. Giao diện chatbot được xây dựng thân thiện, dễ sử dụng 
+trên cả máy tính và thiết bị di động, đồng thời hỗ trợ chuyển đổi âm thanh thành 
+văn bản và ngược lại, tạo điều kiện tiếp cận cho mọi đối tượng người dùng, bao 
+gồm cả sinh viên, giảng viên và cán bộ phụ trách đào tạo. 
+ 
+
+
+=== PAGE 37 ===
+24 
+ 
+ 
+ 
+Hình 4: Chatbot Công an Thành phố Hà Nội hoạt động tốt, tuy nhiên giao 
+diện còn cơ bản, không thân thiện với người dùng. 
+Với những cải tiến nêu trên, đề tài kỳ vọng mang đến cho Trường Đại 
+học An ninh Nhân dân một hệ thống chatbot độc lập, thông minh, an toàn và 
+có khả năng mở rộng trong tương lai. Không chỉ dừng lại ở một công cụ giao 
+tiếp tự động, chatbot hướng đến vai trò như một “trợ giảng ảo 24/7”, hỗ trợ tối 
+đa cho người học và góp phần nâng cao chất lượng đào tạo trong môi trường 
+giáo dục hiện đại. 
+2.1.3. Chức năng chính 
+PSU Chatbot hỗ trợ người dùng tra cứu và giải đáp các thông tin liên 
+quan đến tuyển sinh, quy chế đào tạo, học vụ, học phí, học bổng và các thủ tục 
+hành chính của Trường Đại học An ninh Nhân dân. Hệ thống cho phép người 
+dùng đặt câu hỏi bằng ngôn ngữ tự nhiên và nhận câu trả lời dựa trên kho tài 
+liệu chính thống đã được kiểm duyệt, qua đó bảo đảm tính chính xác và thống 
+nhất của thông tin cung cấp. 
+Bên cạnh đó, hệ thống tích hợp cơ chế tìm kiếm thông minh kết hợp giữa 
+tìm kiếm ngữ nghĩa và tìm kiếm theo từ khóa, giúp xử lý hiệu quả các câu hỏi 
+có cách diễn đạt đa dạng, không nhất thiết trùng khớp với thuật ngữ trong văn 
+bản gốc. Nhờ vậy, người dùng vẫn có thể tiếp cận đúng nội dung cần tìm ngay 
+cả khi câu hỏi chưa được chuẩn hóa về mặt từ ngữ. 
+Mỗi câu trả lời do hệ thống cung cấp đều kèm theo trích dẫn nguồn rõ 
+ràng, bao gồm tên tài liệu, số trang hoặc mục/điều liên quan, đồng thời cho 
+phép đính kèm, mở hoặc tải về các file tài liệu gốc (PDF). Cơ chế này giúp 
+người dùng trực tiếp kiểm chứng thông tin, nâng cao tính minh bạch và độ tin 
+cậy trong quá trình tra cứu. 
+Đối với công tác quản trị, PSU Chatbot hỗ trợ quản lý và cập nhật tài liệu 
+đào tạo theo cơ chế tập trung. Cán bộ được phân quyền có thể tải lên, chỉnh 
+sửa, xử lý và cập nhật các tài liệu mới, bảo đảm hệ thống luôn sử dụng phiên 
+bản dữ liệu mới nhất khi trả lời người dùng. Song song đó, hệ thống cung cấp 
+
+
+=== PAGE 38 ===
+25 
+ 
+ 
+ 
+các chức năng theo dõi và thống kê hoạt động sử dụng, như số lượng truy vấn, 
+các chủ đề được quan tâm và trạng thái vận hành, qua đó hỗ trợ công tác quản 
+lý và đánh giá hiệu quả triển khai. 
+Ngoài ra, hệ thống được thiết kế với cơ chế phân quyền và quản trị rõ 
+ràng, bảo đảm chỉ những cán bộ được ủy quyền mới có thể truy cập khu vực 
+quản trị, quản lý tài liệu và cấu hình hệ thống, đáp ứng yêu cầu an toàn và kiểm 
+soát trong môi trường triển khai của Trường Đại học An ninh Nhân dân. 
+2.1.4. Đối tượng sử dụng 
+Hệ thống chatbot RAG [1], [2] được thiết kế để phục vụ nhiều nhóm đối 
+tượng khác nhau gắn với hoạt động tuyển sinh và đào tạo của Trường Đại học 
+An ninh Nhân dân. Đối với thí sinh, chatbot hỗ trợ tra cứu nhanh các thông tin 
+về tuyển sinh, phương thức xét tuyển, điều kiện đăng ký và các mốc thời gian 
+quan trọng. Với sinh viên đang học, hệ thống tập trung cung cấp các nội dung 
+liên quan đến quy chế đào tạo, đăng ký tín chỉ, điều kiện xét học bổng, quy định 
+về học phí, tạm dừng học, kỷ luật… giúp sinh viên chủ động hơn trong quá 
+trình học tập và rèn luyện. Phụ huynh có thể sử dụng chatbot để nắm bắt các 
+quy định về học phí, chế độ hỗ trợ, chính sách đối với sinh viên, góp phần tăng 
+cường sự phối hợp giữa gia đình và nhà trường. Bên cạnh đó, cán bộ quản lý, 
+phòng ban chức năng cũng là nhóm người dùng quan trọng: họ sử dụng hệ 
+thống để cập nhật tài liệu mới, theo dõi thống kê truy vấn, từ đó đánh giá nhu 
+cầu thông tin của người học và tối ưu công tác tuyên truyền, hướng dẫn. 
+Về phạm vi dữ liệu, hệ thống chỉ sử dụng các nguồn tài liệu nội bộ, chính 
+thống do nhà trường ban hành hoặc kiểm soát. Trọng tâm là các file PDF quy 
+chế, thông báo, biểu mẫu, cẩm nang, hướng dẫn liên quan đến tuyển sinh, đào 
+tạo, rèn luyện, chế độ chính sách… Trong tương lai, hệ thống có thể được mở 
+rộng để tích hợp thêm các đường link tới trang web thông tin chính thức của 
+trường, song vẫn giữ nguyên nguyên tắc cốt lõi: chỉ khai thác và trả lời dựa trên 
+các nguồn đã được kiểm chứng, loại trừ hoàn toàn các dữ liệu từ nguồn bên 
+ngoài không rõ ràng, nhằm đảm bảo tính chính xác, thống nhất và phù hợp với 
+đặc thù của Trường Đại học An ninh Nhân dân. 
+
+
+=== PAGE 39 ===
+26 
+ 
+ 
+ 
+2.2. Kiến trúc hệ thống và Công nghệ sử dụng 
+Kiến trúc hệ thống PSU Chatbot được thiết kế theo mô hình nhiều tầng, 
+dựa trên cơ chế Retrieval-Augmented Generation (RAG [1], [2]), kết hợp giữa 
+truy xuất thông tin từ cơ sở dữ liệu và sinh câu trả lời bằng mô hình ngôn ngữ 
+lớn (LLM [3]). Mô hình kiến trúc này cho phép hệ thống khai thác hiệu quả 
+nguồn dữ liệu đã được số hóa, đồng thời đảm bảo câu trả lời có tính chính xác, 
+nhất quán và phù hợp với ngữ cảnh truy vấn của người dùng. 
+Về tổng thể, kiến trúc hệ thống bao gồm các thành phần chính như giao 
+diện người dùng (Frontend), tầng xử lý nghiệp vụ (Backend), hệ thống lưu trữ 
+dữ liệu và chỉ mục vector, cùng các mô hình AI. Khi người dùng gửi câu hỏi, 
+dữ liệu đầu vào sẽ được tiền xử lý, chuyển đổi thành vector và thực hiện tìm 
+kiếm ngữ nghĩa trên bộ chỉ mục. Các tài liệu liên quan được truy xuất sẽ tiếp 
+tục được xếp hạng lại nhằm lựa chọn thông tin phù hợp nhất làm ngữ cảnh đầu 
+vào cho mô hình ngôn ngữ lớn sinh câu trả lời.  
+Mỗi thành phần trong hệ thống đảm nhận một vai trò riêng biệt nhưng 
+phối hợp chặt chẽ với nhau: Frontend chịu trách nhiệm tiếp nhận tương tác và 
+hiển thị kết quả, Backend điều phối luồng xử lý và tích hợp các mô hình AI, cơ 
+sở dữ liệu và chỉ mục vector phục vụ truy xuất nhanh và chính xác, trong khi 
+các mô hình nhúng, xếp hạng và LLM [3] đảm nhiệm việc phân tích ngữ nghĩa 
+và tạo phản hồi cuối cùng. Kiến trúc này giúp PSU Chatbot vận hành ổn định, 
+dễ mở rộng và đáp ứng tốt yêu cầu hỗ trợ đào tạo, tư vấn người học trong thực 
+tiễn. 
+2.2.1. Kiến trúc tổng thể (4-tier Architecture) 
+PSU Chatbot được thiết kế theo mô hình kiến trúc 4 tầng (4-tier 
+Architecture) nhằm đảm bảo tính phân tầng rõ ràng, dễ bảo trì, dễ mở rộng và 
+tối ưu hiệu suất vận hành. Kiến trúc này chia hệ thống thành bốn lớp chính: 
+Tầng 
+Giao 
+diện 
+(Frontend/Presentation 
+Layer), 
+Tầng 
+Ứng 
+dụng 
+(Backend/Application Layer), Tầng Dữ liệu (Database/Data Layer) và Tầng 
+AI/ML (AI/ML Layer). Việc phân tầng giúp tách biệt trách nhiệm giữa các lớp, 
+
+
+=== PAGE 40 ===
+27 
+ 
+ 
+ 
+giảm phụ thuộc lẫn nhau, nâng cao bảo mật, đồng thời hỗ trợ tích hợp các công 
+nghệ AI theo hướng linh hoạt và mô-đun. Kiến trúc tổng thể của hệ thống PSU 
+Chatbot được minh họa như sau: 
+ 
+Hình 5: Kiến trúc 4 tầng. 
+Mô hình kiến trúc 4 tầng (4-tier architecture) được lựa chọn cho hệ thống 
+chatbot của Trường Đại học An ninh Nhân dân nhờ sở hữu nhiều lợi ích thiết 
+thực, trước hết là tính module hóa cho phép mỗi thành phần phát triển độc lập, 
+giúp việc nâng cấp các mô hình ngôn ngữ lớn (LLM [3]) diễn ra dễ dàng mà 
+
+
+=== PAGE 41 ===
+28 
+ 
+ 
+ 
+không làm ảnh hưởng đến giao diện người dùng. Bên cạnh đó, cấu trúc này còn 
+đảm bảo hiệu suất vận hành mạnh mẽ và khả năng mở rộng linh hoạt thông qua 
+việc phân bổ tải trọng hợp lý giữa các tầng, giúp hệ thống xử lý ổn định hàng 
+nghìn truy vấn cùng lúc mà không xảy ra tình trạng nghẽn mạng. Về mặt an 
+toàn thông tin, mô hình giúp tăng cường bảo mật tối đa cho các dữ liệu nhạy 
+cảm như quy chế tuyển sinh hay tài liệu nội bộ nhờ cơ chế lưu trữ biệt lập tại 
+tầng dữ liệu và chỉ cho phép truy xuất thông qua các lớp xác thực ở tầng ứng 
+dụng. Đặc biệt, kiến trúc 4 tầng tạo điều kiện thuận lợi để tích hợp sâu công 
+nghệ RAG [1], [2] cùng các giải pháp Việt hóa (Vietnamese Embeddings), từ 
+đó tối ưu hóa khả năng hiểu ngữ cảnh và thuật ngữ chuyên ngành tiếng Việt, 
+đáp ứng hoàn hảo các yêu cầu đặc thù trong môi trường đào tạo của Nhà trường. 
+Trong triển khai thực tế, hệ thống sẽ được kiểm tra và tối ưu hóa để đảm 
+bảo thời gian phản hồi nhanh nhất có thể cho mỗi câu hỏi, với độ chính xác cao 
+nhờ reranking và vector search [4]. Phần tiếp theo sẽ đi sâu vào các thành phần 
+chi tiết của hệ thống. 
+ 
+Hình 6: Sơ đồ từng tầng. 
+
+
+=== PAGE 42 ===
+29 
+ 
+ 
+ 
+2.2.2. Tầng Frontend 
+Tầng giao diện người dùng (Frontend) chịu trách nhiệm tương tác trực 
+tiếp với người dùng, bao gồm việc hiển thị giao diện chat, xử lý đầu vào và 
+trình bày kết quả trả về từ hệ thống. Tầng này được xây dựng bằng Next.js 15 
+[5] (App Router) kết hợp React 19 [6], sử dụng Tailwind CSS [7] và shadcn/ui 
+để phát triển giao diện web động, thân thiện, hiện đại và responsive trên nhiều 
+thiết bị (máy tính, máy tính bảng, mobile). Về chức năng, hệ thống được phân 
+tách thành hai phần chính: Chat UI dùng để người dùng nhập câu hỏi, xem câu 
+trả lời kèm trích dẫn nguồn, lịch sử hội thoại và các thông tin bổ sung như độ 
+tin cậy của câu trả lời; và Admin Dashboard cho phép quản trị viên upload tài 
+liệu PDF, theo dõi trạng thái xử lý, xem thống kê sử dụng, log truy vấn… Ngoài 
+ra, frontend còn hỗ trợ nút nổi (Floating Button) để có thể nhúng chatbot vào 
+bất kỳ trang web nào của trường, giúp sinh viên và cán bộ dễ dàng truy cập trợ 
+lý AI mọi lúc. Tầng này giao tiếp với tầng ứng dụng/backend thông qua các 
+API HTTP/REST, đảm bảo dữ liệu được truyền tải an toàn, hiệu quả và có thể 
+tích hợp linh hoạt với các hệ thống web hiện có của Trường Đại học An ninh 
+Nhân dân. 
+ 
+Hình 7: Next.js 
+
+
+=== PAGE 43 ===
+30 
+ 
+ 
+ 
+2.2.3. Tầng Backend 
+Tầng Backend của hệ thống được xây dựng trên FastAPI [8] với mô hình 
+xử lý bất đồng bộ (async), đóng vai trò là lớp API trung tâm điều phối toàn bộ 
+luồng dữ liệu giữa giao diện người dùng, các service RAG [1], [2] và tầng cơ 
+sở dữ liệu. Việc lựa chọn FastAPI [8] giúp hệ thống đạt được hiệu năng cao, dễ 
+mở rộng, dễ khai báo schema và validation cho request/response, đồng thời tích 
+hợp tốt với các thư viện Python [9] trong hệ sinh thái AI/ML. Backend không 
+chỉ đơn thuần “trả lời hộ” LLM [3], mà còn đảm nhận các chức năng quan trọng 
+như xác thực, kiểm soát tốc độ truy cập, logging, giám sát sức khỏe hệ thống 
+và tổ chức các pipeline xử lý tài liệu. 
+ 
+Hình 8: FastAPI. 
+Dưới góc độ chức năng, backend của hệ thống được thiết kế theo hướng 
+chia nhỏ thành các service chuyên biệt, mỗi service đảm nhiệm một vai trò rõ 
+ràng nhằm tăng tính mở rộng, dễ bảo trì và tối ưu hiệu năng tổng thể: 
+• RAGService đóng vai trò là trung tâm điều phối của toàn bộ pipeline trả 
+lời câu hỏi. Service này tiếp nhận truy vấn từ API /chat, gọi 
+RetrievalService để truy xuất các tài liệu liên quan, sau đó xây dựng 
+
+
+=== PAGE 44 ===
+31 
+ 
+ 
+ 
+prompt kèm theo ngữ cảnh (context) phù hợp, gửi yêu cầu tới mô hình 
+LLM [3] và thực hiện hậu xử lý nhằm tạo ra câu trả lời cuối cùng kèm 
+theo trích dẫn nguồn tham chiếu. 
+• RetrievalService chịu trách nhiệm hiện thực cơ chế Hybrid Search [10], 
+[11], [12], kết hợp giữa Vector Search [4] và BM25 [13] để khai thác 
+đồng thời cả ngữ nghĩa và từ khóa. Kết quả từ hai phương pháp được hợp 
+nhất bằng thuật toán Reciprocal Rank Fusion (RRF) [10], đồng thời 
+service này có thể tích hợp thêm bước reranking để sắp xếp lại Top-K tài 
+liệu theo mức độ liên quan cao hơn trước khi cung cấp cho LLM [3]. 
+• EmbeddingService đảm nhiệm việc sinh vector embedding từ dữ liệu 
+văn bản, sử dụng mô hình Vietnamese SBERT [14] với kích thước vector 
+384 chiều. Service này phục vụ cho cả hai luồng chính của hệ thống: (1) 
+tạo embedding trong quá trình indexing tài liệu và (2) tạo embedding cho 
+câu hỏi người dùng trong giai đoạn truy vấn. 
+• IngestionService tự động xử lý dữ liệu đầu vào từ các file PDF được tải 
+lên. Service này thực hiện trích xuất nội dung văn bản (kết hợp OCR 
+trong trường hợp tài liệu scan), chuẩn hóa dữ liệu, chia nhỏ nội dung theo 
+chiến lược chunking, sau đó lưu trữ văn bản cùng embedding tương ứng 
+vào cơ sở dữ liệu, đảm bảo kho tri thức luôn được cập nhật kịp thời. 
+• AnalyticsService phụ trách thu thập và tổng hợp các chỉ số vận hành của 
+hệ thống như: số lượng truy vấn, độ trễ xử lý, tỉ lệ thành công, lỗi phát 
+sinh và tần suất sử dụng theo thời gian. Đồng thời, service này cung cấp 
+các API hỗ trợ giám sát sức khỏe hệ thống và phục vụ cho dashboard 
+quản trị. 
+Cấu trúc router của backend được thiết kế theo hướng phân nhóm rõ ràng 
+theo chức năng, thống nhất dưới namespace /api/v1/*, nhằm đảm bảo tính nhất 
+quán, dễ bảo trì và thuận lợi cho việc mở rộng trong tương lai. 
+
+
+=== PAGE 45 ===
+32 
+ 
+ 
+ 
+• Endpoint /api/v1/chat đảm nhiệm việc tiếp nhận và xử lý các truy vấn 
+hội thoại, thực thi pipeline RAG [1], [2] để tạo câu trả lời và trả kết quả 
+cho người dùng. 
+• Nhóm endpoint /api/v1/documents/* bao gồm các API phục vụ quản lý 
+tài liệu, như: tải lên file PDF, truy xuất danh sách tài liệu, yêu cầu ingest 
+hoặc reprocess lại dữ liệu, cũng như xóa tài liệu khỏi hệ thống khi không 
+còn cần thiết. 
+• Nhóm /api/v1/analytics/* cung cấp các dữ liệu thống kê, log và thông 
+tin tổng hợp, phục vụ cho việc giám sát hoạt động, đánh giá hiệu năng 
+và tối ưu hệ thống thông qua các dashboard quản trị. 
+• Endpoint /api/v1/health được sử dụng cho các cơ chế kiểm tra trạng thái 
+(health check), cho phép các công cụ giám sát, load balancer hoặc nền 
+tảng điều phối như Docker [15] xác định nhanh tình trạng hoạt động của 
+backend. 
+Với cách tổ chức này, kiến trúc backend vừa rõ ràng về mặt logic, vừa linh 
+hoạt trong việc mở rộng, cho phép dễ dàng bổ sung phiên bản API mới, thêm 
+module chức năng hoặc tách thành các microservice khi quy mô hệ thống tăng 
+lên. 
+2.2.4. Tầng Database 
+Tầng cơ sở dữ liệu sử dụng PostgreSQL 16 [16] kết hợp pgvector [17], 
+đóng vai trò là kho lưu trữ trung tâm cho toàn bộ tài liệu, nội dung đã xử lý và 
+các vector embedding phục vụ truy vấn ngữ nghĩa. Dữ liệu được tổ chức thành 
+ba bảng chính với vai trò rõ ràng: bảng documents lưu metadata ở cấp độ tài 
+liệu (tên file, loại tài liệu, đơn vị ban hành, thời gian upload, trạng thái đã xử lý 
+hay chưa, lỗi nếu có…), giúp hệ thống theo dõi vòng đời của từng tài liệu; bảng 
+chunks lưu nội dung đã được chia nhỏ từ các tài liệu, kèm theo thông tin ngữ 
+cảnh như số trang, heading/mục lớn, loại văn bản và các metadata khác – đây 
+là đơn vị cơ bản được đem đi truy xuất trong RAG [1], [2]; bảng embeddings 
+
+
+=== PAGE 46 ===
+33 
+ 
+ 
+ 
+lưu vector chiều 384 tương ứng với từng chunk (thường có khóa ngoại tham 
+chiếu sang chunks), phục vụ cho Vector Search [4] dựa trên cosine similarity. 
+Cách tách riêng text (chunks) và vector (embeddings) giúp dễ quản lý, dễ thay 
+model embedding mà không ảnh hưởng cấu trúc dữ liệu gốc. 
+2.2.5. Tầng AI/Machine Learning 
+Kiến trúc AI/ML của hệ thống được thiết kế xoay quanh pipeline RAG 
+[1], [2], trong đó mỗi thành phần đảm nhận một vai trò chuyên biệt nhưng gắn 
+kết chặt chẽ với nhau. Ở lớp nền tảng, hệ thống sử dụng mô hình Vietnamese 
+SBERT [14] (384-d) để tạo embeddings cho cả tài liệu (chunks) và truy vấn 
+người dùng. Việc lựa chọn mô hình tối ưu cho tiếng Việt giúp biểu diễn tốt ngữ 
+nghĩa câu hỏi, cụm từ chuyên môn, thuật ngữ trong bối cảnh đại học, từ đó nâng 
+cao chất lượng truy xuất. Khi người dùng gửi truy vấn, quy trình Truy vấn sẽ 
+kích hoạt cơ chế Hybrid Search [10], [11], [12]: kết hợp Vector Search [4] trên 
+embeddings với BM25 [13] dựa trên từ khóa, sau đó dùng Reciprocal Rank 
+Fusion (RRF) [10] để hợp nhất hai danh sách kết quả. Nhờ đó, hệ thống vừa 
+tận dụng được sức mạnh hiểu ngữ nghĩa của embeddings, vừa đảm bảo khả 
+năng khớp chính xác với các từ khóa quan trọng như mã quyết định, số hiệu 
+văn bản, mã sinh viên… 
+Sau khi có Top-K tài liệu từ bước Retrieval, pipeline chuyển sang giai 
+đoạn Reranking sử dụng Cross-Encoder [18] để chấm lại độ liên quan cho từng 
+cặp truy vấn – tài liệu một cách tinh vi hơn, xét đầy đủ ngữ cảnh giữa câu hỏi 
+và nội dung tài liệu. Kết quả cuối cùng là Top-N tài liệu “sạch” và sát nghĩa 
+nhất được đưa vào LLM Gemini 2.0 Flash [19] ở bước tạo sinh, nơi mô hình 
+sinh câu trả lời tự nhiên, mạch lạc, kèm trích dẫn nguồn rõ ràng. Đối với các tài 
+liệu PDF dạng scan hoặc hình ảnh, hệ thống tận dụng Gemini Vision API để 
+thực hiện OCR và trích xuất nội dung; trong trường hợp không phù hợp hoặc 
+gặp lỗi, quy trình có cơ chế fallback sang PyPDF2 [20] để đảm bảo tính ổn 
+định. Tổng thể, kiến trúc AI/ML này tạo thành một chuỗi xử lý khép kín: từ đọc 
+tài liệu → embedding → hybrid retrieval → reranking → generation, tối ưu 
+
+
+=== PAGE 47 ===
+34 
+ 
+ 
+ 
+đồng thời cả độ chính xác, tính tin cậy và khả năng mở rộng của hệ thống trợ 
+lý AI trong môi trường đại học. 
+ 
+Hình 9: PostgreSQL. 
+Về tối ưu truy vấn, hệ thống sử dụng chỉ mục ivfflat với phép toán cosine 
+để tăng tốc các truy vấn gần đúng theo vector trong pgvector [17], phù hợp với 
+kịch bản retrieval Top-K cho RAG [1], [2], ngay cả khi số lượng chunks tăng 
+lên rất lớn. Đồng thời, PostgreSQL [16] vẫn phát huy sức mạnh truyền thống 
+qua các chỉ mục trên các cột metadata hoặc trường full-text (nếu kích hoạt), cho 
+phép thực hiện nhanh các truy vấn như lọc theo loại tài liệu, đơn vị ban hành, 
+ngày hiệu lực, hoặc tìm kiếm từ khóa truyền thống khi cần. Kiến trúc này giúp 
+kết hợp linh hoạt giữa tìm kiếm ngữ nghĩa và tìm kiếm dựa trên metadata/từ 
+khóa, đồng thời giữ được tính nhất quán… vốn là thế mạnh của PostgreSQL 
+[16] trong môi trường triển khai thực tế. 
+
+
+=== PAGE 48 ===
+35 
+ 
+ 
+ 
+2.3. Thiết kế chi tiết và API/Giao tiếp hệ thống 
+2.3.1. Luồng dữ liệu toàn hệ thống 
+2.3.1.1. Luồng truy vấn từ người dùng (User → Chat UI → /chat → 
+RAGService) 
+Bước 1 – Nhận query, normalize, tạo query embedding 
+Người dùng nhập câu hỏi trên Chat UI, frontend gửi request đến endpoint 
+/api/v1/chat. Tại đây, RAGService tiếp nhận câu hỏi, thực hiện các bước chuẩn 
+hóa (normalize) như loại bỏ ký tự thừa, chuẩn hóa khoảng trắng, có thể bổ sung 
+bước chuẩn hóa/ viết lại câu truy vấn nếu cần. Sau đó, câu hỏi được đưa vào 
+EmbeddingService để sinh ra query embedding (vector 384 chiều), làm đầu vào 
+cho bước truy xuất (retrieval). 
+Bước 2 – Retrieval (Truy xuất Hybrid)  
+Sau khi có query embedding, hệ thống sẽ gửi yêu cầu đến RetrievalService để 
+thực hiện quá trình truy xuất hỗn hợp (Hybrid Retrieval) theo hai nhánh song 
+song nhằm tối ưu hóa độ chính xác:  
+• Nhánh thứ nhất sử dụng Vector Search trên bảng embeddings (thông 
+qua pgvector [17]) để tìm các phân đoạn văn bản gần nhất về mặt 
+ngữ nghĩa.  
+• Nhánh thứ hai sử dụng thuật toán BM25 [13] để tìm kiếm chính xác 
+theo từ khóa (như mã quyết định, số văn bản hoặc tên học bổng).  
+Để hợp nhất kết quả từ hai nhánh này, thay vì chỉ sử dụng cơ chế Reciprocal 
+Rank Fusion (RRF) [10] thông thường, hệ thống triển khai phương pháp 
+Weighted Sum Fusion (Tổng có trọng số) để tính toán điểm số cuối cùng theo 
+công thức:  
+𝐶𝑜𝑚𝑏𝑖𝑛𝑒𝑑_𝑆𝑐𝑜𝑟𝑒
+= (𝐷𝑒𝑛𝑠𝑒_𝑊𝑒𝑖𝑔ℎ𝑡 ∗ 𝐷𝑒𝑛𝑠𝑒_𝑆𝑐𝑜𝑟𝑒) + ((1 
+− 𝐷𝑒𝑛𝑠𝑒_𝑊𝑒𝑖𝑔ℎ𝑡) ∗ 𝑆𝑝𝑎𝑟𝑠𝑒_𝑆𝑐𝑜𝑟𝑒) 
+
+
+=== PAGE 49 ===
+36 
+ 
+ 
+ 
+Với trọng số dense_weight hiện được thiết lập là 0.7, hệ thống ưu tiên tính 
+ngữ nghĩa nhưng vẫn đảm bảo sự đóng góp của các từ khóa chính xác, từ đó 
+tạo ra một danh sách xếp hạng chung và chọn ra Top-K (ví dụ K=50 hoặc 
+100) các tài liệu liên quan nhất cho các bước xử lý tiếp theo.  
+Bước 3 – Reranking: Cross-Encoder → Top-N 
+Danh sách Top-K từ bước Retrieval được chuyển sang tầng Reranking, sử 
+dụng Cross-Encoder [18]. Mỗi cặp (query, chunk/document) được mô hình 
+chấm lại điểm liên quan một cách chi tiết hơn (cơ chế chú ý toàn diện giữa 
+truy vấn và tài liệu). Từ kết quả này, hệ thống sắp xếp lại và chọn ra Top-N 
+tài liệu/chunks tốt nhất (ví dụ N=5–10) – đây là những đoạn văn thực sự sát 
+nghĩa với câu hỏi, sẽ được dùng làm ngữ cảnh cho LLM [3]. 
+Bước 4 – Context builder: định dạng nguồn, cắt ghép an toàn 
+Các chunks trong Top-N được đưa vào Context Builder. Thành phần này có 
+nhiệm vụ: 
+• Ghép các đoạn văn theo đúng thứ tự, giữ ngữ cảnh (theo heading, trang, 
+tài liệu gốc). 
+• Cắt ngắn/cô đọng nếu tổng độ dài vượt quá giới hạn ngữ cảnh của LLM 
+[3]. 
+• Gắn kèm metadata (tên file, số trang, loại văn bản…) để sau này LLM 
+[3] có thể trích dẫn nguồn. 
+• Đảm bảo “cắt ghép an toàn”: không cắt giữa câu, tránh làm mất nghĩa 
+hoặc làm méo nội dung gốc. 
+Kết quả là một khối ngữ cảnh sạch, rõ ràng, sẵn sàng chèn vào prompt. 
+Bước 5 – LLM (Gemini): sinh câu trả lời + trích dẫn 
+RAGService xây dựng prompt hoàn chỉnh gồm: SYSTEM_PROMPT, 
+CONTEXT (từ bước 4) và câu hỏi của người dùng. Prompt này được gửi tới 
+Gemini [19] 2.0 Flash. LLM sẽ đọc context, hiểu câu hỏi và sinh câu trả lời 
+
+
+=== PAGE 50 ===
+37 
+ 
+ 
+ 
+bám sát tài liệu, kèm theo trích dẫn nguồn (tên file, trang) theo đúng quy tắc 
+đã định nghĩa trong system prompt. Nếu context không có thông tin cần thiết, 
+LLM [3] sẽ trả lời theo hướng “không tìm thấy trong tài liệu”. 
+Bước 6 – Trả về FE + ghi analytics 
+Câu trả lời sau khi sinh sẽ được RAGService hậu xử lý nhẹ (format 
+markdown [21], chuẩn hóa trích dẫn) rồi trả về cho Frontend thông qua /chat. 
+Đồng thời, hệ thống ghi log và tiến hành phân tích: nội dung truy vấn, thời 
+gian xử lý, số tài liệu được truy xuất, model dùng, trạng thái (thành công/lỗi), 
+để phục vụ cho AnalyticsService hiển thị thống kê, giám sát hiệu năng và tối 
+ưu chất lượng hệ thống về sau. 
+ 
+Hình 10: Luồng truy vấn người dùng. 
+2.3.1.2. Luồng ingest tài liệu (Admin → Upload PDF/Drop folder → 
+IngestionService) 
+Bước 1 – IngestionService: detect file 
+Quản trị viên (Admin) upload file PDF qua giao diện dashboard hoặc thả file 
+vào một thư mục được giám sát (watch folder). IngestionService (hoặc 
+
+
+=== PAGE 51 ===
+38 
+ 
+ 
+ 
+Watchdog) có nhiệm vụ phát hiện các file mới hoặc file được cập nhật: ghi 
+nhận metadata (tên file, dung lượng, thời điểm upload, người upload), tạo bản 
+ghi trong bảng documents với trạng thái ban đầu (ví dụ: pending hoặc 
+processing) và kích hoạt pipeline xử lý nội dung. 
+Bước 2 – Extraction: Gemini Vision → pdfplumber → PyPDF2 
+IngestionService sẽ cố gắng trích xuất text từ file theo chuỗi ưu tiên: 
+1. Dùng Gemini [19] Vision API để xử lý các PDF dạng scan/hình ảnh, 
+cho phép nhận dạng chữ (OCR) với độ chính xác cao, đặc biệt với tài 
+liệu có bố cục phức tạp. 
+2. Nếu không cần hoặc không dùng Vision, hệ thống fallback sang 
+pdfplumber để trích xuất text từ PDF “chuẩn” (text-based). 
+3. Nếu pdfplumber gặp vấn đề, hệ thống có thể dùng PyPDF2 [20] như 
+lớp dự phòng. 
+Kết quả của bước này là plain text (kèm cấu trúc cơ bản như ngắt dòng, 
+trang, heading nếu nhận dạng được) sẵn sàng cho bước chunking. 
+Bước 3 – HeadingChunker: tạo chunks (giữ ngữ cảnh, overlap) 
+Text đã trích xuất được chuyển tới HeadingChunker. Thành phần này sẽ: 
+• Phân tích cấu trúc tài liệu theo heading/mục lục (nếu có) để chia nội 
+dung thành các đoạn (chunk) theo các đơn vị logic như chương, mục, 
+điều, khoản. 
+• Áp dụng chiến lược chunking có overlap (các đoạn chồng lấn vài câu) 
+để đảm bảo ngữ cảnh không bị “đứt” khi chia nhỏ. 
+• Gắn metadata cho mỗi chunk: document_id, số trang, heading, loại tài 
+liệu,… 
+Kết quả là một tập các chunks giàu ngữ cảnh, phù hợp cho retrieval. 
+Bước 4 – Embeddings: batch encode + cache 
+Danh sách chunks được gửi đến EmbeddingService để mã hóa hàng loạt 
+
+
+=== PAGE 52 ===
+39 
+ 
+ 
+ 
+(batch encode) thành vector embeddings (384 chiều). Batching giúp tận dụng 
+tối đa tài nguyên CPU/GPU và giảm overhead gọi model nhiều lần. Hệ thống 
+có thể sử dụng thêm caching để tránh mã hóa lại các đoạn trùng lặp (hoặc tài 
+liệu đã xử lý trước đó). Mỗi chunk sau khi được embedding sẽ tạo ra một bản 
+ghi tương ứng trong bảng embeddings, liên kết với chunk bằng khóa ngoại. 
+Bước 5 – Lưu DB + build index (pgvector, BM25) 
+Sau khi chunk và embedding xong, IngestionService lưu toàn bộ thông tin 
+vào Database: 
+• Bảng documents: cập nhật trạng thái tài liệu (ví dụ: đã xử lý), lưu 
+metadata đầy đủ. 
+• Bảng chunks: lưu nội dung text từng chunk, trang, heading, metadata. 
+• Bảng embeddings: lưu vector 384 chiều và liên kết với chunks. 
+Tiếp theo, hệ thống cập nhật các index: 
+o Index vector (ivfflat) trên embeddings để phục vụ Vector Search 
+[4]. 
+o Index BM25 [13] trên nội dung text (hoặc các trường phù hợp) 
+để phục vụ tìm kiếm từ khóa. 
+Từ thời điểm này, tài liệu đã chính thức trở thành một phần của 
+knowledge base, sẵn sàng cho các truy vấn RAG [1], [2]. 
+Bước 6 – Analytics/health cập nhật 
+Cuối cùng, IngestionService ghi nhận kết quả xử lý vào Analytics/Monitoring: 
+số lượng trang/chunks, thời gian xử lý, lỗi nếu có (ví dụ OCR thất bại, file 
+hỏng), trạng thái hiện tại của tài liệu. Thông tin này được AnalyticsService 
+dùng để hiển thị trên dashboard: admin có thể xem tài liệu nào đã ingest xong, 
+tài liệu nào đang lỗi, tốc độ ingest theo thời gian, từ đó dễ dàng giám sát sức 
+khỏe toàn hệ thống và xử lý sự cố khi cần. 
+
+
+=== PAGE 53 ===
+40 
+ 
+ 
+ 
+ 
+Hình 11: Luồng nhúng dữ liệu. 
+2.3.2. Quy trình xử lý dữ liệu 
+2.3.2.1. Tổng quan quy trình xử lý tài liệu 
+Quy trình xử lý tài liệu là “xương sống” của hệ thống RAG [1], [2], chịu 
+trách nhiệm chuyển đổi các văn bản PDF (quy chế, quy định, hướng dẫn…) 
+thành các đơn vị tri thức có cấu trúc, có thể truy vấn ngữ nghĩa. Toàn bộ luồng 
+xử lý được tổ chức theo chuỗi các pha: (1) tiếp nhận và kiểm tra tài liệu, (2) 
+trích xuất văn bản, (3) chia nhỏ thành các đoạn (chunk) theo cấu trúc, (4) sinh 
+vector embedding cho mỗi đoạn, (5) lưu trữ và lập chỉ mục trong cơ sở dữ liệu 
+để phục vụ retrieval. Kết quả cuối cùng là mỗi file PDF sau khi xử lý đều được 
+ánh xạ thành một tập các chunks kèm metadata và vector đặc trưng, sẵn sàng 
+cho tìm kiếm kết hợp BM25 [13] + Vector Search [4] trong pipeline RAG [1], 
+[2].  
+
+
+=== PAGE 54 ===
+41 
+ 
+ 
+ 
+ 
+Hình 12: Quy trình xử lý dữ liệu. 
+2.3.2.2. Giai đoạn 1 – Tiếp nhận và kiểm tra tài liệu (Document Ingestion) 
+Ở giai đoạn này, tài liệu được đưa vào hệ thống thông qua ba phương 
+thức linh hoạt bao gồm upload trực tiếp từ Admin Dashboard, tự động phát hiện 
+file mới qua cơ chế Auto-Ingestion (watch folder) và xử lý hàng loạt bằng đoạn 
+mã dòng lệnh. Mỗi file PDF khi tiếp nhận sẽ được kiểm tra nghiêm ngặt về 
+định dạng, kích thước, tính hợp lệ (kiểm tra file rỗng, bảo vệ mật khẩu) và tính 
+mã hash (SHA-256) để ngăn chặn việc nạp trùng lặp dữ liệu. Để tối ưu hóa hiệu 
+suất quản trị, thay vì duy trì bảng dữ liệu tài liệu riêng biệt một cách rời rạc, hệ 
+thống quản lý metadata gắn liền trực tiếp với các phân đoạn (chunks) và tệp tin 
+trên hệ thống, giúp kiểm soát chặt chẽ vòng đời tài liệu thông qua các trạng thái 
+xử lý cụ thể. Một tài liệu được coi là "đang xử lý" khi nằm trong hàng đợi xử 
+lý nền và chính thức chuyển sang trạng thái "hoàn thành" ngay khi các chunks 
+của nó được lưu trữ thành công trong Cơ sở dữ liệu. Cơ chế xử lý bất đồng bộ 
+này không chỉ giúp hệ thống vận hành ổn định mà còn đảm bảo không gây gián 
+đoạn cho các trải nghiệm tương tác trực tiếp của người dùng. 
+2.3.2.3. Giai đoạn 2 – Trích xuất văn bản (Text Extraction) 
+Sau khi tài liệu được chấp nhận, hệ thống chuyển sang giai đoạn trích xuất 
+nội dung text. Kiến trúc sử dụng một chiến lược “đa lớp” theo thứ tự ưu tiên: 
+• Lớp 1 – Gemini [19] Vision API (OCR): áp dụng cho các PDF scan hoặc 
+chứa nhiều hình ảnh; mô hình có khả năng nhận dạng chữ với chất lượng 
+cao, xử lý được bố cục phức tạp như bảng biểu, layout nhiều cột. 
+
+
+=== PAGE 55 ===
+42 
+ 
+ 
+ 
+• Lớp 2 – pdfplumber: dùng cho các PDF dạng text chuẩn, có định dạng 
+bảng và căn lề rõ ràng; ưu tiên bảo tồn khoảng cách và ngắt dòng. 
+• Lớp 3 – PyPDF2: đóng vai trò fallback nhanh cho các tài liệu đơn giản. 
+Văn bản được trích xuất theo từng trang, kèm số trang tương ứng, giúp việc 
+truy vết nguồn sau này trở nên dễ dàng. Hệ thống cũng có bước đánh giá chất 
+lượng text (độ dài, số từ, phát hiện “gibberish”) để phát hiện lỗi OCR hoặc trích 
+xuất kém và có thể điều chỉnh cấu hình cho lần xử lý sau. 
+2.3.2.4. Giai đoạn 3 – Chiến lược chia nhỏ nội dung (Chunking Strategy) 
+Khi đã có text, hệ thống tiến hành chia nhỏ nội dung (chunking) theo một 
+chiến lược “thông minh” thay vì cắt thô theo số ký tự. Thành phần 
+HeadingChunker sử dụng các mẫu nhận dạng tiêu đề để phát hiện các cấu trúc 
+phổ biến trong văn bản quy phạm như: tiêu đề đánh số (1., 7.1., 7.3.1.), số La 
+Mã (I., II., III.), tiêu đề chữ cái (A., B., …) và các heading viết hoa toàn bộ (ví 
+dụ “CHƯƠNG 1: QUY ĐỊNH CHUNG”). Dựa trên các heading này, văn bản 
+được chia thành các đoạn tương ứng với từng mục/điều/chương, đảm bảo tính 
+trọn vẹn ngữ nghĩa. 
+Đối với các phần nội dung quá dài, hệ thống tiếp tục áp dụng kỹ thuật 
+chia cắt thông minh– ưu tiên tách theo đoạn văn, giữ lại tiêu đề ở đầu mỗi chunk 
+để bảo toàn ngữ cảnh. Ngoài ra, hệ thống sử dụng chiến lược overlap (chồng 
+lấn một phần nội dung giữa hai chunk liên tiếp) nhằm hạn chế việc mất mát 
+ngữ cảnh tại ranh giới cắt. Mỗi chunk được gắn kèm metadata phong phú: tên 
+file gốc, số trang, heading, chiều dài, ngôn ngữ, từ khóa gợi ý, đường dẫn vị trí 
+(ví dụ: “Chương 2 > Điều 4”), là cơ sở quan trọng cho việc trích dẫn và hiển 
+thị kết quả truy vấn. 
+2.3.2.5. Giai đoạn 4 – Sinh vector đặc trưng (Embedding Generation) 
+Ở giai đoạn này, nội dung từng chunk được chuyển thành các vector số 
+trong không gian nhiều chiều bằng mô hình Vietnamese SBERT [14] (384 
+chiều). Hệ thống triển khai sinh embedding theo batch (ví dụ 32 chunk/lô) để 
+
+
+=== PAGE 56 ===
+43 
+ 
+ 
+ 
+tối ưu hiệu năng, tận dụng tốt tài nguyên CPU/GPU và giảm overhead khi gọi 
+model nhiều lần. Bên cạnh đó, một cơ chế cache (Redis) được tích hợp: với mỗi 
+đoạn văn bản, hệ thống sinh ra một khóa băm (hash) và kiểm tra trong cache; 
+nếu đã có embedding tương ứng, hệ thống tái sử dụng thay vì tính toán lại. Mỗi 
+embedding sau khi sinh sẽ được liên kết với chunk tương ứng, tạo thành cặp 
+(chunk, vector) hoàn chỉnh cho retrieval ngữ nghĩa sau này. 
+2.3.2.6. Giai đoạn 5 – Lưu trữ và lập chỉ mục (Storage & Indexing) 
+Sau khi hoàn tất chunking và embedding, dữ liệu được ghi xuống cơ sở 
+dữ liệu PostgreSQL [16] 16 kết hợp pgvector [17]. Bảng documents lưu 
+metadata ở cấp file, bảng chunks lưu nội dung từng đoạn kèm metadata chi tiết, 
+và bảng embeddings lưu vector 384 chiều gắn với từng chunk. Trên bảng 
+embeddings, hệ thống tạo chỉ mục vector (IVFFlat) với phép đo cosine 
+similarity, cho phép thực hiện truy vấn Vector Search [4] Top-K với thời gian 
+đáp ứng thấp ngay cả khi số lượng chunks tăng lên đáng kể. Song song, để tối 
+ưu khả năng tìm kiếm từ khóa Tiếng việt, hệ thống xây dựng và duy trì việc lập 
+chỉ mục bằng BM25 [13], hỗ trợ truy vấn từ khóa và lọc theo điều kiện (ngày 
+ban hành, loại văn bản, tình trạng…). Toàn bộ quá trình chèn dữ liệu và cập 
+nhật chỉ mục được bao bọc trong transaction, đảm bảo tính nhất quán: nếu xảy 
+ra lỗi, hệ thống rollback để bảo toàn dữ liệu. 
+2.3.2.7. Dịch vụ Auto-Ingestion và quản lý tài liệu 
+Bên cạnh việc nạp dữ liệu qua giao diện, hệ thống còn triển khai Auto-
+Ingestion Service dựa trên thư viện Watchdog để liên tục giám sát thư mục 
+chứa tệp tin PDF; khi phát hiện các biến động như thêm mới, sửa đổi hoặc xóa 
+file, dịch vụ này sẽ tự động kích hoạt các thao tác tương ứng như xử lý ingest, 
+reprocess hoặc đánh dấu tài liệu không còn hiệu lực. Ở tầng API, các chức năng 
+quản lý tài liệu được cung cấp đầy đủ thông qua các endpoint chuyên biệt, cho 
+phép liệt kê danh sách tài liệu (hỗ trợ phân trang và lọc theo trạng thái), xem 
+chi tiết trạng thái chunking kèm các số liệu thống kê, cũng như thực hiện xóa 
+mềm để ẩn tài liệu hoặc xóa vĩnh viễn khỏi hệ thống. Đặc biệt, tính năng xử lý 
+lại (reprocess) được thực hiện linh hoạt thông qua việc tải lên phiên bản mới 
+
+
+=== PAGE 57 ===
+44 
+ 
+ 
+ 
+hoặc cập nhật trực tiếp trong thư mục giám sát với các chiến lược phân đoạn 
+dữ liệu tùy chỉnh. Cách tiếp cận toàn diện này giúp bộ phận quản trị dễ dàng 
+kiểm soát kho tri thức, đảm bảo các quy chế đào tạo luôn được cập nhật phiên 
+bản mới nhất, đồng thời giảm thiểu tối đa rủi ro cung cấp các thông tin lỗi thời 
+hoặc sai lệch cho người dùng. 
+2.3.2.8. Giám sát, thống kê và xử lý sự cố 
+Hệ thống tích hợp các cơ chế giám sát (monitoring) và xử lý sự cố 
+(troubleshooting) để theo dõi toàn diện sức khỏe của quy trình xử lý dữ liệu. 
+Trong suốt quá trình nạp liệu, mọi bước quan trọng từ phát hiện tệp tin, trích 
+xuất văn bản, kiểm soát chất lượng phân đoạn đến việc sinh embedding và cập 
+nhật chỉ mục BM25 [13] đều được ghi log chi tiết, tạo điều kiện thuận lợi cho 
+việc truy vết và khắc phục lỗi kịp thời. Bên cạnh đó, một API health-check 
+chuyên biệt được triển khai nhằm kiểm tra tức thời trạng thái kết nối tới cơ sở 
+dữ liệu, thư mục giám sát và dịch vụ Gemini, đảm bảo tính sẵn sàng của các 
+thành phần cốt lõi trong hệ thống. Các chỉ số hiệu năng như số lượng tài liệu 
+theo trạng thái xử lý, thời gian phản hồi trung bình, tổng số phân đoạn (chunks) 
+và tổng dung lượng dữ liệu thực tế cũng được thống kê chi tiết trên hệ thống. 
+Những dữ liệu này không chỉ giúp đội ngũ quản trị nắm bắt tình trạng vận hành 
+mà còn cung cấp cơ sở quan trọng để tối ưu hóa cấu hình, tinh chỉnh chiến lược 
+phân đoạn và mở rộng hạ tầng kịp thời khi quy mô kho tri thức của Nhà trường 
+ngày càng tăng trưởng. 
+2.3.3. Quy trình RAG Retrieval 
+2.3.3.1. Tổng quan quy trình RAG Retrieval 
+Quy trình RAG Retrieval là “lõi” của hệ thống chatbot, chịu trách nhiệm 
+tìm ra các đoạn tài liệu (chunks) phù hợp nhất với câu hỏi của người dùng trước 
+khi gửi sang mô hình ngôn ngữ lớn (LLM [3]) để sinh câu trả lời. Thay vì truy 
+vấn theo kiểu full-text đơn thuần, hệ thống sử dụng kết hợp retrieval đậm đặc 
+(Dense Retrieval – Vector Search [4]) và retrieval thưa (Sparse Retrieval – 
+BM25 [13]), sau đó hợp nhất kết quả bằng cơ chế Hybrid Search [10], [11], 
+
+
+=== PAGE 58 ===
+45 
+ 
+ 
+ 
+[12] và cuối cùng dùng Cross-Encoder [18] để reranking lại những ứng viên tốt 
+nhất. Toàn bộ pipeline được thiết kế theo nhiều bước nối tiếp: chuẩn hóa truy 
+vấn, tìm kiếm vector, tìm kiếm BM25 [13], hợp nhất (fusion) kết quả, reranking 
+và chọn ra Top-N đoạn văn làm context cho LLM [3]. 
+ 
+
+
+=== PAGE 59 ===
+46 
+ 
+ 
+ 
+Hình 13: Quy trình truy vấn RAG. 
+2.3.3.2. Bước 1 – Chuẩn hóa truy vấn (Query Normalization) 
+ 
+Khi người dùng nhập câu hỏi vào hệ thống (ví dụ: “cho tôi xin cái form 
+đơn xin nghỉ học đi ạ”), tầng Backend sẽ gửi yêu cầu này sang Query 
+Preprocessing Module để bắt đầu quá trình xử lý. Tại đây, hệ thống sử dụng 
+Gemini [19] để tái cấu trúc và chuẩn hóa câu hỏi thành dạng ngắn gọn, súc 
+tích nhưng vẫn giữ nguyên các từ khóa quan trọng như “form”, “đơn”, “nghỉ 
+học”. Quá trình chuẩn hóa bao gồm việc sửa lỗi chính tả, chuẩn hóa thuật ngữ 
+chuyên ngành (ví dụ: chuyển “tiền học” thành “học phí”), giải diễn từ viết tắt 
+và loại bỏ các thành phần dư thừa như từ đệm hay hạt tình thái (“cho tôi”, “đi 
+ạ”). Bằng cách này, hệ thống tập trung tối đa vào core intent (ý định chính) 
+của người dùng, giúp loại bỏ sự mơ hồ và giảm nhiễu cho các bước tiếp theo. 
+Điều này đảm bảo cả hai cơ chế Dense Retrieval lẫn BM25 [13] đều hoạt 
+động chính xác và hiệu quả hơn, tránh được các sai sót do câu hỏi ban đầu 
+quá dài hoặc mang nhiều yếu tố hội thoại không cần thiết. 
+2.3.3.3. Bước 2 – Dense Retrieval (Vector Search) 
+Sau khi chuẩn hóa, câu hỏi được chuyển thành vector nhúng (query 
+embedding) thông qua EmbeddingService sử dụng mô hình Vietnamese 
+SBERT [14] 384-d. Vector này đại diện cho ngữ nghĩa của câu hỏi trong không 
+gian nhiều chiều. Hệ thống gửi query embedding sang Vector Database 
+(pgvector [17]) và thực hiện truy vấn với phép đo cosine similarity, lấy ra Top-
+K chunks có vector gần nhất với vector truy vấn. 
+Ở mức SQL, truy vấn thường sử dụng toán tử <=> (cosine distance) của 
+pgvector, ví dụ dạng 1 - (embedding <=> query_embedding) để tính similarity. 
+Các chunks liên quan chặt chẽ về nghĩa (ví dụ “đơn xin nghỉ học có phép”, 
+“form xin nghỉ học có xác nhận”) sẽ có similarity rất cao (≈ 0.9–0.99), trong 
+khi các đoạn ít liên quan (“học bổng”, “học phí”) sẽ có similarity thấp. Kết quả 
+Dense Retrieval cho ta một danh sách ứng viên ưu tiên ngữ nghĩa, kể cả trong 
+
+
+=== PAGE 60 ===
+47 
+ 
+ 
+ 
+trường hợp câu hỏi không trùng chính xác từ khóa với tài liệu (synonyms, 
+paraphrase, từ đồng nghĩa, khác cách diễn đạt). 
+2.3.3.4. Bước 3 – Sparse Retrieval (BM25) 
+Song song với Vector Search [4], hệ thống tiến hành Sparse Retrieval sử 
+dụng thuật toán BM25 [13] trên nội dung text của các chunks. Ở bước này, 
+query đã chuẩn hóa được tách token (ví dụ: “form”, “đơn”, “nghỉ”, “học”), sau 
+đó so khớp với corpus các chunks theo cơ chế keyword matching. BM25 tính 
+điểm dựa trên: 
+• Tần suất xuất hiện từ khóa trong chunk. 
+• Mức độ hiếm của từ khóa trên toàn bộ corpus. 
+• Độ dài của chunk, để tránh thiên vị các đoạn quá dài. 
+Sparse Retrieval đặc biệt mạnh trong các câu hỏi mang tính chỉ định từ khóa 
+cụ thể, ví dụ: mã biểu mẫu (“FORM_NGHI_HOC”), mã sinh viên, số hiệu quy 
+chế, tên file… Các chunk chứa chính xác từ khóa (“FORM”, “nghỉ học”) sẽ 
+được ưu tiên xếp hạng cao, ngay cả khi câu văn không giống hẳn với câu hỏi 
+ban đầu. 
+2.3.3.5. Bước 4 – Hybrid Fusion (Kết hợp Dense + Sparse) 
+Sau khi có hai danh sách kết quả: 
+• Danh sách từ Vector Search [4] (mang nặng yếu tố ngữ nghĩa). 
+• Danh sách từ BM25 [13] (chuẩn keyword matching). 
+Hệ thống áp dụng chiến lược Hybrid Fusion để kết hợp chúng lại thành một 
+ranking duy nhất. Có hai cách phổ biến: 
+1. Reciprocal Rank Fusion (RRF): 
+o Sử dụng thứ hạng (rank) thay vì điểm (score) tuyệt đối. 
+
+
+=== PAGE 61 ===
+48 
+ 
+ 
+ 
+o Với mỗi document/chunk, nếu nó đứng ở vị trí rank_i trong danh 
+sách thứ i, thì điểm RRF [10] cho tài liệu đó là: 
+𝑅𝑅𝐹_𝑠𝑐𝑜𝑟𝑒(𝑑) = ∑
+1
+𝑘+ 𝑟𝑎𝑛𝑘𝑖(𝑑)
+𝑖
+ 
+ 
+trong đó k là hằng số (ví dụ 60). 
+o Những chunk xuất hiện ở top trong cả Dense lẫn BM25 [13] sẽ có 
+RRF [10] score rất cao, được đẩy lên đầu. 
+2. Weighted Linear Combination: 
+o Chuẩn hóa điểm Dense/BM25 về [0,1], sau đó kết hợp: 
+Hybrid_score = 𝛼⋅dense_score + (1 −𝛼) ⋅sparse_score 
+o Có thể điều chỉnh α để ưu tiên semantic (Dense) hoặc keyword 
+(BM25) tùy loại truy vấn. 
+Kết quả của bước này là một danh sách Top-K chunks đã được cân bằng 
+giữa ngữ nghĩa và từ khóa, tận dụng tối đa ưu điểm của cả hai thế giới. 
+ 
+Hình 14: Hybrid Search Fusion. 
+2.3.3.6. Bước 5 – Reranking bằng Cross-Encoder 
+Danh sách Top-K từ bước Hybrid còn là kết quả “thô”, chưa chắc đã xếp 
+chính xác nhất theo ý định truy vấn. Vì vậy, hệ thống dùng thêm một tầng 
+Reranking sử dụng Cross-Encoder [18] (ví dụ cross-encoder/ms-marco-
+
+
+=== PAGE 62 ===
+49 
+ 
+ 
+ 
+MiniLM-L-6-v2) để “chấm điểm lại” mức độ liên quan giữa từng cặp (query, 
+chunk). 
+Cụ thể: 
+• Với mỗi chunk ứng viên, hệ thống tạo một cặp [Query, Content] và đưa 
+vào Cross-Encoder. 
+• Mô hình này cho ra relevance score trong khoảng [0, 1]; càng gần 1 thì 
+độ liên quan càng cao. 
+• Dựa trên các score này, hệ thống sắp xếp lại danh sách và chọn ra Top-
+N chunks (ví dụ N=5) phù hợp nhất. 
+Nhờ Cross-Encoder [18] “soi” kỹ mối quan hệ giữa câu hỏi và nội dung, 
+những chunk nào trả lời trực tiếp câu hỏi (ví dụ “điều kiện để được nhận học 
+bổng”, “form xin nghỉ học có phép…”) sẽ được đẩy lên trên, trong khi các 
+chunk chỉ “na ná” hoặc liên quan xa (danh sách sinh viên nhận học bổng, lịch 
+thi, học phí…) sẽ bị đẩy xuống dưới. 
+2.3.3.7. Bước 6 – Lựa chọn context cuối cùng cho LLM 
+Các Top-N chunks sau reranking chính là context đầu vào cho LLM [3] 
+trong giai đoạn sinh câu trả lời. Tại bước này, hệ thống có thể: 
+• Loại bỏ những chunk trùng lặp hoặc quá giống nhau. 
+• Cắt gọn các đoạn quá dài nhưng vẫn giữ ngữ nghĩa đầy đủ. 
+• Gắn kèm metadata (tên file, số trang, heading) để LLM [3] có thể trích 
+dẫn nguồn chính xác. 
+Kết quả cuối cùng là một “gói” context gọn, sạch, giàu thông tin, được 
+truyền vào prompt của Gemini [19] 2.0 Flash, đảm bảo câu trả lời sinh ra bám 
+sát tài liệu chính thức của trường, có trích dẫn nguồn rõ ràng, giảm thiểu tối đa 
+hiện tượng hallucination. 
+
+
+=== PAGE 63 ===
+50 
+ 
+ 
+ 
+2.3.4. Thiết kế cơ sở dữ liệu 
+2.3.4.1. Danh sách bảng 
+Hệ thống sử dụng PostgreSQL 15+ với extension pgvector trên nền tảng 
+Supabase. Database được thiết kế theo mô hình quan hệ với các bảng chính 
+cho: 
+Quản lý người dùng và phân quyền: 
+▪ Bảng users: Lưu trữ thông tin người dùng và tài khoản 
+▪ Bảng user_roles: Quản lý vai trò và quyền hạn của người dùng 
+Quản lý tài liệu và chunks 
+▪ Bảng documents: Lưu trữ metadata của các tài liệu PDF được xử lý 
+▪ Bảng chunks: Lưu trữ các đoạn văn bản (chunks) được tách ra từ tài 
+liệu 
+▪ Bảng embeddings: Lưu trữ vector embeddings của chunks để semantic 
+search 
+▪ Bảng document_attachments: Lưu trữ file đính kèm (forms, templates, 
+documents bổ sung) 
+▪ Bảng chunk_attachments: Bảng liên kết Many-to-Many giữa chunks và 
+attachments 
+Quản lý hội thoại 
+▪ Bảng conversations: Lưu trữ toàn bộ hội thoại giữa user và chatbot 
+▪ Bảng conversation_messages: Lưu chi tiết từng nội dung trong cuộc hội 
+thoại để tạo ngữ cảnh mới 
+▪ Bảng memory_summaries: Lưu trữ tóm tắt hội thoại cho long-term 
+memory 
+ 
+ 
+
+
+=== PAGE 64 ===
+51 
+ 
+ 
+ 
+ 
+Phản hồi và đánh giá 
+▪ Bảng feedback: Lưu trữ feedback từ người dùng 
+▪ Bảng chunk_performance: Theo dõi hiệu suất của từng chunk dựa trên 
+feedback 
+Phân tích và báo cáo 
+▪ Bảng topic_classifications: Phân loại topic của mỗi câu hỏi cho analytics 
+▪ Bảng analytics_queries: Lưu trữ metrics về mỗi query để phân tích hiệu 
+năng 
+▪ Bảng analytics_documents: Theo dõi lượt truy cập và hiệu suất của từng 
+document 
+▪ Bảng query_metrics: Metrics chi tiết cho từng query (performance 
+monitoring) 
+2.3.4.2. Mô tả các trường dữ liệu, quan hệ 
+Các trường dữ liệu của các bảng có mối quan hệ chặt chẽ với nhau, đảm 
+bảo tính xuyên suốt của toàn hệ thống để có thể theo dõi, nắm bắt nhu cầu của 
+người dùng một cách chính xác nhất. 
+Ví dụ: Bảng users 
+Trường 
+Kiểu dữ liệu 
+Mô tả 
+Ràng buộc 
+id 
+SERIAL 
+ID duy nhất 
+của người 
+dùng 
+PRIMARY 
+KEY 
+
+
+=== PAGE 65 ===
+52 
+ 
+ 
+ 
+Trường 
+Kiểu dữ liệu 
+Mô tả 
+Ràng buộc 
+username 
+VARCHAR(50) 
+Tên đăng 
+nhập 
+UNIQUE, 
+NOT NULL 
+email 
+VARCHAR(100) 
+Địa chỉ email 
+UNIQUE, 
+NOT NULL 
+hashed_password 
+VARCHAR(255) 
+Mật khẩu đã 
+hash (bcrypt) 
+NOT NULL 
+full_name 
+VARCHAR(100) 
+Họ và tên đầy 
+đủ 
+NULL 
+disabled 
+BOOLEAN 
+Trạng thái 
+kích hoạt 
+DEFAULT 
+FALSE 
+created_at 
+TIMESTAMP 
+Ngày tạo tài 
+khoản 
+DEFAULT 
+NOW() 
+updated_at 
+TIMESTAMP 
+Lần cập nhật 
+cuối 
+DEFAULT 
+NOW() 
+ 
+Quan hệ 1:M (One-to-Many) 
+
+
+=== PAGE 66 ===
+53 
+ 
+ 
+ 
+▪ users ─► user_roles 
+▪ users ─► conversations 
+▪ documents ─► chunks 
+▪ documents ─► analytics_documents 
+▪ chunks ─► embeddings 
+▪ conversations ─► feedback 
+▪ conversations ─► conversation_messages 
+▪ conversations ─► memory_summaries 
+▪ conversations ─► topic_classifications 
+Quan hệ M:M (Many-to-Many) 
+▪ chunks ◄─► document_attachments (qua chunk_attachments) 
+▪ users ◄─► roles (qua user_roles) 
+Quan hệ 1:1 (One-to-One) 
+▪ chunks ◄─► embeddings 
+▪ chunks ◄─► chunk_performance 
+▪ documents ◄─► analytics_documents 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+
+=== PAGE 67 ===
+54 
+ 
+ 
+ 
+CHƯƠNG III. CƠ SỞ LÝ THUYẾT 
+Một hạn chế quan trọng của các mô hình ngôn ngữ lớn (LLM [3]) là khó 
+đảm bảo tính minh bạch, tính nhất quán trong phản hồi và khả năng cập nhật 
+tri thức theo thời gian thực. Trong bối cảnh nhiều ứng dụng yêu cầu thông tin 
+mới, chính xác và có thể kiểm chứng, phương pháp Retrieval-Augmented 
+Generation (RAG [1], [2]) được phát triển nhằm khắc phục những bất cập này. 
+RAG [1], [2] cho phép hệ thống mở rộng và thay đổi nguồn tri thức nền 
+tảng một cách linh hoạt thông qua cơ chế truy xuất bối cảnh trực tiếp, đồng thời 
+cung cấp khả năng giải thích nguồn thông tin được sử dụng. Quá trình xử lý 
+của mô hình bắt đầu từ việc tiếp nhận câu hỏi đầu vào của người dùng. Hệ 
+thống sẽ tính toán độ tương đồng ngữ nghĩa giữa câu hỏi và kho dữ liệu, từ đó 
+truy xuất các đoạn văn bản liên quan đóng vai trò làm bối cảnh. Câu hỏi và các 
+bối cảnh này sau đó được kết hợp và đưa vào mô hình ngôn ngữ lớn để tạo ra 
+câu trả lời phù hợp. 
+Mô hình RAG [1], [2] bao gồm hai thành phần chính: Thành phần truy 
+xuất và Thành phần tạo sinh. Thành phần truy xuất thực hiện việc tìm kiếm các 
+đoạn văn bản có mức độ liên quan cao nhất với câu hỏi, thường thông qua lựa 
+chọn K đoạn phù hợp nhất. Thành phần tạo sinh tiếp nhận câu hỏi và bối cảnh 
+đã truy xuất để sinh ra câu trả lời có tính chính xác và chi tiết. Nhờ sự kết hợp 
+này, RAG [1], [2] đã chứng minh hiệu quả trong các tác vụ hỏi–đáp, thể hiện 
+khả năng cung cấp thông tin cụ thể và đáng tin cậy. 
+3.1. RAG - Retrieval-Augmented Generation 
+ 
+RAG [1], [2] (Retrieval-Augmented Generation) là một kiến trúc AI tiên 
+tiến kết hợp chặt chẽ giữa hai thành phần chính: Retrieval (truy xuất) và 
+Generation (sinh văn bản). Ở bước truy xuất, hệ thống sẽ tìm kiếm và lựa chọn 
+những thông tin liên quan từ knowledge base (cơ sở tri thức) như tài liệu nội 
+bộ, văn bản quy định, cơ sở dữ liệu chuyên ngành,… nhằm xây dựng ngữ cảnh 
+đầu vào cho mô hình. Tiếp theo, ở bước sinh văn bản, mô hình ngôn ngữ lớn 
+(LLM [3]) sử dụng phần thông tin đã được truy xuất đó để tạo ra câu trả lời 
+
+
+=== PAGE 68 ===
+55 
+ 
+ 
+ 
+mạch lạc, chính xác hơn và phù hợp với bối cảnh sử dụng, thay vì chỉ dựa vào 
+kiến thức sẵn có bên trong mô hình. 
+Ngày nay, các mô hình LLM [3] thuần túy (LLM standalone) tồn tại 
+nhiều hạn chế: kiến thức bị giới hạn bởi thời điểm huấn luyện (cutoff date), 
+không nắm được các thông tin cụ thể, nội bộ của từng tổ chức, dễ xảy ra hiện 
+tượng “hallucination” (bịa đặt hoặc suy đoán sai thông tin) và không thể tự cập 
+nhật dữ liệu theo thời gian thực. Kiến trúc RAG [1], [2] ra đời để khắc phục 
+những vấn đề này bằng cách cho phép hệ thống truy cập vào knowledge base 
+luôn được cập nhật, chứa dữ liệu chuyên sâu theo từng lĩnh vực, từ đó giúp 
+giảm đáng kể hiện tượng hallucination và đồng thời cung cấp các câu trả lời có 
+kèm nguồn trích dẫn rõ ràng, tăng độ tin cậy và minh bạch cho người sử dụng. 
+ 
+Hình 15: Kiến trúc RAG tổng thể. 
+3.2. Vector Embeddings và Semantic Search 
+3.2.1. Khái niệm Vector Embeddings 
+Embedding [22], [23] là quá trình chuyển đổi văn bản (text) thành một 
+vector số trong không gian nhiều chiều, sao cho những câu có nghĩa tương tự 
+sẽ được biểu diễn bằng các vector nằm gần nhau, còn những câu khác nghĩa thì 
+có vector cách xa nhau. Chẳng hạn, câu “sinh viên xin nghỉ học” sau khi đi qua 
+mô hình embedding sẽ được mã hóa thành một vector dạng [0.23, -0.45, 0.67, 
+..., 0.12] trong không gian 384 chiều; câu “học sinh xin phép vắng mặt” có ý 
+nghĩa gần tương tự nên sẽ cho ra một vector khác, chẳng hạn [0.25, -0.43, 0.65, 
+..., 0.15], nằm rất gần với vector thứ nhất. Ngược lại, một câu hoàn toàn khác 
+ngữ nghĩa như “thời tiết hôm nay” sẽ được ánh xạ tới một vector kiểu [-0.78, 
+0.32, -0.12, ..., 0.89], nằm xa hai vector còn lại. Nhờ đặc tính này, embedding 
+
+
+=== PAGE 69 ===
+56 
+ 
+ 
+ 
+[22], [23] trở thành nền tảng cho các bài toán tìm kiếm ngữ nghĩa, so khớp câu 
+hỏi – tài liệu và nhiều ứng dụng AI khác. 
+3.2.2. Semantic Search 
+Semantic Search [24], [14] (tìm kiếm ngữ nghĩa) là kỹ thuật tìm kiếm 
+dựa trên ý nghĩa của câu hỏi và tài liệu, thay vì chỉ khớp từ khóa thuần túy. Quy 
+trình hoạt động gồm hai giai đoạn chính. Ở Indexing Phase (offline), hệ thống 
+lấy toàn bộ tập tài liệu, chuyển từng đoạn văn/bản ghi thành các vector 
+embedding và lưu trữ trong cơ sở dữ liệu vector, ví dụ như pgvector. Ở Query 
+Phase (online), khi người dùng gửi một câu hỏi, câu hỏi này cũng được mô hình 
+embedding mã hóa thành một vector; sau đó hệ thống thực hiện vector search 
+[4] để tìm ra các vector (tài liệu) gần nhất với vector câu hỏi và trả về Top-K 
+kết quả liên quan nhất. 
+Độ “gần nhau” giữa các vector được đo bằng cosine similarity, được định 
+nghĩa là: 
+cosine_similarity(𝐴, 𝐵) =
+𝐴⋅𝐵
+∥𝐴∥×∥𝐵∥ 
+Trong đó 𝐴⋅𝐵 là tích vô hướng (dot product), ∥𝐴∥và ∥𝐵∥là độ dài 
+(norm) của từng vector. Giá trị cosine similarity nằm trong khoảng [−1,1]: 
+bằng 1 khi hai vector gần như trùng nhau (nghĩa rất giống), khoảng 0 khi gần 
+như không liên quan (trực giao), và gần -1 khi gần như đối lập hoàn toàn. Ví 
+dụ, nếu ta mã hóa hai câu “sinh viên xin nghỉ” và “học sinh xin phép” thành 
+hai vector A và B, rồi tính ra cosine similarity xấp xỉ 0.98, điều đó cho thấy hai 
+câu này có mức độ tương đồng ngữ nghĩa rất cao, nên sẽ được Semantic Search 
+[24], [14] ưu tiên xếp gần nhau trong kết quả tìm kiếm. 
+3.3. BM25  
+BM25 [13] là một thuật toán xếp hạng tài liệu dựa trên keyword 
+matching, được phát triển từ mô hình TF-IDF nhưng đã khắc phục nhiều hạn 
+chế của TF-IDF truyền thống. Thay vì chỉ đếm tần suất xuất hiện của từ, 
+
+
+=== PAGE 70 ===
+57 
+ 
+ 
+ 
+BM25 [13] đưa thêm các cơ chế term frequency saturation (giảm dần “độ lợi” 
+khi một từ xuất hiện quá nhiều lần), chuẩn hóa theo độ dài văn bản và cho 
+phép điều chỉnh thông qua các tham số 𝑘1và 𝑏. Nhờ đó, BM25 [13] xử lý tốt 
+hơn các trường hợp tài liệu quá dài, tránh việc những từ xuất hiện nhiều lần bị 
+“thổi phồng” tầm quan trọng như trong TF-IDF. 
+Điểm BM25 [13] của một document 𝐷 đối với một truy vấn 𝑄 được tính 
+theo công thức: 
+score(𝐷, 𝑄) = ∑𝐼𝐷𝐹(
+𝑞𝑖∈𝑄
+𝑞𝑖) ×
+𝑓(𝑞𝑖, 𝐷) × (𝑘1 + 1)
+𝑓(𝑞𝑖, 𝐷) + 𝑘1 × (1 −𝑏+ 𝑏× ∣𝐷∣
+avgdl)
+ 
+ 
+Trong đó: 𝑄= {𝑞1, 𝑞2, … , 𝑞𝑛} là tập các từ khóa trong truy vấn; 
+𝑓(𝑞𝑖, 𝐷)là tần suất xuất hiện của từ 𝑞𝑖trong document 𝐷; ∣𝐷∣là độ dài của 
+document (số từ); avgdllà độ dài trung bình của các document trong tập dữ 
+liệu. Hai tham số 𝑘1và 𝑏dùng để điều chỉnh độ bão hòa của tần suất từ và mức 
+độ chuẩn hóa theo độ dài document: khi 𝑘1nhỏ (tiệm cận 0), mô hình gần giống 
+dạng nhị phân “có/không”; khi 𝑘1lớn, tần suất xuất hiện của từ khóa được coi 
+trọng hơn (thường chọn khoảng 1.2–2.0). Tham số 𝑏nằm trong [0, 1]: 𝑏=
+0gần như không xét độ dài document, còn 𝑏= 1chuẩn hóa đầy đủ theo độ dài 
+(giá trị phổ biến là 0.75). Thành phần IDF được tính như sau: 
+𝐼𝐷𝐹(𝑞𝑖) = log (𝑁−𝑛(𝑞𝑖) + 0.5
+𝑛(𝑞𝑖) + 0.5
++1) 
+ 
+với 𝑁 là tổng số document trong corpus và 𝑛(𝑞𝑖)là số document có chứa từ 
+𝑞𝑖. 
+3.4. Hybrid Search 
+Trong các hệ thống tìm kiếm hiện đại, Vector Search [4] (dựa trên 
+embedding) và BM25 [13] (dựa trên keyword) mỗi bên đều có ưu điểm riêng, 
+nhưng cũng có những hạn chế khó bỏ qua nếu chỉ dùng đơn lẻ. Với những truy 
+
+
+=== PAGE 71 ===
+58 
+ 
+ 
+ 
+vấn mang tính ngữ nghĩa, chẳng hạn như “điều kiện nhận học bổng” và “yêu 
+cầu để được cấp học bổng”, nội dung khác từ nhưng cùng ý, Vector Search [4] 
+thể hiện rất tốt vì có khả năng nhận ra sự tương đồng về nghĩa và xếp hai câu 
+về gần nhau. Ngược lại, trong các trường hợp cần khớp chính xác chuỗi ký tự, 
+như truy vấn “mã sinh viên SV2024001” tìm tài liệu chứa chính xác mã 
+“SV2024001”, thì BM25 hoặc các thuật toán keyword-based lại vượt trội, do 
+chúng làm việc trực tiếp với từ khóa, mã số, ký hiệu. 
+Chính vì vậy, việc chỉ sử dụng Vector Search [4] hoặc chỉ dùng BM25 
+[13] đều chưa tối ưu cho các hệ thống tìm kiếm phức tạp, nơi truy vấn có thể 
+vừa mang tính ngữ nghĩa, vừa chứa mã số hoặc cụm từ đặc thù. Hybrid Search 
+[10], [11], [12] ra đời để kết hợp sức mạnh của cả hai: dùng Vector Search [4] 
+để hiểu nội dung và ngữ nghĩa, đồng thời dùng BM25 [13] để đảm bảo khớp 
+chính xác từ khóa quan trọng, rồi hợp nhất hai kết quả lại thành một ranking 
+cuối cùng tối ưu hơn cho người dùng. 
+3.5. Cross-Encoder Reranking 
+3.5.1. Bi-Encoder vs Cross-Encoder 
+Trong hệ thống truy xuất và xếp hạng tài liệu, Bi-Encoder [14] và Cross-
+Encoder [18] là hai kiến trúc bổ trợ cho nhau. Bi-Encoder [14] (thường gặp như 
+SBERT) mã hóa query và document một cách tách biệt: truy vấn được đưa vào 
+Encoder A để tạo ra vector A, tài liệu được đưa vào Encoder B để tạo ra vector 
+B, sau đó độ liên quan giữa hai bên được đo bằng các hàm giống như cosine 
+similarity. Cách làm này cho phép mã hóa tài liệu một lần, lưu vào index và tái 
+sử dụng cho rất nhiều truy vấn, nên tốc độ truy vấn rất nhanh và có thể mở rộng 
+tới hàng triệu tài liệu. Điểm hạn chế là Bi-Encoder [14] không cho phép mô 
+hình “nhìn trực tiếp” sự tương tác chi tiết giữa từng từ trong query và document, 
+nên độ chính xác thường kém hơn so với các mô hình có tương tác đầy đủ. 
+Ngược lại, Cross-Encoder [18] nhận [Query + Document] chung một lần 
+và cho ra trực tiếp một relevance score (điểm liên quan). Toàn bộ từ trong truy 
+vấn và tài liệu cùng tham gia vào cơ chế attention, nên mô hình hiểu sâu hơn 
+
+
+=== PAGE 72 ===
+59 
+ 
+ 
+ 
+ngữ cảnh và mối quan hệ giữa chúng; vì vậy Cross-Encoder [18] rất mạnh cho 
+bước xếp hạng cuối cùng (reranking) với độ chính xác cao hơn. Tuy nhiên, cái 
+giá phải trả là chi phí tính toán lớn: mỗi cặp query–document phải được encode 
+riêng, nên rất chậm và không thể áp dụng trực tiếp cho hàng trăm nghìn hay 
+hàng triệu tài liệu. Do đó, Bi-Encoder [14] thường dùng cho retrieval thô, còn 
+Cross-Encoder [18] dùng để rerank trên một tập nhỏ đã được lọc trước. 
+ 
+Hình 16: So sánh Cross-Encoder và Bi-Encoder. 
+
+
+=== PAGE 73 ===
+60 
+ 
+ 
+ 
+3.5.2. Reranking 
+Giả sử bước retrieval ban đầu (dùng Bi-Encoder [14] /BM25 [13]) trả về 
+Top-5 tài liệu cho truy vấn “Điều kiện để được nhận học bổng là gì?” như sau: 
+Doc A (quy định về học bổng khuyến khích học tập), Doc B (danh sách sinh 
+viên đạt học bổng), Doc C (điều kiện xét học bổng: GPA ≥ 3.5), Doc D (học 
+phí và các khoản thu), Doc E (thủ tục xin học bổng), với các score ban đầu lần 
+lượt là 0.82, 0.79, 0.77, 0.75, 0.73. Nhìn qua có vẻ Doc A đứng đầu, nhưng 
+chưa hẳn là tài liệu trả lời trực tiếp câu hỏi về “điều kiện”. Khi đưa các cặp 
+(query, document) này vào Cross-Encoder [18] để reranking, mô hình sẽ chấm 
+điểm lại và sắp xếp theo thứ tự mới: Doc C lên hạng 1 với score khoảng 0.95 
+vì nói thẳng về “điều kiện xét học bổng: GPA ≥ 3.5”; Doc E (thủ tục xin học 
+bổng) đứng thứ 2 với score khoảng 0.88; Doc A tụt xuống thứ 3; còn Doc B 
+(danh sách đã nhận học bổng) và Doc D (học phí) rơi xuống các vị trí cuối với 
+điểm rất thấp. Nhờ vậy, tài liệu phù hợp nhất với ý định truy vấn – hỏi “điều 
+kiện” – được đẩy lên trên cùng, giúp LLM [3] có ngữ cảnh chính xác hơn để 
+sinh câu trả lời. 
+Việc bổ sung bước reranking bằng Cross-Encoder [18] mang lại hai 
+nhóm lợi ích chính. Thứ nhất là cải thiện precision của hệ thống: nếu chỉ dùng 
+kết quả retrieval thô, trong Top-5 tài liệu trả về có thể chỉ 3/5 là thực sự liên 
+quan (precision ≈ 60%), nhưng sau khi rerank, ta có thể sắp xếp lại để Top-5 
+đều là những tài liệu sát nghĩa với truy vấn, nâng tỷ lệ tài liệu “đáng đọc” lên 
+gần 100% – điều cực kỳ quan trọng trong bối cảnh RAG [1], [2], nơi chất lượng 
+vài tài liệu đầu tiên ảnh hưởng trực tiếp tới chất lượng câu trả lời. Thứ hai là 
+giảm chi phí và tăng hiệu quả sử dụng LLM [3]: nếu LLM [3] được cấp 5 tài 
+liệu không liên quan, mô hình sẽ “loay hoay” trong ngữ cảnh nhiễu, dễ trả lời 
+lạc đề và lãng phí token; ngược lại, khi chỉ gửi vào 5 tài liệu đã được Cross-
+Encoder [18] xác nhận là phù hợp nhất, LLM [3] sẽ khai thác ngữ cảnh tốt hơn, 
+trả lời chính xác, ngắn gọn hơn và tiết kiệm chi phí tính toán. Nói cách khác, 
+reranking vừa nâng chất lượng đầu ra, vừa tối ưu chi phí vận hành cho toàn bộ 
+pipeline RAG [1], [2]. 
+
+
+=== PAGE 74 ===
+61 
+ 
+ 
+ 
+3.6. LLM - Large Language Model  
+Large Language Model [3] (LLM) là mô hình ngôn ngữ được huấn luyện 
+trên lượng dữ liệu khổng lồ, có khả năng hiểu và sinh văn bản tự nhiên, trả lời 
+câu hỏi, tóm tắt, dịch thuật cũng như thực hiện reasoning và giải quyết vấn đề 
+phức tạp. Trong hệ thống này, chúng tôi sử dụng Gemini [19] 2.0 Flash 
+Experimental (model gemini-2.0-flash-exp, phát hành tháng 12/2024) với 
+context window lên tới khoảng 1.048.576 tokens (~1M tokens), đầu ra tối đa 
+8.192 tokens, hỗ trợ đa phương thức (text + image) nên có thể xử lý cả 
+PDF/OCR, tốc độ phản hồi nhanh, tối ưu cho low-latency; nhờ đó mô hình vừa 
+xử lý được ngữ cảnh rất lớn, vừa hỗ trợ tiếng Việt tốt, phù hợp cho các bài toán 
+RAG [1], [9] trong môi trường đại học. Để khai thác hiệu quả LLM [3], hệ 
+thống áp dụng prompt engineering với một system prompt cố định, trong đó 
+mô hình được định danh là trợ lý AI của Trường Đại học, chuyên trả lời về quy 
+chế đào tạo, tuyển sinh, học bổng và thủ tục hành chính; được hướng dẫn phải 
+ưu tiên trả lời dựa trên CONTEXT truy xuất được, nếu không có thông tin thì 
+phải nói rõ, luôn trích dẫn nguồn (tên file, trang), trả lời bằng tiếng Việt rõ ràng, 
+lịch sự và sử dụng markdown [21] khi cần, với cấu trúc khung: CONTEXT: 
+{retrieved_documents} – QUESTION: {user_question} – ANSWER.  
+Bên cạnh đó, hệ thống còn cung cấp few-shot examples để “dạy” mô 
+hình phong cách trả lời chuẩn, ví dụ như câu hỏi “Điều kiện xét học bổng là 
+gì?” kèm theo câu trả lời liệt kê rõ các điều kiện về điểm trung bình học tập, 
+điểm rèn luyện và yêu cầu không có học phần dưới điểm C, có ghi nguồn 
+“[QUY_CHE_DAO_TAO.pdf, trang 15]”; hoặc câu hỏi ngoài phạm vi như 
+“Thời tiết hôm nay thế nào?” thì trợ lý sẽ lịch sự từ chối, nêu rõ mình chỉ trả 
+lời các vấn đề liên quan đến quy định, tuyển sinh, học bổng của trường. 
+ 
+ 
+ 
+
+
+=== PAGE 75 ===
+62 
+ 
+ 
+ 
+CHƯƠNG IV. THÔNG TIN VỀ TRIỂN KHAI ỨNG DỤNG PHẦN 
+MỀM/SẢN PHẨM CÔNG NGHỆ 
+4.1. Cài đặt và Triển khai  
+4.1.1. Yêu cầu phần cứng/phần mềm 
+4.1.1.1. Yêu cầu phần cứng 
+Về yêu cầu phần cứng, hệ thống được xây dựng để có thể vận hành linh 
+hoạt ở cả môi trường development và production, phù hợp với quá trình phát 
+triển, thử nghiệm cũng như triển khai thực tế. 
+Trong môi trường development, cấu hình tối thiểu yêu cầu CPU 4 nhân, 
+RAM 8 GB và khoảng 20 GB dung lượng bộ nhớ, đủ để chạy backend, database 
+và thử nghiệm pipeline RAG ở quy mô nhỏ. Tuy nhiên, để quá trình phát triển 
+và debug diễn ra mượt mà hơn, cấu hình khuyến nghị là CPU từ 8 nhân trở lên, 
+RAM 16 GB và 50 GB SSD. GPU không bắt buộc trong giai đoạn này, nhưng 
+nếu sử dụng mô hình LLM chạy local thông qua Ollama thì việc trang bị GPU 
+với tối thiểu 8 GB VRAM sẽ giúp tăng đáng kể tốc độ suy luận. 
+Đối với môi trường production, hệ thống được triển khai trên nền tảng 
+Railway nhằm đảm bảo khả năng mở rộng và vận hành ổn định. Cấu hình đề 
+xuất sử dụng tier Pro cho dịch vụ compute với khoảng 8 GB RAM và 8 vCPU 
+để đáp ứng nhu cầu xử lý đồng thời nhiều truy vấn. Cơ sở dữ liệu PostgreSQL 
+[16] được triển khai trên Supabase, trong đó nhóm sử dụng gói Pro thay cho 
+gói Free nhằm đảm bảo hiệu năng và độ tin cậy khi dữ liệu tăng lên. Ngoài ra, 
+Redis được sử dụng cho caching và queue nhẹ, với dung lượng tối thiểu khoảng 
+100 MB. Phần lưu trữ dạng volume được cấu hình từ 5 GB trở lên để phục vụ 
+việc lưu trữ file PDF và embeddings, thay vì mức tối thiểu 1 GB chỉ phù hợp 
+cho giai đoạn thử nghiệm ban đầu. 
+
+
+=== PAGE 76 ===
+63 
+ 
+ 
+ 
+4.1.1.2. Yêu cầu phần mềm 
+Về yêu cầu phần mềm, hệ thống được thiết kế để hoạt động ổn định trên 
+nhiều nền tảng khác nhau, đáp ứng nhu cầu phát triển và triển khai trong các 
+môi trường phổ biến hiện nay. 
+Ở mức hệ điều hành, hệ thống hỗ trợ các phiên bản 64-bit hiện đại, bao 
+gồm Windows 10/11, các bản phân phối Linux như Ubuntu từ 20.04 trở lên 
+hoặc Debian từ phiên bản 11, cũng như macOS từ phiên bản 12.0 (Monterey). 
+Điều này giúp đảm bảo tính tương thích trong quá trình phát triển cá nhân cũng 
+như khi triển khai trên server hoặc môi trường cloud. 
+Về runtime và công cụ phát triển, Python [9] phiên bản 3.11 trở lên được 
+sử dụng làm runtime chính cho backend, đáp ứng tốt các yêu cầu về hiệu năng 
+và khả năng tương thích với các thư viện AI hiện đại. Conda hoặc pip được 
+dùng để quản lý package và môi trường ảo. Git (từ phiên bản 2.30 trở lên) đóng 
+vai trò quản lý mã nguồn và hỗ trợ làm việc nhóm. Docker [15] (phiên bản 24.0 
+trở lên) được sử dụng như một tùy chọn để container hóa ứng dụng, giúp đơn 
+giản hóa việc triển khai và đảm bảo tính nhất quán giữa các môi trường. Ngoài 
+ra, Node.js từ phiên bản 18 trở lên được sử dụng cho quá trình phát triển 
+frontend và build các tài nguyên liên quan. 
+Đối với database và các dịch vụ hỗ trợ, PostgreSQL [16] phiên bản 15 
+trở lên được lựa chọn làm cơ sở dữ liệu chính thông qua nền tảng Supabase, 
+đáp ứng tốt nhu cầu lưu trữ dữ liệu có cấu trúc. Extension pgvector (từ phiên 
+bản 0.5 trở lên) được tích hợp để hỗ trợ tìm kiếm tương đồng vector trong 
+pipeline RAG. Redis phiên bản 7.0 trở lên được sử dụng như một lớp caching 
+nhằm giảm độ trễ và tối ưu hiệu năng truy vấn. 
+Về mô hình ngôn ngữ lớn (LLM), hệ thống hỗ trợ nhiều lựa chọn tùy 
+theo điều kiện triển khai. Trong đó, Gemini với model gemini-2.0-flash được 
+khuyến nghị cho môi trường production nhờ khả năng phản hồi nhanh và dễ 
+tích hợp thông qua API Key từ Google AI Studio. Ngoài ra, hệ thống cũng hỗ 
+trợ chạy LLM local thông qua Ollama với các model như llama3 hoặc qwen2.5. 
+
+
+=== PAGE 77 ===
+64 
+ 
+ 
+ 
+Phương án này yêu cầu máy chủ có tối thiểu 16 GB RAM và được khuyến nghị 
+trang bị GPU để đạt hiệu năng suy luận tốt hơn. 
+4.1.2. Các bước cài đặt 
+Quy trình cài đặt và triển khai hệ thống được nhóm trình bày theo từng 
+bước sau: 
+Bước 1: Sao chép mã nguồn (Clone repository) 
+Trước tiên, tiến hành clone mã nguồn của dự án từ GitHub về máy và di chuyển 
+vào thư mục làm việc tương ứng. 
+Bước 2: Tạo môi trường Python 
+Hệ thống yêu cầu Python [9] phiên bản 3.11 trở lên. Khuyến nghị sử dụng 
+Conda để quản lý môi trường do tính ổn định và dễ kiểm soát phụ thuộc. Trong 
+trường hợp không sử dụng Conda, có thể thay thế bằng virtual environment 
+(venv). Sau khi tạo và kích hoạt môi trường, cần kiểm tra lại phiên bản Python 
+[9] để đảm bảo đúng yêu cầu. 
+Bước 3: Cài đặt các thư viện phụ thuộc 
+Toàn bộ thư viện cần thiết cho hệ thống được khai báo trong file 
+requirements.txt. Việc cài đặt các dependency này giúp hoàn thiện môi trường 
+runtime cho backend, bao gồm framework web, các thư viện phục vụ pipeline 
+RAG, tìm kiếm vector, kết nối cơ sở dữ liệu và caching. Sau khi cài đặt, có thể 
+kiểm tra nhanh để đảm bảo các package quan trọng đã được cài thành công. 
+Bước 4: Cấu hình biến môi trường 
+Hệ thống sử dụng file .env để quản lý các thông tin cấu hình như kết nối cơ sở 
+dữ liệu, khóa bảo mật, thông tin LLM và các tham số API. Người dùng cần sao 
+chép từ file mẫu (.env.example hoặc .env.railway) và chỉnh sửa lại các giá trị 
+phù hợp với môi trường triển khai, đặc biệt lưu ý các biến quan trọng liên quan 
+đến database, JWT secret và API key của LLM. 
+Bước 5: Khởi tạo cơ sở dữ liệu 
+Sau khi cấu hình xong biến môi trường, tiến hành kiểm tra kết nối đến 
+
+
+=== PAGE 78 ===
+65 
+ 
+ 
+ 
+PostgreSQL [16] để đảm bảo hệ thống có thể truy cập database và extension 
+pgvector đã được cài đặt. Tiếp theo, hệ thống sẽ khởi tạo các bảng cần thiết và 
+tạo sẵn tài khoản người dùng mặc định (admin và user). Các thông tin đăng 
+nhập mặc định chỉ dùng cho mục đích ban đầu và cần được thay đổi ngay sau 
+khi cài đặt. 
+Bước 6: Xử lý và nạp dữ liệu PDF 
+Các tài liệu PDF được đặt trong thư mục dữ liệu của hệ thống. Hệ thống sẽ tự 
+động trích xuất nội dung, chia nhỏ văn bản thành các đoạn (chunking) và xây 
+dựng embedding tương ứng. Sau đó, các embedding này được lưu trữ và lập 
+chỉ mục để phục vụ cho quá trình truy vấn trong pipeline RAG. Việc kiểm tra 
+số lượng vector giúp xác nhận quá trình xử lý dữ liệu đã hoàn tất thành công. 
+Bước 7: Khởi chạy server 
+Hệ thống có thể được chạy ở chế độ development với tính năng tự động reload 
+để thuận tiện cho quá trình phát triển, hoặc ở chế độ production với nhiều 
+worker nhằm tăng khả năng xử lý đồng thời. Sau khi server khởi động, có thể 
+kiểm tra trạng thái hoạt động thông qua endpoint health check và truy cập giao 
+diện tài liệu API (Swagger UI) để xác nhận hệ thống vận hành bình thường. 
+Các hướng dẫn cài đặt và cấu hình chi tiết được mô tả trong file 
+README.md của mã nguồn dự án trên GitHub do nhóm phát triển. 
+4.1.3. Cấu hình hệ thống 
+Hệ thống cho phép cấu hình linh hoạt thông qua các biến môi trường và 
+file cấu hình trung tâm, giúp dễ dàng điều chỉnh hành vi của backend mà không 
+cần thay đổi mã nguồn. 
+Cấu hình chính được khai báo trong file config/settings.py, bao gồm 
+các tham số cốt lõi phục vụ vận hành hệ thống. Trong đó, DATABASE_URL 
+dùng để thiết lập kết nối đến cơ sở dữ liệu PostgreSQL [16] và là biến bắt buộc. 
+REDIS_URL được sử dụng để kết nối Redis trong trường hợp bật cơ chế 
+caching. JWT_SECRET_KEY đóng vai trò là khóa bí mật để ký và xác thực 
+
+
+=== PAGE 79 ===
+66 
+ 
+ 
+ 
+JWT token, đảm bảo an toàn cho hệ thống. Tham số LLM_PROVIDER cho 
+phép lựa chọn nhà cung cấp mô hình ngôn ngữ, mặc định sử dụng Gemini 
+nhưng có thể chuyển sang Ollama khi chạy local. Ngoài ra, 
+EMBEDDING_MODEL xác định mô hình sinh embedding, mặc định là mô 
+hình Vietnamese embedding do BKAI phát triển. 
+Cấu hình cho pipeline RAG tập trung vào các tham số ảnh hưởng trực 
+tiếp đến chất lượng truy vấn và câu trả lời. CHUNK_SIZE và 
+CHUNK_OVERLAP kiểm soát cách chia nhỏ tài liệu nhằm cân bằng giữa độ 
+đầy đủ ngữ cảnh và hiệu năng. TOP_K_RESULTS quy định số lượng tài liệu 
+liên quan được đưa vào quá trình suy luận. SIMILARITY_THRESHOLD đặt 
+ngưỡng tương đồng tối thiểu để lọc các kết quả kém liên quan, trong khi 
+DENSE_WEIGHT xác định trọng số của dense retrieval trong cơ chế hybrid 
+search. 
+Cấu hình bảo mật (Security) được sử dụng để kiểm soát quyền truy cập 
+và bảo vệ hệ thống khi triển khai thực tế. Tham số HTTPS_ONLY cho phép 
+bắt buộc sử dụng HTTPS trong môi trường production. ALLOWED_ORIGINS 
+dùng để cấu hình CORS, mặc định cho phép tất cả origin trong giai đoạn phát 
+triển. Thời gian sống của access token được điều chỉnh thông qua 
+ACCESS_TOKEN_EXPIRE_MINUTES. Ngoài ra, hệ thống còn hỗ trợ giới 
+hạn tần suất truy cập API thông qua các tham số RATE_LIMIT_REQUESTS 
+và RATE_LIMIT_WINDOW nhằm giảm thiểu nguy cơ lạm dụng hoặc tấn 
+công từ chối dịch vụ. 
+Cấu hình Redis Cache giúp tối ưu hiệu năng truy vấn bằng cách lưu 
+tạm các kết quả đã xử lý. Biến ENABLE_REDIS_CACHE cho phép bật hoặc 
+tắt cơ chế caching. REDIS_CACHE_TTL quy định thời gian tồn tại của dữ liệu 
+cache, mặc định là 24 giờ. REDIS_CACHE_PREFIX được sử dụng để phân 
+biệt key của hệ thống với các ứng dụng khác dùng chung Redis, tránh xung đột 
+dữ liệu. 
+
+
+=== PAGE 80 ===
+67 
+ 
+ 
+ 
+4.2. An toàn và bảo mật 
+4.2.1. Cơ chế xác thực dựa trên JWT (JWT Authentication) 
+Trong bối cảnh Trường Đại học An ninh Nhân dân, hệ thống chatbot 
+phải đảm bảo chỉ những người dùng được cấp quyền (quản trị viên, cán bộ phụ 
+trách…) mới có thể truy cập vào các chức năng nhạy cảm như quản lý tài liệu, 
+xem thống kê hệ thống. Để đáp ứng yêu cầu đó, hệ thống áp dụng cơ chế xác 
+thực dựa trên JSON Web Token (JWT) [25]. 
+ 
+Hình 17: JWT. 
+Mỗi JWT [25] gồm ba phần: header, payload và signature. Phần header 
+quy định thuật toán ký (ví dụ HS256) và loại token (JWT [25]). Phần payload 
+chứa các thông tin nhận dạng người dùng như ID người dùng, username, role 
+(vai trò: admin, staff,…) cùng với thời điểm phát hành và thời điểm hết hạn. 
+Phần signature được tạo bằng cách ký kết hợp header + payload với một khóa 
+bí mật, giúp phát hiện mọi sửa đổi trái phép trên token. 
+Quy trình hoạt động diễn ra theo các bước chuẩn:  
+
+
+=== PAGE 81 ===
+68 
+ 
+ 
+ 
+• Người dùng gửi yêu cầu đăng nhập đến endpoint POST 
+/api/v1/auth/login kèm theo thông tin xác thực; nếu hợp lệ, hệ 
+thống trả về một access token dạng JWT [25], kèm token_type và 
+thời gian hết hạn (expires_in).  
+• (2) Khi gọi các API bảo vệ (protected routes), client đính kèm 
+token này trong header Authorization: Bearer <token>.  
+• (3) Backend kiểm tra chữ ký, đối chiếu thời gian hết hạn, sau đó 
+trích xuất thông tin người dùng từ payload để áp dụng các chính 
+sách phân quyền.  
+• (4) Khi token sắp hết hạn, client có thể gọi POST 
+/api/v1/auth/refresh để nhận một access token mới mà không cần 
+đăng nhập lại, giúp cải thiện trải nghiệm nhưng vẫn kiểm soát 
+được phiên làm việc. Cách tiếp cận này vừa stateless, dễ scale, vừa 
+phù hợp cho môi trường có yêu cầu bảo mật cao như lực lượng 
+Công an. 
+
+
+=== PAGE 82 ===
+69 
+ 
+ 
+ 
+ 
+Hình 18: Quy trình bảo mật JWT. 
+4.2.2. Lớp trung gian bảo mật (Security Middleware) 
+Bên cạnh cơ chế xác thực, hệ thống còn triển khai một lớp security 
+middleware nhằm bảo vệ kênh truyền và giảm thiểu các lỗ hổng phổ biến trên 
+web. 
+Thứ nhất, toàn bộ lưu lượng trong môi trường triển khai thực tế (production) 
+được buộc chuyển sang HTTPS. Middleware kiểm tra scheme của yêu cầu; nếu 
+phát hiện truy cập qua HTTP, hệ thống tự động chuyển hướng sang URL tương 
+
+
+=== PAGE 83 ===
+70 
+ 
+ 
+ 
+ứng dùng HTTPS. Việc này đảm bảo dữ liệu (đặc biệt là thông tin đăng nhập, 
+token, nội dung trao đổi liên quan đến quy chế nội bộ) luôn được mã hóa trên 
+đường truyền, tránh nguy cơ bị nghe lén hoặc tấn công “man-in-the-middle”. 
+Thứ hai, backend thiết lập tập hợp HTTP Security Headers ở mọi response: 
+• X-Content-Type-Options: nosniff ngăn trình duyệt tự suy đoán sai loại 
+nội dung. 
+• X-Frame-Options: DENY chặn việc nhúng trang vào iframe, giảm nguy 
+cơ clickjacking. 
+• X-XSS-Protection: 1; mode=block kích hoạt cơ chế phòng chống tấn 
+công XSS phía trình duyệt (trên các browser còn hỗ trợ). 
+• Strict-Transport-Security: max-age=31536000 thông báo cho trình duyệt 
+chỉ được phép kết nối qua HTTPS trong một khoảng thời gian dài, tăng 
+cường bảo vệ khỏi downgrade attack. 
+Thứ ba, đối với những API quan trọng hoặc có nguy cơ bị giả mạo nội dung, 
+hệ thống có thể áp dụng checksum validation. Mỗi request đi kèm một giá trị 
+băm (SHA-256) của phần thân (X-Checksum). Backend tự tính lại băm từ 
+request.body và so sánh; nếu không trùng khớp, yêu cầu bị từ chối. Cơ chế này 
+giúp bảo đảm tính toàn vẹn dữ liệu trên đường truyền và phát hiện các trường 
+hợp chỉnh sửa nội dung request một cách bất hợp pháp. Tổng hợp lại, lớp 
+security middleware tạo thành “vành đai” bảo vệ quanh API, rất cần thiết trong 
+môi trường đặc thù như Trường Đại học An ninh Nhân dân. 
+4.2.3. Cấu hình CORS (Cross-Origin Resource Sharing) 
+Do kiến trúc hệ thống tách rời frontend (Next.js [5] chạy trên domain 
+riêng) và backend (FastAPI [8]), việc cấu hình CORS là bắt buộc để trình duyệt 
+cho phép frontend gửi yêu cầu đến API. Tuy nhiên, nếu cấu hình CORS không 
+chặt chẽ, hệ thống có thể vô tình mở cửa cho các nguồn không tin cậy. 
+
+
+=== PAGE 84 ===
+71 
+ 
+ 
+ 
+Trong thiết kế này, backend chỉ cho phép một danh sách origin được tin cậy 
+(allowlist), ví dụ: http://localhost:3000 cho môi trường phát triển và 
+https://chatbot.university.edu.vn cho môi trường sản xuất. Middleware CORS 
+được cấu hình để: 
+• allow_origins chỉ chứa các domain hợp lệ của trường; 
+• allow_credentials=True cho phép gửi kèm cookie/token khi cần; 
+• allow_methods giới hạn vào các phương thức cần thiết (GET, POST, 
+PUT, DELETE); 
+• allow_headers=["*"] nhưng vẫn có thể siết chặt thêm trong tương lai nếu 
+chính sách yêu cầu. 
+Nhờ vậy, dù frontend và backend hoạt động trên các domain khác nhau, 
+trình duyệt vẫn chấp nhận các request hợp lệ, đồng thời chặn các yêu cầu xuất 
+phát từ website lạ (không có trong danh sách ALLOWED_ORIGINS). Điều 
+này giúp hệ thống chatbot tích hợp mượt mà với hạ tầng web hiện có của 
+Trường Đại học An ninh Nhân dân, nhưng vẫn giữ được kỷ luật bảo mật phù 
+hợp với môi trường lực lượng vũ trang 
+4.2.4. Phân quyền người dùng 
+Hệ thống quản lý quyền truy cập được xây dựng dựa trên mô hình Kiểm 
+soát Truy cập Dựa trên Vai trò (RBAC - Role-Based Access Control). Đây là 
+cơ chế bảo mật cốt lõi nhằm đảm bảo tính toàn vẹn của dữ liệu và ngăn chặn 
+các hành vi truy cập trái phép vào các tài nguyên nhạy cảm. Thay vì cấp quyền 
+riêng lẻ cho từng tài khoản, hệ thống thực hiện phân quyền thông qua việc gán 
+các vai trò cụ thể cho người dùng, giúp quy trình quản trị trở nên tập trung, chặt 
+chẽ và dễ dàng mở rộng khi số lượng người dùng tăng lên. 
+Về mặt kiến trúc dữ liệu, cơ chế này được hiện thực hóa thông qua sự 
+tương tác giữa hai thực thể chính trong cơ sở dữ liệu PostgreSQL [16]. Bảng 
+dữ liệu người dùng chịu trách nhiệm lưu trữ các thông tin định danh duy nhất 
+
+
+=== PAGE 85 ===
+72 
+ 
+ 
+ 
+(UUID) và thông tin xác thực cơ bản. Liên kết chặt chẽ với bảng này là bảng 
+vai trò (user_roles), nơi định nghĩa mối quan hệ giữa tài khoản và quyền hạn 
+tương ứng. Thiết kế này cho phép một người dùng có thể linh hoạt nắm giữ một 
+hoặc nhiều vai trò khác nhau tùy theo yêu cầu nghiệp vụ, đồng thời hỗ trợ việc 
+thu hồi hoặc cấp mới quyền hạn một cách tức thời. 
+Để đảm bảo an toàn tối đa cho quy trình ủy quyền, hệ thống áp dụng các 
+tiêu chuẩn bảo mật hiện đại trong quá trình xác thực. Mật khẩu của người dùng 
+được mã hóa một chiều bằng thuật toán Bcrypt trước khi lưu trữ, đảm bảo 
+không thể bị lộ dưới dạng văn bản thuần. Quá trình duy trì phiên đăng nhập sử 
+dụng công nghệ JSON Web Tokens (JWT [25]) theo cơ chế không trạng thái 
+(stateless). Cụ thể, mỗi yêu cầu (request) gửi đến API đều phải đính kèm mã 
+token chứa thông tin về vai trò của người dùng trong Header; lớp trung gian 
+[26]tại phía máy chủ sẽ tự động giải mã và đối chiếu quyền hạn này trước khi 
+cho phép thực thi bất kỳ thao tác dữ liệu nào. 
+4.2.5. Quản lý phiên đăng nhập 
+Hệ thống sử dụng cơ chế xác thực dựa trên JSON Web Token (JWT) để 
+quản lý phiên đăng nhập theo mô hình Stateless. Giải pháp này giúp loại bỏ 
+việc lưu trữ trạng thái phiên trên máy chủ, từ đó tối ưu hóa hiệu suất và tăng 
+khả năng mở rộng. Token được ký bằng thuật toán HMAC-SHA256 với khóa 
+bí mật và có thời gian hết hạn mặc định là 24 giờ kể từ lúc khởi tạo. 
+Về triển khai thực tế, sau khi người dùng xác thực thành công qua 
+Backend (FastAPI), mã thông báo sẽ được lưu trữ tại sessionStorage ở Frontend 
+(Next.js). Việc sử dụng sessionStorage đảm bảo token tự động bị hủy khi đóng 
+tab trình duyệt, giảm thiểu rủi ro bảo mật. Mọi yêu cầu API đến tài nguyên 
+được bảo vệ đều phải đính kèm mã thông báo này trong tiêu đề (Header) 
+Authorization để máy chủ kiểm tra tính toàn vẹn và quyền hạn (Scopes). 
+Công tác kiểm soát phiên được duy trì chặt chẽ thông qua thành phần 
+ProtectedRoute và các bộ lọc Interceptor. Hệ thống sẽ tự động kiểm tra hiệu 
+lực của mã thông báo định kỳ và thực hiện dọn dẹp phiên (Session Cleanup) 
+
+
+=== PAGE 86 ===
+73 
+ 
+ 
+ 
+ngay khi người dùng đăng xuất hoặc khi phiên làm việc hết hạn. Quy trình này 
+đảm bảo tính an toàn tuyệt đối cho dữ liệu và ngăn chặn hiệu quả các truy cập 
+trái phép vào hệ thống quản trị. 
+4.2.6. Mã hóa, sao lưu dữ liệu 
+PSU Chatbot được triển khai với các cơ chế mã hóa nhằm bảo đảm an 
+toàn dữ liệu trong quá trình lưu trữ và truyền tải. Mật khẩu người dùng được 
+mã hóa bằng thuật toán bcrypt với hệ số chi phí 12, giúp tăng khả năng chống 
+lại các hình thức tấn công dò mật khẩu. Dữ liệu trao đổi giữa người dùng và hệ 
+thống được bảo vệ thông qua giao thức TLS 1.2 trở lên, trong khi cơ chế xác 
+thực và quản lý phiên đăng nhập được thực hiện bằng JWT sử dụng thuật toán 
+HMAC-SHA256. Để bảo đảm tính toàn vẹn dữ liệu, hệ thống áp dụng SHA-
+256 checksums và định hướng mở rộng mã hóa ở mức trường dữ liệu đối với 
+các thông tin nhạy cảm trong giai đoạn phát triển tiếp theo. 
+Về sao lưu, hệ thống thực hiện sao lưu cơ sở dữ liệu tự động hằng ngày, 
+quản lý theo cơ chế luân phiên với thời gian lưu trữ 30 ngày. Các bản sao lưu 
+được lưu trữ tại hạ tầng ngoài hệ thống nhằm giảm thiểu rủi ro mất dữ liệu khi 
+xảy ra sự cố. Đồng thời, hệ thống đã xây dựng các quy trình khôi phục sau thảm 
+họa để bảo đảm khả năng phục hồi và duy trì hoạt động ổn định; việc xác minh 
+tự động tính hợp lệ của các bản sao lưu đang được hoàn thiện trong quá trình 
+phát triển. 
+4.2.7. Toàn Vẹn Dữ Liệu và Chống Lạm Dụng (Rate Limiting) 
+Để bảo vệ tài nguyên máy chủ trước các cuộc tấn công từ chối dịch vụ (DoS) 
+hoặc spam dữ liệu, hệ thống tích hợp các cơ chế kiểm soát lưu lượng và xác 
+thực file. 
+• Giới hạn Tần suất (Rate Limiting): Sử dụng RateLimitMiddleware kết 
+hợp với bộ nhớ tạm Redis để theo dõi yêu cầu theo thời gian thực. 
+
+
+=== PAGE 87 ===
+74 
+ 
+ 
+ 
+o Các giới hạn cụ thể được áp dụng: Đăng nhập (5 requests/phút), 
+Đăng ký (3 requests/phút), Chat API (60 requests/phút) và Admin 
+API (30 requests/phút). 
+o Hệ thống sẽ phản hồi mã lỗi 429 Too Many Requests khi người 
+dùng vượt ngưỡng. 
+• Xác thực Checksum cho Tài liệu: * Khi quản trị viên tải lên các văn 
+bản quy chế, ChecksumMiddleware sẽ yêu cầu gửi kèm mã băm 
+SHA256 hoặc MD5 trong header X-Checksum. 
+o Máy chủ tính toán lại mã băm của file nhận được; nếu không khớp, 
+file sẽ bị hủy ngay lập tức để đảm bảo dữ liệu không bị sai lệch 
+trong quá trình truyền. 
+• Kiểm chuẩn Dữ liệu (Input Validation): Sử dụng Pydantic schemas để 
+lọc toàn bộ dữ liệu đầu vào, tự động từ chối các yêu cầu có định dạng lạ 
+hoặc chứa mã độc trước khi chúng có thể tiếp cận logic xử lý của 
+Backend. 
+4.2.8. Bảo Mật Triển Khai (Deployment Security) 
+Hệ thống được vận hành trong môi trường cô lập để đảm bảo thông tin nhạy 
+cảm không bị rò rỉ. 
+• Quản lý Biến Môi trường: Các thông tin nhạy cảm như Database URL, 
+Secret Keys hay Gemini API Keys đều được lưu trữ trong file cấu hình 
+.env và chỉ được đọc vào bộ nhớ khi chạy, tuyệt đối không lưu trong mã 
+nguồn. 
+• Docker Security: Các container được cấu hình chạy dưới quyền người 
+dùng hạn chế (non-root), giảm thiểu tối đa thiệt hại nếu một thành phần 
+của hệ thống bị xâm nhập. 
+
+
+=== PAGE 88 ===
+75 
+ 
+ 
+ 
+CHƯƠNG V. HƯỚNG DẪN SỬ DỤNG PHẦN MỀM/SẢN PHẨM CÔNG 
+NGHỆ 
+5.1. Tổng quan hệ thống  
+     Hệ thống được thiết kế như một nền tảng chatbot RAG chuyên biệt cho 
+Trường Đại học An ninh Nhân dân, với mục tiêu trả lời chính xác các câu hỏi 
+liên quan đến quy chế đào tạo, tuyển sinh, học bổng, học phí, thủ tục hành 
+chính… dựa trên tài liệu chính thức của nhà trường. Về mặt công nghệ, hệ 
+thống chia thành các lớp rõ ràng: giao diện người dùng (frontend), tầng xử lý 
+nghiệp vụ (backend), tầng lưu trữ dữ liệu (database) và tầng AI/ML cho truy 
+xuất – sinh câu trả lời, tất cả có thể được triển khai trong môi trường container 
+(Docker Inc [15]) để thuận tiện cho việc cài đặt, vận hành và mở rộng. 
+ 
+Hình 19: Sơ đồ Use-case 
+
+
+=== PAGE 89 ===
+76 
+ 
+ 
+ 
+     Ở tầng Frontend, hệ thống sử dụng Next.js [5] 15 kết hợp React [6] 19 
+cùng Tailwind CSS [7] và thư viện giao diện shadcn/ui để xây dựng giao diện 
+web hiện đại, thân thiện, tương thích tốt trên cả máy tính và thiết bị di động. 
+Từ đó hình thành hai nhóm giao diện chính: (1) Giao diện người dùng (Chat 
+UI) cho thí sinh, sinh viên, phụ huynh – nơi họ nhập câu hỏi bằng tiếng Việt và 
+xem câu trả lời kèm trích dẫn nguồn (tên file, trang, mục/điều); (2) Giao diện 
+quản trị (Admin Dashboard) dành cho cán bộ, giúp tải lên tài liệu PDF, theo 
+dõi trạng thái xử lý (đang chờ, đang xử lý, hoàn thành, lỗi), xem thống kê truy 
+vấn và điều chỉnh một số cấu hình vận hành. 
+     Tầng Backend được hiện thực bằng FastAPI [8] (Python [9]), sử dụng 
+SQLAlchemy để tương tác với cơ sở dữ liệu và Redis làm bộ nhớ đệm (cache) 
+cho các kết quả truy vấn hoặc embedding thường dùng, nhằm tăng tốc độ phản 
+hồi. Backend đóng vai trò “bộ điều phối trung tâm”: nhận yêu cầu từ frontend, 
+thực hiện xác thực – phân quyền, gọi các module RAG [1], [2] để truy xuất tài 
+liệu phù hợp, gửi yêu cầu tới mô hình ngôn ngữ lớn để sinh câu trả lời, sau đó 
+trả kết quả về cho giao diện người dùng. Các API được tổ chức thành các nhóm 
+logic như: hỏi đáp (/chat), quản lý tài liệu (/documents), thống kê (/analytics), 
+kiểm tra sức khỏe hệ thống (/health…), phù hợp với yêu cầu tách biệt rõ ràng 
+giữa người dùng thông thường và cán bộ quản trị. 
+     Tầng Database sử dụng PostgreSQL [16] 16 kết hợp extension pgvector 
+[17], cho phép lưu trữ đồng thời cả nội dung văn bản đã được chia nhỏ (chunks) 
+và vector đặc trưng (embeddings) của từng đoạn. Các bảng chính bao gồm: 
+bảng tài liệu (metadata, trạng thái xử lý), bảng chunks (nội dung từng đoạn, 
+trang, tiêu đề, loại văn bản…) và bảng embeddings (vector 384 chiều gắn với 
+từng chunk). Nhờ có pgvector [17], hệ thống có thể thực hiện tìm kiếm ngữ 
+nghĩa trực tiếp trong PostgreSQL [16], đồng thời vẫn tận dụng được các chỉ 
+mục truyền thống (B-tree/BM25 [13]) cho tìm kiếm theo từ khóa, rất quan trọng 
+với các mã số văn bản, biểu mẫu, số hiệu quyết định trong môi trường nhà 
+trường – lực lượng vũ trang. 
+
+
+=== PAGE 90 ===
+77 
+ 
+ 
+ 
+     Tầng AI/ML là phần cốt lõi giúp chatbot “hiểu” và “trả lời” đúng theo 
+tài liệu. Hệ thống sử dụng mô hình Vietnamese SBERT [14] (384 chiều) để 
+sinh embeddings cho cả câu hỏi lẫn nội dung tài liệu, từ đó thực hiện Vector 
+Search [4]phục vụ tìm kiếm ngữ nghĩa. Song song, thuật toán BM25 [13] được 
+dùng để tìm kiếm theo từ khóa chính xác; kết quả từ hai hướng này được kết 
+hợp bằng kỹ thuật RRF (Reciprocal Rank Fusion) [10] để tạo thành một danh 
+sách ứng viên tối ưu. Tiếp theo, một Cross-Encoder [18] (train trên tập MS-
+MARCO) được dùng để reranking, chọn ra những đoạn văn bản liên quan nhất, 
+rồi gửi cùng câu hỏi tới Gemini [19] 2.0 Flash – mô hình ngôn ngữ lớn dùng 
+cho việc sinh câu trả lời. Gemini [19] 2.0 Flash cũng có khả năng xử lý hình 
+ảnh và PDF scan (OCR), giúp hệ thống trích xuất nội dung từ các quy chế dạng 
+scan/bản chụp vốn xuất hiện khá nhiều trong thực tế. 
+     Toàn bộ các thành phần trên có thể được đóng gói và triển khai bằng 
+Docker Compose [15], cho phép chạy hệ thống trên một hoặc nhiều máy chủ 
+trong mạng nội bộ của Trường Đại học An ninh Nhân dân. Nhờ kiến trúc phân 
+lớp rõ ràng và lựa chọn công nghệ phù hợp, hệ thống chatbot vừa đáp ứng được 
+yêu cầu trả lời chính xác, có trích dẫn nguồn, vừa hỗ trợ tra cứu 24/7, giảm tải 
+cho bộ phận tư vấn, đồng thời sẵn sàng cho việc mở rộng quy mô dữ liệu và 
+tích hợp sâu hơn với hạ tầng số của nhà trường trong tương lai. 
+ 
+Hình 20: Trang chủ của hệ thống PSU Chatbot. 
+
+
+=== PAGE 91 ===
+78 
+ 
+ 
+ 
+5.2. Trang Chatbot người dùng 
+Trang Chatbot là giao diện trò chuyện trực quan, đóng vai trò “cửa ngõ” 
+để thí sinh, sinh viên và phụ huynh tra cứu nhanh thông tin chính thức của 
+Trường Đại học An ninh Nhân dân. Giao diện được thiết kế theo phong cách 
+ứng dụng chat quen thuộc, bố cục rõ ràng với khu vực hội thoại ở trung tâm và 
+khung tài liệu tham khảo ở bên cạnh, giúp người dùng dễ theo dõi nội dung trao 
+đổi và đối chiếu nguồn thông tin khi cần. Tổng thể trang hướng đến trải nghiệm 
+đơn giản, dễ sử dụng, dễ đọc và phù hợp trên nhiều thiết bị. 
+ 
+Hình 21: Trang chat của hệ thống PSU Chatbot. 
+5.2.1. Mục tiêu chức năng 
+Trang Chatbot người dùng là nơi thí sinh, sinh viên và phụ huynh tương tác 
+trực tiếp với hệ thống, đóng vai trò như “cửa ngõ” để tiếp cận nhanh các thông 
+tin chính thức của Trường Đại học An ninh Nhân dân. Giao diện này cần vừa 
+đơn giản, dễ sử dụng như một ứng dụng chat quen thuộc, vừa đảm bảo thể hiện 
+rõ ràng nguồn gốc thông tin, giúp người dùng tin tưởng rằng mọi câu trả lời đều 
+dựa trên quy chế, thông báo, văn bản đã được nhà trường ban hành. Bao gồm 
+những chức năng sau: 
+• Nhập và quản lý câu hỏi 
+
+
+=== PAGE 92 ===
+79 
+ 
+ 
+ 
+o Cho phép người dùng nhập câu hỏi bằng tiếng Việt tự nhiên. 
+o Hỗ trợ hiển thị gợi ý câu hỏi mẫu / câu hỏi phổ biến. 
+o Hiển thị lịch sử hội thoại trong cùng phiên làm việc để người dùng 
+xem lại và hỏi tiếp. 
+• Hiển thị câu trả lời theo cơ chế RAG [1], [2] 
+o Trả lời dựa trên tài liệu nội bộ của trường, không tự “bịa” thêm 
+thông tin ngoài nguồn. 
+o Mỗi câu trả lời bắt buộc có trích dẫn nguồn: tên file, số trang, và 
+nếu có thể thì cả chương/mục/điều. 
+o Có thể hiển thị mức độ tin cậy tương đối cho câu trả lời, giúp người 
+dùng tự đánh giá. 
+• Trích đoạn nguồn tham chiếu 
+o Hiển thị các trích đoạn nội dung gốc (snippet) đi kèm câu trả lời. 
+o Cho phép người dùng mở rộng/xem chi tiết trích đoạn (ví dụ: xem 
+đoạn đầy đủ trong ngữ cảnh của tài liệu). 
+• Trải nghiệm người dùng và khả năng truy cập 
+o Hiển thị trạng thái đang xử lý (loading/“đang trả lời…”) để người 
+dùng không nghĩ hệ thống bị treo. 
+o Thông báo lỗi rõ ràng, dễ hiểu, kèm gợi ý (thử lại, rút gọn câu hỏi, 
+kiểm tra kết nối…). 
+o Giao diện thân thiện, dễ đọc, tương thích nhiều thiết bị và tuân thủ 
+nguyên tắc a11y (phông chữ, độ tương phản, hỗ trợ dùng bàn 
+phím, screen reader…). 
+
+
+=== PAGE 93 ===
+80 
+ 
+ 
+ 
+5.2.2. Bố cục giao diện và thành phần  
+• Thanh tiêu đề: logo, tiêu đề hệ thống, nút chuyển chế độ tối/sáng. 
+• Ô nhập câu hỏi: placeholder, đếm ký tự, nút gửi, phím Enter để gửi. 
+• Khu vực trả lời: văn bản định dạng, danh sách nguồn trích dẫn, điểm tin 
+cậy. 
+• Thanh bên (tùy chọn): gợi ý câu hỏi, lịch sử phiên, bộ lọc chủ đề. 
+5.2.3. Luồng thao tác 
+Bước 1 – Nhập câu hỏi 
+Người dùng gõ câu hỏi bằng tiếng Việt vào ô chat và nhấn nút Gửi (hoặc 
+Enter) để gửi yêu cầu tới hệ thống. 
+Bước 2 – Hiển thị trạng thái xử lý 
+Ngay sau khi gửi, giao diện hiển thị spinner/trạng thái “Đang truy vấn…” để 
+báo cho người dùng biết hệ thống đang xử lý câu hỏi. 
+Bước 3 – Nhận và hiển thị câu trả lời 
+Khi có kết quả, hệ thống render nội dung câu trả lời lên màn hình, đồng thời 
+hiển thị kèm theo danh sách các nguồn tham chiếu (Top-N), mỗi nguồn thể 
+hiện tên tài liệu và số trang liên quan. 
+Bước 4 – Xem chi tiết nguồn trích dẫn 
+Người dùng có thể nhấp vào từng nguồn trong danh sách; hệ thống sẽ mở 
+popover hoặc hộp thoại (dialog) hiển thị trích đoạn nội dung đầy đủ hơn từ tài 
+liệu gốc để người dùng đối chiếu. 
+Bước 5 – Lưu lịch sử câu hỏi (tùy chọn) 
+Sau khi trả lời, hệ thống có thể lưu lại câu hỏi và câu trả lời vào lịch sử của 
+phiên hiện tại, giúp người dùng dễ dàng xem lại hoặc tiếp tục đặt các câu hỏi 
+liên quan. 
+
+
+=== PAGE 94 ===
+81 
+ 
+ 
+ 
+5.3. Bảng điều khiển (Admin Dashboard) 
+Bảng điều khiển (Admin Dashboard) là trang quản trị trung tâm của hệ 
+thống PSU ChatBot, cung cấp cho quản trị viên cái nhìn tổng quan và trực quan 
+về tình trạng vận hành. Giao diện được bố cục theo dạng dashboard hiện đại 
+với thanh điều hướng bên trái và vùng nội dung chính ở trung tâm, giúp theo 
+dõi nhanh các chỉ số quan trọng, xu hướng hoạt động theo thời gian và mức độ 
+ổn định của hệ thống. Từ trang này, admin có thể nắm bắt tình hình sử dụng, 
+hiệu suất phản hồi và trạng thái dữ liệu/tài liệu, qua đó chủ động đưa ra quyết 
+định vận hành như ưu tiên xử lý tài liệu, điều chỉnh cấu hình hoặc phát hiện 
+sớm các bất thường. 
+ 
+Hình 22: Trang bảng điều khiển của hệ thống PSU Chatbot. 
+5.3.1. Mục tiêu chức năng 
+Trang /admin/dashboard là “trạm quan sát trung tâm” của hệ thống, giúp 
+quản trị viên nhìn nhanh được toàn cảnh hoạt động của chatbot: dữ liệu đã 
+ingest đến đâu, hệ thống có đang khỏe không, người dùng đang hỏi gì, tốc độ 
+trả lời ra sao… Từ đây, admin có thể quyết định cần ưu tiên xử lý tài liệu, tối 
+ưu cấu hình hay khắc phục sự cố kỹ thuật. 
+
+
+=== PAGE 95 ===
+82 
+ 
+ 
+ 
+• Tổng quan số liệu hệ thống 
+o Hiển thị các chỉ số chính: số lượng tài liệu, tổng số chunks, số 
+embeddings đã sinh, số truy vấn gần đây. 
+o Có thể kèm một danh sách rút gọn truy vấn gần nhất, để admin 
+cảm nhận nhanh người dùng đang hỏi về chủ đề gì. 
+• Sức khỏe hệ thống và cảnh báo 
+o Hiển thị trạng thái kết nối và hoạt động của các thành phần chính: 
+Database, Redis, Watcher (theo dõi thư mục), hàng đợi xử lý 
+(Queue)… 
+o Đánh dấu rõ khi một thành phần ở trạng thái degraded hoặc lỗi (ví 
+dụ: watcher dừng, queue bị tắc, DB chậm…), kèm cảnh báo nổi 
+bật để admin dễ nhận biết. 
+• Tóm tắt xu hướng và hiệu năng 
+o Tóm tắt xu hướng tài liệu mới được xử lý theo thời gian (theo 
+ngày/tuần/tháng). 
+o Hiển thị top tài liệu được trích dẫn nhiều nhất, giúp nhận diện các 
+văn bản “trọng tâm” người dùng thường tra cứu. 
+o Cung cấp các chỉ số hiệu năng như: thời gian phản hồi trung bình, 
+số truy vấn theo khung giờ, tỷ lệ lỗi… làm cơ sở cho việc đánh giá 
+và tối ưu hệ thống. 
+5.3.2. Bố cục giao diện và thành phần 
+• Header: tiêu đề “Admin Dashboard”, nút làm mới (refresh). 
+• Khu Widgets (cards): 
+o Documents Summary: tổng số tài liệu, tài liệu mới trong 24h. 
+
+
+=== PAGE 96 ===
+83 
+ 
+ 
+ 
+o Chunks & Embeddings: tổng số chunks/embeddings, phân phối 
+kích thước chunk. 
+o Queries Overview: số lượt truy vấn/ngày, thời gian phản hồi 
+trung bình. 
+o Health Status: DB/Redis/Watcher/Queue (badge 
+OK/Warning/Error). 
+• Charts: 
+o Line chart: truy vấn theo thời gian. 
+o Bar chart: top tài liệu được tham chiếu. 
+• Actions nhanh: Rebuild BM25, Restart Watcher, Xem chi tiết Health. 
+5.3.3. Luồng thao tác 
+Bước 1 – Mở trang tổng quan 
+Admin đăng nhập và truy cập vào trang /admin/dashboard. Ngay khi tải trang, 
+đây sẽ là nơi cung cấp cái nhìn tổng thể về tình trạng dữ liệu và hoạt động của 
+hệ thống chatbot. 
+Bước 2 – Tải và hiển thị thống kê, sức khỏe hệ thống 
+Hệ thống tự động lấy dữ liệu thống kê và trạng thái sức khỏe của các thành 
+phần (Database, Redis, Watcher, Queue…) rồi hiển thị dưới dạng các 
+widget/card: số tài liệu, số chunks, số embeddings, số truy vấn gần đây, thời 
+gian phản hồi trung bình,… 
+Bước 3 – Kiểm tra cảnh báo và thực hiện thao tác nhanh 
+Admin quan sát các cảnh báo nếu có (ví dụ: Watcher đang dừng, BM25 index 
+cũ, hàng đợi xử lý bị tắc…). Khi phát hiện bất thường, admin có thể sử dụng 
+ngay các nút hành động nhanh như “Restart Watcher”, “Rebuild BM25” hoặc 
+các thao tác tương tự để khôi phục hoặc tối ưu hệ thống. 
+
+
+=== PAGE 97 ===
+84 
+ 
+ 
+ 
+Bước 4 – Xem xu hướng chi tiết theo từng mảng 
+Từ các widget về xu hướng (tài liệu mới, top tài liệu được trích dẫn, truy vấn 
+gần đây…), admin có thể bấm vào từng card để điều hướng tới các trang chi 
+tiết tương ứng như Documents, Analytics hoặc Health, nhằm phân tích sâu 
+hơn và thực hiện các thao tác quản trị cụ thể. 
+5.4. Trang Lịch sử chat  
+Trang Lịch sử chat là khu vực quản trị giúp quản trị viên theo dõi và rà 
+soát các phiên hội thoại đã diễn ra giữa người dùng và chatbot. Giao diện được 
+thiết kế theo dạng danh sách/bảng trực quan, cho phép nhìn nhanh tổng quan 
+từng cuộc hội thoại (thời gian, nội dung câu hỏi, trạng thái, số tin nhắn) và truy 
+cập chi tiết khi cần. Trang này hỗ trợ công tác giám sát chất lượng vận hành, 
+đối chiếu nội dung trao đổi và phục vụ nhu cầu tổng hợp, báo cáo hoặc kiểm 
+tra lại các phiên hội thoại trong hệ thống. 
+ 
+Hình 23: Trang lịch sử chat của hệ thống PSU Chatbot. 
+5.4.1. Mục tiêu chức năng 
+Ngoài việc quản lý tài liệu, hệ thống còn cần cung cấp cho quản trị viên 
+khả năng theo dõi lịch sử các phiên chat để đánh giá chất lượng hoạt động của 
+
+
+=== PAGE 98 ===
+85 
+ 
+ 
+ 
+chatbot: câu trả lời có bám tài liệu không, trích dẫn nguồn có chính xác 
+không, người dùng đang quan tâm đến những chủ đề nào… Từ đó, nhà trường 
+có thể điều chỉnh tài liệu, cập nhật quy chế hoặc bổ sung hướng dẫn cho phù 
+hợp thực tế. 
+• Hiển thị lịch sử phiên chat 
+o Lưu lại và hiển thị danh sách các phiên chat giữa người dùng và 
+chatbot. 
+o Cho phép mở chi tiết một phiên để xem câu hỏi – câu trả lời – 
+nguồn trích dẫn tương ứng. 
+o Hỗ trợ xem nhanh mức độ bám tài liệu (có trích dẫn, trích dẫn 
+đúng file/trang…). 
+• Tìm kiếm, lọc và phân tích 
+o Cho phép tìm kiếm và lọc lịch sử theo khoảng thời gian, từ khóa, 
+chủ đề hoặc nhóm người dùng (thí sinh, sinh viên… nếu có phân 
+loại). 
+o Hỗ trợ xuất dữ liệu (ví dụ dạng bảng) để phục vụ công tác tổng 
+hợp, báo cáo, đánh giá mức độ quan tâm đến từng mảng nội 
+dung (tuyển sinh, học bổng, học phí, quy chế…). 
+5.4.2. Bố cục giao diện và thành phần 
+• Header: tiêu đề “Chat History”, bộ lọc thời gian (date range), ô tìm 
+kiếm từ khóa. 
+• Bảng danh sách phiên chat: 
+o Cột đề xuất: Conversation ID, Thời gian, Câu hỏi (rút gọn), Trả 
+lời (rút gọn), Số nguồn trích dẫn, Độ tin cậy, Hành động (Xem). 
+• Modal/Drawer Chi tiết phiên: 
+
+
+=== PAGE 99 ===
+86 
+ 
+ 
+ 
+o Hiển thị đầy đủ câu hỏi, câu trả lời, danh sách nguồn trích dẫn 
+(file, trang, trích đoạn). 
+o Nút “Xuất CSV/JSON”, “Đánh dấu cần xem lại”. 
+5.4.3. Luồng thao tác 
+Bước 1 – Chọn phạm vi cần xem 
+Admin truy cập mục Chat History trên Dashboard, chọn khoảng thời gian cần 
+xem (ví dụ: theo ngày, tuần, tháng) và/hoặc nhập từ khóa/chủ đề liên quan để 
+lọc các phiên chat phù hợp. 
+Bước 2 – Lọc và chọn phiên chat 
+Hệ thống hiển thị danh sách các phiên chat đã được lọc theo điều kiện trên. 
+Admin duyệt danh sách và chọn một phiên cụ thể để xem chi tiết nội dung 
+trao đổi. 
+Bước 3 – Kiểm tra chi tiết chất lượng trả lời 
+Trong màn hình chi tiết, admin xem lại câu hỏi – câu trả lời – nguồn trích dẫn 
+kèm theo các chỉ số như độ tin cậy. Từ đó, admin đánh giá chatbot có trả lời 
+đúng trọng tâm, bám sát tài liệu và trích dẫn chính xác hay không. 
+Bước 4 – Xuất dữ liệu hoặc đánh dấu phiên cần cải thiện 
+Tùy nhu cầu, admin có thể xuất dữ liệu (phục vụ báo cáo/thống kê) hoặc đánh 
+dấu những phiên chat chưa đạt yêu cầu để đưa vào danh sách cần xem lại, 
+hiệu chỉnh tài liệu hoặc cải thiện cấu hình hệ thống trong các bước tiếp theo. 
+5.5. Trang Phản hồi người dùng 
+Trang Phản hồi người dùng là khu vực quản trị tập trung giúp quản trị 
+viên theo dõi và tổng hợp các đánh giá từ người dùng sau khi tương tác với 
+chatbot. Giao diện được trình bày theo dạng dashboard trực quan, kết hợp thẻ 
+thống kê và các khối tổng quan, giúp nhà trường nhìn nhanh bức tranh về mức 
+độ hài lòng, xu hướng phản hồi theo thời gian và các điểm cần cải thiện. Đây 
+
+
+=== PAGE 100 ===
+87 
+ 
+ 
+ 
+là kênh thông tin quan trọng để đánh giá chất lượng trải nghiệm thực tế và định 
+hướng tối ưu hệ thống trong quá trình vận hành. 
+ 
+Hình 24: Trang Phản hồi người dùng của hệ thống PSU Chatbot. 
+5.5.1. Mục tiêu chức năng 
+Trang /admin/feedback là nơi tập trung tất cả phản hồi của người dùng về 
+chatbot, giúp nhà trường không chỉ “nhìn” vào số liệu truy vấn, mà còn hiểu 
+được chất lượng cảm nhận từ phía thí sinh, sinh viên, phụ huynh. Đây là 
+nguồn dữ liệu quan trọng để điều chỉnh tài liệu, cải thiện cấu hình RAG và 
+nâng cao trải nghiệm sử dụng hệ thống. 
+• Thu thập và quản lý phản hồi 
+o Ghi nhận các đánh giá trực tiếp từ người dùng trên giao diện chat 
+(ví dụ: thumbs up / thumbs down cho từng câu trả lời). 
+o Lưu lại nội dung góp ý nếu người dùng gõ thêm nhận xét (ví dụ: 
+“trả lời chưa đúng ý”, “thiếu phần này”, “rất hữu ích”…). 
+o Hiển thị danh sách phản hồi theo dạng bảng: thời gian, câu hỏi, 
+câu trả lời, đánh giá, ghi chú… 
+
+
+=== PAGE 101 ===
+88 
+ 
+ 
+ 
+• Phân tích mức độ hài lòng và chủ đề 
+o Tổng hợp và thống kê tỉ lệ hài lòng/không hài lòng theo thời 
+gian. 
+o Cho phép gắn hoặc hiển thị nhãn chủ đề (tuyển sinh, học phí, học 
+bổng, quy chế…) để biết nhóm nội dung nào thường gặp vấn đề. 
+o Hỗ trợ xuất dữ liệu phản hồi để phục vụ báo cáo, họp chuyên 
+môn, cải thiện hệ thống (cập nhật tài liệu, điều chỉnh prompt, 
+chiến lược RAG…). 
+5.5.2. Bố cục giao diện và thành phần 
+• Header: “User Feedback”, bộ lọc mức độ hài lòng (All/Up/Down), thời 
+gian. 
+• Bảng Feedback: 
+o Cột đề xuất: Conversation ID, Thời gian, Mức độ (Up/Down), 
+Góp ý, Chủ đề, Hành động (Xem). 
+• Chi tiết Feedback: 
+o Hiển thị câu hỏi, câu trả lời liên quan, các nguồn trích dẫn, ghi 
+chú của người dùng. 
+o Nút “Liên kết tới tài liệu/nguồn”: mở nhanh trang 
+Documents/Chunk chi tiết để reprocess. 
+5.5.3. Luồng thao tác 
+Bước 1 – Thiết lập bộ lọc phản hồi 
+Admin mở trang Feedback và thiết lập bộ lọc phù hợp với nhu cầu kiểm tra, 
+ví dụ: chỉ xem các phản hồi “thumbs down” trong 7 ngày gần đây, hoặc lọc 
+theo chủ đề như tuyển sinh, học phí, học bổng… 
+
+
+=== PAGE 102 ===
+89 
+ 
+ 
+ 
+Bước 2 – Xem danh sách phản hồi tiêu cực 
+Hệ thống hiển thị danh sách các phản hồi khớp với bộ lọc: câu hỏi, câu trả lời, 
+đánh giá (up/down), ghi chú góp ý (nếu có). Admin duyệt danh sách và mở 
+chi tiết từng phản hồi để xem kỹ nội dung trao đổi và bối cảnh. 
+Bước 3 – Xử lý và điều chỉnh hệ thống (nếu cần) 
+Dựa trên phản hồi và nội dung câu trả lời, admin xác định nguyên nhân (ví 
+dụ: thiếu tài liệu, chunking chưa hợp lý, retrieval chưa “bắt” đúng đoạn…). 
+Nếu cần, admin có thể chuyển sang trang Documents hoặc Settings để thực 
+hiện các hành động như: reprocess tài liệu, cập nhật tài liệu mới, hoặc điều 
+chỉnh một số tham số truy xuất. 
+Bước 4 – Ghi nhận và chia sẻ kết quả cải thiện 
+Sau khi đã xử lý hoặc lên kế hoạch cải thiện, admin có thể xuất dữ liệu phản 
+hồi dưới dạng CSV/JSON để đưa vào báo cáo, chia sẻ cho bộ phận QA, đào 
+tạo hoặc các đơn vị liên quan, phục vụ công tác nâng cao chất lượng vận hành 
+chatbot trong thời gian tới. 
+5.6. Trang Quản lý tài liệu 
+Trang Quản lý tài liệu là khu vực quản trị trung tâm dành cho cán bộ/ 
+quản trị viên để quản lý kho tài liệu làm nguồn tri thức cho chatbot. Giao diện 
+được thiết kế trực quan theo dạng danh sách/thẻ, giúp theo dõi nhanh số lượng 
+tài liệu hiện có, trạng thái hoạt động và các thông tin tổng quan như dung lượng, 
+số lượng đoạn nội dung đã được xử lý. Từ trang này, nhà trường có thể kiểm 
+soát việc bổ sung, duy trì và cập nhật nguồn tài liệu của hệ thống, đảm bảo kho 
+tri thức luôn đầy đủ, rõ ràng và sẵn sàng phục vụ tra cứu. 
+
+
+=== PAGE 103 ===
+90 
+ 
+ 
+ 
+ 
+Hình 25: Trang Quản lý tài liệu của hệ thống PSU Chatbot. 
+5.6.1. Mục tiêu chức năng 
+Trang /admin/documents là trung tâm quản trị kho tri thức của chatbot, nơi 
+cán bộ nhà trường kiểm soát toàn bộ vòng đời tài liệu – từ lúc mới được đưa 
+vào hệ thống cho đến khi sẵn sàng phục vụ tra cứu, cập nhật phiên bản mới 
+hoặc xóa bỏ khi hết hiệu lực. Đồng thời, đây cũng là nơi theo dõi trạng thái 
+xử lý, số lượng chunks được sinh ra và quản lý các cơ chế nền như Auto-
+Ingestion và index phục vụ tìm kiếm (BM25, pgvector). 
+• Quản lý vòng đời tài liệu 
+o Cho phép upload tài liệu PDF (quy chế, thông báo, biểu mẫu, 
+cẩm nang…) trực tiếp từ Dashboard. 
+o Hiển thị rõ các bước trong vòng đời tài liệu: mới upload → đang 
+xử lý → sẵn sàng tra cứu → lỗi / hết hiệu lực. 
+o Hỗ trợ cập nhật tài liệu (thay phiên bản mới, chỉnh sửa thông tin 
+mô tả). 
+
+
+=== PAGE 104 ===
+91 
+ 
+ 
+ 
+o Thực hiện xóa mềm (restore được) và xóa vĩnh viễn đối với các 
+tài liệu không còn sử dụng. 
+• Theo dõi trạng thái xử lý và thống kê 
+o Hiển thị trạng thái xử lý của từng tài liệu: pending, processing, 
+completed, failed. 
+o Cung cấp thống kê cơ bản: số trang, số chunks, thời gian xử lý, 
+dung lượng… 
+o Cho phép admin thực hiện các thao tác trực tiếp: reprocess (xử lý 
+lại với chiến lược chunking mới), delete/restore, xem log lỗi nếu 
+quá trình xử lý thất bại. 
+• Tích hợp Auto-Ingestion và quản lý index 
+o Liên kết với cơ chế Auto-Ingestion: hiển thị các tài liệu được hệ 
+thống tự động phát hiện từ thư mục theo dõi, cho phép kiểm tra 
+và xác nhận. 
+o Cho phép giám sát và thao tác với các index tìm kiếm (BM25, 
+pgvector): trạng thái hiện tại, thời điểm cập nhật gần nhất. 
+o Hỗ trợ hành động rebuild/reindex khi có thay đổi lớn về dữ liệu 
+(nhiều tài liệu mới, đổi chiến lược chunking) để đảm bảo việc tra 
+cứu luôn chính xác và hiệu quả. 
+5.6.2. Bố cục giao diện và thành phần 
+• Thanh hành động: Upload, công tắc Auto-Ingestion, Rebuild BM25. 
+• Bộ lọc: trạng thái (pending/processing/completed/failed), từ khóa, thời 
+gian; phân trang. 
+• Bảng tài liệu: 
+
+
+=== PAGE 105 ===
+92 
+ 
+ 
+ 
+o Cột đề xuất: Filename, Status, Chunks, File Size, Updated At, 
+Actions (Details/Reprocess/Delete/Restore). 
+• Chi tiết tài liệu: 
+o Metadata: tên file, đường dẫn, kích thước, hash, thời gian tạo/cập 
+nhật. 
+o Lịch sử xử lý: thời điểm bắt đầu/kết thúc, lỗi (nếu có), cấu hình 
+chunking. 
+o Chunks: danh sách có heading/page/word_count/char_count; mở 
+trích đoạn đầy đủ. 
+5.6.3. Luồng thao tác 
+Bước 1 – Upload tài liệu mới 
+Admin truy cập trang /admin/documents, chọn chức năng Upload và tải lên 
+tệp PDF (quy chế, thông báo, biểu mẫu…). Ngay khi upload, hệ thống tạo 
+một bản ghi trong bảng tài liệu với trạng thái pending và đưa tài liệu vào hàng 
+đợi xử lý; khi pipeline bắt đầu chạy, trạng thái chuyển sang processing. 
+Bước 2 – Xử lý và hoàn tất ingest 
+Pipeline tự động trích xuất nội dung, chia nhỏ tài liệu thành các đoạn, sinh 
+đặc trưng ngữ nghĩa và lưu vào cơ sở dữ liệu. Khi xử lý xong, trạng thái tài 
+liệu được cập nhật sang completed. Trên giao diện, admin có thể xem tổng số 
+chunks, thời gian xử lý, số trang… để nắm được mức độ phức tạp và tình 
+trạng ingest của từng file. 
+Bước 3 – Cấu hình Auto-Ingestion và xử lý lại (reprocess) 
+Tại cùng trang này, admin có thể bật/tắt Auto-Ingestion để hệ thống tự động 
+phát hiện các file PDF mới được sao chép vào thư mục data/new_pdf/ và đưa 
+vào pipeline xử lý mà không cần thao tác upload thủ công. Khi thay đổi chiến 
+lược chia nhỏ nội dung hoặc mô hình embedding, admin có thể chọn một 
+
+
+=== PAGE 106 ===
+93 
+ 
+ 
+ 
+hoặc nhiều tài liệu và thực hiện Reprocess để hệ thống xử lý lại theo thiết lập 
+mới. 
+Bước 4 – Xóa, khôi phục và quản lý quyền tra cứu 
+Đối với các tài liệu không còn muốn xuất hiện trong kết quả trả lời, admin có 
+thể Delete (soft) để ẩn tài liệu khỏi truy xuất nhưng vẫn giữ bản ghi để có thể 
+Restore lại khi cần. Nếu tài liệu hoàn toàn hết hiệu lực hoặc tải nhầm, admin 
+có thể Delete (hard) để xóa hẳn khỏi cơ sở dữ liệu. 
+Bước 5 – Cập nhật chỉ mục tìm kiếm 
+Khi có thay đổi đáng kể về dữ liệu (tài liệu mới, reprocess nhiều file…), 
+admin có thể chạy Rebuild BM25 ngay trên trang để đảm bảo phần tìm kiếm 
+theo từ khóa được cập nhật đầy đủ. Đối với phần truy vấn ngữ nghĩa, chỉ mục 
+pgvector (ivfflat) đã được cập nhật tự động cùng với quá trình ingest, sẵn 
+sàng phục vụ dense retrieval mà không cần thao tác bổ sung. 
+5.7. Trang File đính kèm (Attachments) 
+Trang Quản lý tệp đính kèm là khu vực chuyên biệt giúp quản trị viên 
+xây dựng kho tài liệu bổ trợ cho chatbot. Khác với nguồn tri thức dùng để "học" 
+(Ingestion), đây là nơi lưu trữ các biểu mẫu, văn bản mẫu, hướng dẫn chi tiết 
+(định dạng PDF, Word, Excel...) nhằm mục đích cung cấp trực tiếp cho sinh 
+viên tải về khi cần thiết. Giao diện được thiết kế tối giản, tập trung vào khả 
+năng tìm kiếm, phân loại và liên kết tài liệu với ngữ cảnh cụ thể, giúp chatbot 
+không chỉ trả lời bằng lời nói mà còn có thể gửi kèm các file "hành động" 
+(actionable files) hữu ích. 
+
+
+=== PAGE 107 ===
+94 
+ 
+ 
+ 
+ 
+Hình 26: Trang Quản lý File đính kèm của hệ thống PSU Chatbot. 
+ 
+Hình 27: Người dùng hỏi về mẫu đơn và được trả về mẫu đơn mong muốn. 
+
+
+=== PAGE 108 ===
+95 
+ 
+ 
+ 
+5.7.1. Mục tiêu chức năng Trang  
+Trang /admin/attachments đóng vai trò là kho vận của hệ thống, giải 
+quyết bài toán cung cấp tài liệu gốc cho người dùng cuối: 
+Quản lý kho tài liệu bổ trợ: 
+• Hỗ trợ upload đa định dạng: .doc, .docx, .xlsx... thay vì chỉ giới 
+hạn ở PDF văn bản. 
+• Lưu trữ file an toàn trên Supabase Storage và quản lý metadata 
+(mô tả, kích thước, loại file) trên PostgreSQL [16]. 
+• Phân loại tài liệu rõ ràng theo nhóm (Tuyển sinh, Đào tạo, Biểu 
+mẫu hành chính...) để dễ dàng tra cứu. 
+Liên kết ngữ nghĩa: 
+• Cho phép gắn từ khóa (Keywords) cho từng file, giúp hệ thống 
+nhận diện đúng thời điểm cần gửi file. 
+• Hỗ trợ liên kết thủ công tài liệu với các đoạn tri thức (Chunks) 
+cụ thể (ví dụ: gắn "Mẫu đơn xin nghỉ học" vào các chunk nói 
+về "quy trình bảo lưu"). 
+Cung cấp và phân phối: 
+• Tạo đường dẫn tải xuống (public URL) để chatbot có thể nhúng 
+trực tiếp vào câu trả lời. 
+• Quản lý vòng đời đơn giản: Thêm mới, Sửa mô tả/từ khóa, Xóa 
+bỏ (Soft delete) khi biểu mẫu hết hạn sử dụng. 
+5.7.2. Bố cục giao diện và thành phần 
+• Thanh công cụ: Nút "Upload File" nổi bật, Ô tìm kiếm (theo tên file/mô 
+tả), Bộ lọc theo danh mục (Category). 
+• Danh sách tệp tin: Hiển thị dạng bảng hoặc lưới (Grid) với các thông 
+tin: 
+
+
+=== PAGE 109 ===
+96 
+ 
+ 
+ 
+- File Info: Tên file, Icon định dạng (Word/Excel/PDF), Dung 
+lượng (đã format MB/KB). 
+- Context: Danh mục, Các từ khóa (Tags) gắn kèm. 
+- Status: Trạng thái hoạt động (Active/Inactive), Ngày upload. 
+- Actions: Các nút Copy Link, Edit Metadata, Delete. 
+• Modal Upload/Edit: Form nhập liệu gồm: Chọn file, Mô tả chi tiết 
+(Description), Nhập từ khóa (Keywords), Chọn danh mục, và trường 
+nhập Chunk IDs (tùy chọn) để liên kết sâu. 
+5.7.3. Luồng thao tác 
+Bước 1 – Upload biểu mẫu/tài liệu mẫu  
+Admin truy cập /admin/attachments, nhấn nút Upload. Tại đây, admin chọn file 
+(ví dụ: Mau_Don_Xin_Mien_Giam_Hoc_Phi.docx), chọn danh mục "Tài 
+chính" và viết mô tả ngắn gọn. Hệ thống sẽ upload file lên đám mây (Cloud 
+Storage) và tạo bản ghi quản lý. 
+Bước 2 – Gắn ngữ cảnh và từ khóa  
+Để chatbot biết khi nào cần dùng file này, admin nhập các từ khóa quan trọng 
+vào trường Keywords (ví dụ: "miễn giảm học phí", "đơn xin", "hoàn cảnh khó 
+khăn"). Nếu muốn file này luôn xuất hiện khi bot trả lời về quy trình cụ thể, 
+admin có thể nhập ID của chunk kiến thức tương ứng vào trường Chunk IDs. 
+Bước 3 – Quản lý và tra cứu  
+Khi số lượng biểu mẫu tăng lên, admin sử dụng thanh tìm kiếm để lọc nhanh 
+các file theo tên hoặc danh mục. Hệ thống cho phép xem trước thông tin, copy 
+đường dẫn tải xuống để kiểm tra, hoặc chỉnh sửa lại từ khóa nếu thấy file chưa 
+được chatbot đề xuất đúng lúc. 
+Bước 4 – Xóa và cập nhật phiên bản  
+
+
+=== PAGE 110 ===
+97 
+ 
+ 
+ 
+Khi biểu mẫu thay đổi (ví dụ: Nhà trường ban hành mẫu đơn mới năm 2024), 
+admin thực hiện Xóa (Delete) file cũ để tránh sinh viên tải nhầm biểu mẫu hết 
+hạn. Sau đó thực hiện Upload file mới và gắn lại các từ khóa tương tự để duy 
+trì tính liên tục của dịch vụ. 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+
+=== PAGE 111 ===
+98 
+ 
+ 
+ 
+CHƯƠNG VI. KẾT LUẬN VÀ HƯỚNG PHÁT TRIỂN 
+6.1. Kết luận 
+Trong đề tài này, nhóm tác giả đã xây dựng và triển khai thử nghiệm một 
+hệ thống chatbot RAG hỗ trợ đào tạo cho Trường Đại học An ninh Nhân dân, 
+hiện thực hóa đầy đủ một kiến trúc RAG end-to-end. Hệ thống bao gồm toàn 
+bộ chuỗi xử lý tài liệu: từ OCR, trích xuất nội dung, chia nhỏ theo cấu trúc 
+(chunking), sinh vector biểu diễn (embeddings), lập chỉ mục (BM25 và 
+pgvector) cho đến các bước truy xuất lại (Dense + BM25), hợp nhất kết quả 
+(RRF [10]), reranking bằng Cross-Encoder và cuối cùng là sinh câu trả lời bằng 
+mô hình LLM (Gemini) kèm trích dẫn nguồn rõ ràng (tên file, trang, mục/điều). 
+Về vận hành, hệ thống được tổ chức với quy trình làm việc rõ ràng và có 
+khả năng quản lý qua giao diện: cơ chế Auto-Ingestion giúp tự động phát hiện 
+tài liệu mới, pipeline xử lý tài liệu hoạt động ổn định, các chỉ mục tìm kiếm 
+được cập nhật khi dữ liệu thay đổi. Admin Dashboard cung cấp các chức năng 
+giám sát sức khỏe hệ thống (database, Redis, watcher, hàng đợi), thống kê truy 
+vấn, quản lý tài liệu và các thao tác bảo trì thường gặp (reprocess, rebuild 
+index…). 
+Các mục tiêu đề ra ban đầu về mặt chức năng cơ bản đã được đáp ứng: 
+chatbot có thể trả lời câu hỏi tiếng Việt dựa trên tài liệu chính thức với độ chính 
+xác ở mức tốt đối với các truy vấn phổ biến; việc kết hợp giữa tìm kiếm ngữ 
+nghĩa và tìm kiếm theo từ khóa, cộng với bước reranking, giúp cải thiện rõ rệt 
+chất lượng Top-5 đoạn được truy xuất. Cơ chế trích dẫn nguồn bắt buộc góp 
+phần giảm hiện tượng “bịa đặt” và tăng tính minh bạch cho câu trả lời. Hệ thống 
+cho phép cập nhật dữ liệu nhanh chóng khi có tài liệu mới, hỗ trợ xử lý lại tài 
+liệu (reprocess) khi thay đổi chiến lược chunking hoặc embedding, đồng thời 
+phân tách rõ ràng giao diện người dùng và giao diện quản trị để đảm bảo trải 
+nghiệm nhất quán. Về mặt kỹ thuật, kiến trúc sử dụng batch, cache và index 
+vector (IVFFlat) cho thấy khả năng mở rộng theo quy mô dữ liệu mà vẫn giữ 
+
+
+=== PAGE 112 ===
+99 
+ 
+ 
+ 
+thời gian phản hồi truy vấn ở mức chấp nhận được (khoảng dưới 2 giây với tập 
+dữ liệu thử nghiệm). 
+6.2. Hạn chế 
+Hệ thống vẫn còn một số hạn chế. Khâu OCR hiện phụ thuộc đáng kể 
+vào Gemini, dẫn đến chi phí và độ trễ cao với các tài liệu scan lớn; chất lượng 
+chunking theo heading phụ thuộc vào mức độ chuẩn hóa định dạng văn bản, 
+nên với những tài liệu thiếu cấu trúc hoặc không đồng nhất, ngữ cảnh có thể bị 
+suy giảm. Bước reranking đem lại hiệu quả nhưng tốn chi phí tính toán khi Top-
+K lớn, đòi hỏi cân bằng giữa chất lượng và tốc độ. Phân quyền và audit logs 
+mới dừng ở mức cơ bản, chưa tích hợp các cơ chế đăng nhập tập trung 
+(SSO/LDAP). Về đánh giá định lượng, hệ thống mới ở bước đầu thiết lập các 
+chỉ số như Precision@K, MRR, chưa có bộ tập test chuẩn hóa sâu theo từng 
+chủ đề (tuyển sinh, học bổng, quy chế đào tạo…) để đánh giá toàn diện. Những 
+hạn chế này là cơ sở quan trọng để định hướng các bước phát triển tiếp theo. 
+6.3. Hướng phát triển 
+Do giới hạn về thời gian và phạm vi, sản phẩm hiện tại tập trung chủ yếu 
+vào việc thiết kế kiến trúc, xây dựng prototype và hiện thực hóa pipeline RAG 
+end-to-end, chứ chưa triển khai đầy đủ phần đo lường, đánh giá hiệu suất hệ 
+thống (các chỉ số như Precision@K, MRR, thời gian phản hồi,…). Vì vậy, các 
+nội dung dưới đây được xác định là hướng phát triển đề xuất trong tương lai, 
+khi có thêm dữ liệu thực tế và điều kiện triển khai kiểm thử sâu hơn. 
+Trong ngắn hạn, hệ thống có thể được cải tiến theo hướng tối ưu các thành 
+phần hiện có, bao gồm: 
+• Cải thiện xử lý tài liệu (đặc biệt là tài liệu scan) bằng cách kết hợp OCR 
+đám mây và OCR cục bộ, giảm chi phí và độ trễ. 
+• Hoàn thiện chiến lược chunking (chia nhỏ nội dung) theo đoạn/tiêu 
+đề/ngữ nghĩa để tăng chất lượng ngữ cảnh đưa vào mô hình. 
+
+
+=== PAGE 113 ===
+100 
+ 
+ 
+ 
+• Điều chỉnh tham số retrieval (kết hợp Dense + BM25, RRF, reranking) 
+dựa trên quan sát thực tế từ các truy vấn người dùng. 
+Trong trung hạn, hệ thống có thể mở rộng theo các hướng: 
+• Bổ sung cơ chế đo lường hiệu suất một cách hệ thống, xây dựng bộ tập 
+kiểm thử chuẩn hóa cho từng mảng nội dung (tuyển sinh, học bổng, quy 
+chế đào tạo…) và bắt đầu theo dõi các chỉ số như Precision@5, 
+Recall@5, MRR, thời gian phản hồi trung bình, tỷ lệ câu trả lời có trích 
+dẫn hợp lệ, tỷ lệ phản hồi tích cực. 
+• Mở rộng tính năng quản trị và quan sát hệ thống (dashboard chi tiết hơn, 
+theo dõi lỗi OCR/trích xuất, lịch sử reprocess/reindex) để hỗ trợ vận hành 
+lâu dài. 
+• Xem xét hỗ trợ thêm một số tính năng nâng cao như lọc theo chuyên đề, 
+ưu tiên nguồn theo đơn vị/khoa, hoặc hỗ trợ thêm ngôn ngữ khác (trước 
+mắt là tiếng Anh) nếu phù hợp nhu cầu của nhà trường. 
+Về dài hạn, khi hệ thống ổn định và có dữ liệu sử dụng đủ lớn, có thể nghiên 
+cứu: 
+• Tinh chỉnh (fine-tuning) các mô hình embedding/reranking trên tập dữ 
+liệu riêng của Trường Đại học An ninh Nhân dân để tăng độ chính xác 
+theo domain. 
+• Từng bước nâng cấp hạ tầng (lưu trữ vector, cơ chế sao lưu – phục hồi, 
+phân quyền chi tiết, tích hợp SSO/LDAP cho admin…) để đáp ứng yêu 
+cầu vận hành ở quy mô lớn hơn, bền vững hơn. 
+• Ứng dụng chuyên sâu như mở rộng thành trợ giảng ảo, hỗ trợ giải đáp 
+bài học, bài tập; là công cụ cung cấp và phân tích nhu cầu của học viên 
+cho lãnh đạo nhà trường; hoặc tích hợp với kho tài liệu số hóa. 
+Như vậy, phần hướng phát triển trong bài nghiên cứu này đóng vai trò như 
+bản kế hoạch đề xuất, định hướng các bước tiếp theo: từ việc bổ sung khung đo 
+
+
+=== PAGE 114 ===
+101 
+ 
+ 
+ 
+lường hiệu suất đến tối ưu kỹ thuật và mở rộng tính năng, nhằm từng bước hoàn 
+thiện hệ thống chatbot hỗ trợ đào tạo phù hợp với nhu cầu thực tiễn của Trường 
+Đại học An ninh Nhân dân. 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+
+=== PAGE 115 ===
+ 
+ 
+ 
+ 
+TÀI LIỆU THAM KHẢO 
+ 
+[1]  P. Lewis, E. Perez, A. Piktus, F. Petroni, V. Karpukhin, N. Goyal, H. 
+Küttler, M. Lewis, W. Yih, T. Rocktäschel, S. Riedel, and D. Kiela, 
+“Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks,” 
+Advances in Neural Information Processing Systems (NeurIPS).  
+[2]  Y. Gao, Y. Xiong, X. Gao, K. Jia, J. Pan, Y. Bi, Y. Dai, J. Sun, and H. 
+Wang, “Retrieval-Augmented Generation for Large Language Models: A 
+Survey,” arXiv preprint arXiv:2312.10997, 2023.  
+[3]  T. Brown, B. Mann, N. Ryder, et al, “Language Models are Few-Shot 
+Learners,” Advances in Neural Information Processing Systems 
+(NeurIPS), 2020.  
+[4]  Elastic, “What Is Vector Search?”.  
+[5]  Vercel, “Next.js Documentation,” 2024.  
+[6]  M. Platforms, “React Documentation,” 2024.  
+[7]  T. Labs, “Tailwind CSS Documentation,” 2024.  
+[8]  S. Ramírez, “FastAPI Documentation,” 2024.  
+[9]  P. S. Foundation, “Python Language,” 2006. [Trực tuyến]. Available: 
+https://www.python.org/. 
+
+
+=== PAGE 116 ===
+ 
+ 
+ 
+ 
+[10] G. V. Cormack, C. L. A. Clarke, and S. Büttcher, “Reciprocal Rank 
+Fusion outperforms Condorcet and Individual Rank Learning Methods,” 
+Proceedings of the 32nd International ACM SIGIR Conference on 
+Research and Development in Information Retrieval, 2009.  
+[11] N. Reimers and I. Gurevych, “The Curse of Dense Low-Dimensional 
+Information Retrieval for Large Index Sizes,” Proceedings of the 59th 
+Annual Meeting of the Association for Computational Linguistics (ACL), 
+2021.  
+[12] Z. Dai, V. Y. Zhao, J. Ma, Y. Luan, J. Ni, J. Lu, A. Bakalov, K. Guu, K. 
+B. Hall, and M. Chang, “Promptagator: Few-shot Dense Retrieval From 
+8 Examples,” International Conference on Learning Representations 
+(ICLR), 2023.  
+[13] S. Robertson and H. Zaragoza, “The Probabilistic Relevance Framework: 
+BM25 and Beyond,” Foundations and Trends in Information Retrieval, 
+2009.  
+[14] N. Reimers and I. Gurevych, “Sentence-BERT: Sentence Embeddings 
+using Siamese BERT-Networks,” Proceedings of the 2019 Conference on 
+Empirical Methods in Natural Language Processing (EMNLP), 2019.  
+[15] D. 
+Inc, 
+Docker 
+Desktop 
+, 
+[Trực 
+tuyến]. 
+Available: 
+https://www.docker.com/. 
+[16] P. G. D. Group, “PostgreSQL Documentation”.  
+
+
+=== PAGE 117 ===
+ 
+ 
+ 
+ 
+[17] p. Contributors, “pgvector: Open-source vector similarity search for 
+Postgres,” 2024.  
+[18] T. Nogueira and K. Cho, “Passage Re-ranking with BERT,” arXiv 
+preprint arXiv:1901.04085, 2019.  
+[19] Google, “Gemini: A Family of Highly Capable Multimodal Models,” 
+arXiv preprint arXiv:2312.11805, 2023.  
+[20] M. F. a. S. Houben, “PyPDF2: A pure-python PDF library,” 2026. [Trực 
+tuyến]. Available: https://pypdf2.readthedocs.io/. 
+[21] J. Gruber, “Markdown: A text-to-HTML conversion tool for web 
+writers,” 
+2004. 
+[Trực 
+tuyến]. 
+Available: 
+https://daringfireball.net/projects/markdown/. 
+[22] L. Wang, N. Yang, X. Huang, B. Jiao, L. Yang, D. Jiang, R. Majumder, 
+and F. Wei, “Text Embeddings by Weakly-Supervised Contrastive Pre-
+training,” arXiv preprint arXiv:2212.03533, 2022.  
+[23] J. Devlin, M. Chang, K. Lee, and K. Toutanova, “BERT: Pre-training of 
+Deep Bidirectional Transformers for Language Understanding,” 
+Proceedings of the 2019 Conference of the North American Chapter of 
+the Association for Computational Linguistics (NAACL).  
+[24] L. Wang, N. Yang, X. Huang, L. Yang, R. Majumder, and F. Wei, 
+“Multilingual E5 Text Embeddings: A Technical Report,” arXiv preprint 
+arXiv:2402.05672, 2024.  
+
+
+=== PAGE 118 ===
+ 
+ 
+ 
+ 
+[25] M. Jones, J. Bradley, and N. Sakimura, “JSON Web Token (JWT),” 
+Internet Engineering Task Force (IETF), 2015.  
+[26] [Trực tuyến]. Available: https://www.python.org/. 
+[27] V. Karpukhin, B. Oğuz, S. Min, P. Lewis, L. Wu, S. Edunov, D. Chen, 
+and W. Yih, “Dense Passage Retrieval for Open-Domain Question 
+Answering,” Proceedings of the 2020 Conference on Empirical Methods 
+in Natural Language Processing (EMNLP), 2020.  
+[28] C. D. Manning, P. Raghavan, and H. Schütze, “Introduction to 
+Information Retrieval,” Cambridge University Press, 2008.  
+[29] A. Vaswani, N. Shazeer, N. Parmar, J. Uszkoreit, L. Jones, A. N. Gomez, 
+L. Kaiser, and I. Polosukhin, “Attention Is All You Need,” Advances in 
+Neural Information Processing Systems (NeurIPS), 2017.  
+[30] J. Wei, X. Wang, D. Schuurmans, M. Bosma, B. Ichter, F. Xia, E. Chi, Q. 
+Le, and D. Zhou, “Chain-of-Thought Prompting Elicits Reasoning in 
+Large Language Models,” Advances in Neural Information Processing 
+Systems (NeurIPS), 2022.  
+[31] G. Izacard and E. Grave, “Leveraging Passage Retrieval with Generative 
+Models for Open Domain Question Answering,” Proceedings of the 16th 
+Conference of the European Chapter of the Association for 
+Computational Linguistics (EACL), 2021.  
+
+
+=== PAGE 119 ===
+ 
+ 
+ 
+ 
+[32] K. Guu, K. Lee, Z. Tung, P. Pasupat, and M. Chang, “REALM: Retrieval-
+Augmented Language Model Pre-Training,” Proceedings of the 37th 
+International Conference on Machine Learning (ICML), 2020.  
+[33] J. Johnson, M. Douze, and H. Jégou, “Billion-scale similarity search with 
+GPUs,” IEEE Transactions on Big Data, 2019.  
+[34] O. Foundation, “OWASP Application Security Verification Standard 
+(ASVS),” 2024.  
+[35] A. Barth, “The Web Origin Concept,” Internet Engineering Task Force 
+(IETF), 2011.  
+[36] D. Q. Nguyen and A. T. Nguyen, “PhoBERT: Pre-trained language 
+models for Vietnamese,” Findings of the Association for Computational 
+Linguistics: EMNLP 2020, 2020.  
+[37] H. Face, “ransformers: State-of-the-art Machine Learning for PyTorch, 
+TensorFlow, and JAX,” 2024.  
+[38] E. Voorhees, "The TREC-8 Question Answering Track Report, “The 
+TREC-8 Question Answering Track Report,” Proceedings of the 8th Text 
+REtrieval Conference (TREC-8), 1999.  
+[39] K. Järvelin and J. Kekäläinen, “Cumulated gain-based evaluation of IR 
+techniques,” ACM Transactions on Information Systems (TOIS), 2002.  
+
+
+=== PAGE 120 ===
+ 
+ 
+ 
+ 
+[40] M. Douze, A. Guzhva, C. Deng, J. Johnson, G. Szilvasy, P.–E. Mazaré, 
+M. Lomeli, L. Hosseini, H. Jégou, “The Faiss library,” arXiv preprint, 
+2024.  
+[41] P. G. V. Team, pgvector: Open-source vector similarity search for 
+Postgres, 
+2026. 
+[Trực 
+tuyến]. 
+Available: 
+https://github.com/pgvector/pgvector. 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+
+=== PAGE 121 ===
+ 
+ 
+ 
+ 
+PHỤ LỤC   
+Các trường dữ liệu của các bảng trong hệ thống PSU Chatbot 
+Bảng user_roles 
+Trường 
+Kiểu dữ liệu 
+Mô tả 
+Ràng buộc 
+user_id 
+INTEGER 
+ID người dùng 
+FOREIGN KEY, 
+PRIMARY KEY 
+role 
+VARCHAR(50) 
+Tên vai trò (admin, 
+user, moderator, 
+etc.) 
+NOT NULL, 
+PRIMARY KEY 
+ 
+Bảng documents 
+Trường 
+Kiểu dữ 
+liệu 
+Mô tả 
+Ràng buộc 
+id 
+SERIAL 
+ID duy nhất 
+PRIMARY 
+KEY 
+filename 
+VARCHAR
+(500) 
+Tên file PDF 
+NOT NULL 
+
+
+=== PAGE 122 ===
+ 
+ 
+ 
+ 
+Trường 
+Kiểu dữ 
+liệu 
+Mô tả 
+Ràng buộc 
+file_path 
+TEXT 
+Đường dẫn file trên 
+server 
+NOT NULL 
+file_size 
+INTEGER 
+Kích thước file 
+(bytes) 
+NULL 
+file_hash 
+VARCHAR
+(64) 
+SHA-256 hash 
+(duplicate detection) 
+NULL 
+total_chunks 
+INTEGER 
+Tổng số chunks đã 
+tạo 
+DEFAULT 0 
+status 
+VARCHAR
+(50) 
+Trạng thái xử lý 
+(pending/processing/
+completed/failed) 
+DEFAULT 
+'pending' 
+error_message 
+TEXT 
+Thông báo lỗi nếu 
+failed 
+NULL 
+created_at 
+TIMESTA
+MP 
+Ngày tải lên 
+DEFAULT 
+NOW() 
+
+
+=== PAGE 123 ===
+ 
+ 
+ 
+ 
+Trường 
+Kiểu dữ 
+liệu 
+Mô tả 
+Ràng buộc 
+updated_at 
+TIMESTA
+MP 
+Lần cập nhật cuối 
+DEFAULT 
+NOW() 
+is_active 
+BOOLEAN 
+Trạng thái hoạt động 
+DEFAULT 
+TRUE 
+ 
+Bảng chunks 
+Trường 
+Kiểu dữ liệu 
+Mô tả 
+Ràng buộc 
+id 
+SERIAL 
+ID duy nhất 
+PRIMARY KEY 
+document_id 
+INTEGER 
+Tham chiếu đến 
+document 
+FOREIGN KEY, 
+CASCADE 
+content 
+TEXT 
+Nội dung chunk 
+NOT NULL 
+chunk_index 
+INTEGER 
+Thứ tự chunk 
+trong document 
+NULL 
+
+
+=== PAGE 124 ===
+ 
+ 
+ 
+ 
+Trường 
+Kiểu dữ liệu 
+Mô tả 
+Ràng buộc 
+heading 
+TEXT 
+Tiêu đề section 
+NULL 
+page_number 
+INTEGER 
+Số trang trong 
+PDF 
+NULL 
+metadata 
+JSONB 
+Thông tin bổ 
+sung (flexible) 
+NULL 
+is_active 
+BOOLEAN 
+Trạng thái hoạt 
+động 
+DEFAULT TRUE 
+created_at 
+TIMESTAMP 
+Ngày tạo 
+DEFAULT 
+NOW() 
+ 
+Bảng embeddings 
+Trường 
+Kiểu dữ liệu 
+Mô tả 
+Ràng buộc 
+id 
+SERIAL 
+ID duy nhất 
+PRIMARY KEY 
+
+
+=== PAGE 125 ===
+ 
+ 
+ 
+ 
+Trường 
+Kiểu dữ liệu 
+Mô tả 
+Ràng buộc 
+chunk_id 
+INTEGER 
+Tham chiếu 
+chunk 
+FOREIGN KEY, 
+UNIQUE, 
+CASCADE 
+embedding 
+vector(384) 
+Vector 
+embedding 384 
+dimensions 
+NOT NULL 
+created_at 
+TIMESTAMP 
+Ngày tạo 
+embedding 
+DEFAULT NOW() 
+ 
+Bảng document_attachments 
+Trường 
+Kiểu dữ liệu 
+Mô tả 
+Ràng buộc 
+id 
+SERIAL 
+ID duy nhất 
+PRIMARY 
+KEY 
+file_name 
+VARCHAR(500) 
+Tên file 
+NOT NULL 
+file_type 
+VARCHAR(50) 
+Loại file (doc, 
+docx, xlsx, pdf) 
+NOT NULL 
+
+
+=== PAGE 126 ===
+ 
+ 
+ 
+ 
+Trường 
+Kiểu dữ liệu 
+Mô tả 
+Ràng buộc 
+file_path 
+TEXT 
+Đường dẫn file 
+hoặc URL 
+NOT NULL 
+file_size 
+INTEGER 
+Kích thước file 
+(bytes) 
+NULL 
+description 
+TEXT 
+Mô tả file 
+NULL 
+keywords 
+TEXT[] 
+Mảng từ khóa để 
+match 
+NULL 
+is_active 
+BOOLEAN 
+Trạng thái 
+DEFAULT 
+TRUE 
+created_at 
+TIMESTAMP 
+Ngày tạo 
+DEFAULT 
+NOW() 
+updated_at 
+TIMESTAMP 
+Lần cập nhật cuối 
+DEFAULT 
+NOW() 
+ 
+ 
+ 
+
+
+=== PAGE 127 ===
+ 
+ 
+ 
+ 
+Bảng chunk_attachments 
+Trường 
+Kiểu dữ liệu 
+Mô tả 
+Ràng buộc 
+chunk_id 
+INTEGER 
+ID chunk 
+FOREIGN KEY, 
+PRIMARY KEY 
+attachment_id 
+INTEGER 
+ID 
+attachment 
+FOREIGN KEY, 
+PRIMARY KEY 
+relevance_score 
+FLOAT 
+Độ liên quan 
+(0-1) 
+DEFAULT 1.0 
+created_at 
+TIMESTAMP 
+Ngày liên kết 
+DEFAULT NOW() 
+ 
+Bảng conversations 
+Trường 
+Kiểu dữ liệu 
+Mô tả 
+Ràng buộc 
+id 
+SERIAL 
+ID duy nhất 
+PRIMARY 
+KEY 
+conversation_id 
+VARCHAR(255) 
+ID hội thoại 
+(UUID) 
+UNIQUE, 
+NOT NULL 
+
+
+=== PAGE 128 ===
+ 
+ 
+ 
+ 
+Trường 
+Kiểu dữ liệu 
+Mô tả 
+Ràng buộc 
+session_id 
+VARCHAR(255) 
+ID session 
+browser 
+NULL 
+user_id 
+VARCHAR(100) 
+ID người dùng 
+(optional) 
+NULL 
+user_message 
+TEXT 
+Tin nhắn từ 
+user 
+NOT NULL 
+assistant_response 
+TEXT 
+Phản hồi từ 
+bot 
+NOT NULL 
+sources 
+TEXT 
+Danh sách 
+sources 
+(JSON hoặc 
+CSV) 
+NULL 
+image_urls 
+TEXT[] 
+Mảng URLs 
+hình ảnh đính 
+kèm 
+NULL 
+confidence 
+FLOAT 
+Độ tin cậy câu 
+trả lời (0-1) 
+NULL 
+
+
+=== PAGE 129 ===
+ 
+ 
+ 
+ 
+Trường 
+Kiểu dữ liệu 
+Mô tả 
+Ràng buộc 
+processing_time 
+FLOAT 
+Thời gian xử 
+lý (seconds) 
+NULL 
+created_at 
+TIMESTAMP 
+Thời điểm hội 
+thoại 
+DEFAULT 
+NOW() 
+ 
+Bảng conversation_messages 
+Trường 
+Kiểu dữ liệu 
+Mô tả 
+Ràng 
+buộc 
+id 
+SERIAL 
+ID duy nhất 
+PRIMAR
+Y KEY 
+conversation_i
+d 
+VARCHAR(25
+5) 
+ID hội thoại 
+NOT 
+NULL 
+role 
+VARCHAR(20) 
+Vai trò 
+(user/assistant/syste
+m) 
+NOT 
+NULL 
+
+
+=== PAGE 130 ===
+ 
+ 
+ 
+ 
+Trường 
+Kiểu dữ liệu 
+Mô tả 
+Ràng 
+buộc 
+content 
+TEXT 
+Nội dung tin nhắn 
+NOT 
+NULL 
+timestamp 
+TIMESTAMP 
+Thời gian tin nhắn 
+DEFAUL
+T NOW() 
+turn_number 
+INTEGER 
+Số thứ tự turn trong 
+conversation 
+NULL 
+ 
+Bảng memory_summaries 
+Trường 
+Kiểu dữ liệu 
+Mô tả 
+Ràng buộc 
+id 
+SERIAL 
+ID duy nhất 
+PRIMARY 
+KEY 
+conversation_id 
+VARCHAR(255) 
+ID hội thoại 
+NOT NULL 
+summary 
+TEXT 
+Nội dung tóm 
+tắt 
+NOT NULL 
+
+
+=== PAGE 131 ===
+ 
+ 
+ 
+ 
+Trường 
+Kiểu dữ liệu 
+Mô tả 
+Ràng buộc 
+turn_start 
+INTEGER 
+Turn bắt đầu 
+tóm tắt 
+NOT NULL 
+turn_end 
+INTEGER 
+Turn kết thúc 
+tóm tắt 
+NOT NULL 
+embedding 
+vector(384) 
+Embedding của 
+summary 
+NULL 
+created_at 
+TIMESTAMP 
+Ngày tạo 
+DEFAULT 
+NOW() 
+ 
+Bảng feedback 
+Trường 
+Kiểu dữ liệu 
+Mô tả 
+Ràng 
+buộc 
+id 
+SERIAL 
+ID duy nhất 
+PRIMAR
+Y KEY 
+conversation_
+id 
+VARCHAR(25
+5) 
+ID hội thoại 
+NOT 
+NULL 
+
+
+=== PAGE 132 ===
+ 
+ 
+ 
+ 
+Trường 
+Kiểu dữ liệu 
+Mô tả 
+Ràng 
+buộc 
+message_id 
+VARCHAR(25
+5) 
+ID message cụ thể 
+NULL 
+query 
+TEXT 
+Câu hỏi gốc của user 
+NOT 
+NULL 
+answer 
+TEXT 
+Câu trả lời của bot 
+NOT 
+NULL 
+rating 
+VARCHAR(20
+) 
+Đánh giá 
+(positive/negative/neutr
+al) 
+NOT 
+NULL 
+comment 
+TEXT 
+Nhận xét chi tiết từ 
+user 
+NULL 
+chunk_ids 
+INTEGER[] 
+Mảng ID chunks được 
+sử dụng 
+DEFAUL
+T '{}' 
+user_id 
+VARCHAR(25
+5) 
+ID người dùng 
+NULL 
+
+
+=== PAGE 133 ===
+ 
+ 
+ 
+ 
+Trường 
+Kiểu dữ liệu 
+Mô tả 
+Ràng 
+buộc 
+session_id 
+VARCHAR(25
+5) 
+ID session 
+NULL 
+created_at 
+TIMESTAMP 
+Ngày gửi feedback 
+DEFAUL
+T NOW() 
+ 
+Bảng chunk_performance 
+Trường 
+Kiểu dữ liệu 
+Mô tả 
+Ràng buộc 
+id 
+SERIAL 
+ID duy nhất 
+PRIMARY 
+KEY 
+chunk_id 
+INTEGER 
+Tham chiếu 
+chunk 
+FOREIGN 
+KEY, 
+UNIQUE 
+times_used 
+INTEGER 
+Số lần chunk 
+được dùng 
+trong answer 
+DEFAULT 0 
+
+
+=== PAGE 134 ===
+ 
+ 
+ 
+ 
+Trường 
+Kiểu dữ liệu 
+Mô tả 
+Ràng buộc 
+positive_feedback 
+INTEGER 
+Số feedback 
+tích cực 
+DEFAULT 0 
+negative_feedback 
+INTEGER 
+Số feedback 
+tiêu cực 
+DEFAULT 0 
+neutral_feedback 
+INTEGER 
+Số feedback 
+trung lập 
+DEFAULT 0 
+effectiveness_score 
+FLOAT 
+Điểm hiệu quả 
+(0-1) 
+DEFAULT 
+0.5 
+retrieval_weight 
+FLOAT 
+Trọng số khi 
+retrieve (1.0 = 
+normal) 
+DEFAULT 
+1.0 
+last_updated 
+TIMESTAMP 
+Lần cập nhật 
+cuối 
+DEFAULT 
+NOW() 
+ 
+ 
+ 
+ 
+
+
+=== PAGE 135 ===
+ 
+ 
+ 
+ 
+Bảng topic_classifications 
+Trường 
+Kiểu dữ liệu 
+Mô tả 
+Ràng buộc 
+id 
+SERIAL 
+ID duy nhất 
+PRIMARY 
+KEY 
+conversation_id 
+VARCHAR(255) 
+ID hội thoại 
+NULL 
+session_id 
+VARCHAR(255) 
+ID session 
+NULL 
+query 
+TEXT 
+Câu hỏi gốc 
+NOT NULL 
+topic 
+VARCHAR(100) 
+Topic được gán 
+(tuyen_sinh, 
+hoc_phi, etc.) 
+NOT NULL 
+confidence 
+FLOAT 
+Độ tin cậy phân 
+loại (0-1) 
+DEFAULT 
+0.0 
+keywords 
+TEXT[] 
+Từ khóa trích 
+xuất 
+NULL 
+created_at 
+TIMESTAMP 
+Ngày phân loại 
+DEFAULT 
+NOW() 
+
+
+=== PAGE 136 ===
+ 
+ 
+ 
+ 
+Bảng analytics_queries 
+Trường 
+Kiểu dữ liệu 
+Mô tả 
+Ràng buộc 
+id 
+SERIAL 
+ID duy nhất 
+PRIMARY 
+KEY 
+session_id 
+VARCHAR(100) 
+ID session 
+NULL 
+query 
+TEXT 
+Câu hỏi từ user 
+NOT NULL 
+answer 
+TEXT 
+Câu trả lời từ 
+bot 
+NULL 
+confidence 
+FLOAT 
+Confidence 
+score 
+NULL 
+retrieved_chunks 
+INTEGER 
+Số chunks đã 
+retrieve 
+NULL 
+response_time 
+FLOAT 
+Thời gian xử lý 
+(seconds) 
+NULL 
+feedback 
+VARCHAR(20) 
+Feedback 
+rating 
+NULL 
+
+
+=== PAGE 137 ===
+ 
+ 
+ 
+ 
+Trường 
+Kiểu dữ liệu 
+Mô tả 
+Ràng buộc 
+created_at 
+TIMESTAMP 
+Ngày truy vấn 
+DEFAULT 
+NOW() 
+ 
+Bảng analytics_documents 
+Trường 
+Kiểu dữ liệu 
+Mô tả 
+Ràng buộc 
+id 
+SERIAL 
+ID duy nhất 
+PRIMARY 
+KEY 
+document_id 
+INTEGER 
+Tham chiếu 
+document 
+FOREIGN 
+KEY 
+views 
+INTEGER 
+Số lần document 
+được xem 
+DEFAULT 0 
+chunk_retrievals 
+INTEGER 
+Số lần chunks từ 
+doc được retrieve 
+DEFAULT 0 
+last_accessed 
+TIMESTAMP 
+Lần truy cập cuối 
+NULL 
+
+
+=== PAGE 138 ===
+ 
+ 
+ 
+ 
+Trường 
+Kiểu dữ liệu 
+Mô tả 
+Ràng buộc 
+created_at 
+TIMESTAMP 
+Ngày tạo record 
+DEFAULT 
+NOW() 
+ 
+Bảng query_metrics 
+Trường 
+Kiểu dữ liệu 
+Mô tả 
+Ràng buộc 
+id 
+SERIAL 
+ID duy nhất 
+PRIMARY 
+KEY 
+query 
+TEXT 
+Câu hỏi 
+NOT NULL 
+response_time_ms 
+FLOAT 
+Thời gian xử lý 
+(milliseconds) 
+NULL 
+chunks_retrieved 
+INTEGER 
+Số chunks 
+retrieved 
+NULL 
+confidence_score 
+FLOAT 
+Confidence 
+score 
+NULL 
+
+
+=== PAGE 139 ===
+ 
+ 
+ 
+ 
+Trường 
+Kiểu dữ liệu 
+Mô tả 
+Ràng buộc 
+has_feedback 
+BOOLEAN 
+Có feedback hay 
+không 
+DEFAULT 
+FALSE 
+feedback_id 
+INTEGER 
+Tham chiếu 
+feedback 
+FOREIGN 
+KEY, NULL 
+created_at 
+TIMESTAMP 
+Thời điểm query 
+DEFAULT 
+NOW() 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+

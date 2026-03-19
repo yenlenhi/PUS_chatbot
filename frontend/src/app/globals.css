@@ -3,7 +3,18 @@
 :root {
   --background: #f9fafb;
   --foreground: #171717;
-  --primary-red: #dc2626;
+  
+  /* Unified Design System - PSU Brand */
+  --primary: #B91C1C;        /* red-700 — Hero, CTA, accents */
+  --primary-dark: #7F1D1D;   /* red-900 — Hero gradient end */
+  --primary-light: #FEF2F2;  /* red-50 — Section backgrounds */
+  --accent: #EAB308;         /* yellow-500 — Highlights, badges */
+  --accent-light: #FEF3C7;   /* amber-100 — Badge backgrounds */
+  --secondary: #1E3A5F;      /* navy — Navigation, sub-headers */
+  --secondary-light: #1E40AF;/* blue-800 — Hover states */
+  
+  /* Legacy aliases (backward compat) */
+  --primary-red: #B91C1C;
   --primary-green: #16a34a;
   --primary-yellow: #eab308;
 }

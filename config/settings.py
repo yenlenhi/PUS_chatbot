@@ -34,7 +34,7 @@ EMBEDDINGS_DIR.mkdir(parents=True, exist_ok=True)
 
 
 # LLM Provider Configuration
-LLM_PROVIDER = os.getenv("LLM_PROVIDER", "ollama")  # "ollama" or "gemini"
+LLM_PROVIDER = os.getenv("LLM_PROVIDER", "")  # "ollama" or "gemini"
 
 # Gemini Configuration
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
@@ -55,6 +55,9 @@ ENABLE_GEMINI_NORMALIZATION = (
 ENABLE_GOOGLE_SEARCH_GROUNDING = (
     os.getenv("ENABLE_GOOGLE_SEARCH_GROUNDING", "true").lower() == "true"
 )
+
+# Product policy: chatbot only answers official admission-related questions
+ADMISSION_ONLY_MODE = os.getenv("ADMISSION_ONLY_MODE", "true").lower() == "true"
 
 # ============================================
 # ACCURACY MODE CONFIGURATION
@@ -185,7 +188,9 @@ SPARSE_SIMILARITY_THRESHOLD = float(os.getenv("SPARSE_SIMILARITY_THRESHOLD", "0.
 # Maximum number of attachments to include in context
 MAX_ATTACHMENTS_IN_CONTEXT = int(os.getenv("MAX_ATTACHMENTS_IN_CONTEXT", "3"))
 # Minimum relevance score threshold for attachments (0.0-1.0)
-MIN_ATTACHMENT_SCORE_THRESHOLD = float(os.getenv("MIN_ATTACHMENT_SCORE_THRESHOLD", "0.75"))
+MIN_ATTACHMENT_SCORE_THRESHOLD = float(
+    os.getenv("MIN_ATTACHMENT_SCORE_THRESHOLD", "0.75")
+)
 
 # ============================================
 # Ingestion Service Configuration (NEW)
