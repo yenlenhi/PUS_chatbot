@@ -3,6 +3,8 @@ Async PostgreSQL database service for managing document chunks and embeddings wi
 """
 
 from typing import List, Optional, Dict, Any, AsyncGenerator
+from urllib.parse import urlparse
+from uuid import uuid4
 import numpy as np
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy import text
@@ -43,27 +45,59 @@ class AsyncPostgresDatabaseService:
         self.async_session_factory = None
         self._initialized = False
 
+    def _uses_connection_pooler(self) -> bool:
+        """Detect pooler URLs that need extra asyncpg / PgBouncer safeguards."""
+        normalized_url = self.database_url.replace(
+            "postgresql+asyncpg://", "postgresql://", 1
+        )
+        parsed = urlparse(normalized_url)
+        host = (parsed.hostname or "").lower()
+        port = parsed.port
+
+        return (
+            "pooler.supabase.com" in host
+            or "pgbouncer" in host
+            or port == 6543
+        )
+
+    def _build_connect_args(self) -> Dict[str, Any]:
+        """Build asyncpg connection args compatible with PgBouncer-style poolers."""
+        connect_args: Dict[str, Any] = {
+            # Disable driver and dialect-level statement caching.
+            "statement_cache_size": 0,
+            "prepared_statement_cache_size": 0,
+        }
+
+        if self._uses_connection_pooler():
+            # SQLAlchemy asyncpg still uses prepare(); with PgBouncer, a unique
+            # statement name avoids collisions on reused backend connections.
+            connect_args["prepared_statement_name_func"] = (
+                lambda: f"__asyncpg_{uuid4().hex}__"
+            )
+
+        return connect_args
+
     async def initialize(self):
         """Initialize database connection and create tables"""
         if self._initialized:
             return
 
         try:
-            # Create async engine with pgbouncer compatibility
-            # Use NullPool and connect_args to disable prepared statements completely
+            # Create async engine with PgBouncer-compatible settings.
             from sqlalchemy.pool import NullPool
+
+            if self._uses_connection_pooler():
+                log.info(
+                    "Using asyncpg PgBouncer compatibility mode "
+                    "(NullPool + dynamic prepared statement names)"
+                )
 
             self.engine = create_async_engine(
                 self.database_url,
                 echo=False,
-                poolclass=NullPool,  # Use NullPool for pgbouncer compatibility
-                connect_args={
-                    "statement_cache_size": 0,  # Disable statement cache for PgBouncer compatibility
-                    "prepared_statement_cache_size": 0,  # Also disable prepared statement cache
-                },
+                poolclass=NullPool,
+                connect_args=self._build_connect_args(),
                 pool_pre_ping=False,
-                # Create engine with prepared statements disabled at session level
-                execution_options={"postgresql_prepared_statement": False, "isolation_level": "AUTOCOMMIT"},
             )
 
             # Create async session factory
