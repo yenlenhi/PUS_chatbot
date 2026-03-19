@@ -964,31 +964,31 @@ Hướng dẫn:
                 if "cutoff" in normalized or "score" in normalized:
                     self._append_unique_followup(
                         questions,
-                        f"Do you want the cutoff score by major{year_suffix}?",
+                        f"I want to know the cutoff score by major{year_suffix}",
                     )
                     self._append_unique_followup(
                         questions,
                         (
-                            f"Do you want to compare cutoff scores{year_suffix} with previous years?"
+                            f"I want to compare cutoff scores{year_suffix} with previous years"
                             if target_year
-                            else "Do you want to compare cutoff scores across recent years?"
+                            else "I want to compare cutoff scores across recent years"
                         ),
                     )
                 if "document" in normalized or "application" in normalized:
                     self._append_unique_followup(
                         questions,
-                        "Do you want a checklist of required application documents?",
+                        "I want a checklist of required application documents",
                     )
                 if "method" in normalized or "admission" in normalized:
                     self._append_unique_followup(
                         questions,
-                        "Do you want the conditions for each admission method?",
+                        "I want to know the conditions for each admission method",
                     )
                 if not questions:
                     questions = [
-                        "Do you want details about admission methods?",
-                        "Do you want the required documents and timeline?",
-                        "Do you want cutoff scores or quotas by major?",
+                        "I want details about admission methods",
+                        "I want the required documents and timeline",
+                        "I want cutoff scores or quotas by major",
                     ]
                 return questions[:3]
 
@@ -1060,96 +1060,96 @@ Hướng dẫn:
 
             if has_score:
                 self._append_unique_followup(
-                    questions, f"Bạn muốn xem điểm chuẩn theo từng ngành{year_suffix} không?"
+                    questions, f"Tôi muốn biết điểm chuẩn theo từng ngành{year_suffix}"
                 )
                 self._append_unique_followup(
                     questions,
                     (
-                        f"Bạn muốn so sánh điểm chuẩn{year_suffix} với các năm trước không?"
+                        f"Tôi muốn so sánh điểm chuẩn{year_suffix} với các năm trước"
                         if target_year
-                        else "Bạn muốn xem điểm chuẩn các năm gần đây để so sánh không?"
+                        else "Tôi muốn so sánh điểm chuẩn các năm gần đây"
                     ),
                 )
                 self._append_unique_followup(
                     questions,
-                    "Bạn muốn xem tổ hợp xét tuyển và chỉ tiêu của từng ngành không?",
+                    "Tôi muốn biết tổ hợp xét tuyển và chỉ tiêu của từng ngành",
                 )
 
             if has_method:
                 self._append_unique_followup(
                     questions,
-                    "Bạn muốn xem điều kiện áp dụng của từng phương thức xét tuyển không?",
+                    "Tôi muốn biết điều kiện áp dụng của từng phương thức xét tuyển",
                 )
                 self._append_unique_followup(
                     questions,
-                    "Bạn muốn biết hồ sơ cần chuẩn bị cho phương thức này không?",
+                    "Tôi muốn biết hồ sơ cần chuẩn bị cho phương thức này",
                 )
                 self._append_unique_followup(
                     questions,
-                    "Bạn muốn biết mốc thời gian đăng ký và xác nhận nhập học không?",
+                    "Tôi muốn biết mốc thời gian đăng ký và xác nhận nhập học",
                 )
 
             if has_documents:
                 self._append_unique_followup(
                     questions,
-                    "Bạn muốn tôi chỉ ra các hồ sơ, biểu mẫu cần tải xuống không?",
+                    "Tôi muốn biết các hồ sơ, biểu mẫu cần tải xuống",
                 )
                 self._append_unique_followup(
                     questions,
-                    "Bạn muốn biết hồ sơ nào bắt buộc và hồ sơ nào bổ sung không?",
+                    "Tôi muốn biết hồ sơ nào bắt buộc và hồ sơ nào bổ sung",
                 )
                 self._append_unique_followup(
                     questions,
-                    "Bạn muốn biết nơi nộp và hạn nộp hồ sơ không?",
+                    "Tôi muốn biết nơi nộp và hạn nộp hồ sơ",
                 )
 
             if has_timeline:
                 self._append_unique_followup(
                     questions,
-                    "Bạn muốn xem toàn bộ các mốc thời gian tuyển sinh quan trọng không?",
+                    "Tôi muốn biết toàn bộ các mốc thời gian tuyển sinh quan trọng",
                 )
                 self._append_unique_followup(
                     questions,
-                    "Bạn muốn biết hạn đăng ký, hạn nộp hồ sơ hoặc hạn xác nhận nhập học không?",
+                    "Tôi muốn biết hạn đăng ký, hạn nộp hồ sơ hoặc hạn xác nhận nhập học",
                 )
 
             if has_major:
                 self._append_unique_followup(
                     questions,
-                    "Bạn muốn xem tổ hợp xét tuyển, chỉ tiêu hoặc điểm chuẩn của ngành này không?",
+                    "Tôi muốn biết tổ hợp xét tuyển, chỉ tiêu hoặc điểm chuẩn của ngành này",
                 )
                 self._append_unique_followup(
                     questions,
-                    "Bạn muốn biết chương trình đào tạo hoặc định hướng nghề nghiệp của ngành này không?",
+                    "Tôi muốn biết chương trình đào tạo hoặc định hướng nghề nghiệp của ngành này",
                 )
 
             if has_eligibility:
                 self._append_unique_followup(
                     questions,
-                    "Bạn muốn xem chi tiết các tiêu chuẩn sức khỏe, chính trị hoặc độ tuổi không?",
+                    "Tôi muốn biết chi tiết các tiêu chuẩn sức khỏe, chính trị hoặc độ tuổi",
                 )
                 self._append_unique_followup(
                     questions,
-                    "Bạn muốn biết các giấy tờ cần có để chứng minh điều kiện dự tuyển không?",
+                    "Tôi muốn biết các giấy tờ cần có để chứng minh điều kiện dự tuyển",
                 )
 
             if has_quota:
                 self._append_unique_followup(
                     questions,
-                    "Bạn muốn xem chỉ tiêu theo từng ngành hoặc từng phương thức không?",
+                    "Tôi muốn biết chỉ tiêu theo từng ngành hoặc từng phương thức",
                 )
 
             if has_fee:
                 self._append_unique_followup(
                     questions,
-                    "Bạn muốn biết học phí, lệ phí hoặc chính sách hỗ trợ tài chính liên quan không?",
+                    "Tôi muốn biết học phí, lệ phí hoặc chính sách hỗ trợ tài chính liên quan",
                 )
 
             if not questions:
                 questions = [
-                    "Bạn muốn xem phương thức xét tuyển phù hợp nhất không?",
-                    "Bạn muốn biết hồ sơ và mốc thời gian cần lưu ý không?",
-                    "Bạn muốn xem điểm chuẩn hoặc chỉ tiêu của các ngành liên quan không?",
+                    "Tôi muốn biết phương thức xét tuyển phù hợp",
+                    "Tôi muốn biết hồ sơ và mốc thời gian cần lưu ý",
+                    "Tôi muốn biết điểm chuẩn hoặc chỉ tiêu của các ngành liên quan",
                 ]
 
             return questions[:3]
@@ -1158,12 +1158,12 @@ Hướng dẫn:
             log.error(f"Error generating structured follow-up questions: {e}")
             if language == "vi":
                 return [
-                    "Bạn muốn xem thêm phương thức xét tuyển không?",
-                    "Bạn muốn biết hồ sơ và mốc thời gian liên quan không?",
+                    "Tôi muốn biết thêm về phương thức xét tuyển",
+                    "Tôi muốn biết hồ sơ và mốc thời gian liên quan",
                 ]
             return [
-                "Do you want details about admission methods?",
-                "Do you want the required documents and timeline?",
+                "I want details about admission methods",
+                "I want the required documents and timeline",
             ]
 
     def _add_engagement_prompt(

@@ -24,6 +24,7 @@ def test_structured_follow_ups_for_score_answer_are_contextual():
     assert len(questions) >= 2
     assert any("điểm chuẩn theo từng ngành năm 2025" in q.lower() for q in questions)
     assert any("so sánh điểm chuẩn năm 2025" in q.lower() for q in questions)
+    assert all(not q.lower().startswith("bạn muốn") for q in questions)
 
 
 def test_structured_follow_ups_for_document_answer_surface_download_help():
@@ -44,3 +45,4 @@ def test_structured_follow_ups_for_document_answer_surface_download_help():
 
     assert any("tải xuống" in q.lower() for q in questions)
     assert any("hồ sơ nào bắt buộc" in q.lower() for q in questions)
+    assert all(not q.lower().startswith("bạn muốn") for q in questions)
