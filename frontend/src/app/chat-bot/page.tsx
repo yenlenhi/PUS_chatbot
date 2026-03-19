@@ -418,6 +418,7 @@ const useTypewriter = (
 interface MessageBubbleProps {
   message: Message;
   isLatest: boolean;
+  language: 'vi' | 'en';
   conversationId: string;
   onViewSources: (sources: SourceReference[]) => void;
   onCopy: (content: string) => void;
@@ -441,6 +442,7 @@ interface MessageBubbleProps {
 const MessageBubble: React.FC<MessageBubbleProps> = ({
   message,
   isLatest,
+  language,
   conversationId,
   onViewSources,
   onCopy,
@@ -470,6 +472,9 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   const isCopiedQA = copiedQAId === message.id;
   const isThisMessageSpeaking = speakingMessageId === message.id && isSpeaking;
   const visibleSourceReferences = filterVisibleSourceReferences(message.sourceReferences);
+  const sourceCount = visibleSourceReferences.length;
+  const attachmentCount = message.attachments?.length ?? 0;
+  const hasDiscoverySummary = sourceCount > 0 || attachmentCount > 0;
 
   // Parse follow-up questions from content
   const parseFollowUpQuestions = (content: string): { mainContent: string; followUpQuestions: string[] } => {
@@ -672,6 +677,44 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
             <span className="inline-block w-2 h-4 bg-red-500 animate-pulse ml-1 align-middle"></span>
           )}
         </div>
+
+        {hasDiscoverySummary && (
+          <div
+            className={`mt-3 flex flex-wrap items-center gap-2 rounded-xl border px-3 py-2 text-xs sm:text-sm ${isComplete
+              ? 'border-blue-200 bg-blue-50/80 text-blue-800'
+              : 'border-blue-200 bg-blue-50/60 text-blue-700 animate-pulse'
+              }`}
+          >
+            <div className="flex items-center gap-2 font-medium">
+              <Sparkles className="h-3.5 w-3.5 text-blue-500" />
+              <span>
+                {language === 'vi' ? 'Đã tìm thấy' : 'Found'}
+              </span>
+            </div>
+
+            {sourceCount > 0 && (
+              <div className="inline-flex items-center gap-1 rounded-full bg-white/80 px-2 py-1">
+                <Book className="h-3.5 w-3.5 text-red-500" />
+                <span>
+                  {sourceCount} {language === 'vi'
+                    ? `${sourceCount > 1 ? 'nguồn tham khảo' : 'nguồn tham khảo'}`
+                    : `${sourceCount > 1 ? 'sources' : 'source'}`}
+                </span>
+              </div>
+            )}
+
+            {attachmentCount > 0 && (
+              <div className="inline-flex items-center gap-1 rounded-full bg-white/80 px-2 py-1">
+                <FolderOpen className="h-3.5 w-3.5 text-blue-600" />
+                <span>
+                  {attachmentCount} {language === 'vi'
+                    ? `${attachmentCount > 1 ? 'file đính kèm' : 'file đính kèm'}`
+                    : `${attachmentCount > 1 ? 'attachments' : 'attachment'}`}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Follow-up Questions Section */}
         {followUpQuestions.length > 0 && isComplete && (
@@ -1158,6 +1201,16 @@ const ChatBotPage = () => {
                 streamedSources = rankVisibleSourceReferences(allSourceReferences);
                 streamedConfidence = chunk.confidence || 0;
 
+                setMessages(prev => prev.map(msg =>
+                  msg.id === newMessageId
+                    ? {
+                      ...msg,
+                      sourceReferences: streamedSources,
+                      confidence: streamedConfidence
+                    }
+                    : msg
+                ));
+
                 if (streamedSources.length > 0) {
                   setCurrentSourceReferences(streamedSources);
                   setSidebarOpen(true);
@@ -1415,6 +1468,7 @@ const ChatBotPage = () => {
                   key={message.id}
                   message={message}
                   isLatest={message.id === latestMessageId}
+                  language={language}
                   conversationId={conversationId}
                   onViewSources={handleViewSources}
                   onCopy={(content) => handleCopyMessage(content, message.id)}

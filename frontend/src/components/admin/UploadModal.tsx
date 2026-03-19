@@ -3,6 +3,7 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { X, Upload, FileText, CheckCircle, AlertCircle, Loader2, File, Clock, Zap, Sparkles } from 'lucide-react';
 import DetailedErrorDisplay from './DetailedErrorDisplay';
+import { getAuthHeader } from '@/utils/auth';
 
 interface UploadModalProps {
   isOpen: boolean;
@@ -199,6 +200,9 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onUploadSucc
 
       const response = await fetch(uploadUrl, {
         method: 'POST',
+        headers: {
+          ...getAuthHeader(),
+        },
         body: formData,
       });
 

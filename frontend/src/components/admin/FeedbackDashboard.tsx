@@ -41,6 +41,7 @@ import type {
   ChunkPerformance,
   FeedbackRecord,
 } from '@/types/feedback';
+import { getAuthHeader } from '@/utils/auth';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
 
@@ -99,7 +100,11 @@ const OverviewPanel: React.FC = () => {
   const fetchDashboard = async () => {
     try {
       setRefreshing(true);
-      const response = await fetch(`${API_BASE}/api/v1/feedback/dashboard`);
+      const response = await fetch(`${API_BASE}/api/v1/feedback/dashboard`, {
+        headers: {
+          ...getAuthHeader(),
+        },
+      });
       if (response.ok) {
         const data = await response.json();
         setMetrics(data);
@@ -240,7 +245,11 @@ const HistoryPanel: React.FC = () => {
       if (filterRating) queryParams.append('rating', filterRating);
       if (debouncedSearch) queryParams.append('search', debouncedSearch);
 
-      const res = await fetch(`${API_BASE}/api/v1/feedback/list?${queryParams}`);
+      const res = await fetch(`${API_BASE}/api/v1/feedback/list?${queryParams}`, {
+        headers: {
+          ...getAuthHeader(),
+        },
+      });
       if (res.ok) {
         const data = await res.json();
         setFeedback(data.records);

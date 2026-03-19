@@ -10,6 +10,7 @@ import {
 import { PieChart as RePieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { AttachmentTable } from './attachments/AttachmentTable';
 import { AttachmentMobileList } from './attachments/AttachmentMobileList';
+import { getAuthHeader } from '@/utils/auth';
 
 interface Attachment {
   id: number;
@@ -77,7 +78,11 @@ export default function AttachmentManager() {
       if (searchQuery) queryParams.append('search', searchQuery);
       if (filterCategory && filterCategory !== 'All') queryParams.append('category', filterCategory);
 
-      const response = await fetch(`${API_BASE}/api/v1/attachments?${queryParams.toString()}`);
+      const response = await fetch(`${API_BASE}/api/v1/attachments?${queryParams.toString()}`, {
+        headers: {
+          ...getAuthHeader(),
+        },
+      });
       if (response.ok) {
         const data = await response.json();
         // Check if response is paginated (has items and total) or list
@@ -194,6 +199,9 @@ export default function AttachmentManager() {
 
           const response = await fetch(`${API_BASE}/api/v1/attachments/upload`, {
             method: 'POST',
+            headers: {
+              ...getAuthHeader(),
+            },
             body: formData,
           });
 
@@ -220,6 +228,9 @@ export default function AttachmentManager() {
     try {
       const response = await fetch(`${API_BASE}/api/v1/attachments/${id}`, {
         method: 'DELETE',
+        headers: {
+          ...getAuthHeader(),
+        },
       });
       if (response.ok) {
         fetchAttachments();

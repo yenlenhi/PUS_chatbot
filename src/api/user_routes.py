@@ -14,7 +14,7 @@ from src.models.user import (
     UserInDB,
 )
 from src.services.async_user_service import get_async_user_service, AsyncUserService
-from src.auth.async_jwt_handler import get_current_user_async
+from src.auth.async_jwt_handler import get_current_user_async, require_admin_async
 from src.middleware.rate_limit_middleware import rate_limit
 from src.utils.logger import log
 
@@ -24,23 +24,6 @@ User = UserInDB
 
 # Create router
 user_router = APIRouter(prefix="/api/users", tags=["User Management"])
-
-
-async def require_admin(current_user: User = Depends(get_current_user_async)):
-    """Dependency to require admin access"""
-    if current_user is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication required",
-        )
-
-    if "admin" not in current_user.scopes:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access required",
-        )
-
-    return current_user
 
 
 # ============================================
@@ -133,7 +116,7 @@ async def change_own_password(
 async def create_user(
     request: Request,
     user_data: UserCreate,
-    admin_user: User = Depends(require_admin),
+    admin_user: User = Depends(require_admin_async),
     user_service: AsyncUserService = Depends(get_async_user_service),
 ):
     """
@@ -161,7 +144,7 @@ async def list_users(
     page: int = Query(1, ge=1, description="Page number"),
     page_size: int = Query(20, ge=1, le=100, description="Items per page"),
     disabled: Optional[bool] = Query(None, description="Filter by disabled status"),
-    admin_user: User = Depends(require_admin),
+    admin_user: User = Depends(require_admin_async),
     user_service: AsyncUserService = Depends(get_async_user_service),
 ):
     """
@@ -180,7 +163,7 @@ async def list_users(
 @user_router.get("/admin/users/{user_id}", response_model=UserResponse)
 async def get_user(
     user_id: int,
-    admin_user: User = Depends(require_admin),
+    admin_user: User = Depends(require_admin_async),
     user_service: AsyncUserService = Depends(get_async_user_service),
 ):
     """
@@ -203,7 +186,7 @@ async def get_user(
 async def update_user(
     user_id: int,
     user_data: UserUpdate,
-    admin_user: User = Depends(require_admin),
+    admin_user: User = Depends(require_admin_async),
     user_service: AsyncUserService = Depends(get_async_user_service),
 ):
     """
@@ -234,7 +217,7 @@ async def update_user(
 @user_router.delete("/admin/users/{user_id}")
 async def delete_user(
     user_id: int,
-    admin_user: User = Depends(require_admin),
+    admin_user: User = Depends(require_admin_async),
     user_service: AsyncUserService = Depends(get_async_user_service),
 ):
     """
@@ -265,7 +248,7 @@ async def delete_user(
 @user_router.post("/admin/users/{user_id}/enable")
 async def enable_user(
     user_id: int,
-    admin_user: User = Depends(require_admin),
+    admin_user: User = Depends(require_admin_async),
     user_service: AsyncUserService = Depends(get_async_user_service),
 ):
     """
@@ -288,7 +271,7 @@ async def enable_user(
 
 @user_router.get("/admin/stats")
 async def get_user_stats(
-    admin_user: User = Depends(require_admin),
+    admin_user: User = Depends(require_admin_async),
     user_service: AsyncUserService = Depends(get_async_user_service),
 ):
     """

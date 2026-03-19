@@ -6,6 +6,7 @@ export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const timeRange = searchParams.get('time_range') || 'L7D';
   const limit = searchParams.get('limit') || '5';
+  const authorization = request.headers.get('authorization');
 
   try {
     // Forward request to backend
@@ -13,13 +14,25 @@ export async function GET(request: NextRequest) {
       `${BACKEND_URL}/api/v1/analytics/popular-questions?time_range=${timeRange}&limit=${limit}`,
       {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: authorization
+          ? {
+              'Content-Type': 'application/json',
+              Authorization: authorization,
+            }
+          : {
+              'Content-Type': 'application/json',
+            },
       }
     );
 
     if (!response.ok) {
+      if (response.status === 401 || response.status === 403) {
+        const data = await response.json().catch(() => ({}));
+        return NextResponse.json(
+          { detail: data.detail || 'Authentication required' },
+          { status: response.status }
+        );
+      }
       throw new Error(`Backend API error: ${response.status}`);
     }
 

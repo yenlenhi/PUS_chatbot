@@ -62,7 +62,7 @@ from src.services.supabase_storage_service import (
 )
 from src.services.upload_task_manager import get_task_manager, TaskStatus
 from src.middleware.rate_limit_middleware import rate_limit
-from src.auth.async_jwt_handler import get_current_user_async, require_admin_async
+from src.auth.async_jwt_handler import require_admin_async
 from src.utils.logger import log
 
 # Create router

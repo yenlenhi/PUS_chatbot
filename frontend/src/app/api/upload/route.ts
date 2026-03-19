@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function POST(request: NextRequest) {
   try {
     const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
+    const authorization = request.headers.get('authorization');
     
     // Get the form data from the request
     const formData = await request.formData();
@@ -12,6 +13,7 @@ export async function POST(request: NextRequest) {
     // Forward the request to the backend
     const response = await fetch(`${backendUrl}/api/v1/admin/upload`, {
       method: 'POST',
+      headers: authorization ? { Authorization: authorization } : undefined,
       body: formData,
     });
 
@@ -21,7 +23,11 @@ export async function POST(request: NextRequest) {
     if (!response.ok) {
       console.error('[Upload API] Backend error:', data);
       return NextResponse.json(
-        { error: data.detail || 'Upload failed', success: false },
+        {
+          detail: data.detail || data.error || 'Upload failed',
+          error: data.detail || data.error || 'Upload failed',
+          success: false,
+        },
         { status: response.status }
       );
     }

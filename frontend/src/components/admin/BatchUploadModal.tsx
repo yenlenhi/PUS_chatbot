@@ -7,6 +7,7 @@ import {
   FolderOpen, Archive, Database
 } from 'lucide-react';
 import DetailedErrorDisplay from './DetailedErrorDisplay';
+import { getAuthHeader } from '@/utils/auth';
 
 interface BatchUploadModalProps {
   isOpen: boolean;
@@ -213,6 +214,9 @@ const BatchUploadModal: React.FC<BatchUploadModalProps> = ({ isOpen, onClose, on
     try {
       const response = await fetch('/api/upload', {
         method: 'POST',
+        headers: {
+          ...getAuthHeader(),
+        },
         body: formData,
       });
 
