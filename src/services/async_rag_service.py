@@ -198,6 +198,7 @@ class AsyncRAGService:
             "answer": answer_override
             if answer_override is not None
             else self.scope_service.build_policy_answer(policy, language),
+            "follow_up_questions": [],
             "sources": sources or [],
             "source_references": source_references or [],
             "attachments": [],
@@ -912,6 +913,8 @@ class AsyncRAGService:
             )
             self._record_stage(performance, "generation", generation_started_at)
 
+            follow_up_questions: List[str] = []
+
             # Handle empty response
             if not answer or not answer.strip():
                 log.error("LLM returned empty response")
@@ -920,8 +923,12 @@ class AsyncRAGService:
             else:
                 # Add engagement prompt
                 engagement_started_at = time.perf_counter()
-                answer = self.rag_service._add_engagement_prompt(
-                    answer, query, language
+                follow_up_questions = self.rag_service.generate_structured_follow_up_questions(
+                    query,
+                    answer,
+                    language=language,
+                    sources=sources,
+                    attachments=attachments,
                 )
                 self._record_stage(performance, "engagement", engagement_started_at)
 
@@ -957,6 +964,7 @@ class AsyncRAGService:
 
             return {
                 "answer": answer,
+                "follow_up_questions": follow_up_questions,
                 "sources": sources,
                 "source_references": source_references,
                 "attachments": attachments,
@@ -1349,17 +1357,18 @@ class AsyncRAGService:
                 performance, "generation_stream", generation_started_at
             )
 
-            # Add engagement prompt
+            follow_up_questions: List[str] = []
+
+            # Build structured follow-up suggestions
             if full_answer:
                 engagement_started_at = time.perf_counter()
-                original_length = len(full_answer)
-                enhanced_answer = self.rag_service._add_engagement_prompt(
-                    full_answer, query, language
+                follow_up_questions = self.rag_service.generate_structured_follow_up_questions(
+                    query,
+                    full_answer,
+                    language=language,
+                    sources=sources,
+                    attachments=attachments,
                 )
-                if len(enhanced_answer) > original_length:
-                    engagement_part = enhanced_answer[original_length:]
-                    yield {"type": "answer_chunk", "content": engagement_part}
-                    full_answer = enhanced_answer
                 self._record_stage(performance, "engagement", engagement_started_at)
 
             # Detect charts
@@ -1383,6 +1392,7 @@ class AsyncRAGService:
                 "attachments": attachments,
                 "chart_data": chart_data,
                 "images": [],
+                "follow_up_questions": follow_up_questions,
                 "normalization_applied": normalization_applied,
                 "original_query": query if normalization_applied else None,
                 "normalized_query": normalized_query if normalization_applied else None,

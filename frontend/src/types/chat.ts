@@ -5,6 +5,7 @@ export interface Message {
   role?: 'user' | 'assistant';
   content: string;
   timestamp: string | Date;
+  followUpQuestions?: string[];
   sources?: Source[];
   attachments?: FileAttachment[];
   confidence?: number;

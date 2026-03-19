@@ -7,6 +7,7 @@ export interface ChatRequest {
 
 export interface ChatResponse {
   answer: string;
+  follow_up_questions?: string[];
   sources: string[];
   confidence: number;
   conversation_id: string;

@@ -233,6 +233,7 @@ async def chat_endpoint(
             answer=rag_response.get(
                 "answer", "Xin lỗi, tôi không thể trả lời câu hỏi này."
             ),
+            follow_up_questions=rag_response.get("follow_up_questions", []),
             sources=rag_response.get("sources", []),
             source_references=rag_response.get("source_references", []),
             attachments=rag_response.get("attachments", []),

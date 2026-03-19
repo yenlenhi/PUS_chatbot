@@ -58,6 +58,7 @@ export interface Message {
   role: 'user' | 'assistant';
   content: string;
   timestamp: string | Date;
+  followUpQuestions?: string[];
   sources?: Source[];
   sourceReferences?: SourceReference[];
   attachments?: FileAttachment[]; // File attachments
@@ -102,6 +103,7 @@ export interface Conversation {
 export interface ChatApiResponse {
   response: string;
   answer?: string;
+  follow_up_questions?: string[];
   confidence: number;
   sources: string[];
   source_references: SourceReference[];

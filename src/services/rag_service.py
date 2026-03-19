@@ -6,6 +6,7 @@ import uuid
 import re
 import time
 import hashlib
+import unicodedata
 from typing import List, Dict, Any, Optional
 from src.services.embedding_service import EmbeddingService
 from src.services.postgres_database_service import PostgresDatabaseService
@@ -906,6 +907,264 @@ Hướng dẫn:
                 topics.append(topic)
 
         return topics
+
+    def _normalize_followup_text(self, text: str) -> str:
+        stripped = unicodedata.normalize("NFD", text or "")
+        stripped = stripped.replace("đ", "d").replace("Đ", "D")
+        stripped = "".join(
+            ch for ch in stripped if unicodedata.category(ch) != "Mn"
+        ).lower()
+        stripped = re.sub(r"[^a-z0-9\s]", " ", stripped)
+        return re.sub(r"\s+", " ", stripped).strip()
+
+    def _append_unique_followup(
+        self, questions: List[str], question: str, limit: int = 3
+    ) -> None:
+        candidate = question.strip()
+        if not candidate or candidate in questions or len(questions) >= limit:
+            return
+        questions.append(candidate)
+
+    def generate_structured_follow_up_questions(
+        self,
+        user_query: str,
+        answer: str,
+        *,
+        language: str = "vi",
+        sources: Optional[List[str]] = None,
+        attachments: Optional[List[Dict[str, Any]]] = None,
+    ) -> List[str]:
+        """
+        Build 2-3 deterministic follow-up questions from the current answer context
+        without relying on another LLM call.
+        """
+        try:
+            source_names = sources or []
+            attachment_list = attachments or []
+            attachment_text = " ".join(
+                filter(
+                    None,
+                    [
+                        f"{att.get('file_name', '')} {att.get('description', '')}"
+                        for att in attachment_list
+                    ],
+                )
+            )
+            combined_text = " ".join(
+                filter(None, [user_query, answer, " ".join(source_names), attachment_text])
+            )
+            normalized = self._normalize_followup_text(combined_text)
+            years = [int(year) for year in re.findall(r"\b20\d{2}\b", combined_text)]
+            target_year = str(max(years)) if years else None
+
+            if language == "en":
+                questions: List[str] = []
+                year_suffix = f" in {target_year}" if target_year else ""
+
+                if "cutoff" in normalized or "score" in normalized:
+                    self._append_unique_followup(
+                        questions,
+                        f"Do you want the cutoff score by major{year_suffix}?",
+                    )
+                    self._append_unique_followup(
+                        questions,
+                        (
+                            f"Do you want to compare cutoff scores{year_suffix} with previous years?"
+                            if target_year
+                            else "Do you want to compare cutoff scores across recent years?"
+                        ),
+                    )
+                if "document" in normalized or "application" in normalized:
+                    self._append_unique_followup(
+                        questions,
+                        "Do you want a checklist of required application documents?",
+                    )
+                if "method" in normalized or "admission" in normalized:
+                    self._append_unique_followup(
+                        questions,
+                        "Do you want the conditions for each admission method?",
+                    )
+                if not questions:
+                    questions = [
+                        "Do you want details about admission methods?",
+                        "Do you want the required documents and timeline?",
+                        "Do you want cutoff scores or quotas by major?",
+                    ]
+                return questions[:3]
+
+            questions: List[str] = []
+            has_score = any(
+                keyword in normalized
+                for keyword in (
+                    "diem chuan",
+                    "diem xet",
+                    "diem trung tuyen",
+                    "diem tuyen sinh",
+                )
+            )
+            has_method = any(
+                keyword in normalized
+                for keyword in ("phuong thuc", "xet tuyen", "tuyen thang", "to hop")
+            )
+            has_documents = any(
+                keyword in normalized
+                for keyword in (
+                    "ho so",
+                    "giay to",
+                    "bieu mau",
+                    "mau don",
+                    "dang ky",
+                    "nhap hoc",
+                    "tai xuong",
+                )
+            ) or bool(attachment_list)
+            has_timeline = any(
+                keyword in normalized
+                for keyword in (
+                    "thoi gian",
+                    "moc thoi gian",
+                    "deadline",
+                    "han nop",
+                    "lich",
+                )
+            )
+            has_major = any(
+                keyword in normalized
+                for keyword in (
+                    "nganh",
+                    "chuyen nganh",
+                    "ma nganh",
+                    "dao tao",
+                )
+            )
+            has_eligibility = any(
+                keyword in normalized
+                for keyword in (
+                    "dieu kien",
+                    "doi tuong",
+                    "tieu chuan",
+                    "suc khoe",
+                    "chinh tri",
+                    "do tuoi",
+                )
+            )
+            has_quota = any(
+                keyword in normalized for keyword in ("chi tieu", "so luong", "quota")
+            )
+            has_fee = any(
+                keyword in normalized
+                for keyword in ("hoc phi", "le phi", "chi phi", "hoc bong")
+            )
+
+            year_suffix = f" năm {target_year}" if target_year else ""
+
+            if has_score:
+                self._append_unique_followup(
+                    questions, f"Bạn muốn xem điểm chuẩn theo từng ngành{year_suffix} không?"
+                )
+                self._append_unique_followup(
+                    questions,
+                    (
+                        f"Bạn muốn so sánh điểm chuẩn{year_suffix} với các năm trước không?"
+                        if target_year
+                        else "Bạn muốn xem điểm chuẩn các năm gần đây để so sánh không?"
+                    ),
+                )
+                self._append_unique_followup(
+                    questions,
+                    "Bạn muốn xem tổ hợp xét tuyển và chỉ tiêu của từng ngành không?",
+                )
+
+            if has_method:
+                self._append_unique_followup(
+                    questions,
+                    "Bạn muốn xem điều kiện áp dụng của từng phương thức xét tuyển không?",
+                )
+                self._append_unique_followup(
+                    questions,
+                    "Bạn muốn biết hồ sơ cần chuẩn bị cho phương thức này không?",
+                )
+                self._append_unique_followup(
+                    questions,
+                    "Bạn muốn biết mốc thời gian đăng ký và xác nhận nhập học không?",
+                )
+
+            if has_documents:
+                self._append_unique_followup(
+                    questions,
+                    "Bạn muốn tôi chỉ ra các hồ sơ, biểu mẫu cần tải xuống không?",
+                )
+                self._append_unique_followup(
+                    questions,
+                    "Bạn muốn biết hồ sơ nào bắt buộc và hồ sơ nào bổ sung không?",
+                )
+                self._append_unique_followup(
+                    questions,
+                    "Bạn muốn biết nơi nộp và hạn nộp hồ sơ không?",
+                )
+
+            if has_timeline:
+                self._append_unique_followup(
+                    questions,
+                    "Bạn muốn xem toàn bộ các mốc thời gian tuyển sinh quan trọng không?",
+                )
+                self._append_unique_followup(
+                    questions,
+                    "Bạn muốn biết hạn đăng ký, hạn nộp hồ sơ hoặc hạn xác nhận nhập học không?",
+                )
+
+            if has_major:
+                self._append_unique_followup(
+                    questions,
+                    "Bạn muốn xem tổ hợp xét tuyển, chỉ tiêu hoặc điểm chuẩn của ngành này không?",
+                )
+                self._append_unique_followup(
+                    questions,
+                    "Bạn muốn biết chương trình đào tạo hoặc định hướng nghề nghiệp của ngành này không?",
+                )
+
+            if has_eligibility:
+                self._append_unique_followup(
+                    questions,
+                    "Bạn muốn xem chi tiết các tiêu chuẩn sức khỏe, chính trị hoặc độ tuổi không?",
+                )
+                self._append_unique_followup(
+                    questions,
+                    "Bạn muốn biết các giấy tờ cần có để chứng minh điều kiện dự tuyển không?",
+                )
+
+            if has_quota:
+                self._append_unique_followup(
+                    questions,
+                    "Bạn muốn xem chỉ tiêu theo từng ngành hoặc từng phương thức không?",
+                )
+
+            if has_fee:
+                self._append_unique_followup(
+                    questions,
+                    "Bạn muốn biết học phí, lệ phí hoặc chính sách hỗ trợ tài chính liên quan không?",
+                )
+
+            if not questions:
+                questions = [
+                    "Bạn muốn xem phương thức xét tuyển phù hợp nhất không?",
+                    "Bạn muốn biết hồ sơ và mốc thời gian cần lưu ý không?",
+                    "Bạn muốn xem điểm chuẩn hoặc chỉ tiêu của các ngành liên quan không?",
+                ]
+
+            return questions[:3]
+
+        except Exception as e:
+            log.error(f"Error generating structured follow-up questions: {e}")
+            if language == "vi":
+                return [
+                    "Bạn muốn xem thêm phương thức xét tuyển không?",
+                    "Bạn muốn biết hồ sơ và mốc thời gian liên quan không?",
+                ]
+            return [
+                "Do you want details about admission methods?",
+                "Do you want the required documents and timeline?",
+            ]
 
     def _add_engagement_prompt(
         self, answer: str, user_query: str = "", language: str = "vi"

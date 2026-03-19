@@ -127,6 +127,10 @@ class ChatResponse(BaseModel):
     """Response model for chat endpoint"""
 
     answer: str = Field(..., description="Generated answer")
+    follow_up_questions: List[str] = Field(
+        default_factory=list,
+        description="Suggested next questions derived from the current answer",
+    )
     sources: List[str] = Field(
         default_factory=list, description="Source document names (backward compatible)"
     )

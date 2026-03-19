@@ -67,6 +67,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       response: data.answer || data.response,
       answer: data.answer || data.response,
+      follow_up_questions: data.follow_up_questions || [],
       confidence: data.confidence ?? 0,
       sources: data.sources || [],
       source_references: data.source_references || [],
