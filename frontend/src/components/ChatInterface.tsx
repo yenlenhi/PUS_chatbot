@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User, Loader2 } from 'lucide-react';
 import type { Message } from '@/types/chat';
-import type { Source } from '@/types';
+import type { FileAttachment, Source, SourceReference } from '@/types';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import SourceSection from './SourceSection';
@@ -91,10 +91,10 @@ const ChatInterface = () => {
       const parser = new SSEParser();
       let fullContent = '';
       let sources: Source[] = [];
-      let attachments: any[] = [];
+      let attachments: FileAttachment[] = [];
       let confidence = 0;
       let chunkIds: number[] = [];
-      let sourceReferences: any[] = [];
+      let sourceReferences: SourceReference[] = [];
 
       if (reader) {
         while (true) {
@@ -130,6 +130,15 @@ const ChatInterface = () => {
               chunkIds = sourceReferences
                 .map((ref: { chunk_id: string }) => parseInt(ref.chunk_id, 10))
                 .filter((id: number) => !isNaN(id));
+            } else if (event.type === 'attachments') {
+              attachments = event.attachments || [];
+              setMessages(prev =>
+                prev.map(msg =>
+                  msg.id === botMessageId
+                    ? { ...msg, attachments }
+                    : msg
+                )
+              );
             } else if (event.type === 'complete') {
               // Get attachments if available
               if (event.attachments) {

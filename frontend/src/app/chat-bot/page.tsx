@@ -1139,6 +1139,13 @@ const ChatBotPage = () => {
                     ? { ...msg, content: streamedContent }
                     : msg
                 ));
+              } else if (chunk.type === 'attachments') {
+                streamedAttachments = chunk.attachments || [];
+                setMessages(prev => prev.map(msg =>
+                  msg.id === newMessageId
+                    ? { ...msg, attachments: streamedAttachments }
+                    : msg
+                ));
               } else if (chunk.type === 'complete') {
                 // Handle complete chunk with attachments and charts
                 streamedAttachments = chunk.attachments || [];

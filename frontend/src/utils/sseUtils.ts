@@ -1,17 +1,19 @@
 // Helper functions for Server-Sent Events parsing and handling
 
+import type { ChartData, FileAttachment, SourceReference } from '@/types';
+
 export interface SSEData {
-  type: 'metadata' | 'status' | 'sources' | 'answer_chunk' | 'complete' | 'error';
+  type: 'metadata' | 'status' | 'sources' | 'attachments' | 'answer_chunk' | 'complete' | 'error' | 'done';
   message?: string;
   content?: string;
   conversation_id?: string;
-  sources?: any[];
-  source_references?: any[];
+  sources?: string[];
+  source_references?: SourceReference[];
   confidence?: number;
-  attachments?: any[];
-  chart_data?: any[];
+  attachments?: FileAttachment[];
+  chart_data?: ChartData[];
   status?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export function parseSSELine(line: string): SSEData | null {
@@ -26,7 +28,7 @@ export function parseSSELine(line: string): SSEData | null {
     }
     
     return JSON.parse(jsonStr);
-  } catch (error) {
+  } catch {
     console.warn('Failed to parse SSE line:', line);
     return null;
   }

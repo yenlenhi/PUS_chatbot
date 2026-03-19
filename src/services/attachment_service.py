@@ -113,7 +113,7 @@ class AttachmentService:
             raise
 
     def get_attachments_by_chunk_ids(
-        self, chunk_ids: List[int]
+        self, chunk_ids: List[int], limit: Optional[int] = None
     ) -> List[DocumentAttachment]:
         """
         Get all attachments linked to given chunk IDs
@@ -129,19 +129,20 @@ class AttachmentService:
 
         try:
             with self.db.engine.connect() as conn:
-                result = conn.execute(
-                    text(
-                        """
-                        SELECT DISTINCT a.id, a.filename, a.mime_type, a.file_path, 
-                               a.file_size, a.description, a.keywords, a.category
-                        FROM document_attachments a
-                        JOIN chunk_attachments ca ON a.id = ca.attachment_id
-                        WHERE ca.chunk_id = ANY(:chunk_ids) AND a.is_active = TRUE
-                        ORDER BY a.id
-                    """
-                    ),
-                    {"chunk_ids": chunk_ids},
-                )
+                query = """
+                    SELECT DISTINCT a.id, a.filename, a.mime_type, a.file_path, 
+                           a.file_size, a.description, a.keywords, a.category
+                    FROM document_attachments a
+                    JOIN chunk_attachments ca ON a.id = ca.attachment_id
+                    WHERE ca.chunk_id = ANY(:chunk_ids) AND a.is_active = TRUE
+                    ORDER BY a.id
+                """
+                params: Dict[str, Any] = {"chunk_ids": chunk_ids}
+                if limit is not None and limit > 0:
+                    query += " LIMIT :limit"
+                    params["limit"] = limit
+
+                result = conn.execute(text(query), params)
 
                 attachments = []
                 for row in result:
@@ -210,6 +211,7 @@ class AttachmentService:
         keywords: Optional[List[str]] = None,
         file_name: Optional[str] = None,
         category: Optional[str] = None,
+        limit: Optional[int] = None,
     ) -> List[DocumentAttachment]:
         """
         Search attachments by keywords, file name or category
@@ -253,6 +255,9 @@ class AttachmentService:
                     params["category"] = category
 
                 query += " ORDER BY created_at DESC"
+                if limit is not None and limit > 0:
+                    query += " LIMIT :limit"
+                    params["limit"] = limit
 
                 result = conn.execute(text(query), params)
 

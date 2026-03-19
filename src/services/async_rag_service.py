@@ -1297,6 +1297,12 @@ class AsyncRAGService:
                 attachment_context += "\n(Hãy nhắc người dùng xem và tải xuống các tài liệu này ở phần đính kèm bên dưới)\n"
                 context += attachment_context
 
+            if attachments:
+                yield {
+                    "type": "attachments",
+                    "attachments": attachments,
+                }
+
             # Send sources
             yield {
                 "type": "sources",

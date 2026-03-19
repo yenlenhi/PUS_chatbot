@@ -1730,7 +1730,9 @@ Trả lời:"""
                 ]
                 if chunk_ids:
                     chunk_attachments = (
-                        self.attachment_service.get_attachments_by_chunk_ids(chunk_ids)
+                        self.attachment_service.get_attachments_by_chunk_ids(
+                            chunk_ids, limit=MAX_ATTACHMENTS_IN_CONTEXT
+                        )
                     )
                     for att in chunk_attachments:
                         if att.id not in attachment_ids_found:
@@ -1750,13 +1752,28 @@ Trả lời:"""
                                 )
                             )
 
+                    if len(attachments_with_scores) >= MAX_ATTACHMENTS_IN_CONTEXT:
+                        log.info(
+                            "📎 Skipping keyword attachment search: enough chunk-linked attachments found"
+                        )
+                        attachments_with_scores.sort(
+                            key=lambda item: item[1], reverse=True
+                        )
+                        return [
+                            att
+                            for att, _ in attachments_with_scores[
+                                :MAX_ATTACHMENTS_IN_CONTEXT
+                            ]
+                        ]
+
             # Strategy 2: Search attachments by keywords from query
             from src.services.smart_attachment_matcher import SmartAttachmentMatcher
 
             query_keywords = SmartAttachmentMatcher.extract_keywords_from_query(query)
             if query_keywords:
                 keyword_attachments = self.attachment_service.search_attachments(
-                    keywords=query_keywords
+                    keywords=query_keywords,
+                    limit=max(MAX_ATTACHMENTS_IN_CONTEXT * 2, MAX_ATTACHMENTS_IN_CONTEXT),
                 )
                 for att in keyword_attachments:
                     if att.id not in attachment_ids_found:
