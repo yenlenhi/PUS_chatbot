@@ -898,13 +898,15 @@ const ChatHistoryPage = () => {
                           </div>
                           
                           {/* User images - styled like chat-bot page */}
-                          {msg.images && msg.images.length > 0 && (
+                          {(() => {
+                            const userImages = msg.images ?? [];
+                            return userImages.length > 0 && (
                             <div className="mb-3 flex flex-wrap gap-2 justify-end">
-                              {msg.images.map((imageUrl: string, imgIndex: number) => (
+                              {userImages.map((imageUrl: string, imgIndex: number) => (
                                 <div 
                                   key={imgIndex} 
                                   className="relative group cursor-pointer"
-                                  onClick={() => openImagePreview(imageUrl, msg.images, imgIndex)}
+                                  onClick={() => openImagePreview(imageUrl, userImages, imgIndex)}
                                 >
                                   <div className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-lg sm:rounded-xl overflow-hidden shadow-lg border-2 border-white/30 hover:border-white/60 transition-all duration-200 hover:shadow-xl bg-blue-400/30">
                                     <img
@@ -929,15 +931,15 @@ const ChatHistoryPage = () => {
                                     <ZoomIn className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 drop-shadow-lg" />
                                   </div>
                                   {/* Image counter badge */}
-                                  {msg.images.length > 1 && imgIndex === msg.images.length - 1 && (
+                                  {userImages.length > 1 && imgIndex === userImages.length - 1 && (
                                     <div className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-medium shadow-md">
-                                      {msg.images.length}
+                                      {userImages.length}
                                     </div>
                                   )}
                                 </div>
                               ))}
                             </div>
-                          )}
+                          )})()}
                           
                           {/* User text message */}
                           <p className="text-sm xs:text-base break-words leading-relaxed">{msg.user_message}</p>
