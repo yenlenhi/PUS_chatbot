@@ -219,7 +219,7 @@ class AsyncUserService:
                 result = await session.execute(
                     text_no_prepare(
                         """
-                        SELECT id, username, email, full_name, disabled, created_at, updated_at
+                        SELECT id, username, email, hashed_password, full_name, disabled, created_at, updated_at
                         FROM users 
                         WHERE username = :username
                     """
@@ -244,12 +244,13 @@ class AsyncUserService:
                     id=user_row[0],
                     username=user_row[1],
                     email=user_row[2],
-                    full_name=user_row[3],
-                    disabled=user_row[4],
+                    hashed_password=user_row[3],
+                    full_name=user_row[4],
+                    disabled=user_row[5],
                     roles=roles,
                     scopes=roles,
-                    created_at=user_row[5],
-                    updated_at=user_row[6],
+                    created_at=user_row[6],
+                    updated_at=user_row[7],
                 )
 
             except Exception as e:
@@ -265,7 +266,7 @@ class AsyncUserService:
                 result = await session.execute(
                     text_no_prepare(
                         """
-                        SELECT id, username, email, full_name, disabled, created_at, updated_at
+                        SELECT id, username, email, hashed_password, full_name, disabled, created_at, updated_at
                         FROM users 
                         WHERE id = :user_id
                     """
@@ -290,12 +291,13 @@ class AsyncUserService:
                     id=user_row[0],
                     username=user_row[1],
                     email=user_row[2],
-                    full_name=user_row[3],
-                    disabled=user_row[4],
+                    hashed_password=user_row[3],
+                    full_name=user_row[4],
+                    disabled=user_row[5],
                     roles=roles,
                     scopes=roles,
-                    created_at=user_row[5],
-                    updated_at=user_row[6],
+                    created_at=user_row[6],
+                    updated_at=user_row[7],
                 )
 
             except Exception as e:
