@@ -13,6 +13,8 @@ import asyncio
 import time
 from concurrent.futures import ThreadPoolExecutor
 from typing import List, Dict, Any, Optional, AsyncGenerator, Tuple
+import re
+import unicodedata
 
 from src.utils.logger import log
 from src.services.async_gemini_service import (
@@ -190,9 +192,12 @@ class AsyncRAGService:
         original_query: Optional[str] = None,
         normalized_query: Optional[str] = None,
         performance: Optional[Dict[str, Any]] = None,
+        answer_override: Optional[str] = None,
     ) -> Dict[str, Any]:
         return {
-            "answer": self.scope_service.build_policy_answer(policy, language),
+            "answer": answer_override
+            if answer_override is not None
+            else self.scope_service.build_policy_answer(policy, language),
             "sources": sources or [],
             "source_references": source_references or [],
             "attachments": [],
@@ -229,6 +234,129 @@ class AsyncRAGService:
             if source and source not in sources:
                 sources.append(source)
         return sources
+
+    def _normalize_for_match(self, text: Optional[str]) -> str:
+        if not text:
+            return ""
+
+        stripped = unicodedata.normalize("NFD", text)
+        stripped = stripped.replace("đ", "d").replace("Đ", "D")
+        stripped = "".join(
+            ch for ch in stripped if unicodedata.category(ch) != "Mn"
+        ).lower()
+        stripped = re.sub(r"[^a-z0-9\s]", " ", stripped)
+        return re.sub(r"\s+", " ", stripped).strip()
+
+    def _get_score_query_metadata(self, query: Optional[str]) -> Dict[str, bool]:
+        normalized = self._normalize_for_match(query)
+        explicit_score_terms = (
+            "diem chuan",
+            "diem xet",
+            "diem trung tuyen",
+        )
+        generic_score_terms = (
+            "diem tuyen sinh",
+            "diem vao",
+            "diem vao truong",
+            "diem vao nganh",
+            "diem dau vao",
+            "muc diem",
+        )
+
+        has_explicit_score_term = any(
+            term in normalized for term in explicit_score_terms
+        )
+        has_generic_score_term = any(term in normalized for term in generic_score_terms)
+        has_year = bool(re.search(r"\b20\d{2}\b", normalized))
+        has_major_hint = any(
+            term in normalized
+            for term in (
+                " nganh ",
+                "chuyen nganh",
+                "ma nganh",
+                "to hop",
+                "khoi ",
+            )
+        ) or normalized.startswith("nganh ")
+        token_count = len(normalized.split())
+
+        has_score_signal = "diem" in normalized and (
+            has_explicit_score_term
+            or has_generic_score_term
+            or "tuyen sinh" in normalized
+            or "xet tuyen" in normalized
+            or "truong" in normalized
+            or "nganh" in normalized
+        )
+        is_under_specified = (
+            has_score_signal and token_count <= 5 and not has_year and not has_major_hint
+        )
+        needs_synonym_expansion = has_score_signal and (
+            has_generic_score_term or (token_count <= 5 and not has_explicit_score_term)
+        )
+
+        return {
+            "has_score_signal": has_score_signal,
+            "has_explicit_score_term": has_explicit_score_term,
+            "has_generic_score_term": has_generic_score_term,
+            "has_year": has_year,
+            "has_major_hint": has_major_hint,
+            "is_under_specified": is_under_specified,
+            "needs_synonym_expansion": needs_synonym_expansion,
+        }
+
+    def _enrich_retrieval_query(
+        self, original_query: str, retrieval_query: str
+    ) -> Tuple[str, bool]:
+        metadata = self._get_score_query_metadata(retrieval_query or original_query)
+        if not metadata["needs_synonym_expansion"]:
+            return retrieval_query, False
+
+        normalized = self._normalize_for_match(retrieval_query or original_query)
+        enrichment_terms: List[str] = []
+        if "diem chuan" not in normalized:
+            enrichment_terms.append("điểm chuẩn tuyển sinh")
+        if "diem xet" not in normalized:
+            enrichment_terms.append("điểm xét tuyển")
+        if "diem trung tuyen" not in normalized:
+            enrichment_terms.append("điểm trúng tuyển")
+        if not metadata["has_year"]:
+            enrichment_terms.append("các năm")
+        if "an ninh nhan dan" not in normalized:
+            enrichment_terms.append("Trường Đại học An ninh Nhân dân")
+
+        enriched_query = " ".join(
+            part for part in [retrieval_query.strip(), *enrichment_terms] if part
+        ).strip()
+        if enriched_query != retrieval_query:
+            log.info(
+                f"[ASYNC] Enriched retrieval query: '{retrieval_query[:60]}' -> '{enriched_query[:120]}'"
+            )
+            return enriched_query, True
+
+        return retrieval_query, False
+
+    def _should_return_score_clarification(
+        self, original_query: str, retrieval_query: str
+    ) -> bool:
+        metadata = self._get_score_query_metadata(retrieval_query or original_query)
+        return metadata["is_under_specified"]
+
+    def _build_score_clarification_answer(self, language: str = "vi") -> str:
+        if language == "en":
+            return (
+                "Do you want the admission cutoff score for a specific year or major? "
+                "For example: \"admission cutoff score 2025\" or "
+                "\"cybersecurity cutoff score 2025\". If you want, I can also provide "
+                "the latest cutoff score available in the official documents."
+            )
+
+        return (
+            "Bạn muốn tra điểm chuẩn tuyển sinh theo năm nào hoặc ngành nào? "
+            "Ví dụ: \"điểm chuẩn tuyển sinh 2025\" hoặc "
+            "\"điểm chuẩn ngành An ninh mạng năm 2025\". Nếu cần, tôi cũng có thể "
+            "cung cấp điểm chuẩn gần nhất đang có trong tài liệu chính thức."
+        )
 
     def _build_generation_prompt(
         self, query: str, language: str, system_prompt: str, user_prompt: str
@@ -542,6 +670,7 @@ class AsyncRAGService:
             rewrite_applied = False
             memory_loaded = False
             normalized_query = query
+            retrieval_query = query
             memory_context = ""
             current_history = self.rag_service.conversations.get(conversation_id, [])
             conv_turn_count = len(current_history)
@@ -606,6 +735,8 @@ class AsyncRAGService:
             else:
                 log.info("[ASYNC] Skip rewrite (query is self-contained)")
 
+            retrieval_query, _ = self._enrich_retrieval_query(query, normalized_query)
+
             # Step 3: Memory — only for long conversations with explicit back-references
             if intent["needs_memory"]:
                 memory_started_at = time.perf_counter()
@@ -641,7 +772,7 @@ class AsyncRAGService:
             # Retrieve relevant chunks (with short-TTL cache)
             retrieval_started_at = time.perf_counter()
             relevant_chunks, retrieval_cache_hit = await self._cached_retrieve_chunks(
-                normalized_query
+                retrieval_query
             )
             self._record_stage(performance, "retrieval", retrieval_started_at)
             if performance is not None:
@@ -661,6 +792,47 @@ class AsyncRAGService:
             )
 
             if STRICT_MODE and confidence < CONFIDENCE_THRESHOLD:
+                if self._should_return_score_clarification(query, normalized_query):
+                    answer = self._build_score_clarification_answer(language)
+                    finalized_performance = self._finalize_performance(
+                        performance,
+                        request_started_at,
+                        response_path="policy",
+                        policy_applied="ambiguous_score_query",
+                        normalization_applied=normalization_applied,
+                        rewrite_applied=rewrite_applied,
+                        memory_loaded=memory_loaded,
+                    )
+                    response = self._build_policy_payload(
+                        "ambiguous",
+                        conversation_id,
+                        language,
+                        source_references=source_references,
+                        sources=sources,
+                        confidence=confidence,
+                        normalization_applied=normalization_applied,
+                        original_query=query,
+                        normalized_query=normalized_query,
+                        performance=finalized_performance,
+                        answer_override=answer,
+                    )
+                    self._update_conversation_history(
+                        conversation_id, query, response["answer"]
+                    )
+                    asyncio.create_task(
+                        self._save_conversation_async(
+                            conversation_id,
+                            query,
+                            response["answer"],
+                            sources,
+                            confidence,
+                            normalization_applied,
+                            normalized_query,
+                        )
+                    )
+                    self._log_performance(conversation_id, finalized_performance)
+                    return response
+
                 log.info(
                     f"[POLICY] Insufficient evidence, confidence={confidence:.3f} threshold={CONFIDENCE_THRESHOLD:.3f}"
                 )
@@ -927,6 +1099,7 @@ class AsyncRAGService:
             normalization_applied = False
             rewrite_applied = False
             memory_loaded = False
+            retrieval_query = query
             memory_context = ""
             current_history = self.rag_service.conversations.get(conversation_id, [])
             conv_turn_count = len(current_history)
@@ -991,6 +1164,8 @@ class AsyncRAGService:
             else:
                 log.info("[ASYNC STREAM] Skip rewrite (query is self-contained)")
 
+            retrieval_query, _ = self._enrich_retrieval_query(query, normalized_query)
+
             # Step 3: Memory — only for long conversations with explicit back-references
             if intent["needs_memory"]:
                 memory_started_at = time.perf_counter()
@@ -1028,7 +1203,7 @@ class AsyncRAGService:
 
             retrieval_started_at = time.perf_counter()
             relevant_chunks, retrieval_cache_hit = await self._cached_retrieve_chunks(
-                normalized_query
+                retrieval_query
             )
             self._record_stage(performance, "retrieval", retrieval_started_at)
             if performance is not None:
@@ -1048,14 +1223,19 @@ class AsyncRAGService:
             )
 
             if STRICT_MODE and confidence < CONFIDENCE_THRESHOLD:
-                answer = self.scope_service.build_policy_answer(
-                    "insufficient_evidence", language
-                )
+                if self._should_return_score_clarification(query, normalized_query):
+                    answer = self._build_score_clarification_answer(language)
+                    policy_name = "ambiguous_score_query"
+                else:
+                    answer = self.scope_service.build_policy_answer(
+                        "insufficient_evidence", language
+                    )
+                    policy_name = "insufficient_evidence"
                 finalized_performance = self._finalize_performance(
                     performance,
                     request_started_at,
                     response_path="policy",
-                    policy_applied="insufficient_evidence",
+                    policy_applied=policy_name,
                     normalization_applied=normalization_applied,
                     rewrite_applied=rewrite_applied,
                     memory_loaded=memory_loaded,

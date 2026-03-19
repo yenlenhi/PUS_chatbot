@@ -207,6 +207,7 @@ class AdmissionScopeService:
         if not text:
             return ""
         stripped = unicodedata.normalize("NFD", text)
+        stripped = stripped.replace("đ", "d").replace("Đ", "D")
         stripped = "".join(ch for ch in stripped if unicodedata.category(ch) != "Mn")
         stripped = stripped.lower()
         stripped = re.sub(r"[^a-z0-9\s]", " ", stripped)

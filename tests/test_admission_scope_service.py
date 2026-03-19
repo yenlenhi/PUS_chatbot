@@ -26,6 +26,15 @@ def test_classify_ambiguous_image_only_query():
     assert decision.scope == "ambiguous"
 
 
+def test_classify_preserves_vietnamese_d_stroke_keywords():
+    service = AdmissionScopeService()
+
+    decision = service.classify("Đăng ký xét tuyển cần những gì?")
+
+    assert decision.scope == "admission"
+    assert "dang ky" in decision.matched_keywords or "xet tuyen" in decision.matched_keywords
+
+
 def test_policy_answer_messages_are_defined():
     service = AdmissionScopeService()
 
