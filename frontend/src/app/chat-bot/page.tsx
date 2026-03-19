@@ -481,13 +481,21 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
     return { mainContent: content, followUpQuestions: [] };
   };
 
-  const { mainContent, followUpQuestions } = parseFollowUpQuestions(contentToShow);
+  const parsedFollowUps = parseFollowUpQuestions(contentToShow);
+  const followUpQuestions =
+    message.followUpQuestions && message.followUpQuestions.length > 0
+      ? message.followUpQuestions
+      : parsedFollowUps.followUpQuestions;
+  const mainContent =
+    message.followUpQuestions && message.followUpQuestions.length > 0
+      ? contentToShow
+      : parsedFollowUps.mainContent;
 
   // User message with separate avatar
   if (message.sender === 'user') {
     return (
       <>
-        <div className="flex justify-end items-start gap-2 sm:gap-3 animate-message-right">
+        <div className="flex justify-end items-start gap-2 sm:gap-3 animate-message-right group/msg">
           {/* Message content */}
           <div className="max-w-[85%] sm:max-w-[75%] md:max-w-[70%]">
             {/* Uploaded images - shown above text */}
@@ -527,7 +535,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
 
             {/* Footer: time and copy button */}
             <div className="flex items-center justify-end gap-2 mt-1.5 px-1">
-              <span className="text-xs text-gray-400">
+              <span className="text-xs text-gray-400 opacity-0 group-hover/msg:opacity-100 transition-opacity duration-200">
                 {(message.timestamp instanceof Date ? message.timestamp : new Date(message.timestamp)).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
               </span>
               <button
@@ -563,7 +571,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
 
   // Bot message
   return (
-    <div className="flex justify-start items-start gap-2 sm:gap-3 animate-message-left">
+    <div className="flex justify-start items-start gap-2 sm:gap-3 animate-message-left group/msg">
       {/* Bot Avatar with Gold Ring Pulse */}
       <div className="flex-shrink-0 relative">
         <div className={`rounded-full ${isLatest && !contentToShow ? 'animate-gold-ring' : ''}`}>
@@ -731,7 +739,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
 
         {/* Footer */}
         <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-gray-100">
-          <span className="text-xs text-gray-400">
+          <span className="text-xs text-gray-400 opacity-0 group-hover/msg:opacity-100 transition-opacity duration-200">
             {(message.timestamp instanceof Date ? message.timestamp : new Date(message.timestamp)).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
           </span>
 
@@ -1051,6 +1059,7 @@ const ChatBotPage = () => {
               ? {
                 ...msg,
                 content: data.response || data.answer || 'Xin lỗi, tôi không thể trả lời câu hỏi này lúc này.',
+                followUpQuestions: data.follow_up_questions || [],
                 sourceReferences: sourceReferences,
                 attachments: data.attachments || [],
                 confidence: data.confidence,
@@ -1100,6 +1109,7 @@ const ChatBotPage = () => {
       let streamedAttachments: FileAttachment[] = [];
       let streamedChartData: ChartData[] = [];
       let streamedImages: ImageData[] = [];
+      let streamedFollowUpQuestions: string[] = [];
       let streamedPerformance: PerformanceMetrics | undefined;
 
       while (true) {
@@ -1151,6 +1161,7 @@ const ChatBotPage = () => {
                 streamedAttachments = chunk.attachments || [];
                 streamedChartData = chunk.chart_data || [];
                 streamedImages = chunk.images || [];
+                streamedFollowUpQuestions = chunk.follow_up_questions || [];
                 streamedPerformance = chunk.performance;
                 // Clear processing status when complete
                 setProcessingStatus('');
@@ -1192,6 +1203,7 @@ const ChatBotPage = () => {
           ? {
             ...msg,
             content: streamedContent || 'Xin lỗi, tôi không thể trả lời câu hỏi này lúc này.',
+            followUpQuestions: streamedFollowUpQuestions,
             sourceReferences: streamedSources,
             confidence: streamedConfidence,
             chunkIds: chunkIds,
@@ -1339,7 +1351,7 @@ const ChatBotPage = () => {
       </header>
 
       {/* Optimized Main Content - Maximum Chat Space */}
-      <div className={`transition-all duration-500 ease-out ${sidebarOpen ? 'mr-0 md:mr-96' : 'mr-0'}`}>
+      <div className={`transition-all duration-500 ease-out ${sidebarOpen ? 'sm:mr-80 md:mr-96' : 'mr-0'}`}>
         <div className="max-w-4xl mx-auto px-2 sm:px-4 lg:px-8 py-2 sm:py-3">
           <div className="backdrop-blur-xl bg-white/90 rounded-xl sm:rounded-2xl shadow-2xl border border-white/20 h-[calc(100vh-100px)] sm:h-[calc(100vh-110px)] md:h-[calc(100vh-120px)] flex flex-col overflow-hidden">
             {/* Compact Chat Header */}

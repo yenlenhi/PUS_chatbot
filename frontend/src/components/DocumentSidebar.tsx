@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   FileText,
   ChevronRight,
@@ -13,6 +13,7 @@ import {
   ChevronDown,
   ChevronUp,
   FileSearch,
+  Library,
 } from 'lucide-react';
 import type { SourceReference } from '@/types';
 import { getDocumentDisplayName } from '@/lib/documentNames';
@@ -25,6 +26,8 @@ interface DocumentSidebarProps {
   onClear: () => void;
 }
 
+type MergedRef = SourceReference & { all_pages: (number | null)[] };
+
 const DocumentSidebar: React.FC<DocumentSidebarProps> = ({
   sourceReferences,
   isOpen,
@@ -35,6 +38,24 @@ const DocumentSidebar: React.FC<DocumentSidebarProps> = ({
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
+  // Deduplicate by filename — keep highest-score chunk, collect all page numbers
+  const deduped = useMemo((): MergedRef[] => {
+    const map = new Map<string, MergedRef>();
+    sourceReferences.forEach(ref => {
+      const existing = map.get(ref.filename);
+      if (!existing) {
+        map.set(ref.filename, { ...ref, all_pages: [ref.page_number] });
+      } else if (ref.relevance_score > existing.relevance_score) {
+        map.set(ref.filename, { ...ref, all_pages: [...existing.all_pages, ref.page_number] });
+      } else {
+        if (!existing.all_pages.includes(ref.page_number)) {
+          existing.all_pages.push(ref.page_number);
+        }
+      }
+    });
+    return Array.from(map.values());
+  }, [sourceReferences]);
+
   const formatScore = (score: number) => Math.round(score * 100);
 
   const getScoreStyle = (score: number): { bar: string; text: string; bg: string } => {
@@ -43,8 +64,10 @@ const DocumentSidebar: React.FC<DocumentSidebarProps> = ({
     return { bar: 'bg-slate-400', text: 'text-slate-600', bg: 'bg-slate-50' };
   };
 
-  const handleCopyReference = async (ref: SourceReference, index: number) => {
-    const citation = `${getDocumentDisplayName(ref.filename)}${ref.page_number ? `, trang ${ref.page_number}` : ''}`;
+  const handleCopyReference = async (ref: MergedRef, index: number) => {
+    const pages = ref.all_pages.filter(Boolean);
+    const pageStr = pages.length > 0 ? `, trang ${pages.join(', ')}` : '';
+    const citation = `${getDocumentDisplayName(ref.filename)}${pageStr}`;
     try {
       await navigator.clipboard.writeText(citation);
       setCopiedIndex(index);
@@ -58,24 +81,31 @@ const DocumentSidebar: React.FC<DocumentSidebarProps> = ({
     setExpandedIndex(expandedIndex === index ? null : index);
   };
 
+  const uniqueCount = deduped.length;
+
   return (
     <>
-      {/* Toggle button */}
+      {/* Toggle button — wider pill, shows label + count badge */}
       <button
         onClick={onToggle}
-        className={`fixed top-1/2 -translate-y-1/2 z-40 bg-red-600 text-white p-1.5 sm:p-2 rounded-l-lg shadow-lg hover:bg-red-700 transition-all duration-300 ${
-          isOpen ? 'right-[calc(100vw-2rem)] sm:right-80 md:right-96' : 'right-0'
+        className={`fixed top-1/2 -translate-y-1/2 z-40 flex items-center gap-1.5 bg-red-600 text-white rounded-l-xl shadow-xl hover:bg-red-700 active:scale-95 transition-all duration-300 ${
+          isOpen
+            ? 'right-[calc(100vw-2rem)] sm:right-80 md:right-96 px-2 py-3'
+            : 'right-0 px-2.5 py-3'
         }`}
         title={isOpen ? 'Ẩn tài liệu' : 'Hiện tài liệu'}
       >
         {isOpen ? (
-          <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
+          <ChevronRight className="w-4 h-4" />
         ) : (
-          <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+          <>
+            <Library className="w-4 h-4" />
+            <ChevronLeft className="w-3 h-3 opacity-70" />
+          </>
         )}
-        {!isOpen && sourceReferences.length > 0 && (
-          <span className="absolute -top-2 -left-2 bg-amber-400 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center shadow-sm">
-            {sourceReferences.length}
+        {!isOpen && uniqueCount > 0 && (
+          <span className="absolute -top-2 -left-2 bg-amber-400 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center shadow-sm animate-bounce">
+            {uniqueCount}
           </span>
         )}
       </button>
@@ -95,8 +125,11 @@ const DocumentSidebar: React.FC<DocumentSidebarProps> = ({
               </div>
               <div>
                 <h3 className="text-sm font-semibold text-gray-800 leading-none">Tài liệu tham khảo</h3>
-                {sourceReferences.length > 0 && (
-                  <p className="text-xs text-gray-400 mt-0.5">{sourceReferences.length} tài liệu liên quan</p>
+                {uniqueCount > 0 && (
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {uniqueCount} tài liệu
+                    {sourceReferences.length > uniqueCount && ` (${sourceReferences.length} đoạn)`}
+                  </p>
                 )}
               </div>
             </div>
@@ -111,7 +144,7 @@ const DocumentSidebar: React.FC<DocumentSidebarProps> = ({
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2">
-          {sourceReferences.length === 0 ? (
+          {deduped.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-gray-300 py-16">
               <FileSearch className="w-10 h-10 mb-3" />
               <p className="text-sm text-center text-gray-400">
@@ -122,14 +155,15 @@ const DocumentSidebar: React.FC<DocumentSidebarProps> = ({
               </p>
             </div>
           ) : (
-            sourceReferences.map((ref, index) => {
+            deduped.map((ref, index) => {
               const scoreStyle = getScoreStyle(ref.relevance_score);
               const isExpanded = expandedIndex === index;
               const isCopied = copiedIndex === index;
+              const pages = ref.all_pages.filter((p): p is number => p !== null);
 
               return (
                 <div
-                  key={ref.chunk_id || index}
+                  key={ref.filename}
                   className="group bg-white border border-gray-200 rounded-xl overflow-hidden hover:border-gray-300 hover:shadow-sm transition-all duration-200"
                 >
                   {/* Relevance bar */}
@@ -154,18 +188,21 @@ const DocumentSidebar: React.FC<DocumentSidebarProps> = ({
                           <span className={`inline-flex items-center text-xs font-medium px-1.5 py-0.5 rounded-md ${scoreStyle.bg} ${scoreStyle.text}`}>
                             {formatScore(ref.relevance_score)}%
                           </span>
-                          {ref.page_number && (
-                            <span className="inline-flex items-center text-xs text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded-md border border-gray-100">
-                              Trang {ref.page_number}
+                          {pages.length > 0 && pages.map(pg => (
+                            <span
+                              key={pg}
+                              className="inline-flex items-center text-xs text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded-md border border-gray-100"
+                            >
+                              Tr.{pg}
                             </span>
-                          )}
+                          ))}
                         </div>
                       </div>
 
                       {/* Quick actions */}
                       <div className="flex-shrink-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
-                          onClick={() => onOpenDocument(ref.filename, ref.page_number || undefined)}
+                          onClick={() => onOpenDocument(ref.filename, pages[0])}
                           className="p-1.5 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
                           title="Xem PDF"
                         >
@@ -227,7 +264,7 @@ const DocumentSidebar: React.FC<DocumentSidebarProps> = ({
                       {/* Action row inside expanded */}
                       <div className="flex items-center gap-2 mt-3">
                         <button
-                          onClick={() => onOpenDocument(ref.filename, ref.page_number || undefined)}
+                          onClick={() => onOpenDocument(ref.filename, pages[0])}
                           className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-white bg-red-600 hover:bg-red-700 transition-colors"
                         >
                           <Eye className="w-3 h-3" />
@@ -259,7 +296,7 @@ const DocumentSidebar: React.FC<DocumentSidebarProps> = ({
         </div>
 
         {/* Footer */}
-        {sourceReferences.length > 0 && (
+        {deduped.length > 0 && (
           <div className="flex-shrink-0 px-3 py-3 border-t border-gray-100 bg-white">
             <button
               onClick={onClear}
