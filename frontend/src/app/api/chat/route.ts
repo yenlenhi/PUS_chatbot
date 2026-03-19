@@ -75,6 +75,7 @@ export async function POST(request: NextRequest) {
       processing_time: data.processing_time,
       chart_data: data.chart_data || [],
       images: data.images || [],
+      performance: data.performance,
     });
   } catch (error) {
     console.error('Chat API error:', error);

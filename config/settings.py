@@ -73,6 +73,9 @@ CONFIDENCE_THRESHOLD = float(os.getenv("CONFIDENCE_THRESHOLD", "0.6"))
 # Require source citation in answers
 REQUIRE_SOURCE_CITATION = os.getenv("REQUIRE_SOURCE_CITATION", "true").lower() == "true"
 
+# Performance instrumentation for stage-by-stage latency analysis
+ENABLE_STAGE_TIMINGS = os.getenv("ENABLE_STAGE_TIMINGS", "true").lower() == "true"
+
 # Ollama Configuration
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 OLLAMA_MODEL = os.getenv(
@@ -182,6 +185,23 @@ DENSE_WEIGHT = float(os.getenv("DENSE_WEIGHT", "0.7"))
 DENSE_SIMILARITY_THRESHOLD = float(os.getenv("DENSE_SIMILARITY_THRESHOLD", "0.5"))
 # Minimum BM25 score for sparse retrieval (increased for accuracy)
 SPARSE_SIMILARITY_THRESHOLD = float(os.getenv("SPARSE_SIMILARITY_THRESHOLD", "0.2"))
+RETRIEVAL_INITIAL_K_MULTIPLIER = int(
+    os.getenv("RETRIEVAL_INITIAL_K_MULTIPLIER", "2")
+)
+RETRIEVAL_INITIAL_K_CAP = int(os.getenv("RETRIEVAL_INITIAL_K_CAP", "30"))
+RERANK_MAX_CANDIDATES = int(os.getenv("RERANK_MAX_CANDIDATES", "6"))
+ENABLE_CONTEXT_EXPANSION = (
+    os.getenv("ENABLE_CONTEXT_EXPANSION", "true").lower() == "true"
+)
+CONTEXT_EXPANSION_MAX_NEIGHBORS = int(
+    os.getenv("CONTEXT_EXPANSION_MAX_NEIGHBORS", "2")
+)
+CONTEXT_EXPANSION_SKIP_TOP_SCORE = float(
+    os.getenv("CONTEXT_EXPANSION_SKIP_TOP_SCORE", "0.85")
+)
+CONTEXT_EXPANSION_SKIP_SECONDARY_SCORE = float(
+    os.getenv("CONTEXT_EXPANSION_SKIP_SECONDARY_SCORE", "0.75")
+)
 
 # ============================================
 # Attachment Retrieval Configuration (NEW)

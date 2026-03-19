@@ -10,6 +10,20 @@ export interface ChatResponse {
   sources: string[];
   confidence: number;
   conversation_id: string;
+  performance?: {
+    total_ms: number;
+    stages: Record<string, number>;
+    time_to_first_token_ms?: number | null;
+    retrieval_cache_hit: boolean;
+    attachment_lookup_skipped: boolean;
+    needs_grounding: boolean;
+    normalization_applied: boolean;
+    rewrite_applied: boolean;
+    memory_loaded: boolean;
+    retrieved_chunk_count: number;
+    response_path: string;
+    policy_applied?: string | null;
+  };
 }
 
 export interface SearchRequest {

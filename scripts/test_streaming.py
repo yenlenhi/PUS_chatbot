@@ -29,6 +29,7 @@ def test_streaming_chat(message: str, base_url: str = "http://localhost:8000"):
     sources = []
     attachments = []
     confidence = 0.0
+    performance = None
 
     try:
         response = requests.post(url, json=payload, stream=True, timeout=300)
@@ -90,6 +91,7 @@ def test_streaming_chat(message: str, base_url: str = "http://localhost:8000"):
                         elif event_type == "complete":
                             attachments = data.get("attachments", [])
                             chart_data = data.get("chart_data", [])
+                            performance = data.get("performance")
 
                             print("\n" + "-" * 80)
                             print()
@@ -133,6 +135,18 @@ def test_streaming_chat(message: str, base_url: str = "http://localhost:8000"):
         print(f"   📚 Sources: {len(sources)}")
         print(f"   📎 Attachments: {len(attachments)}")
         print(f"   📊 Confidence: {confidence:.2%}")
+        if performance:
+            print(f"   🧭 Response Path: {performance.get('response_path')}")
+            print(
+                f"   ⚡ Retrieval Cache Hit: {performance.get('retrieval_cache_hit', False)}"
+            )
+            if performance.get("time_to_first_token_ms") is not None:
+                print(
+                    f"   🚀 Time to First Token (server): {performance['time_to_first_token_ms']:.2f} ms"
+                )
+            print("   🧩 Stage Timings:")
+            for stage, duration in performance.get("stages", {}).items():
+                print(f"      - {stage}: {duration:.2f} ms")
 
         # Calculate streaming speed
         if ttfc > 0 and total_time > ttfc:

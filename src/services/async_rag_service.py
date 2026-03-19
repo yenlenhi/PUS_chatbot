@@ -10,6 +10,7 @@ Key optimizations:
 
 import uuid
 import asyncio
+import time
 from concurrent.futures import ThreadPoolExecutor
 from typing import List, Dict, Any, Optional, AsyncGenerator, Tuple
 
@@ -27,6 +28,7 @@ from config.settings import (
     ADMISSION_ONLY_MODE,
     STRICT_MODE,
     CONFIDENCE_THRESHOLD,
+    ENABLE_STAGE_TIMINGS,
 )
 
 # Thread pool for CPU-bound operations (embeddings, reranking)
@@ -67,7 +69,7 @@ class AsyncRAGService:
 
     async def _cached_retrieve_chunks(
         self, normalized_query: str
-    ) -> List[Dict[str, Any]]:
+    ) -> Tuple[List[Dict[str, Any]], bool]:
         """
         Retrieve chunks with a short-TTL in-memory cache.
 
@@ -91,7 +93,7 @@ class AsyncRAGService:
                 log.info(
                     f"⚡ [RETRIEVAL CACHE] Hit — skipping search+rerank for '{normalized_query[:50]}'"
                 )
-                return chunks
+                return chunks, True
             else:
                 del self._retrieval_cache[cache_key]  # expired
 
@@ -108,7 +110,72 @@ class AsyncRAGService:
             del self._retrieval_cache[oldest_key]
 
         self._retrieval_cache[cache_key] = (_time.monotonic(), chunks)
-        return chunks
+        return chunks, False
+
+    def _new_performance_metrics(self) -> Dict[str, Any]:
+        return {
+            "stages": {},
+            "time_to_first_token_ms": None,
+            "retrieval_cache_hit": False,
+            "attachment_lookup_skipped": False,
+            "needs_grounding": False,
+            "normalization_applied": False,
+            "rewrite_applied": False,
+            "memory_loaded": False,
+            "retrieved_chunk_count": 0,
+            "response_path": "rag",
+            "policy_applied": None,
+        }
+
+    def _record_stage(
+        self, performance: Optional[Dict[str, Any]], stage: str, started_at: float
+    ) -> None:
+        if not ENABLE_STAGE_TIMINGS or performance is None:
+            return
+        performance["stages"][stage] = round(
+            (time.perf_counter() - started_at) * 1000, 2
+        )
+
+    def _finalize_performance(
+        self,
+        performance: Optional[Dict[str, Any]],
+        request_started_at: float,
+        **updates,
+    ) -> Optional[Dict[str, Any]]:
+        if not ENABLE_STAGE_TIMINGS or performance is None:
+            return None
+
+        performance.update(updates)
+        performance["total_ms"] = round(
+            (time.perf_counter() - request_started_at) * 1000, 2
+        )
+        return performance
+
+    def _log_performance(
+        self, conversation_id: str, performance: Optional[Dict[str, Any]]
+    ) -> None:
+        if not ENABLE_STAGE_TIMINGS or not performance:
+            return
+
+        stage_summary = ", ".join(
+            f"{stage}={duration:.2f}ms"
+            for stage, duration in performance.get("stages", {}).items()
+        )
+        first_token = performance.get("time_to_first_token_ms")
+        first_token_summary = (
+            f", first_token={first_token:.2f}ms"
+            if isinstance(first_token, (float, int))
+            else ""
+        )
+        log.info(
+            f"[PERF] conversation_id={conversation_id} path={performance.get('response_path')} "
+            f"total={performance.get('total_ms', 0):.2f}ms{first_token_summary} "
+            f"cache_hit={performance.get('retrieval_cache_hit', False)} "
+            f"chunks={performance.get('retrieved_chunk_count', 0)} "
+            f"grounding={performance.get('needs_grounding', False)} "
+            f"attachment_skipped={performance.get('attachment_lookup_skipped', False)} "
+            f"stages=[{stage_summary}]"
+        )
 
     def _build_policy_payload(
         self,
@@ -122,6 +189,7 @@ class AsyncRAGService:
         normalization_applied: bool = False,
         original_query: Optional[str] = None,
         normalized_query: Optional[str] = None,
+        performance: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         return {
             "answer": self.scope_service.build_policy_answer(policy, language),
@@ -135,6 +203,7 @@ class AsyncRAGService:
             "normalized_query": normalized_query if normalization_applied else None,
             "chart_data": [],
             "images": [],
+            "performance": performance,
         }
 
     def _update_conversation_history(
@@ -244,9 +313,9 @@ class AsyncRAGService:
         relevant_chunks: List[Dict[str, Any]],
         *,
         stream: bool = False,
-    ) -> List[Dict[str, Any]]:
+    ) -> Tuple[List[Dict[str, Any]], bool]:
         if not relevant_chunks:
-            return []
+            return [], True
 
         if not self._should_fetch_attachments(query, relevant_chunks):
             log.info(
@@ -254,13 +323,14 @@ class AsyncRAGService:
                 if stream
                 else "[ASYNC] Skip attachment retrieval (no attachment intent detected)"
             )
-            return []
+            return [], True
 
-        return await self._run_in_executor(
+        attachments = await self._run_in_executor(
             self.rag_service._retrieve_attachments_for_context,
             query,
             relevant_chunks,
         )
+        return attachments, False
 
     def _classify_query(self, query: str, conv_turn_count: int) -> dict:
         """
@@ -368,6 +438,11 @@ class AsyncRAGService:
         - Retrieval runs in thread pool
         """
         try:
+            request_started_at = time.perf_counter()
+            performance = (
+                self._new_performance_metrics() if ENABLE_STAGE_TIMINGS else None
+            )
+
             # Create new conversation if needed
             if not conversation_id:
                 conversation_id = str(uuid.uuid4())
@@ -393,17 +468,26 @@ class AsyncRAGService:
 
             # ── Smart Query Router ──────────────────────────────────────────
             if ADMISSION_ONLY_MODE:
+                scope_started_at = time.perf_counter()
                 scope_decision = self.scope_service.classify(
                     query, has_images=bool(images)
                 )
+                self._record_stage(performance, "scope_guard", scope_started_at)
                 if scope_decision.scope != "admission":
                     log.info(
                         f"[POLICY] Short-circuit query as {scope_decision.scope}: {scope_decision.reason}"
+                    )
+                    finalized_performance = self._finalize_performance(
+                        performance,
+                        request_started_at,
+                        response_path="policy",
+                        policy_applied=scope_decision.scope,
                     )
                     response = self._build_policy_payload(
                         scope_decision.scope,
                         conversation_id,
                         language,
+                        performance=finalized_performance,
                     )
                     self._update_conversation_history(
                         conversation_id, query or "[image]", response["answer"]
@@ -419,15 +503,24 @@ class AsyncRAGService:
                             query or "",
                         )
                     )
+                    self._log_performance(conversation_id, finalized_performance)
                     return response
 
             if images and len(images) > 0:
+                vision_started_at = time.perf_counter()
                 vision_response = await self._generate_vision_answer_async(
                     query=query,
                     images=images,
                     conversation_id=conversation_id,
                     language=language,
                 )
+                self._record_stage(performance, "vision_generation", vision_started_at)
+                finalized_performance = self._finalize_performance(
+                    performance,
+                    request_started_at,
+                    response_path="vision",
+                )
+                vision_response["performance"] = finalized_performance
                 self._update_conversation_history(
                     conversation_id, query or "[image]", vision_response["answer"]
                 )
@@ -442,9 +535,12 @@ class AsyncRAGService:
                         query or "",
                     )
                 )
+                self._log_performance(conversation_id, finalized_performance)
                 return vision_response
 
             normalization_applied = False
+            rewrite_applied = False
+            memory_loaded = False
             normalized_query = query
             memory_context = ""
             current_history = self.rag_service.conversations.get(conversation_id, [])
@@ -454,17 +550,24 @@ class AsyncRAGService:
 
             # Step 1: Normalize — only for queries with abbreviations / typos
             if not skip_normalization and intent["needs_normalization"]:
+                normalization_started_at = time.perf_counter()
                 log.info("[ASYNC] Normalizing query (abbreviations/typos detected)...")
                 normalized_query = await normalize_question_async(query)
                 normalization_applied = normalized_query != query
+                if performance is not None:
+                    performance["normalization_applied"] = normalization_applied
                 log.info(
                     f"[ASYNC] Normalized: '{query[:40]}' -> '{normalized_query[:40]}'"
+                )
+                self._record_stage(
+                    performance, "normalization", normalization_started_at
                 )
             else:
                 log.info("[ASYNC] Skip normalization (query is clear)")
 
             # Step 2: Rewrite — only for follow-up queries referencing prior turns
             if intent["needs_rewrite"] and current_history:
+                rewrite_started_at = time.perf_counter()
                 try:
                     formatted_history = "\n".join(
                         [
@@ -492,14 +595,20 @@ class AsyncRAGService:
                         log.info(
                             f"[ASYNC] Rewritten: '{normalized_query[:40]}' -> '{rewritten_query.strip()[:60]}'"
                         )
+                        rewrite_applied = True
+                        if performance is not None:
+                            performance["rewrite_applied"] = True
                         normalized_query = rewritten_query.strip()
                 except Exception as rw_err:
                     log.warning(f"[ASYNC] Query rewrite failed: {rw_err}")
+                finally:
+                    self._record_stage(performance, "rewrite", rewrite_started_at)
             else:
                 log.info("[ASYNC] Skip rewrite (query is self-contained)")
 
             # Step 3: Memory — only for long conversations with explicit back-references
             if intent["needs_memory"]:
+                memory_started_at = time.perf_counter()
                 try:
                     conv_context = await self._run_in_executor(
                         self.rag_service.memory_service.get_conversation_context,
@@ -516,28 +625,53 @@ class AsyncRAGService:
                                 conv_context
                             )
                         )
+                        memory_loaded = True
+                        if performance is not None:
+                            performance["memory_loaded"] = True
                         log.info("🧠 [ASYNC] Loaded memory context")
                 except Exception as mem_error:
                     log.warning(f"Could not load memory context: {mem_error}")
+                finally:
+                    self._record_stage(performance, "memory", memory_started_at)
             else:
                 log.info(
                     f"[ASYNC] Skip memory retrieval (turns={conv_turn_count}, no back-reference)"
                 )
 
             # Retrieve relevant chunks (with short-TTL cache)
-            relevant_chunks = await self._cached_retrieve_chunks(normalized_query)
+            retrieval_started_at = time.perf_counter()
+            relevant_chunks, retrieval_cache_hit = await self._cached_retrieve_chunks(
+                normalized_query
+            )
+            self._record_stage(performance, "retrieval", retrieval_started_at)
+            if performance is not None:
+                performance["retrieval_cache_hit"] = retrieval_cache_hit
+                performance["retrieved_chunk_count"] = len(relevant_chunks)
 
             # Create context and sources
+            post_retrieval_started_at = time.perf_counter()
             context = self.rag_service.create_context(relevant_chunks)
             sources = self._build_sources(relevant_chunks)
 
             # Build source references
             source_references = self._build_source_references(relevant_chunks)
             confidence = self._calculate_confidence(relevant_chunks)
+            self._record_stage(
+                performance, "post_retrieval", post_retrieval_started_at
+            )
 
             if STRICT_MODE and confidence < CONFIDENCE_THRESHOLD:
                 log.info(
                     f"[POLICY] Insufficient evidence, confidence={confidence:.3f} threshold={CONFIDENCE_THRESHOLD:.3f}"
+                )
+                finalized_performance = self._finalize_performance(
+                    performance,
+                    request_started_at,
+                    response_path="policy",
+                    policy_applied="insufficient_evidence",
+                    normalization_applied=normalization_applied,
+                    rewrite_applied=rewrite_applied,
+                    memory_loaded=memory_loaded,
                 )
                 response = self._build_policy_payload(
                     "insufficient_evidence",
@@ -549,6 +683,7 @@ class AsyncRAGService:
                     normalization_applied=normalization_applied,
                     original_query=query,
                     normalized_query=normalized_query,
+                    performance=finalized_performance,
                 )
                 self._update_conversation_history(conversation_id, query, response["answer"])
                 asyncio.create_task(
@@ -562,10 +697,17 @@ class AsyncRAGService:
                         normalized_query,
                     )
                 )
+                self._log_performance(conversation_id, finalized_performance)
                 return response
 
             # Get attachments
-            attachments = await self._maybe_get_attachments(query, relevant_chunks)
+            attachments_started_at = time.perf_counter()
+            attachments, attachment_lookup_skipped = await self._maybe_get_attachments(
+                query, relevant_chunks
+            )
+            self._record_stage(performance, "attachments", attachments_started_at)
+            if performance is not None:
+                performance["attachment_lookup_skipped"] = attachment_lookup_skipped
 
             if attachments:
                 attachment_context = "\n\n*** TÀI LIỆU ĐÍNH KÈM CÓ SẴN ***:\n"
@@ -576,6 +718,7 @@ class AsyncRAGService:
                 context += attachment_context
 
             # Create prompts
+            prompt_started_at = time.perf_counter()
             system_prompt = self.rag_service.create_system_prompt(language=language)
             user_prompt = self.rag_service.create_user_prompt(
                 query, context, memory_context, language=language
@@ -585,12 +728,17 @@ class AsyncRAGService:
             full_prompt, needs_grounding = self._build_generation_prompt(
                 query, language, system_prompt, user_prompt
             )
+            self._record_stage(performance, "prompt_build", prompt_started_at)
+            if performance is not None:
+                performance["needs_grounding"] = needs_grounding
 
             # Generate answer using ASYNC Gemini call
             log.info(f"[ASYNC] Calling Gemini API (grounding={needs_grounding})...")
+            generation_started_at = time.perf_counter()
             answer = await generate_response_async(
                 prompt=full_prompt, enable_grounding=needs_grounding
             )
+            self._record_stage(performance, "generation", generation_started_at)
 
             # Handle empty response
             if not answer or not answer.strip():
@@ -599,9 +747,11 @@ class AsyncRAGService:
                 confidence = 0.0
             else:
                 # Add engagement prompt
+                engagement_started_at = time.perf_counter()
                 answer = self.rag_service._add_engagement_prompt(
                     answer, query, language
                 )
+                self._record_stage(performance, "engagement", engagement_started_at)
 
             self._update_conversation_history(conversation_id, query, answer)
 
@@ -619,7 +769,19 @@ class AsyncRAGService:
             )
 
             # Detect chart data
+            chart_started_at = time.perf_counter()
             chart_data = self.rag_service._detect_chart_request(query, answer)
+            self._record_stage(performance, "chart_detection", chart_started_at)
+
+            finalized_performance = self._finalize_performance(
+                performance,
+                request_started_at,
+                response_path="rag",
+                normalization_applied=normalization_applied,
+                rewrite_applied=rewrite_applied,
+                memory_loaded=memory_loaded,
+            )
+            self._log_performance(conversation_id, finalized_performance)
 
             return {
                 "answer": answer,
@@ -633,10 +795,19 @@ class AsyncRAGService:
                 "normalized_query": normalized_query if normalization_applied else None,
                 "chart_data": chart_data,
                 "images": [],
+                "performance": finalized_performance,
             }
 
         except Exception as e:
             log.error(f"[ASYNC] Error generating answer: {e}")
+            finalized_performance = self._finalize_performance(
+                locals().get("performance"),
+                locals().get("request_started_at", time.perf_counter()),
+                response_path="error",
+            )
+            self._log_performance(
+                conversation_id or str(uuid.uuid4()), finalized_performance
+            )
             return {
                 "answer": "Xin lỗi, có lỗi xảy ra. Vui lòng thử lại sau.",
                 "sources": [],
@@ -646,6 +817,7 @@ class AsyncRAGService:
                 "conversation_id": conversation_id or str(uuid.uuid4()),
                 "chart_data": [],
                 "images": [],
+                "performance": finalized_performance,
             }
 
     async def generate_answer_stream_async(
@@ -661,6 +833,11 @@ class AsyncRAGService:
         Yields chunks as they arrive from the LLM.
         """
         try:
+            request_started_at = time.perf_counter()
+            performance = (
+                self._new_performance_metrics() if ENABLE_STAGE_TIMINGS else None
+            )
+
             # Create conversation ID
             if not conversation_id:
                 conversation_id = str(uuid.uuid4())
@@ -696,13 +873,21 @@ class AsyncRAGService:
 
             # ── Smart Query Router ──────────────────────────────────────────
             if ADMISSION_ONLY_MODE:
+                scope_started_at = time.perf_counter()
                 scope_decision = self.scope_service.classify(query)
+                self._record_stage(performance, "scope_guard", scope_started_at)
                 if scope_decision.scope != "admission":
                     log.info(
                         f"[POLICY STREAM] Short-circuit query as {scope_decision.scope}: {scope_decision.reason}"
                     )
                     answer = self.scope_service.build_policy_answer(
                         scope_decision.scope, language
+                    )
+                    finalized_performance = self._finalize_performance(
+                        performance,
+                        request_started_at,
+                        response_path="policy",
+                        policy_applied=scope_decision.scope,
                     )
                     yield {
                         "type": "sources",
@@ -719,6 +904,7 @@ class AsyncRAGService:
                         "normalization_applied": False,
                         "original_query": None,
                         "normalized_query": None,
+                        "performance": finalized_performance,
                     }
                     asyncio.create_task(
                         self._save_conversation_async(
@@ -734,10 +920,13 @@ class AsyncRAGService:
                     self._update_conversation_history(
                         conversation_id, query or "[image]", answer
                     )
+                    self._log_performance(conversation_id, finalized_performance)
                     return
 
             normalized_query = query
             normalization_applied = False
+            rewrite_applied = False
+            memory_loaded = False
             memory_context = ""
             current_history = self.rag_service.conversations.get(conversation_id, [])
             conv_turn_count = len(current_history)
@@ -746,17 +935,24 @@ class AsyncRAGService:
 
             # Step 1: Normalize — only for abbreviations / unclear short queries
             if not skip_normalization and intent["needs_normalization"]:
+                normalization_started_at = time.perf_counter()
                 log.info("[ASYNC STREAM] Normalizing query (abbreviations/typos)...")
                 normalized_query = await normalize_question_async(query)
                 normalization_applied = normalized_query != query
+                if performance is not None:
+                    performance["normalization_applied"] = normalization_applied
                 log.info(
                     f"[ASYNC STREAM] Normalized: '{query[:40]}' -> '{normalized_query[:40]}'"
+                )
+                self._record_stage(
+                    performance, "normalization", normalization_started_at
                 )
             else:
                 log.info("[ASYNC STREAM] Skip normalization (query is clear)")
 
             # Step 2: Rewrite — only for follow-up queries referencing prior turns
             if intent["needs_rewrite"] and current_history:
+                rewrite_started_at = time.perf_counter()
                 try:
                     formatted_history = "\n".join(
                         [
@@ -784,14 +980,20 @@ class AsyncRAGService:
                         log.info(
                             f"[ASYNC STREAM] Rewritten: '{normalized_query[:40]}' -> '{rewritten_query.strip()[:60]}'"
                         )
+                        rewrite_applied = True
+                        if performance is not None:
+                            performance["rewrite_applied"] = True
                         normalized_query = rewritten_query.strip()
                 except Exception as rw_err:
                     log.warning(f"[ASYNC STREAM] Query rewrite failed: {rw_err}")
+                finally:
+                    self._record_stage(performance, "rewrite", rewrite_started_at)
             else:
                 log.info("[ASYNC STREAM] Skip rewrite (query is self-contained)")
 
             # Step 3: Memory — only for long conversations with explicit back-references
             if intent["needs_memory"]:
+                memory_started_at = time.perf_counter()
                 try:
                     conv_context = await self._run_in_executor(
                         self.rag_service.memory_service.get_conversation_context,
@@ -808,9 +1010,14 @@ class AsyncRAGService:
                                 conv_context
                             )
                         )
+                        memory_loaded = True
+                        if performance is not None:
+                            performance["memory_loaded"] = True
                         log.info("🧠 [ASYNC STREAM] Loaded memory context")
                 except Exception as mem_error:
                     log.warning(f"Memory context error: {mem_error}")
+                finally:
+                    self._record_stage(performance, "memory", memory_started_at)
             else:
                 log.info(
                     f"[ASYNC STREAM] Skip memory retrieval (turns={conv_turn_count}, no back-reference)"
@@ -819,8 +1026,16 @@ class AsyncRAGService:
             # Retrieval (thread pool, with short-TTL cache)
             yield {"type": "status", "message": "Đang tìm kiếm tài liệu..."}
 
-            relevant_chunks = await self._cached_retrieve_chunks(normalized_query)
+            retrieval_started_at = time.perf_counter()
+            relevant_chunks, retrieval_cache_hit = await self._cached_retrieve_chunks(
+                normalized_query
+            )
+            self._record_stage(performance, "retrieval", retrieval_started_at)
+            if performance is not None:
+                performance["retrieval_cache_hit"] = retrieval_cache_hit
+                performance["retrieved_chunk_count"] = len(relevant_chunks)
 
+            post_retrieval_started_at = time.perf_counter()
             context = self.rag_service.create_context(relevant_chunks)
 
             # Get sources
@@ -828,10 +1043,22 @@ class AsyncRAGService:
 
             source_references = self._build_source_references(relevant_chunks)
             confidence = self._calculate_confidence(relevant_chunks)
+            self._record_stage(
+                performance, "post_retrieval", post_retrieval_started_at
+            )
 
             if STRICT_MODE and confidence < CONFIDENCE_THRESHOLD:
                 answer = self.scope_service.build_policy_answer(
                     "insufficient_evidence", language
+                )
+                finalized_performance = self._finalize_performance(
+                    performance,
+                    request_started_at,
+                    response_path="policy",
+                    policy_applied="insufficient_evidence",
+                    normalization_applied=normalization_applied,
+                    rewrite_applied=rewrite_applied,
+                    memory_loaded=memory_loaded,
                 )
                 yield {
                     "type": "sources",
@@ -848,6 +1075,7 @@ class AsyncRAGService:
                     "normalization_applied": normalization_applied,
                     "original_query": query if normalization_applied else None,
                     "normalized_query": normalized_query if normalization_applied else None,
+                    "performance": finalized_performance,
                 }
                 asyncio.create_task(
                     self._save_conversation_async(
@@ -861,12 +1089,17 @@ class AsyncRAGService:
                     )
                 )
                 self._update_conversation_history(conversation_id, query, answer)
+                self._log_performance(conversation_id, finalized_performance)
                 return
 
             # Get attachments
-            attachments = await self._maybe_get_attachments(
+            attachments_started_at = time.perf_counter()
+            attachments, attachment_lookup_skipped = await self._maybe_get_attachments(
                 query, relevant_chunks, stream=True
             )
+            self._record_stage(performance, "attachments", attachments_started_at)
+            if performance is not None:
+                performance["attachment_lookup_skipped"] = attachment_lookup_skipped
 
             # Inject attachments into context for the LLM
             if attachments:
@@ -895,6 +1128,7 @@ class AsyncRAGService:
             # Generate streaming answer
             yield {"type": "status", "message": "Đang tạo câu trả lời..."}
 
+            prompt_started_at = time.perf_counter()
             system_prompt = self.rag_service.create_system_prompt(language=language)
             user_prompt = self.rag_service.create_user_prompt(
                 query, context, memory_context, language=language
@@ -904,6 +1138,9 @@ class AsyncRAGService:
             full_prompt, needs_grounding = self._build_generation_prompt(
                 query, language, system_prompt, user_prompt
             )
+            self._record_stage(performance, "prompt_build", prompt_started_at)
+            if performance is not None:
+                performance["needs_grounding"] = needs_grounding
             if needs_grounding:
                 log.info("[ASYNC STREAM] Grounding ENABLED (real-time query)")
             else:
@@ -911,14 +1148,24 @@ class AsyncRAGService:
 
             # TRUE ASYNC STREAMING from Gemini
             full_answer = ""
+            first_token_ms = None
+            generation_started_at = time.perf_counter()
             async for text_chunk in generate_response_stream_async(
                 prompt=full_prompt, enable_grounding=needs_grounding
             ):
+                if first_token_ms is None and text_chunk:
+                    first_token_ms = round(
+                        (time.perf_counter() - request_started_at) * 1000, 2
+                    )
                 full_answer += text_chunk
                 yield {"type": "answer_chunk", "content": text_chunk}
+            self._record_stage(
+                performance, "generation_stream", generation_started_at
+            )
 
             # Add engagement prompt
             if full_answer:
+                engagement_started_at = time.perf_counter()
                 original_length = len(full_answer)
                 enhanced_answer = self.rag_service._add_engagement_prompt(
                     full_answer, query, language
@@ -927,9 +1174,22 @@ class AsyncRAGService:
                     engagement_part = enhanced_answer[original_length:]
                     yield {"type": "answer_chunk", "content": engagement_part}
                     full_answer = enhanced_answer
+                self._record_stage(performance, "engagement", engagement_started_at)
 
             # Detect charts
+            chart_started_at = time.perf_counter()
             chart_data = self.rag_service._detect_chart_request(query, full_answer)
+            self._record_stage(performance, "chart_detection", chart_started_at)
+
+            finalized_performance = self._finalize_performance(
+                performance,
+                request_started_at,
+                response_path="rag",
+                normalization_applied=normalization_applied,
+                rewrite_applied=rewrite_applied,
+                memory_loaded=memory_loaded,
+                time_to_first_token_ms=first_token_ms,
+            )
 
             # Final metadata
             yield {
@@ -940,6 +1200,7 @@ class AsyncRAGService:
                 "normalization_applied": normalization_applied,
                 "original_query": query if normalization_applied else None,
                 "normalized_query": normalized_query if normalization_applied else None,
+                "performance": finalized_performance,
             }
 
             # Save conversation (background)
@@ -956,12 +1217,22 @@ class AsyncRAGService:
             )
 
             self._update_conversation_history(conversation_id, query, full_answer)
+            self._log_performance(conversation_id, finalized_performance)
 
         except Exception as e:
             log.error(f"[ASYNC STREAM] Error: {e}")
+            finalized_performance = self._finalize_performance(
+                locals().get("performance"),
+                locals().get("request_started_at", time.perf_counter()),
+                response_path="error",
+            )
+            self._log_performance(
+                conversation_id or str(uuid.uuid4()), finalized_performance
+            )
             yield {
                 "type": "error",
                 "message": "Xin lỗi, có lỗi xảy ra. Vui lòng thử lại sau.",
+                "performance": finalized_performance,
             }
 
     async def _generate_vision_answer_async(

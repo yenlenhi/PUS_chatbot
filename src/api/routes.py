@@ -246,6 +246,7 @@ async def chat_endpoint(
             normalization_applied=rag_response.get("normalization_applied", False),
             original_query=rag_response.get("original_query"),
             normalized_query=rag_response.get("normalized_query"),
+            performance=rag_response.get("performance"),
         )
 
         # Track analytics in background (non-blocking)

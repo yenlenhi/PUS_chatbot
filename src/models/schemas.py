@@ -83,6 +83,46 @@ class ChatImage(BaseModel):
     page_number: Optional[int] = Field(None, description="Source page number")
 
 
+class PerformanceMetrics(BaseModel):
+    """Latency and execution metadata for chat responses."""
+
+    total_ms: float = Field(..., description="Total pipeline time in milliseconds")
+    stages: Dict[str, float] = Field(
+        default_factory=dict, description="Stage-by-stage latency in milliseconds"
+    )
+    time_to_first_token_ms: Optional[float] = Field(
+        None, description="Time to first streamed token in milliseconds"
+    )
+    retrieval_cache_hit: bool = Field(
+        default=False, description="Whether retrieval was served from cache"
+    )
+    attachment_lookup_skipped: bool = Field(
+        default=False,
+        description="Whether attachment retrieval was skipped by heuristic",
+    )
+    needs_grounding: bool = Field(
+        default=False, description="Whether web grounding/search was enabled"
+    )
+    normalization_applied: bool = Field(
+        default=False, description="Whether query normalization changed the input"
+    )
+    rewrite_applied: bool = Field(
+        default=False, description="Whether the query was rewritten using history"
+    )
+    memory_loaded: bool = Field(
+        default=False, description="Whether conversation memory context was loaded"
+    )
+    retrieved_chunk_count: int = Field(
+        default=0, description="Number of retrieved chunks used for answering"
+    )
+    response_path: str = Field(
+        default="rag", description="Path used to answer: rag, policy, or vision"
+    )
+    policy_applied: Optional[str] = Field(
+        default=None, description="Policy applied when the pipeline short-circuits"
+    )
+
+
 class ChatResponse(BaseModel):
     """Response model for chat endpoint"""
 
@@ -113,6 +153,9 @@ class ChatResponse(BaseModel):
     )
     normalized_query: Optional[str] = Field(
         default=None, description="Normalized query after Gemini processing"
+    )
+    performance: Optional[PerformanceMetrics] = Field(
+        default=None, description="Optional performance breakdown for benchmarking"
     )
 
 

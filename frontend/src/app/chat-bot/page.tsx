@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Send, User, FolderOpen, Book, Copy, Check, RefreshCw, Volume2, VolumeX, Pause, Play, X, ImagePlus, Home, ArrowLeft, ZoomIn, ZoomOut, RotateCw, Download, Maximize2, ChevronUp, ChevronDown, Sparkles } from 'lucide-react';
-import type { Message, SourceReference, ChartData, ImageData, FileAttachment } from '@/types';
+import type { Message, SourceReference, ChartData, ImageData, FileAttachment, PerformanceMetrics } from '@/types';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -1056,7 +1056,8 @@ const ChatBotPage = () => {
                 confidence: data.confidence,
                 chunkIds: chunkIds,
                 chartData: data.chart_data || [],
-                images: data.images || []
+                images: data.images || [],
+                performance: data.performance
               }
               : msg
           ));
@@ -1099,6 +1100,7 @@ const ChatBotPage = () => {
       let streamedAttachments: FileAttachment[] = [];
       let streamedChartData: ChartData[] = [];
       let streamedImages: ImageData[] = [];
+      let streamedPerformance: PerformanceMetrics | undefined;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -1142,6 +1144,7 @@ const ChatBotPage = () => {
                 streamedAttachments = chunk.attachments || [];
                 streamedChartData = chunk.chart_data || [];
                 streamedImages = chunk.images || [];
+                streamedPerformance = chunk.performance;
                 // Clear processing status when complete
                 setProcessingStatus('');
                 setCompletedSteps([]);
@@ -1188,6 +1191,7 @@ const ChatBotPage = () => {
             attachments: streamedAttachments,
             chartData: streamedChartData,
             images: streamedImages,
+            performance: streamedPerformance,
           }
           : msg
       ));

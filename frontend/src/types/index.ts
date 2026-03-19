@@ -38,6 +38,21 @@ export interface FileAttachment {
   category?: string;
 }
 
+export interface PerformanceMetrics {
+  total_ms: number;
+  stages: Record<string, number>;
+  time_to_first_token_ms?: number | null;
+  retrieval_cache_hit: boolean;
+  attachment_lookup_skipped: boolean;
+  needs_grounding: boolean;
+  normalization_applied: boolean;
+  rewrite_applied: boolean;
+  memory_loaded: boolean;
+  retrieved_chunk_count: number;
+  response_path: 'rag' | 'policy' | 'vision' | 'error' | string;
+  policy_applied?: string | null;
+}
+
 export interface Message {
   id: string;
   role: 'user' | 'assistant';
@@ -53,6 +68,7 @@ export interface Message {
   chartData?: ChartData[]; // Charts to display
   images?: ImageData[]; // Images to display
   uploadedImages?: UploadedImage[]; // Images uploaded by user
+  performance?: PerformanceMetrics;
 }
 
 export interface Source {
@@ -94,6 +110,7 @@ export interface ChatApiResponse {
   processing_time?: number;
   chart_data?: ChartData[]; // Charts from backend
   images?: ImageData[]; // Images from backend
+  performance?: PerformanceMetrics;
   error?: string;
   detail?: string;
 }
