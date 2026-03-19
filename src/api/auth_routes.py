@@ -5,7 +5,7 @@ Now uses PostgreSQL database for user management
 
 from fastapi import APIRouter, HTTPException, status, Form, Depends, Request
 from pydantic import BaseModel
-from src.auth.jwt_handler import create_token_for_user
+from src.auth.async_jwt_handler import create_token_for_user
 from src.services.async_user_service import get_async_user_service, AsyncUserService
 from src.middleware.rate_limit_middleware import rate_limit
 from src.utils.logger import log

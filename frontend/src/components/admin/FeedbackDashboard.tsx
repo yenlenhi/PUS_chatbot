@@ -41,7 +41,7 @@ import type {
   ChunkPerformance,
   FeedbackRecord,
 } from '@/types/feedback';
-import { getAuthHeader } from '@/utils/auth';
+import { getAuthHeader, handleAuthFailure } from '@/utils/auth';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
 
@@ -105,6 +105,10 @@ const OverviewPanel: React.FC = () => {
           ...getAuthHeader(),
         },
       });
+      if (response.status === 401 || response.status === 403) {
+        handleAuthFailure();
+        return;
+      }
       if (response.ok) {
         const data = await response.json();
         setMetrics(data);
@@ -250,6 +254,10 @@ const HistoryPanel: React.FC = () => {
           ...getAuthHeader(),
         },
       });
+      if (res.status === 401 || res.status === 403) {
+        handleAuthFailure();
+        return;
+      }
       if (res.ok) {
         const data = await res.json();
         setFeedback(data.records);

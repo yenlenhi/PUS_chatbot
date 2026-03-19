@@ -8,7 +8,7 @@ import {
   DashboardOverview,
   AnalyticsFilter,
 } from '@/types/analytics';
-import { getAuthHeader } from '@/utils/auth';
+import { getAuthHeader, handleAuthFailure } from '@/utils/auth';
 
 // API Base URL
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -54,7 +54,9 @@ const apiCall = async <T>(endpoint: string, options: RequestInit = {}): Promise<
         }
       }
 
-      throw new Error(errorMessage);
+      const error = new Error(errorMessage) as Error & { status?: number };
+      error.status = response.status;
+      throw error;
     }
 
     return await response.json();
@@ -70,13 +72,21 @@ const apiCall = async <T>(endpoint: string, options: RequestInit = {}): Promise<
 };
 
 const adminApiCall = async <T>(endpoint: string, options: RequestInit = {}): Promise<T> => {
-  return apiCall<T>(endpoint, {
-    ...options,
-    headers: {
-      ...getAuthHeader(),
-      ...options.headers,
-    },
-  });
+  try {
+    return await apiCall<T>(endpoint, {
+      ...options,
+      headers: {
+        ...getAuthHeader(),
+        ...options.headers,
+      },
+    });
+  } catch (error) {
+    const status = (error as Error & { status?: number }).status;
+    if (status === 401 || status === 403) {
+      handleAuthFailure();
+    }
+    throw error;
+  }
 };
 
 // Build query params from filter
@@ -166,6 +176,11 @@ export const analyticsAPI = {
           ...getAuthHeader(),
         },
       });
+
+      if (response.status === 401 || response.status === 403) {
+        handleAuthFailure();
+        throw new Error('Authentication required');
+      }
 
       if (!response.ok) {
         throw new Error('Export failed');

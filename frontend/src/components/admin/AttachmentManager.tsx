@@ -10,7 +10,7 @@ import {
 import { PieChart as RePieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { AttachmentTable } from './attachments/AttachmentTable';
 import { AttachmentMobileList } from './attachments/AttachmentMobileList';
-import { getAuthHeader } from '@/utils/auth';
+import { getAuthHeader, handleAuthFailure } from '@/utils/auth';
 
 interface Attachment {
   id: number;
@@ -83,6 +83,10 @@ export default function AttachmentManager() {
           ...getAuthHeader(),
         },
       });
+      if (response.status === 401 || response.status === 403) {
+        handleAuthFailure();
+        return;
+      }
       if (response.ok) {
         const data = await response.json();
         // Check if response is paginated (has items and total) or list
@@ -205,6 +209,11 @@ export default function AttachmentManager() {
             body: formData,
           });
 
+          if (response.status === 401 || response.status === 403) {
+            handleAuthFailure();
+            throw new Error('Authentication required');
+          }
+
           if (response.ok) {
             updateUploadItem(item.id, 'status', 'success');
           } else {
@@ -232,6 +241,10 @@ export default function AttachmentManager() {
           ...getAuthHeader(),
         },
       });
+      if (response.status === 401 || response.status === 403) {
+        handleAuthFailure();
+        return;
+      }
       if (response.ok) {
         fetchAttachments();
       }

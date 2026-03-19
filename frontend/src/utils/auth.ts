@@ -92,6 +92,34 @@ export const clearSession = () => {
 };
 
 /**
+ * Persist authenticated admin session metadata
+ */
+export const storeAdminSession = (token: string, username: string) => {
+  sessionStorage.setItem('isAdminAuthenticated', 'true');
+  sessionStorage.setItem('adminToken', token);
+  sessionStorage.setItem('username', username);
+  sessionStorage.setItem('loginTime', new Date().toISOString());
+
+  const payload = decodeTokenPayload(token);
+  if (payload?.exp) {
+    sessionStorage.setItem('tokenExpiry', new Date(payload.exp * 1000).toISOString());
+  } else {
+    sessionStorage.removeItem('tokenExpiry');
+  }
+};
+
+/**
+ * Clear invalid auth state and redirect back to admin login
+ */
+export const handleAuthFailure = () => {
+  clearSession();
+
+  if (typeof window !== 'undefined') {
+    window.location.href = '/admin';
+  }
+};
+
+/**
  * Get authorization header for API requests
  */
 export const getAuthHeader = (): { Authorization?: string } => {
@@ -190,8 +218,7 @@ export const apiClient = {
     }
     
     if (session.isExpired) {
-      clearSession();
-      window.location.href = '/admin';
+      handleAuthFailure();
       throw new Error('Session expired');
     }
     
@@ -207,11 +234,10 @@ export const apiClient = {
       headers,
     });
     
-    // Handle 401 Unauthorized
-    if (response.status === 401) {
-      console.warn('Received 401, clearing session');
-      clearSession();
-      window.location.href = '/admin';
+    // Handle auth failures
+    if (response.status === 401 || response.status === 403) {
+      console.warn(`Received ${response.status}, clearing session`);
+      handleAuthFailure();
       throw new Error('Authentication required');
     }
     

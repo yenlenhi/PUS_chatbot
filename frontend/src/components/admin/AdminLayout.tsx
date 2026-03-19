@@ -8,13 +8,14 @@ import Image from 'next/image';
 import { LogOut, Menu, X, Home, Loader2, Star, Clock } from 'lucide-react';
 import { useLanguage } from '@/i18n/LanguageContext';
 import LanguageSwitcher from '@/i18n/LanguageSwitcher';
-import { checkSession, clearSession, isTokenExpiringSoon, getTimeToExpiry } from '@/utils/auth';
+import { checkSession, clearSession, getAuthHeader, handleAuthFailure, isTokenExpiringSoon, getTimeToExpiry } from '@/utils/auth';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
 }
 
 const AdminLayout = ({ children }: AdminLayoutProps) => {
+  const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
   const router = useRouter();
   const pathname = usePathname();
   const { t } = useLanguage();
@@ -26,10 +27,28 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
   const [timeToExpiry, setTimeToExpiry] = useState(0);
 
   useEffect(() => {
-    const validateSession = () => {
+    let isMounted = true;
+
+    const validateSession = async () => {
       const session = checkSession();
       
       if (session.isAuthenticated) {
+        try {
+          const response = await fetch(`${apiBaseUrl}/api/users/me`, {
+            headers: {
+              ...getAuthHeader(),
+            },
+          });
+
+          if (response.status === 401 || response.status === 403) {
+            handleAuthFailure();
+            return;
+          }
+        } catch (error) {
+          console.error('Session validation error:', error);
+        }
+
+        if (!isMounted) return;
         setIsAuthenticated(true);
         
         // Check if session is expiring soon
@@ -37,19 +56,25 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
         setSessionWarning(expiringSoon);
         setTimeToExpiry(getTimeToExpiry());
       } else {
+        if (!isMounted) return;
         setIsAuthenticated(false);
         router.push('/admin');
       }
+
+      if (!isMounted) return;
+      setIsLoading(false);
     };
 
     validateSession();
-    setIsLoading(false);
 
     // Check session every minute
     const interval = setInterval(validateSession, 60 * 1000);
     
-    return () => clearInterval(interval);
-  }, [router]);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [apiBaseUrl, router]);
 
   const handleLogout = () => {
     if (confirm('Bạn có chắc chắn muốn đăng xuất?')) {

@@ -3,7 +3,7 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { X, Upload, FileText, CheckCircle, AlertCircle, Loader2, File, Clock, Zap, Sparkles } from 'lucide-react';
 import DetailedErrorDisplay from './DetailedErrorDisplay';
-import { getAuthHeader } from '@/utils/auth';
+import { getAuthHeader, handleAuthFailure } from '@/utils/auth';
 
 interface UploadModalProps {
   isOpen: boolean;
@@ -205,6 +205,11 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onUploadSucc
         },
         body: formData,
       });
+
+      if (response.status === 401 || response.status === 403) {
+        handleAuthFailure();
+        throw new Error('Authentication required');
+      }
 
       clearInterval(progressInterval);
 

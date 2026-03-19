@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Lock, User, Home, ArrowLeft, CheckCircle, Star } from 'lucide-react';
+import { storeAdminSession } from '@/utils/auth';
 
 const AdminLoginPage = () => {
   const [username, setUsername] = useState('');
@@ -53,10 +54,7 @@ const AdminLoginPage = () => {
 
       const data = await response.json();
       
-      // Store authentication token
-      sessionStorage.setItem('isAdminAuthenticated', 'true');
-      sessionStorage.setItem('adminToken', data.access_token);
-      sessionStorage.setItem('username', username);
+      storeAdminSession(data.access_token, username);
       
       // Redirect to dashboard
       setTimeout(() => {

@@ -7,7 +7,7 @@ import {
   FolderOpen, Archive, Database
 } from 'lucide-react';
 import DetailedErrorDisplay from './DetailedErrorDisplay';
-import { getAuthHeader } from '@/utils/auth';
+import { getAuthHeader, handleAuthFailure } from '@/utils/auth';
 
 interface BatchUploadModalProps {
   isOpen: boolean;
@@ -219,6 +219,11 @@ const BatchUploadModal: React.FC<BatchUploadModalProps> = ({ isOpen, onClose, on
         },
         body: formData,
       });
+
+      if (response.status === 401 || response.status === 403) {
+        handleAuthFailure();
+        throw new Error('Authentication required');
+      }
 
       if (!processQueueRef.current) return;
 
