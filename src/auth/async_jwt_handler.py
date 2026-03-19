@@ -175,5 +175,58 @@ async def get_current_user_async(
         )
 
 
+async def require_admin_async(
+    current_user: Optional[User] = Depends(get_current_user_async),
+) -> User:
+    """
+    FastAPI dependency that enforces admin-only access.
+    Use as: dependencies=[Depends(require_admin_async)]
+    """
+    if current_user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    if "admin" not in current_user.scopes:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required",
+        )
+    return current_user
+
+
 # Alias for compatibility
 get_current_user = get_current_user_async
+
+
+async def require_admin_async(
+    current_user: Optional[User] = Depends(get_current_user_async),
+) -> User:
+    """
+    Require an authenticated admin user.
+
+    Returns:
+        Authenticated user with admin scope
+
+    Raises:
+        HTTPException: If the request is unauthenticated or lacks admin scope
+    """
+    if current_user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    if "admin" not in current_user.scopes:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required",
+        )
+
+    return current_user
+
+
+# Alias for compatibility
+require_admin = require_admin_async

@@ -62,7 +62,7 @@ from src.services.supabase_storage_service import (
 )
 from src.services.upload_task_manager import get_task_manager, TaskStatus
 from src.middleware.rate_limit_middleware import rate_limit
-from src.auth.async_jwt_handler import require_admin_async
+from src.auth.async_jwt_handler import get_current_user_async, require_admin_async
 from src.utils.logger import log
 
 # Create router
@@ -1383,9 +1383,7 @@ async def get_chat_stats(rag: RAGService = Depends(get_rag_service)):
         )
 
 
-@router.get(
-    "/admin/chat-history/export", dependencies=[Depends(require_admin_async)]
-)
+@router.get("/admin/chat-history/export", dependencies=[Depends(require_admin_async)])
 async def export_chat_history(
     start_date: str = None,
     end_date: str = None,
@@ -1533,9 +1531,7 @@ async def get_daily_feedback_stats(
         )
 
 
-@router.get(
-    "/feedback/chunks/performance", dependencies=[Depends(require_admin_async)]
-)
+@router.get("/feedback/chunks/performance", dependencies=[Depends(require_admin_async)])
 async def get_chunk_performance(
     top_n: int = 10,
     worst: bool = False,
@@ -1562,9 +1558,7 @@ async def get_chunk_performance(
         )
 
 
-@router.get(
-    "/feedback/negative/recent", dependencies=[Depends(require_admin_async)]
-)
+@router.get("/feedback/negative/recent", dependencies=[Depends(require_admin_async)])
 async def get_recent_negative_feedback(
     limit: int = 10,
     feedback_svc: FeedbackService = Depends(get_feedback_service),
@@ -1637,9 +1631,7 @@ async def export_feedback_report(
         )
 
 
-@router.get(
-    "/feedback/retrieval-weights", dependencies=[Depends(require_admin_async)]
-)
+@router.get("/feedback/retrieval-weights", dependencies=[Depends(require_admin_async)])
 async def get_retrieval_weights(
     feedback_svc: FeedbackService = Depends(get_feedback_service),
 ):
@@ -1918,9 +1910,7 @@ async def get_business_insights(
         )
 
 
-@router.get(
-    "/analytics/popular-questions", dependencies=[Depends(require_admin_async)]
-)
+@router.get("/analytics/popular-questions", dependencies=[Depends(require_admin_async)])
 async def get_popular_questions(
     time_range: TimeRange = Query(
         TimeRange.LAST_7_DAYS, description="Time range filter"
@@ -2273,9 +2263,7 @@ async def link_attachment_to_chunks(
         raise HTTPException(status_code=500, detail=f"Link failed: {str(e)}")
 
 
-@router.get(
-    "/admin/analytics/export", dependencies=[Depends(require_admin_async)]
-)
+@router.get("/admin/analytics/export", dependencies=[Depends(require_admin_async)])
 async def export_analytics_data(
     type: str = Query(
         ..., description="Type of data: system, users, chat, documents, business"
