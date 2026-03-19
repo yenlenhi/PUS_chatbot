@@ -8,6 +8,7 @@ import Toast, { ToastType } from '@/components/ui/Toast';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import { Search, Filter, Download, Eye, Calendar, User, MessageSquare, RefreshCw, Trash2, X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Image as ImageIcon, Copy, Check, RotateCw, Maximize2 } from 'lucide-react';
 import { chatHistoryAPI } from '@/services/api';
+import { checkSession } from '@/utils/auth';
 import { ConversationSummary, ConversationDetail, ChatHistoryStats } from '@/types/api';
 
 // Confirm modal state type
@@ -360,6 +361,8 @@ const ChatHistoryPage = () => {
 
   // Initial fetch
   useEffect(() => {
+    const { isAuthenticated } = checkSession();
+    if (!isAuthenticated) return;
     fetchConversations();
   }, [fetchConversations]);
 

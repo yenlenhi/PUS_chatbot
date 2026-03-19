@@ -87,14 +87,18 @@ class RateLimitMiddleware:
     Enhanced Rate Limiting Middleware with different limits for different endpoints
     """
 
-    # Define rate limits for different endpoint patterns
+    # Define rate limits for different endpoint patterns.
+    # Paths must match the actual mounted routes:
+    #   auth_router  → app.include_router(..., prefix="/api/v1") + router prefix "/auth"
+    #   user_router  → already carries prefix "/api/users" (no /v1)
+    #   main router  → app.include_router(..., prefix="/api/v1")
     ENDPOINT_LIMITS = {
-        "/api/auth/login": "5/minute",  # Login attempts
-        "/api/auth/register": "3/minute",  # Registration attempts
-        "/api/auth/": "10/minute",  # General auth endpoints
-        "/api/admin/": "30/minute",  # Admin endpoints
-        "/api/chat": "60/minute",  # Chat endpoint
-        "/api/upload": "10/minute",  # File upload
+        "/api/v1/auth/login": "5/minute",  # Login attempts
+        "/api/v1/auth/register": "3/minute",  # Registration attempts
+        "/api/v1/auth/": "10/minute",  # General auth endpoints
+        "/api/users/": "30/minute",  # Admin/user-management endpoints
+        "/api/v1/chat": "60/minute",  # Chat endpoint
+        "/api/v1/attachments/upload": "10/minute",  # File upload
         "default": "120/minute",  # Default for other endpoints
     }
 

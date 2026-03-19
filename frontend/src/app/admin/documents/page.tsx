@@ -8,6 +8,7 @@ import QuickStats from '@/components/admin/QuickStats';
 import Toast, { ToastType } from '@/components/ui/Toast';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import { documentsAPI } from '@/services/api';
+import { checkSession } from '@/utils/auth';
 import { Document } from '@/types/api';
 import { 
   Search, Upload, Download, FileText, Eye, Trash2, 
@@ -115,6 +116,8 @@ const DocumentsPage = () => {
   }, []);
 
   useEffect(() => {
+    const { isAuthenticated } = checkSession();
+    if (!isAuthenticated) return;
     fetchDocuments();
   }, [fetchDocuments]);
 

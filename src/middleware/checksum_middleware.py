@@ -20,9 +20,10 @@ class ChecksumMiddleware(BaseHTTPMiddleware):
         self.enable_checksum = (
             os.getenv("ENABLE_CHECKSUM_VERIFICATION", "false").lower() == "true"
         )
+        # Paths must match the actual mounted route:
+        #   router is included at prefix "/api/v1" → upload is /api/v1/attachments/upload
         self.checksum_required_paths = [
-            "/api/admin/upload",
-            "/api/documents/upload",
+            "/api/v1/attachments/upload",
         ]
 
     async def dispatch(self, request: Request, call_next):

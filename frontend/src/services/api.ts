@@ -1,5 +1,6 @@
 import { ChatRequest, ChatResponse, SearchRequest, SearchResponse, HealthResponse, ChatHistoryResponse, ConversationDetail, ChatHistoryStats, ChatHistoryExport, Document, DocumentListResponse, UploadResponse, DeleteDocumentResponse, ToggleActiveResponse } from '@/types/api';
 import { Message } from '@/types';
+import { getAuthHeader } from '@/utils/auth';
 
 // API Base URL - có thể config từ environment variables
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -14,13 +15,15 @@ const apiCall = async <T>(endpoint: string, options: RequestInit = {}): Promise<
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 30000);
 
+    const { headers: extraHeaders, ...restOptions } = options;
+
     const response = await fetch(url, {
       signal: controller.signal,
+      ...restOptions,
       headers: {
         'Content-Type': 'application/json',
-        ...options.headers,
+        ...extraHeaders,
       },
-      ...options,
     });
 
     clearTimeout(timeoutId);
@@ -56,6 +59,16 @@ const apiCall = async <T>(endpoint: string, options: RequestInit = {}): Promise<
 
     throw error;
   }
+};
+
+const adminApiCall = async <T>(endpoint: string, options: RequestInit = {}): Promise<T> => {
+  return apiCall<T>(endpoint, {
+    ...options,
+    headers: {
+      ...getAuthHeader(),
+      ...options.headers,
+    },
+  });
 };
 
 // API Functions
@@ -238,24 +251,24 @@ export const chatHistoryAPI = {
     if (search) params.append('search', search);
     if (status && status !== 'all') params.append('status', status);
 
-    return apiCall<ChatHistoryResponse>(`/api/v1/admin/chat-history?${params.toString()}`);
+    return adminApiCall<ChatHistoryResponse>(`/api/v1/admin/chat-history?${params.toString()}`);
   },
 
   // Get conversation detail
   getConversationDetail: async (conversationId: string): Promise<ConversationDetail> => {
-    return apiCall<ConversationDetail>(`/api/v1/admin/chat-history/${encodeURIComponent(conversationId)}`);
+    return adminApiCall<ConversationDetail>(`/api/v1/admin/chat-history/${encodeURIComponent(conversationId)}`);
   },
 
   // Delete conversation
   deleteConversation: async (conversationId: string): Promise<{ success: boolean; message: string }> => {
-    return apiCall(`/api/v1/admin/chat-history/${encodeURIComponent(conversationId)}`, {
+    return adminApiCall(`/api/v1/admin/chat-history/${encodeURIComponent(conversationId)}`, {
       method: 'DELETE',
     });
   },
 
   // Get chat statistics
   getStats: async (): Promise<ChatHistoryStats> => {
-    return apiCall<ChatHistoryStats>('/api/v1/admin/chat-history/stats/overview');
+    return adminApiCall<ChatHistoryStats>('/api/v1/admin/chat-history/stats/overview');
   },
 
   // Export conversations
@@ -265,7 +278,7 @@ export const chatHistoryAPI = {
     if (endDate) params.append('end_date', endDate);
 
     const queryString = params.toString();
-    return apiCall<ChatHistoryExport>(`/api/v1/admin/chat-history/export${queryString ? `?${queryString}` : ''}`);
+    return adminApiCall<ChatHistoryExport>(`/api/v1/admin/chat-history/export${queryString ? `?${queryString}` : ''}`);
   },
 };
 
@@ -274,7 +287,7 @@ export const chatHistoryAPI = {
 export const documentsAPI = {
   // Get all documents
   getDocuments: async (): Promise<DocumentListResponse> => {
-    return apiCall<DocumentListResponse>('/api/v1/admin/documents');
+    return adminApiCall<DocumentListResponse>('/api/v1/admin/documents');
   },
 
   // Upload a new document
@@ -292,6 +305,9 @@ export const documentsAPI = {
     try {
       const response = await fetch(`${API_BASE_URL}/api/v1/admin/upload`, {
         method: 'POST',
+        headers: {
+          ...getAuthHeader(),
+        },
         body: formData,
       });
 
@@ -309,14 +325,14 @@ export const documentsAPI = {
 
   // Delete a document
   deleteDocument: async (filename: string): Promise<DeleteDocumentResponse> => {
-    return apiCall<DeleteDocumentResponse>(`/api/v1/admin/documents/${encodeURIComponent(filename)}`, {
+    return adminApiCall<DeleteDocumentResponse>(`/api/v1/admin/documents/${encodeURIComponent(filename)}`, {
       method: 'DELETE',
     });
   },
 
   // Toggle document active status
   toggleActive: async (filename: string): Promise<ToggleActiveResponse> => {
-    return apiCall<ToggleActiveResponse>(`/api/v1/admin/documents/${encodeURIComponent(filename)}/toggle-active`, {
+    return adminApiCall<ToggleActiveResponse>(`/api/v1/admin/documents/${encodeURIComponent(filename)}/toggle-active`, {
       method: 'PATCH',
     });
   },

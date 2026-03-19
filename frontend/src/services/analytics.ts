@@ -8,6 +8,7 @@ import {
   DashboardOverview,
   AnalyticsFilter,
 } from '@/types/analytics';
+import { getAuthHeader } from '@/utils/auth';
 
 // API Base URL
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -22,13 +23,17 @@ const apiCall = async <T>(endpoint: string, options: RequestInit = {}): Promise<
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 30000);
 
+    // Destructure headers out of options so the explicit headers object below
+    // is never overwritten by the ...rest spread.
+    const { headers: extraHeaders, ...restOptions } = options;
+
     const response = await fetch(url, {
       signal: controller.signal,
+      ...restOptions,
       headers: {
         'Content-Type': 'application/json',
-        ...options.headers,
+        ...extraHeaders,
       },
-      ...options,
     });
 
     clearTimeout(timeoutId);
@@ -64,6 +69,16 @@ const apiCall = async <T>(endpoint: string, options: RequestInit = {}): Promise<
   }
 };
 
+const adminApiCall = async <T>(endpoint: string, options: RequestInit = {}): Promise<T> => {
+  return apiCall<T>(endpoint, {
+    ...options,
+    headers: {
+      ...getAuthHeader(),
+      ...options.headers,
+    },
+  });
+};
+
 // Build query params from filter
 const buildQueryParams = (filter: AnalyticsFilter): string => {
   const params = new URLSearchParams();
@@ -85,37 +100,37 @@ const buildQueryParams = (filter: AnalyticsFilter): string => {
 export const analyticsAPI = {
   // Get dashboard overview
   getOverview: async (): Promise<DashboardOverview> => {
-    return apiCall<DashboardOverview>('/api/v1/analytics/overview');
+    return adminApiCall<DashboardOverview>('/api/v1/analytics/overview');
   },
 
   // Get system insights
   getSystemInsights: async (filter: AnalyticsFilter = { timeRange: 'L7D' }): Promise<SystemInsights> => {
     const query = buildQueryParams(filter);
-    return apiCall<SystemInsights>(`/api/v1/analytics/system?${query}`);
+    return adminApiCall<SystemInsights>(`/api/v1/analytics/system?${query}`);
   },
 
   // Get user insights
   getUserInsights: async (filter: AnalyticsFilter = { timeRange: 'L7D' }): Promise<UserInsights> => {
     const query = buildQueryParams(filter);
-    return apiCall<UserInsights>(`/api/v1/analytics/users?${query}`);
+    return adminApiCall<UserInsights>(`/api/v1/analytics/users?${query}`);
   },
 
   // Get chat insights
   getChatInsights: async (filter: AnalyticsFilter = { timeRange: 'L7D' }): Promise<ChatInsights> => {
     const query = buildQueryParams(filter);
-    return apiCall<ChatInsights>(`/api/v1/analytics/chat?${query}`);
+    return adminApiCall<ChatInsights>(`/api/v1/analytics/chat?${query}`);
   },
 
   // Get document insights
   getDocumentInsights: async (filter: AnalyticsFilter = { timeRange: 'L7D' }): Promise<DocumentInsights> => {
     const query = buildQueryParams(filter);
-    return apiCall<DocumentInsights>(`/api/v1/analytics/documents?${query}`);
+    return adminApiCall<DocumentInsights>(`/api/v1/analytics/documents?${query}`);
   },
 
   // Get business insights
   getBusinessInsights: async (filter: AnalyticsFilter = { timeRange: 'L7D' }): Promise<BusinessInsights> => {
     const query = buildQueryParams(filter);
-    return apiCall<BusinessInsights>(`/api/v1/analytics/business?${query}`);
+    return adminApiCall<BusinessInsights>(`/api/v1/analytics/business?${query}`);
   },
 
   // Get popular questions from real data
@@ -123,7 +138,7 @@ export const analyticsAPI = {
     const query = buildQueryParams(filter);
     const params = new URLSearchParams(query);
     params.append('limit', limit.toString());
-    return apiCall(`/api/v1/analytics/popular-questions?${params.toString()}`);
+    return adminApiCall(`/api/v1/analytics/popular-questions?${params.toString()}`);
   },
 
   // Get all insights at once
@@ -146,7 +161,11 @@ export const analyticsAPI = {
     const url = `${API_BASE_URL}/api/v1/admin/analytics/export?${query}&type=${type}&format=excel`;
 
     try {
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        headers: {
+          ...getAuthHeader(),
+        },
+      });
 
       if (!response.ok) {
         throw new Error('Export failed');

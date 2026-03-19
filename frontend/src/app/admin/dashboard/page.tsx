@@ -35,6 +35,7 @@ import InteractiveLineChart from '@/components/admin/analytics/InteractiveLineCh
 import InteractiveBarChart from '@/components/admin/analytics/InteractiveBarChart';
 import InteractivePieChart from '@/components/admin/analytics/InteractivePieChart';
 import { analyticsAPI, formatNumber, formatBytes, formatCurrency, formatDuration } from '@/services/analytics';
+import { checkSession } from '@/utils/auth';
 import { useLanguage } from '@/i18n/LanguageContext';
 import {
   AnalyticsFilter,
@@ -104,6 +105,12 @@ const DashboardPage = () => {
   }, [filter]);
 
   useEffect(() => {
+    // Don't fire API calls if the session isn't confirmed yet.
+    // AdminLayout will redirect unauthenticated users; this guard prevents
+    // a batch of 401 requests on the initial unauthenticated mount.
+    const { isAuthenticated } = checkSession();
+    if (!isAuthenticated) return;
+
     const loadData = async () => {
       setIsLoading(true);
       await fetchAllData();
