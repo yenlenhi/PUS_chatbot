@@ -283,9 +283,7 @@ class RAGService:
 
         return chart_data
 
-    def _should_expand_context(
-        self, chunks: List[Dict[str, Any]], query: str
-    ) -> bool:
+    def _should_expand_context(self, chunks: List[Dict[str, Any]], query: str) -> bool:
         """Decide whether context expansion is worth the extra DB lookups."""
         if not ENABLE_CONTEXT_EXPANSION or len(chunks) <= 1:
             return False
@@ -992,24 +990,60 @@ Hướng dẫn:
     # Patterns that are clearly unrelated to the university or education.
     # Checked with ZERO API calls to save cost.
     _OFF_TOPIC_VI = [
-        "mấy giờ", "bây giờ là mấy", "hôm nay là ngày", "ngày hôm nay là",
-        "thứ mấy hôm nay", "bao nhiêu giờ", "giờ hiện tại",
-        "thời tiết hôm nay", "dự báo thời tiết", "trời hôm nay",
-        "viết thơ tình", "thơ tình", "bài thơ tình", "kể chuyện cười",
-        "bài hát hay", "lời bài hát", "cách nấu phở", "công thức làm bánh",
-        "cách nấu bún", "cách nấu cơm", "nấu ăn", "món ngon",
-        "tử vi hôm nay", "xem bói", "số phận",
-        "tính tích phân", "đạo hàm của", "phương trình vi phân",
-        "chơi game", "tên game hay", "phim hay", "xem phim",
+        "mấy giờ",
+        "bây giờ là mấy",
+        "hôm nay là ngày",
+        "ngày hôm nay là",
+        "thứ mấy hôm nay",
+        "bao nhiêu giờ",
+        "giờ hiện tại",
+        "thời tiết hôm nay",
+        "dự báo thời tiết",
+        "trời hôm nay",
+        "viết thơ tình",
+        "thơ tình",
+        "bài thơ tình",
+        "kể chuyện cười",
+        "bài hát hay",
+        "lời bài hát",
+        "cách nấu phở",
+        "công thức làm bánh",
+        "cách nấu bún",
+        "cách nấu cơm",
+        "nấu ăn",
+        "món ngon",
+        "tử vi hôm nay",
+        "xem bói",
+        "số phận",
+        "tính tích phân",
+        "đạo hàm của",
+        "phương trình vi phân",
+        "chơi game",
+        "tên game hay",
+        "phim hay",
+        "xem phim",
     ]
     _OFF_TOPIC_EN = [
-        "what time is it", "what's the time", "current time",
-        "what day is it", "today's date", "what is today",
-        "weather today", "weather forecast", "is it raining",
-        "write a poem", "write a love", "tell me a joke",
-        "recipe for", "how to cook", "song lyrics",
-        "solve this math", "calculate the integral", "derivative of",
-        "best movie", "play a game",
+        "what time is it",
+        "what's the time",
+        "current time",
+        "what day is it",
+        "today's date",
+        "what is today",
+        "weather today",
+        "weather forecast",
+        "is it raining",
+        "write a poem",
+        "write a love",
+        "tell me a joke",
+        "recipe for",
+        "how to cook",
+        "song lyrics",
+        "solve this math",
+        "calculate the integral",
+        "derivative of",
+        "best movie",
+        "play a game",
     ]
 
     def _is_off_topic_query(self, query: str) -> bool:
@@ -1355,8 +1389,12 @@ Trả lời:"""
                         "Bạn có câu hỏi nào về trường không?"
                     )
                 # Still save to conversation history so the chat flow isn't broken
-                self.conversations[conversation_id].append({"role": "user", "content": query})
-                self.conversations[conversation_id].append({"role": "assistant", "content": refusal})
+                self.conversations[conversation_id].append(
+                    {"role": "user", "content": query}
+                )
+                self.conversations[conversation_id].append(
+                    {"role": "assistant", "content": refusal}
+                )
                 try:
                     self.db_service.save_conversation(
                         conversation_id=conversation_id,
