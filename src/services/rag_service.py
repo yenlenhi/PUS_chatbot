@@ -24,6 +24,13 @@ from config.settings import (
     LLM_PROVIDER,
     ENABLE_GEMINI_NORMALIZATION,
     ADMISSION_ONLY_MODE,
+    RETRIEVAL_INITIAL_K_MULTIPLIER,
+    RETRIEVAL_INITIAL_K_CAP,
+    RERANK_MAX_CANDIDATES,
+    ENABLE_CONTEXT_EXPANSION,
+    CONTEXT_EXPANSION_MAX_NEIGHBORS,
+    CONTEXT_EXPANSION_SKIP_TOP_SCORE,
+    CONTEXT_EXPANSION_SKIP_SECONDARY_SCORE,
 )
 
 
@@ -276,6 +283,56 @@ class RAGService:
 
         return chart_data
 
+    def _should_expand_context(
+        self, chunks: List[Dict[str, Any]], query: str
+    ) -> bool:
+        """Decide whether context expansion is worth the extra DB lookups."""
+        if not ENABLE_CONTEXT_EXPANSION or len(chunks) <= 1:
+            return False
+
+        query_lower = (query or "").lower().strip()
+        detail_keywords = (
+            "chi tiết",
+            "cụ thể",
+            "giải thích",
+            "so sánh",
+            "khác nhau",
+            "bao gồm",
+            "toàn bộ",
+            "đầy đủ",
+            "quy định",
+            "thủ tục",
+            "hồ sơ",
+            "documents",
+            "details",
+            "compare",
+            "procedure",
+        )
+        if any(keyword in query_lower for keyword in detail_keywords):
+            return True
+
+        query_token_count = len(query_lower.split())
+        primary_scores = [
+            chunk.get("rerank_score")
+            or chunk.get("combined_score")
+            or chunk.get("dense_score")
+            or chunk.get("score", 0.0)
+            for chunk in chunks[:2]
+        ]
+
+        if (
+            query_token_count <= 8
+            and len(primary_scores) >= 2
+            and primary_scores[0] >= CONTEXT_EXPANSION_SKIP_TOP_SCORE
+            and primary_scores[1] >= CONTEXT_EXPANSION_SKIP_SECONDARY_SCORE
+        ):
+            log.info(
+                "⚡ Skip context expansion: short direct query already has strong top hits"
+            )
+            return False
+
+        return True
+
     def retrieve_relevant_chunks(
         self, query: str, top_k: int = TOP_K_RESULTS
     ) -> List[Dict[str, Any]]:
@@ -284,8 +341,10 @@ class RAGService:
             # Generate query embedding
             query_embedding = self.embedding_service.create_embedding(query)
 
-            # Optimization: Reduce initial_k from top_k*3 to top_k*2 (max 30)
-            initial_k = min(top_k * 2, 30)  # Cap at 30 candidates
+            initial_k = min(
+                top_k * max(RETRIEVAL_INITIAL_K_MULTIPLIER, 1),
+                max(RETRIEVAL_INITIAL_K_CAP, top_k),
+            )
             hybrid_results = self.retrieval_service.hybrid_search(
                 query=query, query_embedding=query_embedding, top_k=initial_k
             )
@@ -298,10 +357,15 @@ class RAGService:
 
             # Optimized rerank: only cross-encode the top-6 low-confidence candidates
             # (high-score chunks are bypassed inside _rerank_chunks automatically)
-            reranked_chunks = self._rerank_chunks(query, hybrid_results, max_rerank=6)
+            reranked_chunks = self._rerank_chunks(
+                query, hybrid_results, max_rerank=RERANK_MAX_CANDIDATES
+            )
 
             # Context expansion
-            expanded_chunks = self._expand_context(reranked_chunks[:top_k], query)
+            if self._should_expand_context(reranked_chunks[:top_k], query):
+                expanded_chunks = self._expand_context(reranked_chunks[:top_k], query)
+            else:
+                expanded_chunks = reranked_chunks[:top_k]
 
             # Final ranking
             final_chunks = self._final_ranking(expanded_chunks, query)
@@ -359,6 +423,11 @@ class RAGService:
             return chunks
 
         expanded_chunks = chunks.copy()
+        expanded_ids = {
+            chunk.get("id", chunk.get("chunk_id"))
+            for chunk in expanded_chunks
+            if chunk.get("id", chunk.get("chunk_id")) is not None
+        }
 
         try:
             # Group chunks by source file
@@ -376,14 +445,20 @@ class RAGService:
                     page_number = chunk.get("page_number", -1)
 
                     if chunk_index >= 0:
+                        added_neighbors = 0
                         # Look for adjacent chunks (before and after)
-                        for offset in [-1, 1]:
+                        for offset in (-1, 1):
+                            if added_neighbors >= max(
+                                CONTEXT_EXPANSION_MAX_NEIGHBORS, 0
+                            ):
+                                break
                             adjacent_chunk = self._get_adjacent_chunk(
                                 source_file, chunk_index + offset, page_number
                             )
-                            if adjacent_chunk and adjacent_chunk["id"] not in [
-                                c["id"] for c in expanded_chunks
-                            ]:
+                            adjacent_id = (
+                                adjacent_chunk.get("id") if adjacent_chunk else None
+                            )
+                            if adjacent_chunk and adjacent_id not in expanded_ids:
                                 # Check if adjacent chunk is somewhat relevant
                                 if self._is_chunk_relevant(adjacent_chunk, query):
                                     adjacent_chunk["context_expansion"] = True
@@ -391,6 +466,9 @@ class RAGService:
                                         chunk.get("hybrid_score", 0.0) * 0.7
                                     )  # Lower score for context
                                     expanded_chunks.append(adjacent_chunk)
+                                    if adjacent_id is not None:
+                                        expanded_ids.add(adjacent_id)
+                                    added_neighbors += 1
 
             log.info(
                 f"Context expansion added {len(expanded_chunks) - len(chunks)} additional chunks"
@@ -908,6 +986,44 @@ Hướng dẫn:
 
         return "\n\n".join(context_parts)
 
+    # ------------------------------------------------------------------ #
+    # OFF-TOPIC PRE-FILTER                                               #
+    # ------------------------------------------------------------------ #
+    # Patterns that are clearly unrelated to the university or education.
+    # Checked with ZERO API calls to save cost.
+    _OFF_TOPIC_VI = [
+        "mấy giờ", "bây giờ là mấy", "hôm nay là ngày", "ngày hôm nay là",
+        "thứ mấy hôm nay", "bao nhiêu giờ", "giờ hiện tại",
+        "thời tiết hôm nay", "dự báo thời tiết", "trời hôm nay",
+        "viết thơ tình", "thơ tình", "bài thơ tình", "kể chuyện cười",
+        "bài hát hay", "lời bài hát", "cách nấu phở", "công thức làm bánh",
+        "cách nấu bún", "cách nấu cơm", "nấu ăn", "món ngon",
+        "tử vi hôm nay", "xem bói", "số phận",
+        "tính tích phân", "đạo hàm của", "phương trình vi phân",
+        "chơi game", "tên game hay", "phim hay", "xem phim",
+    ]
+    _OFF_TOPIC_EN = [
+        "what time is it", "what's the time", "current time",
+        "what day is it", "today's date", "what is today",
+        "weather today", "weather forecast", "is it raining",
+        "write a poem", "write a love", "tell me a joke",
+        "recipe for", "how to cook", "song lyrics",
+        "solve this math", "calculate the integral", "derivative of",
+        "best movie", "play a game",
+    ]
+
+    def _is_off_topic_query(self, query: str) -> bool:
+        """
+        Rule-based off-topic detector. Zero API cost.
+        Returns True only when the query is clearly unrelated to
+        the university, education, or security forces.
+        """
+        q = query.lower().strip()
+        for pattern in self._OFF_TOPIC_VI + self._OFF_TOPIC_EN:
+            if pattern in q:
+                return True
+        return False
+
     def create_system_prompt(self, language: str = "vi") -> str:
         """
         Create system prompt for the chatbot
@@ -1220,6 +1336,51 @@ Trả lời:"""
                             self.conversations[conversation_id].append(
                                 {"role": message["role"], "content": message["content"]}
                             )
+
+            # Step 0: Off-topic pre-filter — skip ALL retrieval & LLM calls
+            if self._is_off_topic_query(query):
+                log.info(f"[OFF-TOPIC] Query skipped retrieval: '{query[:80]}'")
+                if language == "en":
+                    refusal = (
+                        "Sorry, that question is outside the scope of what I support. "
+                        "I'm here to help with anything related to the People's Security University — "
+                        "admission, training programs, student regulations, campus life, and more. "
+                        "Feel free to ask about those!"
+                    )
+                else:
+                    refusal = (
+                        "Xin lỗi, câu hỏi này nằm ngoài phạm vi hỗ trợ của tôi. "
+                        "Tôi chuyên hỗ trợ các thông tin liên quan đến Trường Đại học An ninh Nhân dân — "
+                        "tuyển sinh, đào tạo, quy chế học viên, đời sống sinh viên, v.v. "
+                        "Bạn có câu hỏi nào về trường không?"
+                    )
+                # Still save to conversation history so the chat flow isn't broken
+                self.conversations[conversation_id].append({"role": "user", "content": query})
+                self.conversations[conversation_id].append({"role": "assistant", "content": refusal})
+                try:
+                    self.db_service.save_conversation(
+                        conversation_id=conversation_id,
+                        user_message=query,
+                        assistant_response=refusal,
+                        sources=[],
+                        confidence=0.0,
+                        processing_time=0.0,
+                    )
+                except Exception:
+                    pass
+                return {
+                    "answer": refusal,
+                    "sources": [],
+                    "source_references": [],
+                    "attachments": [],
+                    "confidence": 0.0,
+                    "conversation_id": conversation_id,
+                    "normalization_applied": False,
+                    "original_query": None,
+                    "normalized_query": None,
+                    "chart_data": [],
+                    "images": [],
+                }
 
             # Step 1: Normalize the user's question using Gemini AI
             log.info(f"Original query: {query}")
