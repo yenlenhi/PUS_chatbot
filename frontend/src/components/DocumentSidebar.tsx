@@ -13,7 +13,6 @@ import {
   ChevronDown,
   ChevronUp,
   FileSearch,
-  Library,
 } from 'lucide-react';
 import type { SourceReference } from '@/types';
 import { getDocumentDisplayName } from '@/lib/documentNames';
@@ -85,23 +84,24 @@ const DocumentSidebar: React.FC<DocumentSidebarProps> = ({
 
   return (
     <>
-      {/* Toggle button — wider pill, shows label + count badge */}
+      {/* Toggle button */}
       <button
         onClick={onToggle}
-        className={`fixed top-1/2 -translate-y-1/2 z-40 flex items-center gap-1.5 bg-red-600 text-white rounded-l-xl shadow-xl hover:bg-red-700 active:scale-95 transition-all duration-300 ${
+        className={`fixed top-1/2 -translate-y-1/2 z-40 flex flex-col items-center justify-center bg-red-600 text-white rounded-l-xl shadow-xl hover:bg-red-700 active:scale-95 transition-all duration-300 w-7 py-5 ${
           isOpen
-            ? 'right-[calc(100vw-2rem)] sm:right-80 md:right-96 px-2 py-3'
-            : 'right-0 px-2.5 py-3'
+            ? 'right-[calc(100vw-2rem)] sm:right-80 md:right-96'
+            : 'right-0'
         }`}
         title={isOpen ? 'Ẩn tài liệu' : 'Hiện tài liệu'}
       >
+        {/* Rotated label */}
+        <span className="text-[10px] font-semibold tracking-widest rotate-90 whitespace-nowrap mb-1 select-none">
+          TL
+        </span>
         {isOpen ? (
-          <ChevronRight className="w-4 h-4" />
+          <ChevronRight className="w-3.5 h-3.5 mt-1" />
         ) : (
-          <>
-            <Library className="w-4 h-4" />
-            <ChevronLeft className="w-3 h-3 opacity-70" />
-          </>
+          <ChevronLeft className="w-3.5 h-3.5 mt-1" />
         )}
         {!isOpen && uniqueCount > 0 && (
           <span className="absolute -top-2 -left-2 bg-amber-400 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center shadow-sm animate-bounce">
