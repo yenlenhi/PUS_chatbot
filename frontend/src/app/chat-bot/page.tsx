@@ -343,8 +343,15 @@ const ImageModal: React.FC<ImageModalProps> = ({ isOpen, onClose, imageSrc, imag
   );
 };
 
+const TYPEWRITER_MAX_ANIMATED_CHARS = 120;
+
 // Custom hook for typewriter effect - optimized to prevent flickering
-const useTypewriter = (text: string, speed: number = 5, enabled: boolean = true) => {
+const useTypewriter = (
+  text: string,
+  speed: number = 5,
+  enabled: boolean = true,
+  maxAnimatedChars: number = TYPEWRITER_MAX_ANIMATED_CHARS
+) => {
   const [displayedText, setDisplayedText] = useState('');
   const [isComplete, setIsComplete] = useState(false);
   const textRef = useRef(text);
@@ -368,6 +375,17 @@ const useTypewriter = (text: string, speed: number = 5, enabled: boolean = true)
 
     if (!text) return;
 
+    const animateTarget = Math.min(text.length, maxAnimatedChars);
+
+    // For long answers, animate only the opening segment then reveal all text.
+    if (text.length > maxAnimatedChars && displayedText.length >= animateTarget) {
+      if (displayedText !== text) {
+        setDisplayedText(text);
+      }
+      setIsComplete(true);
+      return;
+    }
+
     // If already showing all text, just update
     if (displayedText === text) {
       setIsComplete(true);
@@ -376,19 +394,22 @@ const useTypewriter = (text: string, speed: number = 5, enabled: boolean = true)
 
     let index = displayedText.length;
     const timer = setInterval(() => {
-      if (index < text.length) {
+      if (index < animateTarget) {
         // Update multiple characters at once for smoother rendering
-        const charsToAdd = Math.min(3, text.length - index);
+        const charsToAdd = Math.min(3, animateTarget - index);
         setDisplayedText(text.slice(0, index + charsToAdd));
         index += charsToAdd;
       } else {
+        if (text.length > maxAnimatedChars) {
+          setDisplayedText(text);
+        }
         setIsComplete(true);
         clearInterval(timer);
       }
     }, speed);
 
     return () => clearInterval(timer);
-  }, [text, speed, enabled, displayedText]);
+  }, [text, speed, enabled, displayedText, maxAnimatedChars]);
 
   return { displayedText, isComplete };
 };
