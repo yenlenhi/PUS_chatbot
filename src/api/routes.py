@@ -62,6 +62,7 @@ from src.services.supabase_storage_service import (
 )
 from src.services.upload_task_manager import get_task_manager, TaskStatus
 from src.middleware.rate_limit_middleware import rate_limit
+from src.auth.async_jwt_handler import require_admin_async
 from src.utils.logger import log
 
 # Create router
@@ -643,7 +644,7 @@ async def get_document_info(filename: str):
 # ==================== Admin Endpoints ====================
 
 
-@router.get("/admin/documents")
+@router.get("/admin/documents", dependencies=[Depends(require_admin_async)])
 async def admin_list_documents(rag: RAGService = Depends(get_rag_service)):
     """
     Admin endpoint: List all documents with full metadata and statistics
@@ -771,7 +772,9 @@ async def admin_list_documents(rag: RAGService = Depends(get_rag_service)):
         )
 
 
-@router.delete("/admin/documents/{filename}")
+@router.delete(
+    "/admin/documents/{filename}", dependencies=[Depends(require_admin_async)]
+)
 async def admin_delete_document(
     filename: str, rag: RAGService = Depends(get_rag_service)
 ):
@@ -841,7 +844,10 @@ async def admin_delete_document(
         )
 
 
-@router.patch("/admin/documents/{filename}/toggle-active")
+@router.patch(
+    "/admin/documents/{filename}/toggle-active",
+    dependencies=[Depends(require_admin_async)],
+)
 async def admin_toggle_document_active(
     filename: str, rag: RAGService = Depends(get_rag_service)
 ):
@@ -917,7 +923,7 @@ async def admin_toggle_document_active(
         )
 
 
-@router.post("/admin/upload")
+@router.post("/admin/upload", dependencies=[Depends(require_admin_async)])
 @rate_limit("10/minute")  # Limit file uploads to 10 per minute
 async def admin_upload_document(
     request: Request,
@@ -1169,7 +1175,9 @@ async def process_pdf_background(
         )
 
 
-@router.get("/admin/upload/status/{task_id}")
+@router.get(
+    "/admin/upload/status/{task_id}", dependencies=[Depends(require_admin_async)]
+)
 async def get_upload_status(task_id: str):
     """
     Get the status of a PDF upload/processing task
@@ -1192,7 +1200,7 @@ async def get_upload_status(task_id: str):
     )
 
 
-@router.get("/admin/stats")
+@router.get("/admin/stats", dependencies=[Depends(require_admin_async)])
 async def admin_get_stats(rag: RAGService = Depends(get_rag_service)):
     """
     Admin endpoint: Get dashboard statistics
@@ -1244,7 +1252,7 @@ async def admin_get_stats(rag: RAGService = Depends(get_rag_service)):
 # ==================== Chat History Endpoints ====================
 
 
-@router.get("/admin/chat-history")
+@router.get("/admin/chat-history", dependencies=[Depends(require_admin_async)])
 async def get_chat_history(
     limit: int = 50,
     offset: int = 0,
@@ -1289,7 +1297,10 @@ async def get_chat_history(
         )
 
 
-@router.get("/admin/chat-history/{conversation_id}")
+@router.get(
+    "/admin/chat-history/{conversation_id}",
+    dependencies=[Depends(require_admin_async)],
+)
 async def get_conversation_detail(
     conversation_id: str, rag: RAGService = Depends(get_rag_service)
 ):
@@ -1318,7 +1329,10 @@ async def get_conversation_detail(
         )
 
 
-@router.delete("/admin/chat-history/{conversation_id}")
+@router.delete(
+    "/admin/chat-history/{conversation_id}",
+    dependencies=[Depends(require_admin_async)],
+)
 async def delete_conversation(
     conversation_id: str, rag: RAGService = Depends(get_rag_service)
 ):
@@ -1350,7 +1364,10 @@ async def delete_conversation(
         )
 
 
-@router.get("/admin/chat-history/stats/overview")
+@router.get(
+    "/admin/chat-history/stats/overview",
+    dependencies=[Depends(require_admin_async)],
+)
 async def get_chat_stats(rag: RAGService = Depends(get_rag_service)):
     """
     Get chat history statistics
@@ -1366,7 +1383,9 @@ async def get_chat_stats(rag: RAGService = Depends(get_rag_service)):
         )
 
 
-@router.get("/admin/chat-history/export")
+@router.get(
+    "/admin/chat-history/export", dependencies=[Depends(require_admin_async)]
+)
 async def export_chat_history(
     start_date: str = None,
     end_date: str = None,
@@ -1440,7 +1459,11 @@ async def submit_feedback(
         )
 
 
-@router.get("/feedback/stats", response_model=FeedbackStats)
+@router.get(
+    "/feedback/stats",
+    response_model=FeedbackStats,
+    dependencies=[Depends(require_admin_async)],
+)
 async def get_feedback_stats(
     days: int = 30,
     feedback_svc: FeedbackService = Depends(get_feedback_service),
@@ -1462,7 +1485,11 @@ async def get_feedback_stats(
         )
 
 
-@router.get("/feedback/dashboard", response_model=DashboardMetrics)
+@router.get(
+    "/feedback/dashboard",
+    response_model=DashboardMetrics,
+    dependencies=[Depends(require_admin_async)],
+)
 async def get_feedback_dashboard(
     feedback_svc: FeedbackService = Depends(get_feedback_service),
 ):
@@ -1484,7 +1511,7 @@ async def get_feedback_dashboard(
         )
 
 
-@router.get("/feedback/daily")
+@router.get("/feedback/daily", dependencies=[Depends(require_admin_async)])
 async def get_daily_feedback_stats(
     days: int = 7,
     feedback_svc: FeedbackService = Depends(get_feedback_service),
@@ -1506,7 +1533,9 @@ async def get_daily_feedback_stats(
         )
 
 
-@router.get("/feedback/chunks/performance")
+@router.get(
+    "/feedback/chunks/performance", dependencies=[Depends(require_admin_async)]
+)
 async def get_chunk_performance(
     top_n: int = 10,
     worst: bool = False,
@@ -1533,7 +1562,9 @@ async def get_chunk_performance(
         )
 
 
-@router.get("/feedback/negative/recent")
+@router.get(
+    "/feedback/negative/recent", dependencies=[Depends(require_admin_async)]
+)
 async def get_recent_negative_feedback(
     limit: int = 10,
     feedback_svc: FeedbackService = Depends(get_feedback_service),
@@ -1558,7 +1589,7 @@ async def get_recent_negative_feedback(
         )
 
 
-@router.get("/feedback/list")
+@router.get("/feedback/list", dependencies=[Depends(require_admin_async)])
 async def get_feedback_list(
     limit: int = 50,
     offset: int = 0,
@@ -1584,7 +1615,7 @@ async def get_feedback_list(
         raise HTTPException(status_code=500, detail=f"Error listing feedback: {str(e)}")
 
 
-@router.get("/feedback/export")
+@router.get("/feedback/export", dependencies=[Depends(require_admin_async)])
 async def export_feedback_report(
     days: int = 30,
     feedback_svc: FeedbackService = Depends(get_feedback_service),
@@ -1606,7 +1637,9 @@ async def export_feedback_report(
         )
 
 
-@router.get("/feedback/retrieval-weights")
+@router.get(
+    "/feedback/retrieval-weights", dependencies=[Depends(require_admin_async)]
+)
 async def get_retrieval_weights(
     feedback_svc: FeedbackService = Depends(get_feedback_service),
 ):
@@ -1626,7 +1659,7 @@ async def get_retrieval_weights(
         )
 
 
-@router.get("/feedback/training-data")
+@router.get("/feedback/training-data", dependencies=[Depends(require_admin_async)])
 async def get_training_data(
     min_samples: int = 100,
     feedback_svc: FeedbackService = Depends(get_feedback_service),
@@ -1658,7 +1691,11 @@ async def get_training_data(
 # ============================================================================
 
 
-@router.get("/analytics/overview", response_model=DashboardOverview)
+@router.get(
+    "/analytics/overview",
+    response_model=DashboardOverview,
+    dependencies=[Depends(require_admin_async)],
+)
 async def get_analytics_overview(
     analytics_svc: AnalyticsService = Depends(get_analytics_service),
 ):
@@ -1679,7 +1716,11 @@ async def get_analytics_overview(
         )
 
 
-@router.get("/analytics/system", response_model=SystemInsights)
+@router.get(
+    "/analytics/system",
+    response_model=SystemInsights,
+    dependencies=[Depends(require_admin_async)],
+)
 async def get_system_insights(
     time_range: TimeRange = Query(
         TimeRange.LAST_7_DAYS, description="Time range filter"
@@ -1714,7 +1755,11 @@ async def get_system_insights(
         )
 
 
-@router.get("/analytics/users", response_model=UserInsights)
+@router.get(
+    "/analytics/users",
+    response_model=UserInsights,
+    dependencies=[Depends(require_admin_async)],
+)
 async def get_user_insights(
     time_range: TimeRange = Query(
         TimeRange.LAST_7_DAYS, description="Time range filter"
@@ -1752,7 +1797,11 @@ async def get_user_insights(
         )
 
 
-@router.get("/analytics/chat", response_model=ChatInsights)
+@router.get(
+    "/analytics/chat",
+    response_model=ChatInsights,
+    dependencies=[Depends(require_admin_async)],
+)
 async def get_chat_insights(
     time_range: TimeRange = Query(
         TimeRange.LAST_7_DAYS, description="Time range filter"
@@ -1789,7 +1838,11 @@ async def get_chat_insights(
         )
 
 
-@router.get("/analytics/documents", response_model=DocumentInsights)
+@router.get(
+    "/analytics/documents",
+    response_model=DocumentInsights,
+    dependencies=[Depends(require_admin_async)],
+)
 async def get_document_insights(
     time_range: TimeRange = Query(
         TimeRange.LAST_7_DAYS, description="Time range filter"
@@ -1827,7 +1880,11 @@ async def get_document_insights(
         )
 
 
-@router.get("/analytics/business", response_model=BusinessInsights)
+@router.get(
+    "/analytics/business",
+    response_model=BusinessInsights,
+    dependencies=[Depends(require_admin_async)],
+)
 async def get_business_insights(
     time_range: TimeRange = Query(
         TimeRange.LAST_7_DAYS, description="Time range filter"
@@ -1861,7 +1918,9 @@ async def get_business_insights(
         )
 
 
-@router.get("/analytics/popular-questions")
+@router.get(
+    "/analytics/popular-questions", dependencies=[Depends(require_admin_async)]
+)
 async def get_popular_questions(
     time_range: TimeRange = Query(
         TimeRange.LAST_7_DAYS, description="Time range filter"
@@ -1981,8 +2040,13 @@ async def get_suggested_questions(
 # ==================== ATTACHMENT ENDPOINTS ====================
 
 
-@router.post("/attachments/upload", response_model=DocumentAttachment)
+@router.post(
+    "/attachments/upload",
+    response_model=DocumentAttachment,
+    dependencies=[Depends(require_admin_async)],
+)
 async def upload_attachment(
+    request: Request,
     file: UploadFile = File(...),
     description: Optional[str] = Form(None),
     keywords: Optional[str] = Form(None),
@@ -1994,7 +2058,7 @@ async def upload_attachment(
     """
     Upload a new attachment (form, template, etc.)
 
-    - **file**: File to upload (doc, docx, xlsx, xls, pdf)
+    - **file**: File to upload (doc, docx, xlsx, xls, pdf), max 10 MB
     - **description**: Description of the file
     - **keywords**: Comma-separated keywords for searching
     - **chunk_ids**: Comma-separated chunk IDs to link this attachment to
@@ -2010,10 +2074,27 @@ async def upload_attachment(
                 detail=f"File type not allowed. Allowed types: {', '.join(allowed_extensions)}",
             )
 
-        # Validate file size (max 10MB)
-        max_size = 10 * 1024 * 1024  # 10MB
-        # Save file to Supabase Storage
-        file_content = await file.read()
+        # Enforce 10 MB limit — reject early via Content-Length if present
+        MAX_SIZE = 10 * 1024 * 1024  # 10 MB
+        content_length = request.headers.get("content-length")
+        if content_length and int(content_length) > MAX_SIZE:
+            raise HTTPException(
+                status_code=413,
+                detail="File too large. Maximum size is 10 MB.",
+            )
+
+        # Read file in chunks so we never buffer more than MAX_SIZE + 1 byte
+        chunks: list[bytes] = []
+        total = 0
+        async for chunk in file:
+            total += len(chunk)
+            if total > MAX_SIZE:
+                raise HTTPException(
+                    status_code=413,
+                    detail="File too large. Maximum size is 10 MB.",
+                )
+            chunks.append(chunk)
+        file_content = b"".join(chunks)
 
         # Determine content type
         content_type = file.content_type or "application/octet-stream"
@@ -2098,6 +2179,7 @@ async def download_attachment(
 @router.get(
     "/attachments",
     response_model=PaginatedAttachmentResponse,
+    dependencies=[Depends(require_admin_async)],
 )
 async def list_attachments(
     skip: int = Query(0, ge=0),
@@ -2124,7 +2206,9 @@ async def list_attachments(
         )
 
 
-@router.delete("/attachments/{attachment_id}")
+@router.delete(
+    "/attachments/{attachment_id}", dependencies=[Depends(require_admin_async)]
+)
 async def delete_attachment(
     attachment_id: int,
     attachment_svc: AttachmentService = Depends(get_attachment_service),
@@ -2148,7 +2232,10 @@ async def delete_attachment(
         raise HTTPException(status_code=500, detail=f"Delete failed: {str(e)}")
 
 
-@router.post("/attachments/{attachment_id}/link-chunks")
+@router.post(
+    "/attachments/{attachment_id}/link-chunks",
+    dependencies=[Depends(require_admin_async)],
+)
 async def link_attachment_to_chunks(
     attachment_id: int,
     chunk_ids: List[int],
@@ -2186,7 +2273,9 @@ async def link_attachment_to_chunks(
         raise HTTPException(status_code=500, detail=f"Link failed: {str(e)}")
 
 
-@router.get("/admin/analytics/export")
+@router.get(
+    "/admin/analytics/export", dependencies=[Depends(require_admin_async)]
+)
 async def export_analytics_data(
     type: str = Query(
         ..., description="Type of data: system, users, chat, documents, business"
