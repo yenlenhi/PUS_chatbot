@@ -132,6 +132,11 @@ class UserInDB(UserResponse):
 
     hashed_password: str = Field(..., description="Hashed password")
 
+    @property
+    def scopes(self) -> List[str]:
+        """Backward-compatible alias for auth code that still expects scopes."""
+        return self.roles
+
 
 class UserListResponse(BaseModel):
     """Response model for user list"""

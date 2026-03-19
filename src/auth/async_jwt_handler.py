@@ -162,7 +162,7 @@ async def get_current_user_async(
             username=user_in_db.username,
             user_id=str(user_in_db.id),
             disabled=user_in_db.disabled,
-            scopes=user_in_db.scopes,
+            scopes=getattr(user_in_db, "scopes", user_in_db.roles),
         )
 
     except HTTPException:
@@ -173,31 +173,6 @@ async def get_current_user_async(
             detail=f"Authentication error: {str(e)}",
             headers={"WWW-Authenticate": "Bearer"},
         )
-
-
-async def require_admin_async(
-    current_user: Optional[User] = Depends(get_current_user_async),
-) -> User:
-    """
-    FastAPI dependency that enforces admin-only access.
-    Use as: dependencies=[Depends(require_admin_async)]
-    """
-    if current_user is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication required",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    if "admin" not in current_user.scopes:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access required",
-        )
-    return current_user
-
-
-# Alias for compatibility
-get_current_user = get_current_user_async
 
 
 async def require_admin_async(
@@ -226,6 +201,10 @@ async def require_admin_async(
         )
 
     return current_user
+
+
+# Alias for compatibility
+get_current_user = get_current_user_async
 
 
 # Alias for compatibility
