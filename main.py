@@ -12,6 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from pathlib import Path
+import os
 import time
 import uvicorn
 from src.api.routes import router
@@ -40,6 +41,21 @@ from config.settings import (
 import shutil
 
 from contextlib import asynccontextmanager
+
+
+def _resolve_uvicorn_workers() -> int:
+    configured_workers = os.environ.get("UVICORN_WORKERS")
+    if configured_workers:
+        try:
+            return max(1, int(configured_workers))
+        except ValueError:
+            log.warning(
+                f"Invalid UVICORN_WORKERS='{configured_workers}', falling back to dynamic default"
+            )
+
+    cpu_count = os.cpu_count() or 2
+    # Each worker loads retrieval + reranker models, so keep the default conservative.
+    return max(1, min((cpu_count + 1) // 2, 4))
 
 
 # Create FastAPI app
@@ -216,18 +232,14 @@ async def health_check():
 
 
 if __name__ == "__main__":
-    import os
-
     # Support Railway PORT environment variable
     port = int(os.environ.get("PORT", API_PORT))
     host = os.environ.get("HOST", API_HOST)
 
     # Run the application
-    # Run the application
-    # Use 24 workers as requested
-    workers = 24
+    workers = _resolve_uvicorn_workers()
     if API_RELOAD:
         workers = 1
 
-        
+    log.info(f"Starting uvicorn with {workers} worker(s)")
     uvicorn.run("main:app", host=host, port=port, reload=API_RELOAD, workers=workers, log_level="info")

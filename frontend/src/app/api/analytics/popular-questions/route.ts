@@ -3,11 +3,11 @@ import { NextRequest, NextResponse } from 'next/server';
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8000';
 
 export async function GET(request: NextRequest) {
+  const searchParams = request.nextUrl.searchParams;
+  const timeRange = searchParams.get('time_range') || 'L7D';
+  const limit = searchParams.get('limit') || '5';
+
   try {
-    const searchParams = request.nextUrl.searchParams;
-    const timeRange = searchParams.get('time_range') || 'L7D';
-    const limit = searchParams.get('limit') || '5';
-    
     // Forward request to backend
     const response = await fetch(
       `${BACKEND_URL}/api/v1/analytics/popular-questions?time_range=${timeRange}&limit=${limit}`,

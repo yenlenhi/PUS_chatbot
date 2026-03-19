@@ -2,8 +2,8 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { Send, User, FolderOpen, Book, Copy, Check, RefreshCw, Volume2, VolumeX, Pause, Play, X, ImagePlus, Home, ArrowLeft, ZoomIn, ZoomOut, RotateCw, Download, Maximize2, Compass, ChevronUp, ChevronDown, Sparkles } from 'lucide-react';
-import type { Message, SourceReference, ChartData, ImageData, UploadedImage, FileAttachment } from '@/types';
+import { Send, User, FolderOpen, Book, Copy, Check, RefreshCw, Volume2, VolumeX, Pause, Play, X, ImagePlus, Home, ArrowLeft, ZoomIn, ZoomOut, RotateCw, Download, Maximize2, ChevronUp, ChevronDown, Sparkles } from 'lucide-react';
+import type { Message, SourceReference, ChartData, ImageData, FileAttachment } from '@/types';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -16,13 +16,38 @@ import FeedbackButtons from '@/components/FeedbackButtons';
 import VoiceInputButton from '@/components/VoiceInputButton';
 import ChartRenderer from '@/components/ChartRenderer';
 import ImageRenderer from '@/components/ImageRenderer';
-import GuidedFlow from '@/components/GuidedFlow';
-import ImageUpload, { UploadedImage as UploadedImageType } from '@/components/ImageUpload';
+import type { UploadedImage as UploadedImageType } from '@/components/ImageUpload';
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 import { useSpeechSynthesis } from '@/hooks/useSpeechSynthesis';
-import { MobileSourceDrawer, SourceFAB, SuggestedQuestions } from '@/components/chat/MobileUI';
+import { MobileSourceDrawer } from '@/components/chat/MobileUI';
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 const SOURCE_REFERENCE_DISPLAY_THRESHOLD = 0.65;
+
+const filterVisibleSourceReferences = (sourceReferences: SourceReference[] = []) =>
+  sourceReferences.filter((ref) => (ref.relevance_score || 0) >= SOURCE_REFERENCE_DISPLAY_THRESHOLD);
+
+const rankVisibleSourceReferences = (sourceReferences: SourceReference[] = [], limit = 5) =>
+  filterVisibleSourceReferences(sourceReferences)
+    .sort((a, b) => (b.relevance_score || 0) - (a.relevance_score || 0))
+    .slice(0, limit);
+
+const FALLBACK_QUESTIONS = {
+  vi: [
+    'Điều kiện tuyển sinh và các phương thức xét tuyển của trường là gì?',
+    'Chỉ tiêu tuyển sinh theo từng ngành hoặc nhóm ngành hiện nay như thế nào?',
+    'Hồ sơ sơ tuyển hoặc hồ sơ đăng ký xét tuyển cần chuẩn bị những gì?',
+    'Mốc thời gian nộp hồ sơ, sơ tuyển và nhập học diễn ra khi nào?',
+    'Tiêu chuẩn sức khỏe, độ tuổi và đối tượng tuyển sinh được quy định ra sao?'
+  ],
+  en: [
+    'What are the admission requirements and admission methods?',
+    'What are the admission quotas by major or program?',
+    'Which application or pre-qualification documents are required?',
+    'What is the timeline for application, pre-qualification, and enrollment?',
+    'What are the health, age, and applicant eligibility standards?'
+  ]
+} as const;
 
 // Gemini-style Processing Indicator - Shows REAL backend processing status
 interface ProcessingIndicatorProps {
@@ -76,6 +101,16 @@ const ProcessingIndicator: React.FC<ProcessingIndicatorProps> = ({ currentStatus
 
   const currentInfo = getStepInfo(currentStatus);
   const activeStepIdx = getCurrentStepIndex();
+  const isCompletedStep = (stepKey: string, idx: number) => {
+    const completed = completedSteps.some((step) => {
+      const normalized = step.toLowerCase();
+      if (stepKey === 'search') return normalized.includes('tìm kiếm') || normalized.includes('search');
+      if (stepKey === 'analyze') return normalized.includes('phân tích') || normalized.includes('context') || normalized.includes('ngữ cảnh');
+      return normalized.includes('soạn') || normalized.includes('tạo') || normalized.includes('generate') || normalized.includes('answer');
+    });
+
+    return completed || idx < activeStepIdx;
+  };
 
   return (
     <div className="w-full">
@@ -111,25 +146,33 @@ const ProcessingIndicator: React.FC<ProcessingIndicatorProps> = ({ currentStatus
           <div className="flex items-center gap-2 mt-3">
             {allSteps.map((step, idx) => (
               <div key={step.key} className="flex items-center gap-1">
-                <div
-                  className={`w-2 h-2 rounded-full transition-all duration-300 ${idx < activeStepIdx
-                    ? 'bg-green-500' // completed
-                    : idx === activeStepIdx
-                      ? 'bg-amber-500 animate-pulse' // active
-                      : 'bg-gray-300' // pending
-                    }`}
-                />
-                <span className={`text-xs ${idx < activeStepIdx
-                  ? 'text-green-600'
-                  : idx === activeStepIdx
-                    ? 'text-amber-600 font-medium'
-                    : 'text-gray-400'
-                  }`}>
-                  {step.title}
-                </span>
-                {idx < allSteps.length - 1 && (
-                  <span className="text-gray-300 mx-1">→</span>
-                )}
+                {(() => {
+                  const isCompleted = isCompletedStep(step.key, idx);
+                  const isActive = idx === activeStepIdx;
+                  return (
+                    <>
+                      <div
+                        className={`w-2 h-2 rounded-full transition-all duration-300 ${isCompleted
+                          ? 'bg-green-500'
+                          : isActive
+                            ? 'bg-amber-500 animate-pulse'
+                            : 'bg-gray-300'
+                          }`}
+                      />
+                      <span className={`text-xs ${isCompleted
+                        ? 'text-green-600'
+                        : isActive
+                          ? 'text-amber-600 font-medium'
+                          : 'text-gray-400'
+                        }`}>
+                        {step.title}
+                      </span>
+                      {idx < allSteps.length - 1 && (
+                        <span className="text-gray-300 mx-1">→</span>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
             ))}
           </div>
@@ -275,9 +318,12 @@ const ImageModal: React.FC<ImageModalProps> = ({ isOpen, onClose, imageSrc, imag
         onMouseLeave={handleMouseUp}
         style={{ cursor: scale > 1 ? (isDragging ? 'grabbing' : 'grab') : 'default' }}
       >
-        <img
+        <Image
           src={imageSrc}
           alt={imageAlt}
+          width={1600}
+          height={1200}
+          unoptimized
           className="max-w-[90vw] max-h-[85vh] object-contain select-none transition-transform duration-200"
           style={{
             transform: `translate(${position.x}px, ${position.y}px) scale(${scale}) rotate(${rotation}deg)`,
@@ -402,6 +448,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   const isCopied = copiedId === message.id;
   const isCopiedQA = copiedQAId === message.id;
   const isThisMessageSpeaking = speakingMessageId === message.id && isSpeaking;
+  const visibleSourceReferences = filterVisibleSourceReferences(message.sourceReferences);
 
   // Parse follow-up questions from content
   const parseFollowUpQuestions = (content: string): { mainContent: string; followUpQuestions: string[] } => {
@@ -452,11 +499,14 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                     className="relative group cursor-pointer"
                     onClick={() => setSelectedImage(img.preview || img.base64 || '')}
                   >
-                    <div className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-lg sm:rounded-xl overflow-hidden shadow-lg border border-white sm:border-2 hover:border-blue-400 transition-all duration-200 hover:shadow-xl">
-                      <img
+                    <div className="relative w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-lg sm:rounded-xl overflow-hidden shadow-lg border border-white sm:border-2 hover:border-blue-400 transition-all duration-200 hover:shadow-xl">
+                      <Image
                         src={img.preview || img.base64}
                         alt={`Uploaded ${idx + 1}`}
-                        className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
+                        fill
+                        unoptimized
+                        sizes="(max-width: 640px) 80px, (max-width: 768px) 96px, 112px"
+                        className="object-cover transition-transform duration-200 group-hover:scale-105"
                       />
                     </div>
                     {/* Zoom overlay */}
@@ -541,7 +591,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               components={{
-                code({ node, className, children, ...props }) {
+                code({ className, children, ...props }) {
                   const match = /language-(\w+)/.exec(className || '');
                   const isInline = !match && (children?.toString().indexOf('\n') === -1);
                   return !isInline && match ? (
@@ -638,7 +688,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
             {message.attachments.map((attachment, idx) => (
               <a
                 key={idx}
-                href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}${attachment.download_url}`}
+                href={`${API_BASE_URL}${attachment.download_url}`}
                 download
                 target="_blank"
                 rel="noopener noreferrer"
@@ -669,16 +719,13 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
         )}
 
         {/* Source indicator */}
-        {message.sourceReferences && message.sourceReferences.filter(ref => (ref.relevance_score || 0) >= SOURCE_REFERENCE_DISPLAY_THRESHOLD).length > 0 && isComplete && (
+        {visibleSourceReferences.length > 0 && isComplete && (
           <button
-            onClick={() => {
-              const filteredSources = message.sourceReferences?.filter(ref => (ref.relevance_score || 0) >= SOURCE_REFERENCE_DISPLAY_THRESHOLD) || [];
-              onViewSources(filteredSources);
-            }}
+            onClick={() => onViewSources(visibleSourceReferences)}
             className="mt-3 text-xs text-red-600 hover:text-red-700 flex items-center gap-1 bg-red-50 px-2.5 py-1.5 rounded-full transition-colors"
           >
             <Book className="w-3 h-3" />
-            {message.sourceReferences.filter(ref => (ref.relevance_score || 0) >= SOURCE_REFERENCE_DISPLAY_THRESHOLD).length} nguồn tham khảo (≥{Math.round(SOURCE_REFERENCE_DISPLAY_THRESHOLD * 100)}%)
+            {visibleSourceReferences.length} nguồn tham khảo (≥{Math.round(SOURCE_REFERENCE_DISPLAY_THRESHOLD * 100)}%)
           </button>
         )}
 
@@ -786,7 +833,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
 const ChatBotPage = () => {
   const [conversationId] = useState(() => `web-chat-${Date.now()}`);
   const [language, setLanguage] = useState<'vi' | 'en'>('vi'); // Language toggle state
-  const [messages, setMessages] = useState<Message[]>([
+  const [messages, setMessages] = useState<Message[]>(() => [
     {
       id: '1',
       role: 'assistant',
@@ -813,13 +860,10 @@ const ChatBotPage = () => {
 
   // Document repository state
   const [repositoryOpen, setRepositoryOpen] = useState(false);
-
-  // Guided Flow state
-  const [guidedFlowOpen, setGuidedFlowOpen] = useState(false);
-
   // PDF Viewer state
   const [pdfViewerOpen, setPdfViewerOpen] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState<{ filename: string; page?: number } | null>(null);
+  const visibleCurrentSourceReferences = filterVisibleSourceReferences(currentSourceReferences);
 
   // Speech Recognition (Voice to Text) - dynamic language based on toggle
   const {
@@ -841,8 +885,7 @@ const ChatBotPage = () => {
     resume: resumeSpeaking,
     isSpeaking,
     isPaused,
-    isSupported: speechSynthesisSupported,
-    error: speechSynthesisError
+    isSupported: speechSynthesisSupported
   } = useSpeechSynthesis({ lang: 'vi-VN', rate: 1 });
 
   // Update input when speech recognition completes
@@ -992,10 +1035,7 @@ const ChatBotPage = () => {
         if (response.ok) {
           const data = await response.json();
           const allSourceReferences: SourceReference[] = data.source_references || [];
-          const sourceReferences: SourceReference[] = allSourceReferences
-            .filter(ref => (ref.relevance_score || 0) >= SOURCE_REFERENCE_DISPLAY_THRESHOLD)
-            .sort((a, b) => (b.relevance_score || 0) - (a.relevance_score || 0))
-            .slice(0, 5);
+          const sourceReferences = rankVisibleSourceReferences(allSourceReferences);
 
           const chunkIds: number[] = sourceReferences
             .map((ref: SourceReference) => parseInt(ref.chunk_id, 10))
@@ -1082,10 +1122,7 @@ const ChatBotPage = () => {
               } else if (chunk.type === 'sources') {
                 // Backend sends source_references, not sources
                 const allSourceReferences: SourceReference[] = chunk.source_references || [];
-                streamedSources = allSourceReferences
-                  .filter((ref: SourceReference) => (ref.relevance_score || 0) >= SOURCE_REFERENCE_DISPLAY_THRESHOLD)
-                  .sort((a: SourceReference, b: SourceReference) => (b.relevance_score || 0) - (a.relevance_score || 0))
-                  .slice(0, 5);
+                streamedSources = rankVisibleSourceReferences(allSourceReferences);
                 streamedConfidence = chunk.confidence || 0;
 
                 if (streamedSources.length > 0) {
@@ -1165,31 +1202,12 @@ const ChatBotPage = () => {
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
-  };
-
   // Suggested questions from API (trending topics)
   const [suggestedQuestions, setSuggestedQuestions] = useState<string[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
 
   // Fallback suggested questions
-  const fallbackQuestions = language === 'vi' ? [
-    "Điều kiện tuyển sinh và các phương thức xét tuyển của trường là gì?",
-    "Chỉ tiêu tuyển sinh theo từng ngành hoặc nhóm ngành hiện nay như thế nào?",
-    "Hồ sơ sơ tuyển hoặc hồ sơ đăng ký xét tuyển cần chuẩn bị những gì?",
-    "Mốc thời gian nộp hồ sơ, sơ tuyển và nhập học diễn ra khi nào?",
-    "Tiêu chuẩn sức khỏe, độ tuổi và đối tượng tuyển sinh được quy định ra sao?"
-  ] : [
-    "What are the admission requirements and admission methods?",
-    "What are the admission quotas by major or program?",
-    "Which application or pre-qualification documents are required?",
-    "What is the timeline for application, pre-qualification, and enrollment?",
-    "What are the health, age, and applicant eligibility standards?"
-  ];
+  const fallbackQuestions = FALLBACK_QUESTIONS[language];
 
   // Fetch suggested questions from API
   useEffect(() => {
@@ -1205,30 +1223,30 @@ const ChatBotPage = () => {
             setSuggestedQuestions(questions);
           } else {
             // Use fallback if API returns empty
-            setSuggestedQuestions(fallbackQuestions);
+            setSuggestedQuestions([...fallbackQuestions]);
           }
         } else {
           // Use fallback on error
-          setSuggestedQuestions(fallbackQuestions);
+          setSuggestedQuestions([...fallbackQuestions]);
         }
       } catch (error) {
         console.error('Error fetching suggested questions:', error);
         // Use fallback on error
-        setSuggestedQuestions(fallbackQuestions);
+        setSuggestedQuestions([...fallbackQuestions]);
       } finally {
         setLoadingSuggestions(false);
       }
     };
 
     fetchSuggestedQuestions();
-  }, []); // Fetch once on mount
+  }, [fallbackQuestions]);
 
   // Update fallback questions when language changes (if using fallback)
   useEffect(() => {
     if (suggestedQuestions.length === 0 && !loadingSuggestions) {
-      setSuggestedQuestions(fallbackQuestions);
+      setSuggestedQuestions([...fallbackQuestions]);
     }
-  }, [language]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [fallbackQuestions, loadingSuggestions, suggestedQuestions.length]);
 
 
 
@@ -1292,25 +1310,15 @@ const ChatBotPage = () => {
                   EN
                 </button>
               </div>
-              {/* Guided Flow Button - Hidden on very small screens */}
-              <button
-                onClick={() => setGuidedFlowOpen(true)}
-                className="hidden"
-                title={language === 'vi' ? 'Hướng dẫn thủ tục' : 'Procedure Guide'}
-              >
-                <Compass className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                <span className="hidden sm:inline">{language === 'vi' ? 'Thủ tục' : 'Guide'}</span>
-              </button>
-
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
                 className="group flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-gray-50 to-gray-100 hover:from-gray-100 hover:to-gray-200 text-gray-700 rounded-xl transition-all duration-300 text-xs sm:text-sm font-medium relative shadow-sm hover:shadow-md hover:scale-105"
               >
                 <Book className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover:scale-110 transition-transform" />
                 <span className="hidden sm:inline">{language === 'vi' ? 'Nguồn' : 'Sources'}</span>
-                {currentSourceReferences.filter(ref => (ref.relevance_score || 0) >= SOURCE_REFERENCE_DISPLAY_THRESHOLD).length > 0 && (
+                {visibleCurrentSourceReferences.length > 0 && (
                   <span className="absolute -top-1 -right-1 bg-gradient-to-r from-red-500 to-red-600 text-white text-xs rounded-full w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center animate-pulse shadow-lg">
-                    {currentSourceReferences.filter(ref => (ref.relevance_score || 0) >= SOURCE_REFERENCE_DISPLAY_THRESHOLD).length}
+                    {visibleCurrentSourceReferences.length}
                   </span>
                 )}
               </button>
@@ -1358,7 +1366,7 @@ const ChatBotPage = () => {
             {/* Expanded Messages Container */}
             <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4 bg-gradient-to-b from-white/50 to-gray-50/50 min-h-0">
               {/* Custom scrollbar styling added via global CSS would be ideal here */}
-              {messages.map((message, index) => (
+              {messages.map((message) => (
                 <MessageBubble
                   key={message.id}
                   message={message}
@@ -1499,10 +1507,13 @@ const ChatBotPage = () => {
                           className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden border-3 border-white shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer hover:scale-105 bg-gradient-to-br from-white to-gray-100"
                           onClick={() => setPreviewImage(image.preview)}
                         >
-                          <img
+                          <Image
                             src={image.preview}
                             alt={image.name}
-                            className="w-full h-full object-cover transition-all duration-300 group-hover:scale-110"
+                            fill
+                            unoptimized
+                            sizes="(max-width: 640px) 80px, 96px"
+                            className="object-cover transition-all duration-300 group-hover:scale-110"
                           />
                           {/* Enhanced zoom overlay */}
                           <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center">
@@ -1698,7 +1709,7 @@ const ChatBotPage = () => {
                   <p className="text-xs text-gray-500 leading-tight">
                     📋 {language === 'vi'
                       ? <>Mọi thông tin pháp lý chính thức xin tham khảo văn bản được công bố trên <a href="https://dhannd.bocongan.gov.vn/" target="_blank" rel="noopener noreferrer" className="text-red-600 hover:text-red-700 hover:underline font-medium">website/trang thông báo của trường</a>.</>
-                      : <>For all official legal information, please refer to documents published on the <a href="https://dhannd.bocongan.gov.vn/" target="_blank" rel="noopener noreferrer" className="text-red-600 hover:text-red-700 hover:underline font-medium">university's website/notice board</a>.</>
+                      : <>For all official legal information, please refer to documents published on the <a href="https://dhannd.bocongan.gov.vn/" target="_blank" rel="noopener noreferrer" className="text-red-600 hover:text-red-700 hover:underline font-medium">university&apos;s website/notice board</a>.</>
                     }
                   </p>
                 </div>
@@ -1710,7 +1721,7 @@ const ChatBotPage = () => {
 
       {/* Document Sidebar */}
       <DocumentSidebar
-        sourceReferences={currentSourceReferences.filter(ref => (ref.relevance_score || 0) >= SOURCE_REFERENCE_DISPLAY_THRESHOLD)}
+        sourceReferences={visibleCurrentSourceReferences}
         isOpen={sidebarOpen}
         onToggle={() => setSidebarOpen(!sidebarOpen)}
         onOpenDocument={handleOpenDocument}
@@ -1723,26 +1734,6 @@ const ChatBotPage = () => {
         onClose={() => setRepositoryOpen(false)}
         onOpenDocument={(filename) => handleOpenDocument(filename)}
       />
-
-      {/* Guided Flow Modal */}
-      {false && guidedFlowOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="w-full max-w-lg max-h-[90vh] overflow-auto">
-            <GuidedFlow
-              language={language}
-              onClose={() => setGuidedFlowOpen(false)}
-              onAskBot={(message) => {
-                setGuidedFlowOpen(false);
-                setInputMessage(message);
-                // Auto-send after a short delay
-                setTimeout(() => {
-                  handleSendMessage(message);
-                }, 100);
-              }}
-            />
-          </div>
-        </div>
-      )}
 
       {/* PDF Viewer Modal */}
       {selectedDocument && (
@@ -1766,13 +1757,13 @@ const ChatBotPage = () => {
       <MobileSourceDrawer
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
-        sources={currentSourceReferences.filter(ref => (ref.relevance_score || 0) >= SOURCE_REFERENCE_DISPLAY_THRESHOLD)}
+        sources={visibleCurrentSourceReferences}
         onViewDocument={handleOpenDocument}
       />
 
       {/* Floating Action Button for Sources on Mobile - REMOVED as per user request to avoid overlap */}
       {/* <SourceFAB
-        sourceCount={currentSourceReferences.filter(ref => (ref.relevance_score || 0) >= SOURCE_REFERENCE_DISPLAY_THRESHOLD).length}
+        sourceCount={visibleCurrentSourceReferences.length}
         onClick={() => setSidebarOpen(true)}
       /> */}
     </div>

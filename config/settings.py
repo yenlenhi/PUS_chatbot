@@ -56,8 +56,9 @@ ENABLE_GOOGLE_SEARCH_GROUNDING = (
     os.getenv("ENABLE_GOOGLE_SEARCH_GROUNDING", "true").lower() == "true"
 )
 
-# Product policy: chatbot only answers official admission-related questions
-ADMISSION_ONLY_MODE = os.getenv("ADMISSION_ONLY_MODE", "true").lower() == "true"
+# Product policy: chatbot answers all university-related questions (not just admission)
+# Set ADMISSION_ONLY_MODE=true to restrict to admission topics only
+ADMISSION_ONLY_MODE = os.getenv("ADMISSION_ONLY_MODE", "false").lower() == "true"
 
 # ============================================
 # ACCURACY MODE CONFIGURATION

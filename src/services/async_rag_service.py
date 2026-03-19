@@ -11,7 +11,7 @@ Key optimizations:
 import uuid
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
-from typing import List, Dict, Any, Optional, AsyncGenerator
+from typing import List, Dict, Any, Optional, AsyncGenerator, Tuple
 
 from src.utils.logger import log
 from src.services.async_gemini_service import (
@@ -152,6 +152,115 @@ class AsyncRAGService:
             self.rag_service.conversations[conversation_id] = (
                 self.rag_service.conversations[conversation_id][-10:]
             )
+
+    def _build_sources(self, relevant_chunks: List[Dict[str, Any]]) -> List[str]:
+        sources: List[str] = []
+        for chunk in relevant_chunks:
+            source = chunk.get("source_file", "") or chunk.get("source", "")
+            if source and source not in sources:
+                sources.append(source)
+        return sources
+
+    def _build_generation_prompt(
+        self, query: str, language: str, system_prompt: str, user_prompt: str
+    ) -> Tuple[str, bool]:
+        grounding_instruction = get_grounding_instruction(query, language)
+        if grounding_instruction:
+            full_prompt = f"{grounding_instruction}\n\n{system_prompt}\n\n{user_prompt}"
+            return full_prompt, True
+
+        return f"{system_prompt}\n\n{user_prompt}", False
+
+    def _should_fetch_attachments(
+        self, query: str, relevant_chunks: List[Dict[str, Any]]
+    ) -> bool:
+        query_lower = (query or "").lower()
+        attachment_keywords = (
+            "hồ sơ",
+            "ho so",
+            "sơ tuyển",
+            "so tuyen",
+            "đăng ký",
+            "dang ky",
+            "biểu mẫu",
+            "bieu mau",
+            "mẫu",
+            "mau",
+            "đơn",
+            "don",
+            "phiếu",
+            "phieu",
+            "tài liệu",
+            "tai lieu",
+            "file",
+            "form",
+            "pdf",
+            "download",
+            "tải xuống",
+            "tai xuong",
+            "attachment",
+            "document",
+            "documents",
+            "template",
+        )
+        if any(keyword in query_lower for keyword in attachment_keywords):
+            return True
+
+        chunk_keywords = (
+            "hồ sơ",
+            "ho so",
+            "mẫu",
+            "mau",
+            "đơn",
+            "don",
+            "phiếu",
+            "phieu",
+            "tài liệu",
+            "tai lieu",
+            "biểu mẫu",
+            "bieu mau",
+            "download",
+            "tải xuống",
+            "tai xuong",
+            "file đính kèm",
+            "tep dinh kem",
+            "form",
+            "document",
+            "attachment",
+        )
+        for chunk in relevant_chunks[:3]:
+            chunk_text = " ".join(
+                str(chunk.get(field, "") or "")
+                for field in ("content", "text", "title", "source", "source_file")
+            ).lower()
+            if any(keyword in chunk_text for keyword in chunk_keywords):
+                return True
+
+        return False
+
+    async def _maybe_get_attachments(
+        self,
+        query: str,
+        relevant_chunks: List[Dict[str, Any]],
+        *,
+        stream: bool = False,
+    ) -> List[Dict[str, Any]]:
+        if not relevant_chunks:
+            return []
+
+        if not self._should_fetch_attachments(query, relevant_chunks):
+            log.info(
+                "[ASYNC STREAM] Skip attachment retrieval (no attachment intent detected)"
+                if stream
+                else "[ASYNC] Skip attachment retrieval (no attachment intent detected)"
+            )
+            return []
+
+        return await self._run_in_executor(
+            self.rag_service._retrieve_attachments_for_context,
+            query,
+            relevant_chunks,
+        )
 
     def _classify_query(self, query: str, conv_turn_count: int) -> dict:
         """
@@ -420,12 +529,7 @@ class AsyncRAGService:
 
             # Create context and sources
             context = self.rag_service.create_context(relevant_chunks)
-
-            sources = []
-            for chunk in relevant_chunks:
-                source = chunk.get("source_file", "") or chunk.get("source", "")
-                if source and source not in sources:
-                    sources.append(source)
+            sources = self._build_sources(relevant_chunks)
 
             # Build source references
             source_references = self._build_source_references(relevant_chunks)
@@ -461,11 +565,7 @@ class AsyncRAGService:
                 return response
 
             # Get attachments
-            attachments = await self._run_in_executor(
-                self.rag_service._retrieve_attachments_for_context,
-                query,
-                relevant_chunks,
-            )
+            attachments = await self._maybe_get_attachments(query, relevant_chunks)
 
             if attachments:
                 attachment_context = "\n\n*** TÀI LIỆU ĐÍNH KÈM CÓ SẴN ***:\n"
@@ -482,14 +582,9 @@ class AsyncRAGService:
             )
 
             # Grounding: only for real-time queries (lãnh đạo, sự kiện, tin tức...)
-            needs_grounding = bool(get_grounding_instruction(query, language))
-            if needs_grounding:
-                grounding_instruction = get_grounding_instruction(query, language)
-                full_prompt = (
-                    f"{grounding_instruction}\n\n{system_prompt}\n\n{user_prompt}"
-                )
-            else:
-                full_prompt = f"{system_prompt}\n\n{user_prompt}"
+            full_prompt, needs_grounding = self._build_generation_prompt(
+                query, language, system_prompt, user_prompt
+            )
 
             # Generate answer using ASYNC Gemini call
             log.info(f"[ASYNC] Calling Gemini API (grounding={needs_grounding})...")
@@ -729,11 +824,7 @@ class AsyncRAGService:
             context = self.rag_service.create_context(relevant_chunks)
 
             # Get sources
-            sources = []
-            for chunk in relevant_chunks:
-                source = chunk.get("source_file", "") or chunk.get("source", "")
-                if source and source not in sources:
-                    sources.append(source)
+            sources = self._build_sources(relevant_chunks)
 
             source_references = self._build_source_references(relevant_chunks)
             confidence = self._calculate_confidence(relevant_chunks)
@@ -773,10 +864,8 @@ class AsyncRAGService:
                 return
 
             # Get attachments
-            attachments = await self._run_in_executor(
-                self.rag_service._retrieve_attachments_for_context,
-                query,
-                relevant_chunks,
+            attachments = await self._maybe_get_attachments(
+                query, relevant_chunks, stream=True
             )
 
             # Inject attachments into context for the LLM
@@ -812,16 +901,13 @@ class AsyncRAGService:
             )
 
             # Grounding: only for real-time queries (lãnh đạo, sự kiện, tin tức...)
-            needs_grounding = bool(get_grounding_instruction(query, language))
+            full_prompt, needs_grounding = self._build_generation_prompt(
+                query, language, system_prompt, user_prompt
+            )
             if needs_grounding:
-                grounding_instruction = get_grounding_instruction(query, language)
                 log.info("[ASYNC STREAM] Grounding ENABLED (real-time query)")
-                full_prompt = (
-                    f"{grounding_instruction}\n\n{system_prompt}\n\n{user_prompt}"
-                )
             else:
                 log.info("[ASYNC STREAM] Grounding DISABLED (using internal documents)")
-                full_prompt = f"{system_prompt}\n\n{user_prompt}"
 
             # TRUE ASYNC STREAMING from Gemini
             full_answer = ""

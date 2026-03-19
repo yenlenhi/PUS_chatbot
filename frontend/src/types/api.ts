@@ -89,6 +89,7 @@ export interface ConversationMessage {
   confidence: number;
   processing_time: number;
   timestamp: string | null;
+  images?: string[] | null;
 }
 
 export interface ConversationDetail {
@@ -138,79 +139,9 @@ export interface ChatHistoryExport {
       confidence: number;
       processing_time: number;
       timestamp: string | null;
+      images?: string[] | null;
     }[];
   }[];
-}
-
-// ==================== Chat History Types ====================
-
-export interface ConversationMessage {
-  id: number;
-  user_message: string;
-  assistant_response: string;
-  sources: string[];
-  confidence: number;
-  processing_time: number;
-  timestamp: string;
-}
-
-export interface ConversationSummary {
-  id: string;
-  conversation_id: string;
-  message_count: number;
-  first_message: string;
-  last_message: string;
-  avg_confidence: number;
-  total_processing_time: number;
-  first_query: string;
-  status: 'active' | 'completed';
-}
-
-export interface ConversationDetail {
-  conversation_id: string;
-  message_count: number;
-  messages: ConversationMessage[];
-  total_processing_time: number;
-  avg_confidence: number;
-  first_message: string;
-  last_message: string;
-}
-
-export interface ChatHistoryResponse {
-  conversations: ConversationSummary[];
-  total: number;
-  limit: number;
-  offset: number;
-  stats: {
-    total_conversations: number;
-    active_conversations: number;
-    today_conversations: number;
-    total_messages: number;
-  };
-}
-
-export interface ChatHistoryStats {
-  total_conversations: number;
-  total_messages: number;
-  today_conversations: number;
-  active_conversations: number;
-  avg_confidence: number;
-  avg_processing_time: number;
-  popular_topics: Array<{
-    topic: string;
-    count: number;
-  }>;
-}
-
-export interface ChatHistoryExport {
-  export_date: string;
-  start_date: string | null;
-  end_date: string | null;
-  total_conversations: number;
-  conversations: Array<{
-    conversation_id: string;
-    messages: ConversationMessage[];
-  }>;
 }
 
 // ==================== Document Management Types ====================

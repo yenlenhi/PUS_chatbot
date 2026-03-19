@@ -308,7 +308,7 @@ ${source.content ? `📝 Nội dung liên quan:\n${source.content.substring(0, 3
                   )}
 
                   <p className={`text-xs mt-2 ${message.sender === 'user' ? 'text-red-200' : 'text-gray-500'}`}>
-                    {message.timestamp.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                    {(message.timestamp instanceof Date ? message.timestamp : new Date(message.timestamp)).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
                   </p>
 
                   {/* Feedback Buttons - only for bot messages (except welcome message) and not streaming */}
