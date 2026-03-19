@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { FileText, ChevronDown, ChevronUp, ExternalLink, Book, Hash } from 'lucide-react';
 import type { SourceReference } from '@/types';
+import { getDocumentDisplayName } from '@/lib/documentNames';
 
 interface SourceReferencesProps {
   sourceReferences: SourceReference[];
@@ -20,13 +21,6 @@ const SourceReferences: React.FC<SourceReferencesProps> = ({
   if (!sourceReferences || sourceReferences.length === 0) {
     return null;
   }
-
-  const formatFileName = (filename: string) => {
-    return filename
-      .replace(/\.[^/.]+$/, '')
-      .replace(/_/g, ' ')
-      .replace(/\b\w/g, l => l.toUpperCase());
-  };
 
   const formatScore = (score: number) => {
     return Math.round(score * 100);
@@ -77,7 +71,7 @@ const SourceReferences: React.FC<SourceReferencesProps> = ({
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <p className="text-sm font-medium text-gray-900 truncate">
-                      {formatFileName(ref.filename)}
+                      {getDocumentDisplayName(ref.filename)}
                     </p>
                     <span className={`text-xs px-2 py-0.5 rounded-full ${getScoreColor(ref.relevance_score)}`}>
                       {formatScore(ref.relevance_score)}% phù hợp
