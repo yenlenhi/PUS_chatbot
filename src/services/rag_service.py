@@ -19,6 +19,7 @@ from src.services.memory_service import ConversationMemoryService
 from src.services.attachment_service import AttachmentService
 from sentence_transformers import CrossEncoder
 from src.utils.logger import log
+from src.utils.admission_document_priority import compute_priority_adjustment
 
 from config.settings import (
     TOP_K_RESULTS,
@@ -533,6 +534,9 @@ class RAGService:
                     "rerank_score", chunk.get("hybrid_score", 0.0)
                 )
 
+                # Prefer current-cycle official admission documents when relevant.
+                priority_adjustment = compute_priority_adjustment(query, chunk)
+
                 # Bonus for chunks with headings (likely more structured content)
                 heading_bonus = 0.1 if chunk.get("heading_text") else 0.0
 
@@ -545,7 +549,13 @@ class RAGService:
                 content_length = len(chunk.get("content", ""))
                 length_penalty = -0.1 if content_length < 100 else 0.0
 
-                return primary_score + heading_bonus + original_bonus + length_penalty
+                return (
+                    primary_score
+                    + priority_adjustment
+                    + heading_bonus
+                    + original_bonus
+                    + length_penalty
+                )
 
             ranked_chunks = sorted(chunks, key=ranking_score, reverse=True)
 
@@ -1236,9 +1246,16 @@ Hướng dẫn:
             source = chunk.get("source_file", "Unknown")
             page = chunk.get("page_number", "N/A")
             content = chunk.get("content", "").strip()
+            document_year = chunk.get("document_year")
+            source_url = chunk.get("source_url")
 
-            # Simplified format for the LLM - removed source citation from content
-            context_part = f"###\n{content}\n###"
+            metadata_parts = [f"Nguon: {source}", f"Trang: {page}"]
+            if document_year:
+                metadata_parts.append(f"Nam tai lieu: {document_year}")
+            if source_url:
+                metadata_parts.append(f"URL nguon: {source_url}")
+
+            context_part = f"###\n{' | '.join(metadata_parts)}\n{content}\n###"
             context_parts.append(context_part)
 
         return "\n\n".join(context_parts)
@@ -1484,6 +1501,8 @@ Instructions:
 - If the question is outside admission scope, refuse briefly.
 - If the question is ambiguous, ask one short clarifying question.
 - If the documents are insufficient, explicitly say there is not enough basis to confirm.
+- If the user asks about the current admission cycle or does not specify a year, prioritize the newest official year shown in the context (for example 2026).
+- If multiple years appear, use the newest official year as the main basis and mention older years only when comparing them explicitly.
 - Do not answer beyond the evidence in the documents.
 - Structure the answer as: short summary, detailed bullets, reference reminder.
 - End with: "Reference documents: please review the official documents displayed by the system."
@@ -1509,6 +1528,8 @@ Hướng dẫn:
 - Nếu câu hỏi ngoài phạm vi tuyển sinh, từ chối ngắn gọn.
 - Nếu câu hỏi mơ hồ, hỏi lại một câu ngắn để làm rõ.
 - Nếu tài liệu không đủ căn cứ, phải nói rõ là chưa đủ cơ sở để khẳng định.
+- Nếu người dùng hỏi về kỳ tuyển sinh hiện tại hoặc không nêu rõ năm, ưu tiên tài liệu có năm mới nhất trong ngữ cảnh (ví dụ 2026).
+- Nếu trong ngữ cảnh có nhiều năm, dùng tài liệu chính thức mới nhất làm căn cứ chính; chỉ nhắc tài liệu cũ hơn khi cần đối chiếu và phải nêu rõ năm.
 - Không trả lời vượt quá bằng chứng trong tài liệu.
 - Trình bày theo cấu trúc: tóm tắt ngắn, chi tiết theo gạch đầu dòng, nhắc xem tài liệu tham khảo.
 - Kết thúc bằng: "Tài liệu tham khảo: vui lòng xem các tài liệu chính thức do hệ thống hiển thị."
