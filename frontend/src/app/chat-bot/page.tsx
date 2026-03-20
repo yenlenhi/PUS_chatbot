@@ -32,22 +32,12 @@ const rankVisibleSourceReferences = (sourceReferences: SourceReference[] = [], l
     .sort((a, b) => (b.relevance_score || 0) - (a.relevance_score || 0))
     .slice(0, limit);
 
-const FALLBACK_QUESTIONS = {
-  vi: [
-    'Điều kiện tuyển sinh và các phương thức xét tuyển của trường là gì?',
-    'Chỉ tiêu tuyển sinh theo từng ngành hoặc nhóm ngành hiện nay như thế nào?',
-    'Hồ sơ sơ tuyển hoặc hồ sơ đăng ký xét tuyển cần chuẩn bị những gì?',
-    'Mốc thời gian nộp hồ sơ, sơ tuyển và nhập học diễn ra khi nào?',
-    'Tiêu chuẩn sức khỏe, độ tuổi và đối tượng tuyển sinh được quy định ra sao?'
-  ],
-  en: [
-    'What are the admission requirements and admission methods?',
-    'What are the admission quotas by major or program?',
-    'Which application or pre-qualification documents are required?',
-    'What is the timeline for application, pre-qualification, and enrollment?',
-    'What are the health, age, and applicant eligibility standards?'
-  ]
-} as const;
+const FIXED_SUGGESTED_QUESTIONS = [
+  'Chỉ tiêu tuyển sinh vào Trường Đại học An Ninh Nhân Dân?',
+  'Ký hiệu mã bài thi đánh giá của Bộ Công an?',
+  'Câu trúc đề thi tuyển sinh đại học chính quy tuyển mới?',
+  'Các phương thức tuyển sinh?'
+] as const;
 
 // Gemini-style Processing Indicator - Shows REAL backend processing status
 interface ProcessingIndicatorProps {
@@ -1299,51 +1289,8 @@ const ChatBotPage = () => {
     }
   };
 
-  // Suggested questions from API (trending topics)
-  const [suggestedQuestions, setSuggestedQuestions] = useState<string[]>([]);
-  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
-
-  // Fallback suggested questions
-  const fallbackQuestions = FALLBACK_QUESTIONS[language];
-
-  // Fetch suggested questions from API
-  useEffect(() => {
-    const fetchSuggestedQuestions = async () => {
-      setLoadingSuggestions(true);
-      try {
-        const response = await fetch('/api/analytics/suggested-questions?limit=5');
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success && data.questions && data.questions.length > 0) {
-            // Extract question text from API response
-            const questions = data.questions.map((q: { question: string }) => q.question);
-            setSuggestedQuestions(questions);
-          } else {
-            // Use fallback if API returns empty
-            setSuggestedQuestions([...fallbackQuestions]);
-          }
-        } else {
-          // Use fallback on error
-          setSuggestedQuestions([...fallbackQuestions]);
-        }
-      } catch (error) {
-        console.error('Error fetching suggested questions:', error);
-        // Use fallback on error
-        setSuggestedQuestions([...fallbackQuestions]);
-      } finally {
-        setLoadingSuggestions(false);
-      }
-    };
-
-    fetchSuggestedQuestions();
-  }, [fallbackQuestions]);
-
-  // Update fallback questions when language changes (if using fallback)
-  useEffect(() => {
-    if (suggestedQuestions.length === 0 && !loadingSuggestions) {
-      setSuggestedQuestions([...fallbackQuestions]);
-    }
-  }, [fallbackQuestions, loadingSuggestions, suggestedQuestions.length]);
+  const suggestedQuestions = [...FIXED_SUGGESTED_QUESTIONS];
+  const loadingSuggestions = false;
 
 
 

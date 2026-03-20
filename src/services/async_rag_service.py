@@ -17,6 +17,7 @@ import re
 import unicodedata
 
 from src.utils.logger import log
+from src.utils.fixed_admission_faq import get_fixed_admission_faq
 from src.services.async_gemini_service import (
     generate_response_async,
     generate_response_stream_async,
@@ -207,6 +208,35 @@ class AsyncRAGService:
             "normalization_applied": normalization_applied,
             "original_query": original_query if normalization_applied else None,
             "normalized_query": normalized_query if normalization_applied else None,
+            "chart_data": [],
+            "images": [],
+            "performance": performance,
+        }
+
+    def _build_fixed_faq_payload(
+        self,
+        faq: Dict[str, Any],
+        conversation_id: str,
+        query: str,
+        language: str,
+        *,
+        performance: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        answer = faq.get("answer", "")
+        sources = faq.get("sources", [])
+        confidence = faq.get("confidence", 0.98)
+
+        return {
+            "answer": answer,
+            "follow_up_questions": [],
+            "sources": sources,
+            "source_references": [],
+            "attachments": [],
+            "confidence": confidence,
+            "conversation_id": conversation_id,
+            "normalization_applied": False,
+            "original_query": None,
+            "normalized_query": None,
             "chart_data": [],
             "images": [],
             "performance": performance,
@@ -634,6 +664,38 @@ class AsyncRAGService:
                     )
                     self._log_performance(conversation_id, finalized_performance)
                     return response
+
+            fixed_faq = get_fixed_admission_faq(query)
+            if fixed_faq:
+                finalized_performance = self._finalize_performance(
+                    performance,
+                    request_started_at,
+                    response_path="faq",
+                    policy_applied="fixed_admission_faq",
+                )
+                response = self._build_fixed_faq_payload(
+                    fixed_faq,
+                    conversation_id,
+                    query,
+                    language,
+                    performance=finalized_performance,
+                )
+                self._update_conversation_history(
+                    conversation_id, query, response["answer"]
+                )
+                asyncio.create_task(
+                    self._save_conversation_async(
+                        conversation_id,
+                        query,
+                        response["answer"],
+                        response["sources"],
+                        response["confidence"],
+                        False,
+                        query,
+                    )
+                )
+                self._log_performance(conversation_id, finalized_performance)
+                return response
 
             if images and len(images) > 0:
                 vision_started_at = time.perf_counter()
@@ -1102,6 +1164,54 @@ class AsyncRAGService:
                     )
                     self._log_performance(conversation_id, finalized_performance)
                     return
+
+            fixed_faq = get_fixed_admission_faq(query)
+            if fixed_faq:
+                response = self._build_fixed_faq_payload(
+                    fixed_faq,
+                    conversation_id,
+                    query,
+                    language,
+                )
+                finalized_performance = self._finalize_performance(
+                    performance,
+                    request_started_at,
+                    response_path="faq",
+                    policy_applied="fixed_admission_faq",
+                )
+                yield {
+                    "type": "sources",
+                    "sources": response["sources"],
+                    "source_references": [],
+                    "confidence": response["confidence"],
+                }
+                yield {"type": "answer_chunk", "content": response["answer"]}
+                yield {
+                    "type": "complete",
+                    "attachments": [],
+                    "chart_data": [],
+                    "images": [],
+                    "normalization_applied": False,
+                    "original_query": None,
+                    "normalized_query": None,
+                    "performance": finalized_performance,
+                }
+                asyncio.create_task(
+                    self._save_conversation_async(
+                        conversation_id,
+                        query,
+                        response["answer"],
+                        response["sources"],
+                        response["confidence"],
+                        False,
+                        query,
+                    )
+                )
+                self._update_conversation_history(
+                    conversation_id, query, response["answer"]
+                )
+                self._log_performance(conversation_id, finalized_performance)
+                return
 
             normalized_query = query
             normalization_applied = False
