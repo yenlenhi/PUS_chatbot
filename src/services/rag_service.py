@@ -22,10 +22,12 @@ from sentence_transformers import CrossEncoder
 from src.utils.logger import log
 from src.utils.admission_document_priority import (
     compute_priority_adjustment,
+    enrich_query_for_primary_school,
     enrich_query_for_current_cycle,
     infer_target_year,
     is_admission_query,
     is_personnel_query,
+    query_targets_primary_school,
 )
 
 from config.settings import (
@@ -1485,6 +1487,35 @@ MAC DINH THEO CHU KY TUYEN SINH HIEN TAI:
 - Khong duoc trinh bay thong tin cua nam 2025 tro ve truoc nhu thong tin hien hanh neu nguoi dung khong hoi ro nam do.
 """
 
+    def _create_primary_school_prompt_guidance(
+        self, query: str, language: str = "vi"
+    ) -> str:
+        if not query_targets_primary_school(query):
+            return ""
+
+        if language == "en":
+            return """
+
+PRIMARY SCHOOL DEFAULT:
+- This chatbot serves People's Security University, code T04, school symbol ANS.
+- If the user asks about admission generally and does not name another school, interpret the question as being about People's Security University (T04).
+- Prioritize excerpts that explicitly mention T04, ANS, People's Security University, or the southern recruitment area.
+- Do not present whole-system CAND totals or another school's data as if they were T04-specific figures.
+- If the documents only provide system-wide CAND information, clearly label it as system-wide reference information rather than T04-specific admission information.
+- Never refer to People's Security University as T05.
+"""
+
+        return """
+
+MAC DINH THEO PHAM VI TRUONG DAI HOC AN NINH NHAN DAN:
+- Day la chatbot tuyen sinh cua Truong Dai hoc An ninh Nhan dan, ma truong T04, ky hieu truong ANS.
+- Neu nguoi dung hoi thong tin tuyen sinh chung ma khong neu ro truong khac, mac dinh cau hoi dang noi ve Truong Dai hoc An ninh Nhan dan (T04).
+- Uu tien cac doan trich neu ro T04, ANS, Truong Dai hoc An ninh Nhan dan, hoac dia ban tuyen sinh phia Nam.
+- Khong duoc dung tong chi tieu cua toan bo cac truong CAND hoac thong tin cua truong khac de trinh bay nhu thong tin rieng cua T04.
+- Neu tai lieu chi co thong tin tong quan toan khoi CAND, phai ghi ro do la thong tin toan he thong, khong phai thong tin chi tieu rieng cua T04.
+- Tuyet doi khong duoc goi Truong Dai hoc An ninh Nhan dan la T05.
+"""
+
     def create_user_prompt(
         self, query: str, context: str, memory_context: str = "", language: str = "vi"
     ) -> str:
@@ -1506,9 +1537,16 @@ MAC DINH THEO CHU KY TUYEN SINH HIEN TAI:
         current_cycle_guidance = self._create_current_cycle_prompt_guidance(
             query, language=language
         )
+        primary_school_guidance = self._create_primary_school_prompt_guidance(
+            query, language=language
+        )
         prompt_guidance = "".join(
             guidance
-            for guidance in (current_cycle_guidance, personnel_guidance)
+            for guidance in (
+                current_cycle_guidance,
+                primary_school_guidance,
+                personnel_guidance,
+            )
             if guidance
         )
         if prompt_guidance:
@@ -1777,9 +1815,17 @@ Trả lời:"""
             retrieval_query, retrieval_enriched = enrich_query_for_current_cycle(
                 rewritten_query
             )
+            school_query, school_enriched = enrich_query_for_primary_school(
+                retrieval_query
+            )
+            retrieval_query = school_query
             if retrieval_enriched:
                 log.info(
                     f"Applied current-cycle retrieval enrichment: '{rewritten_query[:60]}' -> '{retrieval_query[:120]}'"
+                )
+            if school_enriched:
+                log.info(
+                    f"Applied primary-school retrieval enrichment: '{rewritten_query[:60]}' -> '{retrieval_query[:120]}'"
                 )
 
             # Step 3: Retrieve relevant chunks using the normalized and rewritten query
@@ -2243,9 +2289,17 @@ Trả lời:"""
             retrieval_query, retrieval_enriched = enrich_query_for_current_cycle(
                 rewritten_query
             )
+            school_query, school_enriched = enrich_query_for_primary_school(
+                retrieval_query
+            )
+            retrieval_query = school_query
             if retrieval_enriched:
                 log.info(
                     f"Applied current-cycle retrieval enrichment: '{rewritten_query[:60]}' -> '{retrieval_query[:120]}'"
+                )
+            if school_enriched:
+                log.info(
+                    f"Applied primary-school retrieval enrichment: '{rewritten_query[:60]}' -> '{retrieval_query[:120]}'"
                 )
 
             # Step 5: Retrieve relevant chunks

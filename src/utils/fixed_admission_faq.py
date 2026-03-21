@@ -22,13 +22,59 @@ def _normalize(text: Optional[str]) -> str:
     return re.sub(r"\s+", " ", normalized).strip()
 
 
+_PRIMARY_SCHOOL_TERMS = (
+    "an ninh nhan dan",
+    "truong dai hoc an ninh nhan dan",
+    "t04",
+    "ans",
+)
+_OTHER_SCHOOL_TERMS = (
+    "hoc vien an ninh nhan dan",
+    "hoc vien canh sat nhan dan",
+    "truong dai hoc canh sat nhan dan",
+    "truong dai hoc phong chay chua chay",
+    "truong dai hoc ky thuat hau can cand",
+    "t01",
+    "t02",
+    "t03",
+    "t05",
+    "t06",
+    "csh",
+    "tdhc",
+    "pccc",
+)
+_SYSTEM_WIDE_TERMS = (
+    "cac truong cand",
+    "toan khoi cand",
+    "toan nganh cong an",
+    "bo cong an",
+)
+
+
+def _is_primary_school_quota_query(normalized_query: str) -> bool:
+    if "chi tieu" not in normalized_query:
+        return False
+
+    if any(term in normalized_query for term in _SYSTEM_WIDE_TERMS):
+        return False
+
+    if any(term in normalized_query for term in _OTHER_SCHOOL_TERMS):
+        return False
+
+    if any(term in normalized_query for term in _PRIMARY_SCHOOL_TERMS):
+        return True
+
+    return any(
+        term in normalized_query for term in ("to hop", "xet tuyen", "tuyen sinh")
+    )
+
+
 def _build_fixed_faq_catalog() -> list[Dict[str, Any]]:
     return [
         {
             "key": "quota_t04",
             "question": "Chỉ tiêu tuyển sinh vào Trường Đại học An Ninh Nhân Dân?",
-            "match": lambda q: "chi tieu" in q
-            and ("an ninh nhan dan" in q or "t04" in q),
+            "match": _is_primary_school_quota_query,
             "sources": [
                 "Thông báo chỉ tiêu tuyển sinh tuyển mới đào tạo trình độ đại học năm 2026",
                 "Bảng chỉ tiêu tuyển sinh CAND năm 2026",
@@ -42,7 +88,7 @@ def _build_fixed_faq_catalog() -> list[Dict[str, Any]]:
 
 Theo đúng bảng chỉ tiêu bạn cung cấp, Trường Đại học An ninh nhân dân (T04), ký hiệu trường ANS, tuyển sinh nhóm ngành nghiệp vụ An ninh tại địa bàn phía Nam với tổng 220 chỉ tiêu. Dưới đây là bản tóm lược bám sát nội dung của bảng:
 
-| Trường/nhóm ngành | Ký hiệu trường | Mã ngành | Địa bàn tuyển sinh | Tổng chỉ tiêu | PT1 Nam | PT1 Nữ | PT2 Nam | PT2 Nữ | Tổ hợp xét tuyển | Mã bài thi đánh giá |
+| Trường/nhóm ngành | Ký hiệu trường | Mã ngành | Địa bàn tuyển sinh | Tổng chỉ tiêu | PT1 Nam | PT1 Nữ | PT2, PT3 Nam | PT2, PT3 Nữ | Tổ hợp xét tuyển | Mã bài thi đánh giá |
 | --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | --- | --- |
 | Trường Đại học An ninh nhân dân (T04) - Nhóm ngành nghiệp vụ An ninh | ANS | 7860100 | Phía Nam | 220 | 10 | 1 | 188 | 21 | A00, A01, C03, D01, X02, X03, X04 | CA1, CA2, CA3, CA4 |
 

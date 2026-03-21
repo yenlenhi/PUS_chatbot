@@ -17,7 +17,10 @@ import re
 import unicodedata
 
 from src.utils.logger import log
-from src.utils.admission_document_priority import enrich_query_for_current_cycle
+from src.utils.admission_document_priority import (
+    enrich_query_for_current_cycle,
+    enrich_query_for_primary_school,
+)
 from src.utils.fixed_admission_faq import get_fixed_admission_faq
 from src.services.async_gemini_service import (
     generate_response_async,
@@ -355,13 +358,20 @@ class AsyncRAGService:
         enriched_query, current_cycle_enriched = enrich_query_for_current_cycle(
             retrieval_query
         )
+        enriched_query, primary_school_enriched = enrich_query_for_primary_school(
+            enriched_query
+        )
+        if primary_school_enriched:
+            log.info(
+                f"[ASYNC] Applied primary-school enrichment: '{retrieval_query[:60]}' -> '{enriched_query[:120]}'"
+            )
         metadata = self._get_score_query_metadata(retrieval_query or original_query)
         if not metadata["needs_synonym_expansion"]:
             if current_cycle_enriched:
                 log.info(
                     f"[ASYNC] Applied current-cycle enrichment: '{retrieval_query[:60]}' -> '{enriched_query[:120]}'"
                 )
-            return enriched_query, current_cycle_enriched
+            return enriched_query, current_cycle_enriched or primary_school_enriched
 
         normalized = self._normalize_for_match(enriched_query or original_query)
         enrichment_terms: List[str] = []
@@ -385,7 +395,7 @@ class AsyncRAGService:
             )
             return enriched_query, True
 
-        return enriched_query, current_cycle_enriched
+        return enriched_query, current_cycle_enriched or primary_school_enriched
 
     def _should_return_score_clarification(
         self, original_query: str, retrieval_query: str

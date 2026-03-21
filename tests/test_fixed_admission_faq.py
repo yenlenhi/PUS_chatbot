@@ -12,11 +12,22 @@ def test_quota_question_returns_fixed_answer_with_intro_and_follow_ups():
     assert "A00, A01, C03, D01, X02, X03, X04" in faq["answer"]
     assert "CA1, CA2, CA3, CA4" in faq["answer"]
     assert "| Trường/nhóm ngành |" in faq["answer"]
+    assert "PT2, PT3 Nam" in faq["answer"]
+    assert "PT2, PT3 Nữ" in faq["answer"]
     assert len(faq["follow_up_questions"]) == 3
     assert (
         "Điều kiện sơ tuyển vào Trường Đại học An Ninh Nhân Dân là gì?"
         in faq["follow_up_questions"]
     )
+
+
+def test_generic_quota_and_combination_query_defaults_to_t04_fixed_answer():
+    faq = get_fixed_admission_faq("thong tin ve chi tieu va to hop xet tuyen")
+
+    assert faq is not None
+    assert "220" in faq["answer"]
+    assert "T04" in faq["answer"]
+    assert "A00, A01, C03, D01, X02, X03, X04" in faq["answer"]
 
 
 def test_exam_code_question_returns_code_table_and_follow_ups():

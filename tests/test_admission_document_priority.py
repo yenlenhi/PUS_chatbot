@@ -2,10 +2,12 @@ import datetime as dt
 
 from src.utils.admission_document_priority import (
     compute_priority_adjustment,
+    enrich_query_for_primary_school,
     enrich_query_for_current_cycle,
     infer_target_year,
     is_admission_query,
     is_personnel_query,
+    query_targets_primary_school,
 )
 
 
@@ -88,3 +90,42 @@ def test_personnel_query_prefers_org_structure_document():
     assert compute_priority_adjustment(query, org_chunk) > compute_priority_adjustment(
         query, generic_chunk
     )
+
+
+def test_primary_school_enrichment_applies_to_generic_admission_query():
+    query = "thong tin ve chi tieu va to hop xet tuyen"
+
+    enriched_query, enriched = enrich_query_for_primary_school(query)
+
+    assert query_targets_primary_school(query)
+    assert enriched is True
+    assert "Truong Dai hoc An ninh Nhan dan" in enriched_query
+    assert "T04" in enriched_query
+    assert "ANS" in enriched_query
+
+
+def test_priority_adjustment_prefers_t04_over_system_wide_or_t05_chunks():
+    query = "thong tin ve chi tieu va to hop xet tuyen"
+
+    t04_chunk = {
+        "source_file": "Thong bao chi tieu tuyen sinh T04 2026.pdf",
+        "heading_text": "Truong Dai hoc An ninh Nhan dan (T04)",
+        "content": "Ky hieu truong ANS, nhom nganh nghiep vu An ninh, phia Nam, 220 chi tieu.",
+    }
+    system_wide_chunk = {
+        "source_file": "Huong dan tuyen sinh CAND 2026.pdf",
+        "heading_text": "Tong chi tieu cac truong CAND",
+        "content": "Tong chi tieu toan bo cac truong CAND la 1870.",
+    }
+    t05_chunk = {
+        "source_file": "Thong bao tuyen sinh T05 2026.pdf",
+        "heading_text": "Truong Dai hoc T05",
+        "content": "Thong tin chi tieu tuyen sinh cua truong T05.",
+    }
+
+    t04_score = compute_priority_adjustment(query, t04_chunk)
+    system_score = compute_priority_adjustment(query, system_wide_chunk)
+    t05_score = compute_priority_adjustment(query, t05_chunk)
+
+    assert t04_score > system_score
+    assert t04_score > t05_score

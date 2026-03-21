@@ -158,6 +158,21 @@ def test_implicit_admission_timeline_prompt_defaults_to_current_cycle():
     assert "Khong duoc trinh bay thong tin cua nam 2025 tro ve truoc" in prompt
 
 
+def test_generic_admission_prompt_defaults_to_t04_scope():
+    rag_module = _load_rag_module()
+    service = rag_module.RAGService.__new__(rag_module.RAGService)
+
+    prompt = service.create_user_prompt(
+        "thong tin ve chi tieu va to hop xet tuyen",
+        "Nguon: thong bao tuyen sinh 2026",
+        language="vi",
+    )
+
+    assert "MAC DINH THEO PHAM VI TRUONG DAI HOC AN NINH NHAN DAN" in prompt
+    assert "ma truong T04, ky hieu truong ANS" in prompt
+    assert "Tuyet doi khong duoc goi Truong Dai hoc An ninh Nhan dan la T05" in prompt
+
+
 def test_chat_response_schema_preserves_source_reference_display_name():
     schemas_module = importlib.import_module("src.models.schemas")
 

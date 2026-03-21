@@ -78,6 +78,48 @@ _CURRENT_CYCLE_HINTS = (
     "ky nay",
 )
 _DRAFT_TERMS = ("du thao", "draft")
+_PRIMARY_SCHOOL_TERMS = (
+    "truong dai hoc an ninh nhan dan",
+    "an ninh nhan dan",
+    "annd",
+    "t04",
+    "ans",
+)
+_PRIMARY_SCHOOL_STRONG_DOC_TERMS = (
+    "truong dai hoc an ninh nhan dan",
+    "t04",
+    "ans",
+)
+_OTHER_SCHOOL_TERMS = (
+    "hoc vien an ninh nhan dan",
+    "hoc vien canh sat nhan dan",
+    "truong dai hoc canh sat nhan dan",
+    "truong dai hoc phong chay chua chay",
+    "truong dai hoc ky thuat hau can cand",
+    "t01",
+    "t02",
+    "t03",
+    "t05",
+    "t06",
+    "csh",
+    "tdhc",
+    "pccc",
+)
+_SYSTEM_WIDE_QUERY_TERMS = (
+    "cac truong cand",
+    "toan bo cac truong cand",
+    "toan khoi cand",
+    "toan nganh cong an",
+    "toan luc luong cand",
+    "bo cong an",
+)
+_SYSTEM_WIDE_DOC_TERMS = (
+    "cac truong cand",
+    "tong chi tieu",
+    "toan quoc",
+    "toan nganh",
+    "bo cong an",
+)
 _SOURCE_AUTHORITY_BONUS = (
     ("dhannd.bocongan.gov.vn", 0.14, "school"),
     ("dhannd.edu.vn", 0.14, "school"),
@@ -136,6 +178,23 @@ def is_personnel_query(query: Optional[str]) -> bool:
 def has_explicit_year(query: Optional[str]) -> bool:
     normalized_query = _normalize_text(query)
     return _extract_year_from_text(normalized_query) is not None
+
+
+def query_targets_primary_school(query: Optional[str]) -> bool:
+    normalized_query = _normalize_text(query)
+    if not normalized_query:
+        return False
+
+    if any(term in normalized_query for term in _SYSTEM_WIDE_QUERY_TERMS):
+        return False
+
+    if any(term in normalized_query for term in _OTHER_SCHOOL_TERMS):
+        return False
+
+    if any(term in normalized_query for term in _PRIMARY_SCHOOL_TERMS):
+        return True
+
+    return is_admission_query(query)
 
 
 def infer_target_year(query: Optional[str]) -> Optional[int]:
@@ -197,6 +256,29 @@ def enrich_query_for_current_cycle(query: Optional[str]) -> tuple[str, bool]:
 
     if "tuyen sinh" not in normalized_query:
         enrichment_terms.append("tuyển sinh")
+
+    enriched_query = " ".join(
+        part for part in [raw_query, *enrichment_terms] if part
+    ).strip()
+    return enriched_query, enriched_query != raw_query
+
+
+def enrich_query_for_primary_school(query: Optional[str]) -> tuple[str, bool]:
+    raw_query = str(query or "").strip()
+    if not raw_query or not query_targets_primary_school(raw_query):
+        return raw_query, False
+
+    normalized_query = _normalize_text(raw_query)
+    enrichment_terms = []
+
+    if "truong dai hoc an ninh nhan dan" not in normalized_query:
+        enrichment_terms.append("Truong Dai hoc An ninh Nhan dan")
+
+    if "t04" not in normalized_query:
+        enrichment_terms.append("T04")
+
+    if "ans" not in normalized_query:
+        enrichment_terms.append("ANS")
 
     enriched_query = " ".join(
         part for part in [raw_query, *enrichment_terms] if part
@@ -307,12 +389,18 @@ def enrich_chunk_source_metadata(chunk: Dict[str, Any]) -> Dict[str, Any]:
 def compute_priority_adjustment(query: Optional[str], chunk: Dict[str, Any]) -> float:
     source_name = chunk.get("source_file") or chunk.get("source") or ""
     normalized_source = _normalize_text(source_name)
+    normalized_heading = _normalize_text(chunk.get("heading_text") or chunk.get("heading"))
+    normalized_content = _normalize_text(str(chunk.get("content") or "")[:1600])
+    normalized_chunk_text = " ".join(
+        part for part in (normalized_source, normalized_heading, normalized_content) if part
+    ).strip()
     metadata = enrich_chunk_source_metadata(chunk)
 
     target_year = infer_target_year(query)
     document_year = chunk.get("document_year")
     authority_bonus = float(metadata.get("authority_bonus") or 0.0)
     personnel_query = is_personnel_query(query)
+    primary_school_query = query_targets_primary_school(query)
 
     year_bonus = 0.0
     if target_year is not None and document_year is not None:
@@ -339,6 +427,23 @@ def compute_priority_adjustment(query: Optional[str], chunk: Dict[str, Any]) -> 
         ):
             personnel_bonus += 0.08
 
+    school_bonus = 0.0
+    if primary_school_query:
+        if any(
+            term in normalized_chunk_text for term in _PRIMARY_SCHOOL_STRONG_DOC_TERMS
+        ):
+            school_bonus += 0.22
+        elif "an ninh nhan dan" in normalized_chunk_text:
+            school_bonus += 0.12
+
+        if any(term in normalized_chunk_text for term in _OTHER_SCHOOL_TERMS):
+            school_bonus -= 0.18
+
+        if school_bonus <= 0 and any(
+            term in normalized_chunk_text for term in _SYSTEM_WIDE_DOC_TERMS
+        ):
+            school_bonus -= 0.10
+
     draft_penalty = -0.08 if any(term in normalized_source for term in _DRAFT_TERMS) else 0.0
 
     total_adjustment = (
@@ -346,6 +451,7 @@ def compute_priority_adjustment(query: Optional[str], chunk: Dict[str, Any]) -> 
         + authority_bonus
         + title_bonus
         + personnel_bonus
+        + school_bonus
         + draft_penalty
     )
     chunk["priority_adjustment"] = round(total_adjustment, 4)
