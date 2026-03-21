@@ -339,6 +339,45 @@ body {
   font-style: italic !important;
 }
 
+/* Table styling for chat messages */
+.markdown-body table {
+  border-collapse: collapse !important;
+  width: 100% !important;
+  margin: 0.75rem 0 !important;
+  font-size: 0.875em !important;
+  overflow-x: auto !important;
+  display: block !important;
+}
+
+.markdown-body thead {
+  background-color: #dc2626 !important;
+  color: #ffffff !important;
+}
+
+.markdown-body th {
+  border: 1px solid #d1d5db !important;
+  padding: 0.5rem 0.75rem !important;
+  font-weight: 600 !important;
+  text-align: left !important;
+  white-space: nowrap !important;
+}
+
+.markdown-body td {
+  border: 1px solid #d1d5db !important;
+  padding: 0.5rem 0.75rem !important;
+  text-align: left !important;
+  vertical-align: top !important;
+  line-height: 1.5 !important;
+}
+
+.markdown-body tbody tr:nth-child(even) {
+  background-color: #f9fafb !important;
+}
+
+.markdown-body tbody tr:hover {
+  background-color: #fee2e2 !important;
+}
+
 /* Modal animations */
 @keyframes modal-appear {
   from {
