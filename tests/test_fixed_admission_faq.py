@@ -7,8 +7,10 @@ def test_quota_question_returns_fixed_answer_with_intro_and_follow_ups():
     )
 
     assert faq is not None
-    assert "Nếu bạn đang quan tâm đến chỉ tiêu" in faq["answer"]
-    assert "100" in faq["answer"]
+    assert "Theo đúng bảng chỉ tiêu bạn cung cấp" in faq["answer"]
+    assert "220" in faq["answer"]
+    assert "A00, A01, C03, D01, X02, X03, X04" in faq["answer"]
+    assert "CA1, CA2, CA3, CA4" in faq["answer"]
     assert "| Trường/nhóm ngành |" in faq["answer"]
     assert len(faq["follow_up_questions"]) == 3
     assert (

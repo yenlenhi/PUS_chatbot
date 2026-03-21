@@ -36,27 +36,29 @@ def _build_fixed_faq_catalog() -> list[Dict[str, Any]]:
             "follow_up_questions": [
                 "Điều kiện sơ tuyển vào Trường Đại học An Ninh Nhân Dân là gì?",
                 "Hồ sơ sơ tuyển cần chuẩn bị những gì?",
-                "Phương thức 1 và phương thức 2 khác nhau thế nào?",
+                "Tổ hợp xét tuyển và mã bài thi đánh giá áp dụng cho T04 là gì?",
             ],
             "answer": """### Chỉ tiêu tuyển sinh năm 2026 vào Trường Đại học An ninh nhân dân (T04)
 
-Nếu bạn đang quan tâm đến chỉ tiêu của Trường Đại học An ninh nhân dân trong mùa tuyển sinh 2026, bảng dưới đây là phần thông tin cốt lõi và dễ theo dõi nhất. Theo tài liệu tuyển sinh năm 2026, trường tuyển sinh nhóm ngành nghiệp vụ An ninh tại địa bàn phía Nam và phân bổ chỉ tiêu theo từng phương thức như sau:
+Theo đúng bảng chỉ tiêu bạn cung cấp, Trường Đại học An ninh nhân dân (T04), ký hiệu trường ANS, tuyển sinh nhóm ngành nghiệp vụ An ninh tại địa bàn phía Nam với tổng 220 chỉ tiêu. Dưới đây là bản tóm lược bám sát nội dung của bảng:
 
-| Trường/nhóm ngành | Ký hiệu trường | Mã ngành | Địa bàn tuyển sinh | Tổng chỉ tiêu | Phương thức 1 | Phương thức 2 |
-| --- | --- | --- | --- | ---: | --- | --- |
-| Trường Đại học An ninh nhân dân (T04) - Nhóm ngành nghiệp vụ An ninh | ANS | 7860100 | Phía Nam | 100 | Nam 45, Nữ 5 | Nam 45, Nữ 5 |
+| Trường/nhóm ngành | Ký hiệu trường | Mã ngành | Địa bàn tuyển sinh | Tổng chỉ tiêu | PT1 Nam | PT1 Nữ | PT2 Nam | PT2 Nữ | Tổ hợp xét tuyển | Mã bài thi đánh giá |
+| --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | --- | --- |
+| Trường Đại học An ninh nhân dân (T04) - Nhóm ngành nghiệp vụ An ninh | ANS | 7860100 | Phía Nam | 220 | 10 | 1 | 188 | 21 | A00, A01, C03, D01, X02, X03, X04 | CA1, CA2, CA3, CA4 |
 
 ### Tóm tắt nhanh
 
 | Nội dung | Giá trị |
 | --- | --- |
-| Tổng chỉ tiêu | 100 |
+| Tổng chỉ tiêu | 220 |
 | Nhóm ngành | Nghiệp vụ An ninh |
 | Mã ngành | 7860100 |
 | Ký hiệu trường | ANS |
 | Địa bàn tuyển sinh | Phía Nam |
+| Tổ hợp xét tuyển | A00, A01, C03, D01, X02, X03, X04 |
+| Mã bài thi đánh giá | CA1, CA2, CA3, CA4 |
 
-Bạn có thể hiểu nhanh rằng T04 tuyển 100 chỉ tiêu cho nhóm ngành nghiệp vụ An ninh, trong đó chỉ tiêu được chia đều giữa Phương thức 1 và Phương thức 2.""",
+Điểm cần lưu ý là bản trả lời cũ `100 chỉ tiêu` không còn đúng với bảng anh cung cấp. Với FAQ cứng này, hệ thống phải trả theo mốc `220 chỉ tiêu` của T04, đồng thời hiển thị luôn tổ hợp xét tuyển và mã bài thi đánh giá để người xem dễ đối chiếu.""",
         },
         {
             "key": "exam_codes",
