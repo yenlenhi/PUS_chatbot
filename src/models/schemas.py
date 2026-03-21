@@ -54,6 +54,9 @@ class SourceReference(BaseModel):
     source_url: Optional[str] = Field(
         None, description="Official source URL when available"
     )
+    display_name: Optional[str] = Field(
+        None, description="Admin-defined human-readable document name"
+    )
 
 
 class FileAttachment(BaseModel):

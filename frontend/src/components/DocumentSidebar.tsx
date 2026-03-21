@@ -51,6 +51,7 @@ const DocumentSidebar: React.FC<DocumentSidebarProps> = ({
           ...ref,
           document_year: ref.document_year ?? existing.document_year,
           source_url: ref.source_url ?? existing.source_url,
+          display_name: ref.display_name ?? existing.display_name,
           all_pages: Array.from(new Set([...existing.all_pages, ref.page_number])),
         });
       } else {
@@ -62,6 +63,9 @@ const DocumentSidebar: React.FC<DocumentSidebarProps> = ({
         }
         if (!existing.source_url && ref.source_url) {
           existing.source_url = ref.source_url;
+        }
+        if (!existing.display_name && ref.display_name) {
+          existing.display_name = ref.display_name;
         }
       }
     });
@@ -76,11 +80,14 @@ const DocumentSidebar: React.FC<DocumentSidebarProps> = ({
     return { bar: 'bg-slate-400', text: 'text-slate-600', bg: 'bg-slate-50' };
   };
 
+  const getResolvedDisplayName = (ref: Pick<SourceReference, 'filename' | 'display_name'>) =>
+    ref.display_name?.trim() || getDocumentDisplayName(ref.filename);
+
   const handleCopyReference = async (ref: MergedRef, index: number) => {
     const pages = ref.all_pages.filter(Boolean);
     const pageStr = pages.length > 0 ? `, trang ${pages.join(', ')}` : '';
     const yearStr = ref.document_year ? `, năm ${ref.document_year}` : '';
-    const citation = `${getDocumentDisplayName(ref.filename)}${yearStr}${pageStr}`;
+    const citation = `${getResolvedDisplayName(ref)}${yearStr}${pageStr}`;
     try {
       await navigator.clipboard.writeText(citation);
       setCopiedIndex(index);
@@ -193,9 +200,9 @@ const DocumentSidebar: React.FC<DocumentSidebarProps> = ({
                       <div className="flex-1 min-w-0">
                         <p
                           className="text-xs font-semibold text-gray-800 leading-snug line-clamp-2"
-                          title={getDocumentDisplayName(ref.filename)}
+                          title={getResolvedDisplayName(ref)}
                         >
-                          {getDocumentDisplayName(ref.filename)}
+                          {getResolvedDisplayName(ref)}
                         </p>
 
                         <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">

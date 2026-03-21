@@ -511,6 +511,49 @@ class AsyncRAGService:
         )
         return attachments, False
 
+    def _normalize_router_text(self, query: str) -> str:
+        import re
+        import unicodedata
+
+        normalized = unicodedata.normalize("NFD", (query or "").strip().lower())
+        normalized = normalized.replace("đ", "d").replace("Đ", "D")
+        normalized = "".join(
+            ch for ch in normalized if unicodedata.category(ch) != "Mn"
+        )
+        normalized = re.sub(r"\s+", " ", normalized)
+        return normalized.strip()
+
+    def _is_context_dependent_followup(
+        self, normalized_query: str, query_tokens: List[str]
+    ) -> bool:
+        import re
+
+        if not normalized_query:
+            return False
+
+        if re.fullmatch(r"(nam\s*)?20\d{2}", normalized_query):
+            return True
+
+        if re.fullmatch(r"(nam\s*)?20\d{2}\s*(thi sao|the nao)?", normalized_query):
+            return True
+
+        short_followup_patterns = [
+            r"^(con|the con|vay thi|vay con|the thi)\b",
+            r"^(ngoai ra|ben canh do)\b",
+            r"\b(nam do|nam kia|nam nay)\b",
+            r"\b(phuong thuc do|nganh do|truong do|mon do)\b",
+        ]
+        if any(
+            re.search(pattern, normalized_query)
+            for pattern in short_followup_patterns
+        ):
+            return True
+
+        return len(query_tokens) <= 3 and any(
+            token in {"nam", "2024", "2025", "2026", "do", "kia", "nay"}
+            for token in query_tokens
+        )
+
     def _classify_query(self, query: str, conv_turn_count: int) -> dict:
         """
         Lightweight heuristic query router — zero latency, no LLM call.

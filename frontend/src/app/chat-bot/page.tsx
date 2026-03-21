@@ -19,7 +19,6 @@ import ImageRenderer from '@/components/ImageRenderer';
 import type { UploadedImage as UploadedImageType } from '@/components/ImageUpload';
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 import { useSpeechSynthesis } from '@/hooks/useSpeechSynthesis';
-import { MobileSourceDrawer } from '@/components/chat/MobileUI';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 const SOURCE_REFERENCE_DISPLAY_THRESHOLD = 0.65;
@@ -1377,7 +1376,7 @@ const ChatBotPage = () => {
               </div>
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="group flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-gray-50 to-gray-100 hover:from-gray-100 hover:to-gray-200 text-gray-700 rounded-xl transition-all duration-300 text-xs sm:text-sm font-medium relative shadow-sm hover:shadow-md hover:scale-105"
+                className="group hidden md:flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-gray-50 to-gray-100 hover:from-gray-100 hover:to-gray-200 text-gray-700 rounded-xl transition-all duration-300 text-sm font-medium relative shadow-sm hover:shadow-md hover:scale-105"
               >
                 <Book className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover:scale-110 transition-transform" />
                 <span className="hidden sm:inline">{language === 'vi' ? 'Nguồn' : 'Sources'}</span>
@@ -1817,14 +1816,6 @@ const ChatBotPage = () => {
         onClose={() => setPreviewImage(null)}
         imageSrc={previewImage || ''}
         imageAlt="Preview image"
-      />
-
-      {/* Mobile Source Drawer - Bottom Sheet */}
-      <MobileSourceDrawer
-        isOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-        sources={visibleCurrentSourceReferences}
-        onViewDocument={handleOpenDocument}
       />
 
       {/* Floating Action Button for Sources on Mobile - REMOVED as per user request to avoid overlap */}

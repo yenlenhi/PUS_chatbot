@@ -123,7 +123,7 @@ export const MobileSourceDrawer: React.FC<MobileSourceDrawerProps> = ({
                                 <div className="flex items-start justify-between mb-2">
                                 <div className="flex-1 min-w-0">
                                     <h4 className="font-medium text-gray-900 text-sm truncate">
-                                        {source.heading || source.filename || 'Tài liệu'}
+                                        {source.display_name || source.heading || source.filename || 'Tài liệu'}
                                     </h4>
                                         <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
                                             {source.page_number && (

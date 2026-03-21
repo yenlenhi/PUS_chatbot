@@ -71,6 +71,13 @@ def test_async_source_references_include_document_metadata():
     service = async_rag_module.AsyncRAGService.__new__(
         async_rag_module.AsyncRAGService
     )
+    service._rag_service = types.SimpleNamespace(
+        db_service=types.SimpleNamespace(
+            get_all_display_names=lambda: {
+                "tuyen_sinh_2026.pdf": "Thong bao tuyen sinh 2026"
+            }
+        )
+    )
 
     refs = service._build_source_references(
         [
@@ -90,6 +97,7 @@ def test_async_source_references_include_document_metadata():
     assert len(refs) == 1
     assert refs[0]["document_year"] == 2026
     assert refs[0]["source_url"] == "https://example.com/tuyen-sinh-2026"
+    assert refs[0]["display_name"] == "Thong bao tuyen sinh 2026"
     assert "full_content" not in refs[0]
 
 
@@ -148,3 +156,27 @@ def test_implicit_admission_timeline_prompt_defaults_to_current_cycle():
     assert "MAC DINH THEO CHU KY TUYEN SINH HIEN TAI" in prompt
     assert f"nam {dt.datetime.now().year}" in prompt
     assert "Khong duoc trinh bay thong tin cua nam 2025 tro ve truoc" in prompt
+
+
+def test_chat_response_schema_preserves_source_reference_display_name():
+    schemas_module = importlib.import_module("src.models.schemas")
+
+    response = schemas_module.ChatResponse(
+        answer="ok",
+        confidence=0.9,
+        conversation_id="conv-1",
+        processing_time=0.12,
+        source_references=[
+            {
+                "chunk_id": "chunk-1",
+                "filename": "iem_Chuan_ai_Hoc_An_Ninh_Nhan_Dan_2020_2025.pdf",
+                "page_number": 3,
+                "heading": None,
+                "content_snippet": "snippet",
+                "relevance_score": 0.8,
+                "display_name": "Iem Chuan Ai Hoc An Ninh Nhan Dan 2020 2025",
+            }
+        ],
+    )
+
+    assert response.source_references[0].display_name == "Iem Chuan Ai Hoc An Ninh Nhan Dan 2020 2025"
