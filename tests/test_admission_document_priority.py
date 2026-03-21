@@ -2,8 +2,10 @@ import datetime as dt
 
 from src.utils.admission_document_priority import (
     compute_priority_adjustment,
+    enrich_query_for_current_cycle,
     infer_target_year,
     is_admission_query,
+    is_personnel_query,
 )
 
 
@@ -16,6 +18,24 @@ def test_infer_target_year_defaults_to_current_cycle_for_admission_queries():
 
 def test_explicit_year_query_keeps_requested_year():
     assert infer_target_year("diem chuan tuyen sinh 2025") == 2025
+
+
+def test_current_cycle_enrichment_adds_current_year_for_implicit_timeline_query():
+    enriched_query, enriched = enrich_query_for_current_cycle(
+        "moc thoi gian dang ky va xac nhan nhap hoc"
+    )
+
+    assert enriched is True
+    assert f"nam {dt.datetime.now().year}" in enriched_query
+    assert "ky tuyen sinh hien tai" in enriched_query
+
+
+def test_current_cycle_enrichment_keeps_explicit_year_query_unchanged():
+    original_query = "moc thoi gian dang ky va xac nhan nhap hoc 2025"
+    enriched_query, enriched = enrich_query_for_current_cycle(original_query)
+
+    assert enriched is False
+    assert enriched_query == original_query
 
 
 def test_priority_adjustment_prefers_2026_for_current_cycle_queries():
@@ -49,4 +69,22 @@ def test_priority_adjustment_respects_explicit_2025_query():
 
     assert compute_priority_adjustment(query, requested_chunk) > compute_priority_adjustment(
         query, newer_chunk
+    )
+
+
+def test_personnel_query_prefers_org_structure_document():
+    query = "hieu truong hien nay la ai"
+
+    org_chunk = {
+        "source_file": "Co_cau_to_chuc_va_Nhan_su_T04_Cap_nhat.pdf",
+        "content": "Ban giam hieu va lanh dao nha truong.",
+    }
+    generic_chunk = {
+        "source_file": "gioi_thieu.pdf",
+        "content": "Thong tin gioi thieu chung ve nha truong.",
+    }
+
+    assert is_personnel_query(query)
+    assert compute_priority_adjustment(query, org_chunk) > compute_priority_adjustment(
+        query, generic_chunk
     )

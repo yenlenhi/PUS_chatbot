@@ -164,12 +164,68 @@ class PostgresDatabaseService:
                     )
                 )
 
+                # Create document display names table
+                conn.execute(
+                    text(
+                        """
+                    CREATE TABLE IF NOT EXISTS document_display_names (
+                        id SERIAL PRIMARY KEY,
+                        source_file VARCHAR(255) UNIQUE NOT NULL,
+                        display_name VARCHAR(500) NOT NULL,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """
+                    )
+                )
+                conn.execute(
+                    text(
+                        "CREATE INDEX IF NOT EXISTS idx_display_names_source ON document_display_names(source_file)"
+                    )
+                )
+
                 conn.commit()
                 log.info("✅ Database tables created successfully")
 
         except Exception as e:
             log.error(f"❌ Error creating tables: {e}")
             raise
+
+    def get_all_display_names(self) -> dict:
+        """Return all document display names as {source_file: display_name}."""
+        try:
+            session = self.SessionLocal()
+            result = session.execute(
+                text("SELECT source_file, display_name FROM document_display_names")
+            )
+            names = {row[0]: row[1] for row in result.fetchall()}
+            session.close()
+            return names
+        except Exception as e:
+            log.error(f"Error getting display names: {e}")
+            return {}
+
+    def set_display_name(self, source_file: str, display_name: str) -> bool:
+        """Insert or update the display name for a document."""
+        try:
+            session = self.SessionLocal()
+            session.execute(
+                text(
+                    """
+                INSERT INTO document_display_names (source_file, display_name, updated_at)
+                VALUES (:source_file, :display_name, CURRENT_TIMESTAMP)
+                ON CONFLICT (source_file) DO UPDATE
+                SET display_name = EXCLUDED.display_name,
+                    updated_at = CURRENT_TIMESTAMP
+            """
+                ),
+                {"source_file": source_file, "display_name": display_name},
+            )
+            session.commit()
+            session.close()
+            return True
+        except Exception as e:
+            log.error(f"Error setting display name: {e}")
+            return False
 
     def insert_chunks(self, chunks: List[DocumentChunk]) -> List[int]:
         """

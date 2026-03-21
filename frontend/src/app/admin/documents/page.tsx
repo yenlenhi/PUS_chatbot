@@ -15,7 +15,7 @@ import {
   Plus, Filter, RefreshCw, AlertCircle, Loader2,
   Database, HardDrive, LayoutGrid, List, Power, PowerOff,
   ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Check,
-  Archive, FolderOpen, Zap, Clock, BarChart3
+  Archive, FolderOpen, Zap, Clock, BarChart3, Pencil, X
 } from 'lucide-react';
 import { getDocumentUrl } from '@/lib/supabase';
 
@@ -95,6 +95,26 @@ const DocumentsPage = () => {
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Display name editing state
+  const [editingDisplayName, setEditingDisplayName] = useState<{ filename: string; value: string } | null>(null);
+  const [savingDisplayName, setSavingDisplayName] = useState<string | null>(null);
+
+  const handleSaveDisplayName = async (filename: string, value: string) => {
+    setSavingDisplayName(filename);
+    try {
+      await documentsAPI.updateDisplayName(filename, value.trim());
+      setDocuments(prev =>
+        prev.map(d => d.name === filename ? { ...d, display_name: value.trim() } : d)
+      );
+      setEditingDisplayName(null);
+      showToast('Đã cập nhật tên hiển thị', 'success');
+    } catch {
+      showToast('Không thể cập nhật tên hiển thị', 'error');
+    } finally {
+      setSavingDisplayName(null);
+    }
+  };
 
   // Fetch documents from API
   const fetchDocuments = useCallback(async () => {
@@ -598,6 +618,53 @@ const DocumentsPage = () => {
                       {doc.name}
                     </h3>
 
+                    {/* Display Name */}
+                    {editingDisplayName?.filename === doc.name ? (
+                      <div className="flex items-center gap-1 mb-3">
+                        <input
+                          autoFocus
+                          type="text"
+                          value={editingDisplayName.value}
+                          onChange={e => setEditingDisplayName({ filename: doc.name, value: e.target.value })}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') handleSaveDisplayName(doc.name, editingDisplayName.value);
+                            if (e.key === 'Escape') setEditingDisplayName(null);
+                          }}
+                          className="flex-1 text-xs border border-blue-300 rounded px-2 py-1 focus:outline-none focus:border-blue-500"
+                          placeholder="Nhập tên hiển thị..."
+                          maxLength={500}
+                        />
+                        <button
+                          onClick={() => handleSaveDisplayName(doc.name, editingDisplayName.value)}
+                          disabled={savingDisplayName === doc.name}
+                          className="p-1 text-green-600 hover:bg-green-50 rounded"
+                          title="Lưu"
+                        >
+                          {savingDisplayName === doc.name ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                        </button>
+                        <button
+                          onClick={() => setEditingDisplayName(null)}
+                          className="p-1 text-gray-500 hover:bg-gray-100 rounded"
+                          title="Hủy"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1 mb-3 group/dn">
+                        <p className="text-xs text-gray-500 truncate flex-1" title={doc.display_name || undefined}>
+                          {doc.display_name || <span className="italic text-gray-400">Chưa có tên hiển thị</span>}
+                        </p>
+                        <button
+                          onClick={() => setEditingDisplayName({ filename: doc.name, value: doc.display_name || '' })}
+                          className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded opacity-0 group-hover/dn:opacity-100 transition-opacity"
+                          title="Sửa tên hiển thị"
+                        >
+                          <Pencil className="w-3 h-3" />
+                        </button>
+                      </div>
+                    )}
+
                     <div className="space-y-1.5 xs:space-y-2 mb-3 xs:mb-4">
                       <div className="flex items-center justify-between text-xs xs:text-sm">
                         <span className="text-gray-600">Danh mục:</span>
@@ -859,9 +926,56 @@ const DocumentsPage = () => {
                             <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
                               <FileText className="w-5 h-5 text-red-600" />
                             </div>
-                            <span className="font-medium text-gray-900 truncate max-w-[200px]" title={doc.name}>
-                              {doc.name}
-                            </span>
+                            <div className="min-w-0">
+                              <span className="block font-medium text-gray-900 truncate max-w-[200px]" title={doc.name}>
+                                {doc.name}
+                              </span>
+                              {editingDisplayName?.filename === doc.name ? (
+                                <div className="flex items-center gap-1 mt-1">
+                                  <input
+                                    autoFocus
+                                    type="text"
+                                    value={editingDisplayName.value}
+                                    onChange={e => setEditingDisplayName({ filename: doc.name, value: e.target.value })}
+                                    onKeyDown={e => {
+                                      if (e.key === 'Enter') handleSaveDisplayName(doc.name, editingDisplayName.value);
+                                      if (e.key === 'Escape') setEditingDisplayName(null);
+                                    }}
+                                    className="flex-1 text-xs border border-blue-300 rounded px-1.5 py-0.5 focus:outline-none focus:border-blue-500 max-w-[160px]"
+                                    placeholder="Tên hiển thị..."
+                                    maxLength={500}
+                                  />
+                                  <button
+                                    onClick={() => handleSaveDisplayName(doc.name, editingDisplayName.value)}
+                                    disabled={savingDisplayName === doc.name}
+                                    className="p-0.5 text-green-600 hover:bg-green-50 rounded"
+                                    title="Lưu"
+                                  >
+                                    {savingDisplayName === doc.name ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+                                  </button>
+                                  <button
+                                    onClick={() => setEditingDisplayName(null)}
+                                    className="p-0.5 text-gray-500 hover:bg-gray-100 rounded"
+                                    title="Hủy"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-1 mt-0.5 group/dn">
+                                  <span className="text-xs text-gray-400 truncate max-w-[160px]" title={doc.display_name || undefined}>
+                                    {doc.display_name || <span className="italic">Chưa có tên hiển thị</span>}
+                                  </span>
+                                  <button
+                                    onClick={() => setEditingDisplayName({ filename: doc.name, value: doc.display_name || '' })}
+                                    className="p-0.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded opacity-0 group-hover/dn:opacity-100 transition-opacity"
+                                    title="Sửa tên hiển thị"
+                                  >
+                                    <Pencil className="w-2.5 h-2.5" />
+                                  </button>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </td>
                         <td className="px-4 py-4 text-sm text-gray-600">

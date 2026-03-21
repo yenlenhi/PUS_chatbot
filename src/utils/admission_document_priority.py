@@ -27,6 +27,11 @@ _ADMISSION_TERMS = (
     "nganh",
     "phuong thuc",
     "dieu kien",
+    "dang ky",
+    "moc thoi gian",
+    "nhap hoc",
+    "xac nhan nhap hoc",
+    "so tuyen",
 )
 _ADMISSION_DOC_TERMS = (
     "tuyen sinh",
@@ -35,6 +40,36 @@ _ADMISSION_DOC_TERMS = (
     "huong dan",
     "de an",
 )
+_PERSONNEL_TERMS = (
+    "hieu truong",
+    "pho hieu truong",
+    "ban giam hieu",
+    "lanh dao",
+    "can bo",
+    "nhan su",
+    "co cau to chuc",
+    "co cau",
+    "truong khoa",
+    "pho truong khoa",
+    "truong phong",
+    "pho truong phong",
+    "phong ban",
+    "don vi",
+    "bo mon",
+)
+_PERSONNEL_DOC_STRONG_TERMS = (
+    "co cau to chuc",
+    "nhan su",
+)
+_PERSONNEL_DOC_TERMS = (
+    "co cau",
+    "to chuc",
+    "nhan su",
+    "ban giam hieu",
+    "lanh dao",
+    "can bo",
+)
+_UPDATED_DOC_TERMS = ("cap nhat", "updated", "moi nhat")
 _CURRENT_CYCLE_HINTS = (
     "nam nay",
     "moi nhat",
@@ -93,6 +128,16 @@ def is_admission_query(query: Optional[str]) -> bool:
     return any(term in normalized_query for term in _ADMISSION_TERMS)
 
 
+def is_personnel_query(query: Optional[str]) -> bool:
+    normalized_query = _normalize_text(query)
+    return any(term in normalized_query for term in _PERSONNEL_TERMS)
+
+
+def has_explicit_year(query: Optional[str]) -> bool:
+    normalized_query = _normalize_text(query)
+    return _extract_year_from_text(normalized_query) is not None
+
+
 def infer_target_year(query: Optional[str]) -> Optional[int]:
     normalized_query = _normalize_text(query)
     explicit_year = _extract_year_from_text(normalized_query)
@@ -107,6 +152,56 @@ def infer_target_year(query: Optional[str]) -> Optional[int]:
         return current_year
 
     return current_year
+
+
+def _build_current_cycle_query(raw_query: str, normalized_query: str) -> tuple[str, bool]:
+    current_year = dt.datetime.now().year
+    enrichment_terms = []
+
+    current_year_phrase = f"nam {current_year}"
+    if current_year_phrase not in normalized_query:
+        enrichment_terms.append(f"nam {current_year}")
+
+    if "ky tuyen sinh hien tai" not in normalized_query:
+        enrichment_terms.append("ky tuyen sinh hien tai")
+
+    if "tuyen sinh" not in normalized_query:
+        enrichment_terms.append("tuyen sinh")
+
+    enriched_query = " ".join(
+        part for part in [raw_query, *enrichment_terms] if part
+    ).strip()
+    return enriched_query, enriched_query != raw_query
+
+
+def enrich_query_for_current_cycle(query: Optional[str]) -> tuple[str, bool]:
+    raw_query = str(query or "").strip()
+    if not raw_query:
+        return raw_query, False
+
+    if not is_admission_query(raw_query) or has_explicit_year(raw_query):
+        return raw_query, False
+
+    normalized_query = _normalize_text(raw_query)
+    return _build_current_cycle_query(raw_query, normalized_query)
+
+    current_year = dt.datetime.now().year
+    enrichment_terms = []
+
+    current_year_phrase = f"nam {current_year}"
+    if current_year_phrase not in normalized_query:
+        enrichment_terms.append(f"năm {current_year}")
+
+    if "ky tuyen sinh hien tai" not in normalized_query:
+        enrichment_terms.append("kỳ tuyển sinh hiện tại")
+
+    if "tuyen sinh" not in normalized_query:
+        enrichment_terms.append("tuyển sinh")
+
+    enriched_query = " ".join(
+        part for part in [raw_query, *enrichment_terms] if part
+    ).strip()
+    return enriched_query, enriched_query != raw_query
 
 
 def _get_source_authority(domain: str) -> tuple[float, Optional[str]]:
@@ -217,6 +312,7 @@ def compute_priority_adjustment(query: Optional[str], chunk: Dict[str, Any]) -> 
     target_year = infer_target_year(query)
     document_year = chunk.get("document_year")
     authority_bonus = float(metadata.get("authority_bonus") or 0.0)
+    personnel_query = is_personnel_query(query)
 
     year_bonus = 0.0
     if target_year is not None and document_year is not None:
@@ -231,8 +327,26 @@ def compute_priority_adjustment(query: Optional[str], chunk: Dict[str, Any]) -> 
             year_bonus = max(-0.18, year_gap * 0.05)
 
     title_bonus = 0.04 if any(term in normalized_source for term in _ADMISSION_DOC_TERMS) else 0.0
+    personnel_bonus = 0.0
+    if personnel_query:
+        if any(term in normalized_source for term in _PERSONNEL_DOC_STRONG_TERMS):
+            personnel_bonus += 0.28
+        elif any(term in normalized_source for term in _PERSONNEL_DOC_TERMS):
+            personnel_bonus += 0.16
+
+        if personnel_bonus and any(
+            term in normalized_source for term in _UPDATED_DOC_TERMS
+        ):
+            personnel_bonus += 0.08
+
     draft_penalty = -0.08 if any(term in normalized_source for term in _DRAFT_TERMS) else 0.0
 
-    total_adjustment = year_bonus + authority_bonus + title_bonus + draft_penalty
+    total_adjustment = (
+        year_bonus
+        + authority_bonus
+        + title_bonus
+        + personnel_bonus
+        + draft_penalty
+    )
     chunk["priority_adjustment"] = round(total_adjustment, 4)
     return total_adjustment

@@ -6,6 +6,7 @@ import uuid
 import re
 import time
 import hashlib
+import datetime as dt
 import unicodedata
 from typing import List, Dict, Any, Optional
 from src.services.embedding_service import EmbeddingService
@@ -19,7 +20,13 @@ from src.services.memory_service import ConversationMemoryService
 from src.services.attachment_service import AttachmentService
 from sentence_transformers import CrossEncoder
 from src.utils.logger import log
-from src.utils.admission_document_priority import compute_priority_adjustment
+from src.utils.admission_document_priority import (
+    compute_priority_adjustment,
+    enrich_query_for_current_cycle,
+    infer_target_year,
+    is_admission_query,
+    is_personnel_query,
+)
 
 from config.settings import (
     TOP_K_RESULTS,
@@ -1422,6 +1429,62 @@ Quy tắc bảo mật danh tính:
   - **Nguyễn Hữu Tấn Dũng** — Lớp: D32C — Thành viên
   Đây là các sinh viên của Trường Đại học An ninh Nhân dân đã xây dựng và phát triển hệ thống chatbot AI này."""
 
+    def _create_personnel_prompt_guidance(
+        self, query: str, language: str = "vi"
+    ) -> str:
+        if not is_personnel_query(query):
+            return ""
+
+        if language == "en":
+            return """
+
+MANDATORY RULES FOR LEADERSHIP / STAFF / ORGANIZATIONAL QUESTIONS:
+- Prioritize excerpts whose source/title clearly relates to organizational structure, personnel, leadership, departments, or faculties.
+- Do not open with a self-introduction.
+- Do not infer rank, academic degree, unit, appointment date, or phrases like "currently" / "still serving" unless the document states that explicitly.
+- For a question about one person or one title, present the answer as a Markdown table with columns: Name | Position | Unit | Note.
+- For a question about multiple staff members or organizational units, use a Markdown table such as: No. | Name/Unit | Position | Note.
+- If the document only confirms part of the information, clearly state which parts cannot be confirmed from the provided documents.
+"""
+
+        return """
+
+HUONG DAN BAT BUOC CHO CAU HOI VE CAN BO / LANH DAO / CO CAU TO CHUC:
+- Uu tien tuyet doi cac doan trich co nguon/tieu de lien quan den co cau to chuc, nhan su, ban giam hieu, lanh dao, khoa, phong ban, don vi.
+- Khong mo dau bang cau tu gioi thieu ban than.
+- Khong suy dien cap bac, hoc ham, hoc vi, don vi, thoi diem bo nhiem, hay cac cum nhu "hien nay", "van dang duong nhiem" neu tai lieu khong ghi ro.
+- Neu cau hoi hoi ve mot nguoi hoac mot chuc danh, trinh bay bang bang Markdown voi cac cot: Ho va ten | Chuc vu | Don vi | Ghi chu.
+- Neu cau hoi hoi ve nhieu can bo hoac co cau don vi, dung bang Markdown voi cac cot: STT | Ho va ten/Don vi | Chuc vu | Ghi chu.
+- Neu tai lieu chi xac nhan duoc mot phan thong tin, neu ro phan nao chua du co so xac nhan tu tai lieu da cung cap.
+"""
+
+    def _create_current_cycle_prompt_guidance(
+        self, query: str, language: str = "vi"
+    ) -> str:
+        target_year = infer_target_year(query)
+        current_year = dt.datetime.now().year
+        if not is_admission_query(query) or target_year != current_year:
+            return ""
+
+        if language == "en":
+            return f"""
+
+CURRENT-CYCLE DEFAULT:
+- Because the user did not clearly request another year, interpret this question as referring to the current admission cycle year {current_year}.
+- Prioritize evidence for year {current_year}.
+- If the retrieved excerpts only mention older years, say clearly that they are older references and that you do not have enough basis to confirm the current cycle year {current_year}.
+- Do not present 2025-or-earlier information as if it were the current cycle unless the user explicitly asked for that year.
+"""
+
+        return f"""
+
+MAC DINH THEO CHU KY TUYEN SINH HIEN TAI:
+- Vi nguoi dung khong neu ro nam khac, hay hieu cau hoi nay theo chu ky tuyen sinh hien tai nam {current_year}.
+- Uu tien toi da cac bang chung cua nam {current_year}.
+- Neu cac doan trich chi de cap cac nam cu hon, phai noi ro do la tai lieu tham khao cu va chua du co so de xac nhan cho nam {current_year}.
+- Khong duoc trinh bay thong tin cua nam 2025 tro ve truoc nhu thong tin hien hanh neu nguoi dung khong hoi ro nam do.
+"""
+
     def create_user_prompt(
         self, query: str, context: str, memory_context: str = "", language: str = "vi"
     ) -> str:
@@ -1437,6 +1500,20 @@ Quy tắc bảo mật danh tính:
         Returns:
             Formatted user prompt
         """
+        personnel_guidance = self._create_personnel_prompt_guidance(
+            query, language=language
+        )
+        current_cycle_guidance = self._create_current_cycle_prompt_guidance(
+            query, language=language
+        )
+        prompt_guidance = "".join(
+            guidance
+            for guidance in (current_cycle_guidance, personnel_guidance)
+            if guidance
+        )
+        if prompt_guidance:
+            context = f"{context}{prompt_guidance}"
+
         if ADMISSION_ONLY_MODE:
             if language == "en":
                 memory_section = (
@@ -1466,6 +1543,7 @@ Instructions:
 - After any score table, add 1-2 short sentences highlighting the trend or key comparison.
 - Structure the answer as: short summary, detailed bullets, reference reminder.
 - End with: "Reference documents: please review the official documents displayed by the system."
+{personnel_guidance}
 
 Response:"""
 
@@ -1696,9 +1774,16 @@ Trả lời:"""
             rewritten_query = self._rewrite_query_with_history(
                 normalized_query, current_history
             )
+            retrieval_query, retrieval_enriched = enrich_query_for_current_cycle(
+                rewritten_query
+            )
+            if retrieval_enriched:
+                log.info(
+                    f"Applied current-cycle retrieval enrichment: '{rewritten_query[:60]}' -> '{retrieval_query[:120]}'"
+                )
 
             # Step 3: Retrieve relevant chunks using the normalized and rewritten query
-            relevant_chunks = self.retrieve_relevant_chunks(rewritten_query)
+            relevant_chunks = self.retrieve_relevant_chunks(retrieval_query)
 
             # Create formatted context from chunks
             context = self.create_context(relevant_chunks)
@@ -2155,11 +2240,18 @@ Trả lời:"""
             rewritten_query = self._rewrite_query_with_history(
                 normalized_query, current_history
             )
+            retrieval_query, retrieval_enriched = enrich_query_for_current_cycle(
+                rewritten_query
+            )
+            if retrieval_enriched:
+                log.info(
+                    f"Applied current-cycle retrieval enrichment: '{rewritten_query[:60]}' -> '{retrieval_query[:120]}'"
+                )
 
             # Step 5: Retrieve relevant chunks
             yield {"type": "status", "message": "Đang tìm kiếm tài liệu liên quan..."}
 
-            relevant_chunks = self.retrieve_relevant_chunks(rewritten_query)
+            relevant_chunks = self.retrieve_relevant_chunks(retrieval_query)
             context = self.create_context(relevant_chunks)
 
             # Get sources

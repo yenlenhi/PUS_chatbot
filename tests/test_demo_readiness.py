@@ -1,4 +1,5 @@
 import importlib
+import datetime as dt
 import sys
 import types
 
@@ -117,3 +118,33 @@ def test_frontend_next_config_disables_production_browser_source_maps():
         config_text = config_file.read()
 
     assert "productionBrowserSourceMaps: false" in config_text
+
+
+def test_personnel_prompt_requires_doc_grounded_table_formatting():
+    rag_module = _load_rag_module()
+    service = rag_module.RAGService.__new__(rag_module.RAGService)
+
+    prompt = service.create_user_prompt(
+        "Hieu truong hien nay la ai",
+        "Nguon: Co_cau_to_chuc_va_Nhan_su_T04_Cap_nhat.pdf",
+        language="vi",
+    )
+
+    assert "HUONG DAN BAT BUOC CHO CAU HOI VE CAN BO / LANH DAO / CO CAU TO CHUC" in prompt
+    assert "Khong suy dien cap bac" in prompt
+    assert "Ho va ten | Chuc vu | Don vi | Ghi chu" in prompt
+
+
+def test_implicit_admission_timeline_prompt_defaults_to_current_cycle():
+    rag_module = _load_rag_module()
+    service = rag_module.RAGService.__new__(rag_module.RAGService)
+
+    prompt = service.create_user_prompt(
+        "Tôi muốn biết mốc thời gian đăng ký và xác nhận nhập học",
+        "Nguon: thong bao tuyen sinh",
+        language="vi",
+    )
+
+    assert "MAC DINH THEO CHU KY TUYEN SINH HIEN TAI" in prompt
+    assert f"nam {dt.datetime.now().year}" in prompt
+    assert "Khong duoc trinh bay thong tin cua nam 2025 tro ve truoc" in prompt

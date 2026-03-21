@@ -352,6 +352,18 @@ export const documentsAPI = {
     });
   },
 
+  // Update display name for a document
+  updateDisplayName: async (filename: string, displayName: string): Promise<{ success: boolean; filename: string; display_name: string }> => {
+    return adminApiCall<{ success: boolean; filename: string; display_name: string }>(
+      `/api/v1/admin/documents/${encodeURIComponent(filename)}/display-name`,
+      {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ display_name: displayName }),
+      }
+    );
+  },
+
   // Get document info
   getDocumentInfo: async (filename: string) => {
     return apiCall(`/api/v1/documents/${encodeURIComponent(filename)}/info`);

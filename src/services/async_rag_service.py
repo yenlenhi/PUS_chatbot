@@ -17,6 +17,7 @@ import re
 import unicodedata
 
 from src.utils.logger import log
+from src.utils.admission_document_priority import enrich_query_for_current_cycle
 from src.utils.fixed_admission_faq import get_fixed_admission_faq
 from src.services.async_gemini_service import (
     generate_response_async,
@@ -351,11 +352,18 @@ class AsyncRAGService:
     def _enrich_retrieval_query(
         self, original_query: str, retrieval_query: str
     ) -> Tuple[str, bool]:
+        enriched_query, current_cycle_enriched = enrich_query_for_current_cycle(
+            retrieval_query
+        )
         metadata = self._get_score_query_metadata(retrieval_query or original_query)
         if not metadata["needs_synonym_expansion"]:
-            return retrieval_query, False
+            if current_cycle_enriched:
+                log.info(
+                    f"[ASYNC] Applied current-cycle enrichment: '{retrieval_query[:60]}' -> '{enriched_query[:120]}'"
+                )
+            return enriched_query, current_cycle_enriched
 
-        normalized = self._normalize_for_match(retrieval_query or original_query)
+        normalized = self._normalize_for_match(enriched_query or original_query)
         enrichment_terms: List[str] = []
         if "diem chuan" not in normalized:
             enrichment_terms.append("điểm chuẩn tuyển sinh")
@@ -369,7 +377,7 @@ class AsyncRAGService:
             enrichment_terms.append("Trường Đại học An ninh Nhân dân")
 
         enriched_query = " ".join(
-            part for part in [retrieval_query.strip(), *enrichment_terms] if part
+            part for part in [enriched_query.strip(), *enrichment_terms] if part
         ).strip()
         if enriched_query != retrieval_query:
             log.info(
@@ -377,7 +385,7 @@ class AsyncRAGService:
             )
             return enriched_query, True
 
-        return retrieval_query, False
+        return enriched_query, current_cycle_enriched
 
     def _should_return_score_clarification(
         self, original_query: str, retrieval_query: str
@@ -1631,6 +1639,12 @@ Trả lời bằng tiếng Việt."""
         self, chunks: List[Dict[str, Any]]
     ) -> List[Dict[str, Any]]:
         """Build source references from chunks."""
+        # Load display names once for all chunks
+        try:
+            display_names = self.rag_service.db_service.get_all_display_names()
+        except Exception:
+            display_names = {}
+
         source_references = []
         for chunk in chunks:
             content = chunk.get("content", "")
@@ -1647,16 +1661,18 @@ Trả lời bằng tiếng Việt."""
             elif relevance_score < 0:
                 relevance_score = max(0.0, (relevance_score + 10) / 20)
 
+            source_file = chunk.get("source_file", "") or chunk.get("source", "")
             source_references.append(
                 {
                     "chunk_id": str(chunk.get("chunk_id", "")),
-                    "filename": chunk.get("source_file", "") or chunk.get("source", ""),
+                    "filename": source_file,
                     "page_number": chunk.get("page_number"),
                     "heading": chunk.get("heading_text"),
                     "content_snippet": snippet,
                     "relevance_score": relevance_score,
                     "document_year": chunk.get("document_year"),
                     "source_url": chunk.get("source_url"),
+                    "display_name": display_names.get(source_file) or None,
                 }
             )
         return source_references

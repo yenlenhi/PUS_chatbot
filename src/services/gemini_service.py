@@ -1,6 +1,8 @@
 import requests
 import json
 import gzip
+import re
+import unicodedata
 from config.settings import (
     GEMINI_API_KEY,
     GEMINI_API_URL,
@@ -9,12 +11,23 @@ from config.settings import (
     GEMINI_MAX_OUTPUT_TOKENS,
     GEMINI_TEMPERATURE,
 )
+from src.utils.admission_document_priority import is_personnel_query
 from src.utils.logger import log
 
 
 # ============================================
 # Google Search Grounding Helper
 # ============================================
+def _normalize_grounding_query(query: str) -> str:
+    normalized = unicodedata.normalize("NFD", query or "")
+    normalized = normalized.replace("đ", "d").replace("Đ", "D")
+    normalized = "".join(
+        ch for ch in normalized if unicodedata.category(ch) != "Mn"
+    ).lower()
+    normalized = re.sub(r"[^a-z0-9\s]", " ", normalized)
+    return re.sub(r"\s+", " ", normalized).strip()
+
+
 def _needs_realtime_info(query: str) -> bool:
     """
     Detect if query needs real-time web search for current affairs.
@@ -31,7 +44,29 @@ def _needs_realtime_info(query: str) -> bool:
     """
     if not ENABLE_GOOGLE_SEARCH_GROUNDING:
         return False
-        
+
+    normalized_query = _normalize_grounding_query(query)
+    personnel_news_terms = (
+        "bo nhiem",
+        "mien nhiem",
+        "dieu dong",
+        "thong bao quyet dinh",
+        "quyet dinh moi",
+        "tin tuc",
+        "su kien",
+        "hoi nghi",
+        "vua qua",
+        "moi nhat",
+        "cap nhat moi",
+    )
+
+    # School personnel questions should prefer internal organization/personnel
+    # documents unless the user explicitly asks about appointment/news updates.
+    if is_personnel_query(query) and not any(
+        term in normalized_query for term in personnel_news_terms
+    ):
+        return False
+
     realtime_keywords = [
         # Time-related (có dấu + không dấu)
         "hiện tại", "hien tai", "hiện nay", "hien nay", 

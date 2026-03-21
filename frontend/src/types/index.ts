@@ -92,6 +92,7 @@ export interface SourceReference {
   sparse_score: number | null;
   document_year?: number | null;
   source_url?: string | null;
+  display_name?: string | null;
 }
 
 export interface Conversation {

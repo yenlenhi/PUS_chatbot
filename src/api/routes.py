@@ -25,6 +25,7 @@ import datetime
 from pathlib import Path
 import json
 from typing import Optional, List
+from pydantic import BaseModel
 from src.models.schemas import (
     ChatRequest,
     ChatResponse,
@@ -681,6 +682,17 @@ async def admin_list_documents(rag: RAGService = Depends(get_rag_service)):
                 )
             )
 
+            # Fetch display names in one query
+            try:
+                display_names_result = session.execute(
+                    text("SELECT source_file, display_name FROM document_display_names")
+                )
+                display_names = {
+                    row[0]: row[1] for row in display_names_result.fetchall()
+                }
+            except Exception:
+                display_names = {}
+
             for row in result.fetchall():
                 source_file = row[0]
                 chunk_count = row[1]
@@ -742,6 +754,7 @@ async def admin_list_documents(rag: RAGService = Depends(get_rag_service)):
                         "format": "PDF",
                         "chunks": chunk_count,
                         "path": source_file,
+                        "display_name": display_names.get(source_file, ""),
                     }
                 )
 
@@ -924,6 +937,39 @@ async def admin_toggle_document_active(
         raise HTTPException(
             status_code=500, detail=f"Error toggling document status: {str(e)}"
         )
+
+
+class DisplayNameRequest(BaseModel):
+    display_name: str
+
+
+@router.put(
+    "/admin/documents/{filename}/display-name",
+    dependencies=[Depends(require_admin_async)],
+)
+async def update_document_display_name(
+    filename: str,
+    body: DisplayNameRequest,
+    rag: RAGService = Depends(get_rag_service),
+):
+    """Admin endpoint: Set or update a human-readable display name for a document."""
+    import urllib.parse
+    from pathlib import Path
+
+    decoded = urllib.parse.unquote(filename)
+    safe_filename = Path(decoded).name
+
+    display_name = body.display_name.strip()
+    if len(display_name) > 500:
+        raise HTTPException(
+            status_code=400, detail="Display name too long (max 500 characters)"
+        )
+
+    success = rag.db_service.set_display_name(safe_filename, display_name)
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to update display name")
+
+    return {"success": True, "filename": safe_filename, "display_name": display_name}
 
 
 @router.post("/admin/upload", dependencies=[Depends(require_admin_async)])

@@ -174,6 +174,7 @@ export interface Document {
   downloads: number;
   format: string;
   chunks: number;
+  display_name?: string | null;
 }
 
 export interface DocumentListResponse {

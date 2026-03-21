@@ -73,7 +73,7 @@ const SourceReferences: React.FC<SourceReferencesProps> = ({
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="truncate text-sm font-medium text-gray-900">
-                      {getDocumentDisplayName(ref.filename)}
+                      {ref.display_name || getDocumentDisplayName(ref.filename)}
                     </p>
                     <span
                       className={`rounded-full px-2 py-0.5 text-xs ${getScoreColor(ref.relevance_score)}`}
