@@ -29,6 +29,7 @@ _SCORE_ROW_PATTERN = re.compile(
     re.IGNORECASE,
 )
 _INLINE_TABLE_PATTERN = re.compile(r"([^\n])(\|(?:[^|\n]+\|){2,}.*)")
+_TABLE_SEPARATOR_PATTERN = re.compile(r"^:?-{3,}:?$")
 
 
 def _normalize_text(value: Optional[str]) -> str:
@@ -109,7 +110,7 @@ def normalize_answer_markdown(answer: str) -> str:
     normalized_answer = answer.replace("\r\n", "\n").replace("\r", "\n")
     normalized_answer = _INLINE_TABLE_PATTERN.sub(r"\1\n\n\2", normalized_answer)
 
-    lines = normalized_answer.split("\n")
+    lines = _repair_fragmented_table_blocks(normalized_answer.split("\n"))
     rebuilt: List[str] = []
     previous_was_table = False
 
@@ -133,6 +134,103 @@ def normalize_answer_markdown(answer: str) -> str:
         previous_was_table = is_table_line
 
     return "\n".join(rebuilt)
+
+
+def _extract_table_cells(line: str) -> Optional[List[str]]:
+    stripped = line.strip()
+    if not stripped.startswith("|"):
+        return None
+
+    body = stripped[1:]
+    if body.endswith("|"):
+        body = body[:-1]
+
+    cells = [cell.strip() for cell in body.split("|") if cell.strip()]
+    return cells or None
+
+
+def _is_table_separator_cells(cells: List[str]) -> bool:
+    return bool(cells) and all(_TABLE_SEPARATOR_PATTERN.match(cell) for cell in cells)
+
+
+def _repair_fragmented_table_block(block_lines: List[str]) -> Optional[List[str]]:
+    compact_lines = [line for line in block_lines if line.strip()]
+    if len(compact_lines) < 3:
+        return None
+
+    parsed_rows: List[List[str]] = []
+    for line in compact_lines:
+        cells = _extract_table_cells(line)
+        if not cells:
+            return None
+        parsed_rows.append(cells)
+
+    separator_start = next(
+        (index for index, cells in enumerate(parsed_rows) if _is_table_separator_cells(cells)),
+        None,
+    )
+    if separator_start is None or separator_start == 0:
+        return None
+
+    header_cells = [cell for cells in parsed_rows[:separator_start] for cell in cells]
+    separator_cells: List[str] = []
+    separator_end = separator_start
+    while separator_end < len(parsed_rows) and _is_table_separator_cells(
+        parsed_rows[separator_end]
+    ):
+        separator_cells.extend(parsed_rows[separator_end])
+        separator_end += 1
+
+    if len(header_cells) != len(separator_cells) or len(header_cells) < 2:
+        return None
+
+    target_columns = len(header_cells)
+    rebuilt_block = [
+        "| " + " | ".join(header_cells) + " |",
+        "| " + " | ".join(separator_cells) + " |",
+    ]
+
+    current_cells: List[str] = []
+    for cells in parsed_rows[separator_end:]:
+        if _is_table_separator_cells(cells):
+            return None
+        current_cells.extend(cells)
+        if len(current_cells) == target_columns:
+            rebuilt_block.append("| " + " | ".join(current_cells) + " |")
+            current_cells = []
+        elif len(current_cells) > target_columns:
+            return None
+
+    if current_cells:
+        return None
+
+    return rebuilt_block if len(rebuilt_block) > 2 else None
+
+
+def _repair_fragmented_table_blocks(lines: List[str]) -> List[str]:
+    rebuilt_lines: List[str] = []
+    index = 0
+
+    while index < len(lines):
+        current_line = lines[index]
+        if current_line.strip().startswith("|"):
+            block = [current_line]
+            index += 1
+            while index < len(lines):
+                candidate = lines[index]
+                if candidate.strip() and not candidate.strip().startswith("|"):
+                    break
+                block.append(candidate)
+                index += 1
+
+            repaired = _repair_fragmented_table_block(block)
+            rebuilt_lines.extend(repaired or block)
+            continue
+
+        rebuilt_lines.append(current_line)
+        index += 1
+
+    return rebuilt_lines
 
 
 def validate_admission_answer(

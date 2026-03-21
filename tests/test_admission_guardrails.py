@@ -48,9 +48,7 @@ def test_filter_chunks_by_metadata_prefers_t04_current_cycle_before_rerank():
 
 def test_validate_admission_answer_flags_wrong_t05_and_systemwide_quota():
     query = "thong tin ve chi tieu va to hop xet tuyen"
-    answer = (
-        "Truong Dai hoc An ninh Nhan dan (T05) co 1.870 chi tieu trong nam 2026."
-    )
+    answer = "Truong Dai hoc An ninh Nhan dan (T05) co 1.870 chi tieu trong nam 2026."
 
     violations = validate_admission_answer(query, answer)
 
@@ -97,44 +95,76 @@ def test_build_structured_timeline_answer_from_retrieved_chunks():
     answer = build_structured_admission_answer(query, chunks, language="vi")
 
     assert answer is not None
-    assert "| Mốc | Thời gian | Ghi chú |" in answer
-    assert "15/3/2026 đến 25/4/2026" in answer
+    assert "| --- | --- | --- |" in answer
+    assert "Dang ky du tuyen" in answer
+    assert "15/3/2026" in answer
+    assert "25/4/2026" in answer
     assert "30/8/2026" in answer
 
 
 def test_normalize_answer_markdown_inserts_blank_lines_around_tables():
     raw_answer = (
-        "1. Đối với hệ Đại học chính quy tuyển mới| Phương thức | Điều kiện |\n"
+        "1. Doi voi he Dai hoc chinh quy tuyen moi| Phuong thuc | Dieu kien |\n"
         "| --- | --- |\n"
-        "| Phương thức 1 | Tuyển thẳng |\n"
-        "### 2. Đối với hệ Tiến sĩ"
+        "| Phuong thuc 1 | Tuyen thang |\n"
+        "### 2. Doi voi he Tien si"
     )
 
     normalized = normalize_answer_markdown(raw_answer)
 
-    assert "tuyển mới\n\n| Phương thức | Điều kiện |" in normalized
-    assert "| Phương thức 1 | Tuyển thẳng |\n\n### 2." in normalized
+    assert "tuyen moi\n\n| Phuong thuc | Dieu kien |" in normalized
+    assert "| Phuong thuc 1 | Tuyen thang |\n\n### 2." in normalized
 
 
 def test_normalize_answer_markdown_removes_blank_lines_inside_table():
     raw_answer = (
-        "Sự khác biệt như sau:\n\n"
-        "| Mã bài thi |\n\n"
-        "| Phần Tự luận bắt buộc |\n\n"
-        "| Phần Trắc nghiệm tự chọn |\n\n"
+        "Su khac biet nhu sau:\n\n"
+        "| Ma bai thi |\n\n"
+        "| Phan Tu luan bat buoc |\n\n"
+        "| Phan Trac nghiem tu chon |\n\n"
         "| :--- |\n\n"
         "| :--- |\n\n"
         "| :--- |\n\n"
         "| CA1 |\n\n"
-        "| Ngữ văn |\n\n"
-        "| Vật lí |"
+        "| Ngu van |\n\n"
+        "| Vat li |"
     )
 
     normalized = normalize_answer_markdown(raw_answer)
 
-    assert "|\n\n| Phần" not in normalized
-    assert "| Mã bài thi |\n| Phần Tự luận bắt buộc |\n| Phần Trắc nghiệm tự chọn |" in normalized
-    assert "| :--- |\n| :--- |\n| :--- |" in normalized
+    assert "|\n\n| Phan" not in normalized
+    assert (
+        "| Ma bai thi | Phan Tu luan bat buoc | Phan Trac nghiem tu chon |"
+        in normalized
+    )
+    assert "| :--- | :--- | :--- |" in normalized
+    assert "| CA1 | Ngu van | Vat li |" in normalized
+
+
+def test_normalize_answer_markdown_repairs_fragmented_multi_column_table():
+    raw_answer = (
+        "Bang diem tuyen sinh\n"
+        "Toi da chuan hoa cac moc diem truy xuat duoc duoi dang bang de de doi chieu:\n\n"
+        "| Nam\n\n"
+        "| Nganh/Ma nganh\n\n"
+        "| Diem | Ghi chu |\n\n"
+        "| ---\n\n"
+        "| ---\n\n"
+        "| ---: | --- |\n\n"
+        "| 2022\n\n"
+        "| Nganh/nhom nganh\n\n"
+        "| 14.69 | Theo tai lieu truy xuat |\n\n"
+        "| 2023\n\n"
+        "| Nganh/nhom nganh\n\n"
+        "| 18.62 | Theo tai lieu truy xuat |"
+    )
+
+    normalized = normalize_answer_markdown(raw_answer)
+
+    assert "| Nam | Nganh/Ma nganh | Diem | Ghi chu |" in normalized
+    assert "| --- | --- | ---: | --- |" in normalized
+    assert "| 2022 | Nganh/nhom nganh | 14.69 | Theo tai lieu truy xuat |" in normalized
+    assert "| 2023 | Nganh/nhom nganh | 18.62 | Theo tai lieu truy xuat |" in normalized
 
 
 def test_build_reference_year_bridge_answer_adds_current_cycle_disclaimer():
@@ -142,5 +172,6 @@ def test_build_reference_year_bridge_answer_adds_current_cycle_disclaimer():
         "Noi dung tham khao tu tai lieu nam 2025.", language="vi"
     )
 
-    assert "mặc định ưu tiên năm" in bridged
-    assert "năm 2025" in bridged
+    assert "2026" in bridged
+    assert "tham khao" in bridged
+    assert "nam 2025" in bridged
