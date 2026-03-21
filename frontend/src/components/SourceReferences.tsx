@@ -1,7 +1,14 @@
 'use client';
 
 import React, { useState } from 'react';
-import { FileText, ChevronDown, ChevronUp, ExternalLink, Book, Hash } from 'lucide-react';
+import {
+  Book,
+  ChevronDown,
+  ChevronUp,
+  ExternalLink,
+  FileText,
+  Hash,
+} from 'lucide-react';
 import type { SourceReference } from '@/types';
 import { getDocumentDisplayName } from '@/lib/documentNames';
 
@@ -14,7 +21,7 @@ interface SourceReferencesProps {
 const SourceReferences: React.FC<SourceReferencesProps> = ({
   sourceReferences,
   onOpenDocument,
-  className = ''
+  className = '',
 }) => {
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
 
@@ -22,9 +29,7 @@ const SourceReferences: React.FC<SourceReferencesProps> = ({
     return null;
   }
 
-  const formatScore = (score: number) => {
-    return Math.round(score * 100);
-  };
+  const formatScore = (score: number) => Math.round(score * 100);
 
   const getScoreColor = (score: number) => {
     if (score >= 0.7) return 'bg-green-100 text-green-800';
@@ -33,99 +38,113 @@ const SourceReferences: React.FC<SourceReferencesProps> = ({
   };
 
   const handleDocumentClick = (ref: SourceReference) => {
-    if (onOpenDocument) {
-      onOpenDocument(ref.filename, ref.page_number || undefined);
-    }
+    onOpenDocument?.(ref.filename, ref.page_number || undefined);
   };
 
-  const toggleExpand = (index: number, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const toggleExpand = (index: number, event: React.MouseEvent) => {
+    event.stopPropagation();
     setExpandedIndex(expandedIndex === index ? null : index);
   };
 
   return (
     <div className={`mt-4 ${className}`}>
       <div className="border-t border-gray-200 pt-3">
-        <div className="flex items-center justify-between mb-3">
-          <p className="text-xs text-gray-500 font-semibold flex items-center gap-1">
-            <Book className="w-3.5 h-3.5" />
-            Nguồn tham khảo ({sourceReferences.length})
+        <div className="mb-3 flex items-center justify-between">
+          <p className="flex items-center gap-1 text-xs font-semibold text-gray-500">
+            <Book className="h-3.5 w-3.5" />
+            Nguon tham khao ({sourceReferences.length})
           </p>
         </div>
-        
+
         <div className="space-y-2">
           {sourceReferences.map((ref, index) => (
             <div
               key={ref.chunk_id || index}
-              className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all duration-200"
+              className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-md"
             >
-              {/* Header - Always visible */}
               <div
                 onClick={() => handleDocumentClick(ref)}
-                className="flex items-start gap-3 p-3 cursor-pointer hover:bg-gray-50 transition-colors"
+                className="flex cursor-pointer items-start gap-3 p-3 transition-colors hover:bg-gray-50"
               >
-                <div className="flex-shrink-0 mt-0.5">
-                  <FileText className="w-5 h-5 text-red-500" />
+                <div className="mt-0.5 flex-shrink-0">
+                  <FileText className="h-5 w-5 text-red-500" />
                 </div>
-                
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <p className="text-sm font-medium text-gray-900 truncate">
+
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="truncate text-sm font-medium text-gray-900">
                       {getDocumentDisplayName(ref.filename)}
                     </p>
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${getScoreColor(ref.relevance_score)}`}>
-                      {formatScore(ref.relevance_score)}% phù hợp
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-xs ${getScoreColor(ref.relevance_score)}`}
+                    >
+                      {formatScore(ref.relevance_score)}% phu hop
                     </span>
                   </div>
-                  
-                  <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
+
+                  <div className="mt-1 flex items-center gap-2 text-xs text-gray-500">
                     {ref.page_number && (
                       <span className="flex items-center gap-1">
-                        <Hash className="w-3 h-3" />
+                        <Hash className="h-3 w-3" />
                         Trang {ref.page_number}
                       </span>
                     )}
                     {ref.heading && (
-                      <span className="truncate max-w-[200px]" title={ref.heading}>
+                      <span className="max-w-[200px] truncate" title={ref.heading}>
                         • {ref.heading}
                       </span>
                     )}
+                    {ref.document_year && (
+                      <span>Nam {ref.document_year}</span>
+                    )}
                   </div>
-                  
-                  {/* Snippet preview */}
-                  <p className="text-xs text-gray-600 mt-2 line-clamp-2">
+
+                  <p className="mt-2 line-clamp-2 text-xs text-gray-600">
                     {ref.content_snippet}
                   </p>
                 </div>
 
-                <div className="flex items-center gap-2 flex-shrink-0">
+                <div className="flex flex-shrink-0 items-center gap-2">
                   <button
-                    onClick={(e) => toggleExpand(index, e)}
-                    className="p-1 hover:bg-gray-200 rounded transition-colors"
-                    title={expandedIndex === index ? "Thu gọn" : "Xem thêm"}
+                    onClick={(event) => toggleExpand(index, event)}
+                    className="rounded p-1 transition-colors hover:bg-gray-200"
+                    title={expandedIndex === index ? 'Thu gon' : 'Xem them'}
                   >
                     {expandedIndex === index ? (
-                      <ChevronUp className="w-4 h-4 text-gray-500" />
+                      <ChevronUp className="h-4 w-4 text-gray-500" />
                     ) : (
-                      <ChevronDown className="w-4 h-4 text-gray-500" />
+                      <ChevronDown className="h-4 w-4 text-gray-500" />
                     )}
                   </button>
-                  <ExternalLink className="w-4 h-4 text-gray-400" />
+                  {ref.source_url ? (
+                    <a
+                      href={ref.source_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="rounded p-1 transition-colors hover:bg-gray-200"
+                      onClick={(event) => event.stopPropagation()}
+                      title="Nguon chinh thuc"
+                    >
+                      <ExternalLink className="h-4 w-4 text-gray-400" />
+                    </a>
+                  ) : (
+                    <ExternalLink className="h-4 w-4 text-gray-400" />
+                  )}
                 </div>
               </div>
 
-              {/* Expanded content */}
               {expandedIndex === index && (
-                <div className="px-3 pb-3 pt-0 border-t border-gray-100">
-                  <div className="bg-gray-50 rounded p-3 mt-2">
-                    <p className="text-xs text-gray-500 font-medium mb-2">Nội dung đầy đủ:</p>
-                    <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
-                      {ref.full_content}
+                <div className="border-t border-gray-100 px-3 pb-3 pt-0">
+                  <div className="mt-2 rounded bg-gray-50 p-3">
+                    <p className="mb-2 text-xs font-medium text-gray-500">
+                      Trich doan lien quan:
+                    </p>
+                    <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-700">
+                      {ref.content_snippet}
                     </p>
                   </div>
-                  
-                  {/* Score details */}
-                  <div className="flex gap-4 mt-3 text-xs text-gray-500">
+
+                  <div className="mt-3 flex gap-4 text-xs text-gray-500">
                     {ref.dense_score !== null && (
                       <span>Dense: {formatScore(ref.dense_score)}%</span>
                     )}
@@ -144,4 +163,3 @@ const SourceReferences: React.FC<SourceReferencesProps> = ({
 };
 
 export default SourceReferences;
-

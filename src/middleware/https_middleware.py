@@ -56,11 +56,13 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         )
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; "
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
+            "script-src 'self'; "
             "style-src 'self' 'unsafe-inline'; "
             "img-src 'self' data: https:; "
             "font-src 'self' data:; "
-            "connect-src 'self'"
+            "connect-src 'self'; "
+            "object-src 'none'; "
+            "frame-ancestors 'none'"
         )
 
         # Require TLS 1.2 or higher (informational header)

@@ -173,15 +173,14 @@ class RAGService:
 
     def _detect_chart_request(self, query: str, answer: str) -> List[Dict[str, Any]]:
         """
-        Detect if the query/answer contains statistical data that can be visualized as charts.
-        Returns chart data if applicable.
-        Only generates charts when user EXPLICITLY asks for statistics or charts.
+        Detect chart intent.
+
+        For the demo build we intentionally disable synthetic chart generation
+        because the current implementation only contains illustrative placeholder
+        data, not document-grounded statistics.
         """
-        chart_data = []
         query_lower = query.lower()
 
-        # Keywords that EXPLICITLY suggest chart visualization request
-        # Removed common keywords that appear in most questions
         explicit_chart_keywords = [
             "thống kê",
             "biểu đồ",
@@ -201,89 +200,11 @@ class RAGService:
         )
 
         if should_generate_chart:
-            # Example: Admission statistics by year
-            if any(word in query_lower for word in ["tuyển sinh", "chỉ tiêu"]):
-                chart_data.append(
-                    {
-                        "type": "bar",
-                        "title": "Chỉ tiêu tuyển sinh qua các năm",
-                        "data": [
-                            {"name": "2021", "Chỉ tiêu": 450, "Trúng tuyển": 420},
-                            {"name": "2022", "Chỉ tiêu": 500, "Trúng tuyển": 480},
-                            {"name": "2023", "Chỉ tiêu": 550, "Trúng tuyển": 530},
-                            {"name": "2024", "Chỉ tiêu": 600, "Trúng tuyển": 580},
-                            {"name": "2025", "Chỉ tiêu": 650, "Trúng tuyển": 0},
-                        ],
-                        "xKey": "name",
-                        "yKeys": ["Chỉ tiêu", "Trúng tuyển"],
-                        "description": "Biểu đồ thống kê chỉ tiêu tuyển sinh (Dữ liệu minh họa)",
-                    }
-                )
+            log.info(
+                "Chart intent detected, but chart rendering is disabled because no document-backed chart dataset is available."
+            )
 
-            # Example: Score distribution by major
-            if any(
-                word in query_lower
-                for word in ["điểm chuẩn", "điểm trúng tuyển", "ngành"]
-            ):
-                chart_data.append(
-                    {
-                        "type": "bar",
-                        "title": "Điểm chuẩn các ngành năm 2024",
-                        "data": [
-                            {"name": "An ninh chính trị", "Điểm chuẩn": 24.5},
-                            {"name": "An ninh kinh tế", "Điểm chuẩn": 25.0},
-                            {"name": "An ninh mạng", "Điểm chuẩn": 26.5},
-                            {"name": "Điều tra hình sự", "Điểm chuẩn": 25.5},
-                            {"name": "Kỹ thuật hình sự", "Điểm chuẩn": 24.0},
-                        ],
-                        "xKey": "name",
-                        "yKeys": ["Điểm chuẩn"],
-                        "description": "Biểu đồ điểm chuẩn các ngành (Dữ liệu minh họa)",
-                    }
-                )
-
-            # Example: Student distribution by major (pie chart)
-            if any(word in query_lower for word in ["tỷ lệ", "phân bố", "cơ cấu"]):
-                chart_data.append(
-                    {
-                        "type": "pie",
-                        "title": "Tỷ lệ học viên theo ngành đào tạo",
-                        "data": [
-                            {"name": "An ninh chính trị", "value": 25},
-                            {"name": "An ninh kinh tế", "value": 20},
-                            {"name": "An ninh mạng", "value": 30},
-                            {"name": "Điều tra hình sự", "value": 15},
-                            {"name": "Kỹ thuật hình sự", "value": 10},
-                        ],
-                        "xKey": "name",
-                        "yKeys": ["value"],
-                        "description": "Biểu đồ tỷ lệ học viên theo ngành (Dữ liệu minh họa)",
-                    }
-                )
-
-            # Example: Trend over time (line chart)
-            if any(
-                word in query_lower
-                for word in ["xu hướng", "trend", "biến động", "qua các năm"]
-            ):
-                chart_data.append(
-                    {
-                        "type": "line",
-                        "title": "Xu hướng số lượng hồ sơ đăng ký qua các năm",
-                        "data": [
-                            {"name": "2020", "Hồ sơ": 1200},
-                            {"name": "2021", "Hồ sơ": 1450},
-                            {"name": "2022", "Hồ sơ": 1680},
-                            {"name": "2023", "Hồ sơ": 1920},
-                            {"name": "2024", "Hồ sơ": 2150},
-                        ],
-                        "xKey": "name",
-                        "yKeys": ["Hồ sơ"],
-                        "description": "Biểu đồ xu hướng số lượng hồ sơ (Dữ liệu minh họa)",
-                    }
-                )
-
-        return chart_data
+        return []
 
     def _should_expand_context(self, chunks: List[Dict[str, Any]], query: str) -> bool:
         """Decide whether context expansion is worth the extra DB lookups."""
@@ -1540,6 +1461,9 @@ Instructions:
 - If the user asks about the current admission cycle or does not specify a year, prioritize the newest official year shown in the context (for example 2026).
 - If multiple years appear, use the newest official year as the main basis and mention older years only when comparing them explicitly.
 - Do not answer beyond the evidence in the documents.
+- For admission score / cutoff score / score comparison questions, ALWAYS use a Markdown table.
+- When comparing multiple years, use columns such as: Year | Major/Code | Score | Method | Trend.
+- After any score table, add 1-2 short sentences highlighting the trend or key comparison.
 - Structure the answer as: short summary, detailed bullets, reference reminder.
 - End with: "Reference documents: please review the official documents displayed by the system."
 
@@ -1567,6 +1491,9 @@ Hướng dẫn:
 - Nếu người dùng hỏi về kỳ tuyển sinh hiện tại hoặc không nêu rõ năm, ưu tiên tài liệu có năm mới nhất trong ngữ cảnh (ví dụ 2026).
 - Nếu trong ngữ cảnh có nhiều năm, dùng tài liệu chính thức mới nhất làm căn cứ chính; chỉ nhắc tài liệu cũ hơn khi cần đối chiếu và phải nêu rõ năm.
 - Không trả lời vượt quá bằng chứng trong tài liệu.
+- Với câu hỏi về điểm chuẩn, điểm xét tuyển, điểm trúng tuyển hoặc so sánh điểm, BẮT BUỘC dùng bảng Markdown.
+- Khi so sánh nhiều năm, ưu tiên các cột: Năm | Ngành/Mã ngành | Điểm | Phương thức | Xu hướng.
+- Sau bảng điểm, luôn thêm 1-2 câu nhận xét ngắn về xu hướng hoặc điểm nổi bật.
 - Trình bày theo cấu trúc: tóm tắt ngắn, chi tiết theo gạch đầu dòng, nhắc xem tài liệu tham khảo.
 - Kết thúc bằng: "Tài liệu tham khảo: vui lòng xem các tài liệu chính thức do hệ thống hiển thị."
 
@@ -1817,10 +1744,11 @@ Trả lời:"""
                     "page_number": chunk.get("page_number"),
                     "heading": chunk.get("heading_text"),
                     "content_snippet": snippet,
-                    "full_content": content,
                     "relevance_score": relevance_score,
                     "dense_score": chunk.get("dense_score"),
                     "sparse_score": chunk.get("sparse_score"),
+                    "document_year": chunk.get("document_year"),
+                    "source_url": chunk.get("source_url"),
                 }
                 source_references.append(source_ref)
 
@@ -2270,8 +2198,9 @@ Trả lời:"""
                     "page_number": chunk.get("page_number"),
                     "heading": chunk.get("heading_text"),
                     "content_snippet": snippet,
-                    "full_content": content,
                     "relevance_score": relevance_score,
+                    "document_year": chunk.get("document_year"),
+                    "source_url": chunk.get("source_url"),
                 }
                 source_references.append(source_ref)
 

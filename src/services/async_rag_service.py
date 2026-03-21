@@ -1654,8 +1654,9 @@ Trả lời bằng tiếng Việt."""
                     "page_number": chunk.get("page_number"),
                     "heading": chunk.get("heading_text"),
                     "content_snippet": snippet,
-                    "full_content": content,
                     "relevance_score": relevance_score,
+                    "document_year": chunk.get("document_year"),
+                    "source_url": chunk.get("source_url"),
                 }
             )
         return source_references

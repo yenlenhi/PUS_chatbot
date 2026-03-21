@@ -87,10 +87,11 @@ export interface SourceReference {
   page_number: number | null;
   heading: string | null;
   content_snippet: string;
-  full_content: string;
   relevance_score: number;
   dense_score: number | null;
   sparse_score: number | null;
+  document_year?: number | null;
+  source_url?: string | null;
 }
 
 export interface Conversation {

@@ -76,6 +76,12 @@ REQUIRE_SOURCE_CITATION = os.getenv("REQUIRE_SOURCE_CITATION", "true").lower() =
 # Performance instrumentation for stage-by-stage latency analysis
 ENABLE_STAGE_TIMINGS = os.getenv("ENABLE_STAGE_TIMINGS", "true").lower() == "true"
 
+# Prewarm retrieval + reranker models on startup so the first demo question
+# does not pay the full lazy-loading cost.
+PREWARM_RAG_ON_STARTUP = (
+    os.getenv("PREWARM_RAG_ON_STARTUP", "true").lower() == "true"
+)
+
 # Ollama Configuration
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 OLLAMA_MODEL = os.getenv(

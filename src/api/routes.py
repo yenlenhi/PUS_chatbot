@@ -442,7 +442,7 @@ async def get_conversation_endpoint(
         )
 
 
-@router.get("/stats")
+@router.get("/stats", dependencies=[Depends(require_admin_async)])
 async def stats_endpoint(rag: RAGService = Depends(get_rag_service)):
     """
     Get system statistics
@@ -475,7 +475,8 @@ async def stats_endpoint(rag: RAGService = Depends(get_rag_service)):
 
 
 @router.get("/documents")
-async def list_documents():
+@rate_limit("30/minute")
+async def list_documents(request: Request):
     """
     List all available PDF documents
     """
@@ -509,7 +510,8 @@ async def list_documents():
 
 
 @router.get("/documents/{filename}")
-async def get_document(filename: str, page: int = None):
+@rate_limit("30/minute")
+async def get_document(request: Request, filename: str, page: int = None):
     """
     Get a PDF document by filename
 
@@ -585,7 +587,8 @@ async def get_document(filename: str, page: int = None):
 
 
 @router.get("/documents/{filename}/info")
-async def get_document_info(filename: str):
+@rate_limit("30/minute")
+async def get_document_info(request: Request, filename: str):
     """
     Get metadata about a PDF document
     """

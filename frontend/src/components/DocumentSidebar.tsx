@@ -6,6 +6,7 @@ import {
   ChevronRight,
   ChevronLeft,
   Eye,
+  ExternalLink,
   Copy,
   Check,
   X,
@@ -45,10 +46,22 @@ const DocumentSidebar: React.FC<DocumentSidebarProps> = ({
       if (!existing) {
         map.set(ref.filename, { ...ref, all_pages: [ref.page_number] });
       } else if (ref.relevance_score > existing.relevance_score) {
-        map.set(ref.filename, { ...ref, all_pages: [...existing.all_pages, ref.page_number] });
+        map.set(ref.filename, {
+          ...existing,
+          ...ref,
+          document_year: ref.document_year ?? existing.document_year,
+          source_url: ref.source_url ?? existing.source_url,
+          all_pages: Array.from(new Set([...existing.all_pages, ref.page_number])),
+        });
       } else {
         if (!existing.all_pages.includes(ref.page_number)) {
           existing.all_pages.push(ref.page_number);
+        }
+        if (!existing.document_year && ref.document_year) {
+          existing.document_year = ref.document_year;
+        }
+        if (!existing.source_url && ref.source_url) {
+          existing.source_url = ref.source_url;
         }
       }
     });
@@ -66,7 +79,8 @@ const DocumentSidebar: React.FC<DocumentSidebarProps> = ({
   const handleCopyReference = async (ref: MergedRef, index: number) => {
     const pages = ref.all_pages.filter(Boolean);
     const pageStr = pages.length > 0 ? `, trang ${pages.join(', ')}` : '';
-    const citation = `${getDocumentDisplayName(ref.filename)}${pageStr}`;
+    const yearStr = ref.document_year ? `, năm ${ref.document_year}` : '';
+    const citation = `${getDocumentDisplayName(ref.filename)}${yearStr}${pageStr}`;
     try {
       await navigator.clipboard.writeText(citation);
       setCopiedIndex(index);
@@ -188,6 +202,11 @@ const DocumentSidebar: React.FC<DocumentSidebarProps> = ({
                           <span className={`inline-flex items-center text-xs font-medium px-1.5 py-0.5 rounded-md ${scoreStyle.bg} ${scoreStyle.text}`}>
                             {formatScore(ref.relevance_score)}%
                           </span>
+                          {ref.document_year && (
+                            <span className="inline-flex items-center text-xs text-sky-700 bg-sky-50 px-1.5 py-0.5 rounded-md border border-sky-100">
+                              Năm {ref.document_year}
+                            </span>
+                          )}
                           {pages.length > 0 && pages.map(pg => (
                             <span
                               key={pg}
@@ -219,6 +238,17 @@ const DocumentSidebar: React.FC<DocumentSidebarProps> = ({
                             <Copy className="w-3.5 h-3.5" />
                           )}
                         </button>
+                        {ref.source_url && (
+                          <a
+                            href={ref.source_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-1.5 rounded-md text-gray-400 hover:text-sky-600 hover:bg-sky-50 transition-colors"
+                            title="Mở nguồn chính thức"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </a>
+                        )}
                       </div>
                     </div>
 
@@ -230,7 +260,7 @@ const DocumentSidebar: React.FC<DocumentSidebarProps> = ({
                     )}
 
                     {/* Expand toggle */}
-                    {(ref.full_content || ref.heading) && (
+                    {(ref.content_snippet || ref.heading || ref.document_year || ref.source_url) && (
                       <button
                         onClick={() => toggleExpand(index)}
                         className="mt-2 flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 transition-colors"
@@ -258,8 +288,28 @@ const DocumentSidebar: React.FC<DocumentSidebarProps> = ({
                           Mục: <span className="text-gray-700">{ref.heading}</span>
                         </p>
                       )}
+                      {(ref.document_year || ref.source_url) && (
+                        <div className="mb-2 space-y-1">
+                          {ref.document_year && (
+                            <p className="text-xs text-gray-500">
+                              Năm tài liệu: <span className="text-gray-700">{ref.document_year}</span>
+                            </p>
+                          )}
+                          {ref.source_url && (
+                            <a
+                              href={ref.source_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-xs text-sky-700 hover:text-sky-800 hover:underline"
+                            >
+                              <ExternalLink className="w-3 h-3" />
+                              Nguồn chính thức
+                            </a>
+                          )}
+                        </div>
+                      )}
                       <p className="text-xs text-gray-600 leading-relaxed max-h-36 overflow-y-auto whitespace-pre-wrap">
-                        {ref.full_content}
+                        {ref.content_snippet}
                       </p>
                       {/* Action row inside expanded */}
                       <div className="flex items-center gap-2 mt-3">

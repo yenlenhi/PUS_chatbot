@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, ChevronUp, FileText, ExternalLink, Copy, Check, Eye } from 'lucide-react';
 import type { SourceReference } from '@/types';
 
@@ -27,7 +27,7 @@ export const MobileSourceDrawer: React.FC<MobileSourceDrawerProps> = ({
         if (!isOpen) setDragY(0);
     }, [isOpen]);
 
-    const handleDragStart = (e: React.TouchEvent | React.MouseEvent) => {
+    const handleDragStart = () => {
         setIsDragging(true);
     };
 
@@ -57,12 +57,6 @@ export const MobileSourceDrawer: React.FC<MobileSourceDrawerProps> = ({
         if (score >= 0.9) return 'bg-green-500';
         if (score >= 0.8) return 'bg-yellow-500';
         return 'bg-orange-500';
-    };
-
-    const getConfidenceLabel = (score: number) => {
-        if (score >= 0.9) return 'Rất phù hợp';
-        if (score >= 0.8) return 'Phù hợp';
-        return 'Tham khảo';
     };
 
     if (!isOpen) return null;
@@ -127,15 +121,22 @@ export const MobileSourceDrawer: React.FC<MobileSourceDrawerProps> = ({
                             >
                                 {/* Source Header */}
                                 <div className="flex items-start justify-between mb-2">
-                                    <div className="flex-1 min-w-0">
-                                        <h4 className="font-medium text-gray-900 text-sm truncate">
-                                            {source.heading || source.filename || 'Tài liệu'}
-                                        </h4>
-                                        {source.page_number && (
-                                            <p className="text-xs text-gray-500 mt-0.5">
-                                                Trang {source.page_number}
-                                            </p>
-                                        )}
+                                <div className="flex-1 min-w-0">
+                                    <h4 className="font-medium text-gray-900 text-sm truncate">
+                                        {source.heading || source.filename || 'Tài liệu'}
+                                    </h4>
+                                        <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+                                            {source.page_number && (
+                                                <p className="text-xs text-gray-500">
+                                                    Trang {source.page_number}
+                                                </p>
+                                            )}
+                                            {source.document_year && (
+                                                <span className="inline-flex items-center rounded-full bg-sky-50 px-2 py-0.5 text-[11px] font-medium text-sky-700">
+                                                    Năm {source.document_year}
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
                                     {/* Confidence Badge */}
                                     <div className="flex items-center gap-1 ml-2">
@@ -172,6 +173,16 @@ export const MobileSourceDrawer: React.FC<MobileSourceDrawerProps> = ({
                                             <Copy className="w-3.5 h-3.5" />
                                         )}
                                     </button>
+                                    {source.source_url && (
+                                        <a
+                                            href={source.source_url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex items-center justify-center gap-1.5 py-2 px-3 bg-sky-100 hover:bg-sky-200 text-sky-700 text-xs font-medium rounded-lg transition-colors"
+                                        >
+                                            <ExternalLink className="w-3.5 h-3.5" />
+                                        </a>
+                                    )}
                                 </div>
                             </div>
                         ))
@@ -248,18 +259,12 @@ export const SuggestedQuestions: React.FC<SuggestedQuestionsProps> = ({
 // Quick Actions Bar for messages
 interface QuickActionsProps {
     onCopy: () => void;
-    onSpeak: () => void;
-    onShare?: () => void;
     isCopied: boolean;
-    isSpeaking: boolean;
 }
 
 export const QuickActions: React.FC<QuickActionsProps> = ({
     onCopy,
-    onSpeak,
-    onShare,
     isCopied,
-    isSpeaking,
 }) => {
     return (
         <div className="flex items-center gap-1 mt-2">

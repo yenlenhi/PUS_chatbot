@@ -1,14 +1,17 @@
 // Supabase Storage utility functions
 import { createClient } from '@supabase/supabase-js';
 
-// Supabase Storage URL configuration
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://thessjemstjljfbkvzih.supabase.co';
-const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+// Supabase Storage URL configuration — all values must come from env variables
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const STORAGE_BUCKET = process.env.NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET || 'documents';
-const USER_IMAGES_BUCKET = 'user-images';
+
+if (!SUPABASE_URL || !SUPABASE_KEY) {
+  throw new Error('Missing required Supabase environment variables: NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY');
+}
 
 // Create Supabase client
-export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+export const supabase = createClient(SUPABASE_URL!, SUPABASE_KEY!);
 
 /**
  * Get the public URL for a document stored in Supabase Storage
@@ -22,7 +25,7 @@ export function getDocumentUrl(filename: string): string {
   // URL encode the filename for special characters
   const encodedFilename = encodeURIComponent(normalizedFilename);
   
-  return `${SUPABASE_URL}/storage/v1/object/public/${STORAGE_BUCKET}/${encodedFilename}`;
+  return `${SUPABASE_URL!}/storage/v1/object/public/${STORAGE_BUCKET}/${encodedFilename}`;
 }
 
 /**
@@ -55,74 +58,7 @@ export function formatDocumentName(filename: string): string {
     .trim();
 }
 
-/**
- * Get the public URL for a user uploaded image
- * @param filename - The filename of the image in user-images bucket
- * @returns The public URL of the image
- */
-export function getUserImageUrl(filename: string): string {
-  const { data } = supabase.storage
-    .from(USER_IMAGES_BUCKET)
-    .getPublicUrl(filename);
-  
-  return data.publicUrl;
-}
-
-/**
- * Upload image to user-images bucket
- * @param file - File to upload
- * @param fileName - Optional custom filename
- * @returns Upload result with public URL
- */
-export async function uploadUserImage(file: File, fileName?: string) {
-  if (!fileName) {
-    const timestamp = Date.now();
-    const randomString = Math.random().toString(36).substring(2, 15);
-    const fileExtension = file.name.split('.').pop() || 'jpg';
-    fileName = `img_${timestamp}_${randomString}.${fileExtension}`;
-  }
-
-  const { data, error } = await supabase.storage
-    .from(USER_IMAGES_BUCKET)
-    .upload(fileName, file, {
-      contentType: file.type,
-      cacheControl: '3600',
-      upsert: false
-    });
-
-  if (error) {
-    throw error;
-  }
-
-  const { data: urlData } = supabase.storage
-    .from(USER_IMAGES_BUCKET)
-    .getPublicUrl(fileName);
-
-  return {
-    path: data.path,
-    url: urlData.publicUrl,
-    fileName
-  };
-}
-
-/**
- * Delete image from user-images bucket
- * @param filePath - Path to the file in the bucket
- * @returns Deletion result
- */
-export async function deleteUserImage(filePath: string) {
-  const { error } = await supabase.storage
-    .from(USER_IMAGES_BUCKET)
-    .remove([filePath]);
-
-  if (error) {
-    throw error;
-  }
-
-  return { success: true };
-}
-
-export default {
+const supabaseUtils = {
   getDocumentUrl,
   getDocumentDownloadUrl,
   isPdfDocument,
@@ -130,3 +66,5 @@ export default {
   SUPABASE_URL,
   STORAGE_BUCKET,
 };
+
+export default supabaseUtils;

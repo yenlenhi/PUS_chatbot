@@ -12,6 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from pathlib import Path
+import asyncio
 import os
 import time
 import uvicorn
@@ -37,6 +38,7 @@ from config.settings import (
     ALLOWED_ORIGINS,
     PDF_DIR,
     BASE_DIR,
+    PREWARM_RAG_ON_STARTUP,
 )
 import shutil
 
@@ -108,6 +110,17 @@ async def lifespan(app: FastAPI):
             )
     except Exception as e:
         log.warning(f"Failed to copy bundled PDFs to data volume: {e}")
+
+    if PREWARM_RAG_ON_STARTUP:
+        try:
+            from src.services.async_rag_service import get_async_rag_service
+
+            log.info("Prewarming RAG service and reranker...")
+            async_rag = get_async_rag_service()
+            await asyncio.to_thread(lambda: async_rag.rag_service)
+            log.info("✅ RAG service prewarmed successfully")
+        except Exception as e:
+            log.warning(f"⚠️ Failed to prewarm RAG service: {e}")
     yield
     # Shutdown logic
     log.info("Shutting down University Chatbot API...")

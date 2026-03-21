@@ -45,10 +45,15 @@ class SourceReference(BaseModel):
     content_snippet: str = Field(
         ..., description="Brief preview of the content (max 200 chars)"
     )
-    full_content: str = Field(..., description="Full chunk content")
     relevance_score: float = Field(..., description="Relevance score (0-1)")
     dense_score: Optional[float] = Field(None, description="Dense search score")
     sparse_score: Optional[float] = Field(None, description="Sparse search score")
+    document_year: Optional[int] = Field(
+        None, description="Document year when available"
+    )
+    source_url: Optional[str] = Field(
+        None, description="Official source URL when available"
+    )
 
 
 class FileAttachment(BaseModel):

@@ -1,8 +1,8 @@
 'use client';
+/* eslint-disable @next/next/no-img-element */
 
-import React, { useState, useEffect } from 'react';
-import { Trash2, Eye, Download, RefreshCw } from 'lucide-react';
-import { getUserImageUrl } from '@/lib/supabase';
+import React, { useEffect, useState } from 'react';
+import { Download, Eye, RefreshCw } from 'lucide-react';
 
 interface UploadedImageInfo {
   id: string;
@@ -22,55 +22,31 @@ interface UserImageGalleryProps {
 const UserImageGallery: React.FC<UserImageGalleryProps> = ({
   onImageSelect,
   showControls = true,
-  className = ''
+  className = '',
 }) => {
   const [images, setImages] = useState<UploadedImageInfo[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const fetchImages = async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const response = await fetch('/api/upload/images');
       const result = await response.json();
-      
+
       if (result.success) {
         setImages(result.files || []);
       } else {
-        setError(result.error || 'Lỗi tải danh sách ảnh');
+        setError(result.error || 'Loi tai danh sach anh');
       }
     } catch (err) {
       console.error('Error fetching images:', err);
-      setError('Lỗi kết nối khi tải ảnh');
+      setError('Loi ket noi khi tai anh');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const deleteImage = async (imageId: string, fileName: string) => {
-    setDeletingId(imageId);
-    
-    try {
-      const response = await fetch(`/api/upload/images/delete?fileName=${encodeURIComponent(fileName)}`, {
-        method: 'DELETE'
-      });
-      
-      const result = await response.json();
-      
-      if (result.success) {
-        setImages(prev => prev.filter(img => img.id !== imageId));
-      } else {
-        alert(result.error || 'Lỗi xóa ảnh');
-      }
-    } catch (err) {
-      console.error('Error deleting image:', err);
-      alert('Lỗi kết nối khi xóa ảnh');
-    } finally {
-      setDeletingId(null);
     }
   };
 
@@ -95,101 +71,88 @@ const UserImageGallery: React.FC<UserImageGalleryProps> = ({
 
   return (
     <div className={className}>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="mb-4 flex items-center justify-between">
         <h3 className="text-lg font-semibold text-gray-900">
-          Ảnh đã tải lên ({images.length})
+          Anh da tai len ({images.length})
         </h3>
         <button
           onClick={fetchImages}
           disabled={loading}
-          className="flex items-center gap-2 px-3 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors disabled:opacity-50"
+          className="flex items-center gap-2 rounded-lg bg-blue-100 px-3 py-2 text-blue-700 transition-colors hover:bg-blue-200 disabled:opacity-50"
         >
-          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          Làm mới
+          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          Lam moi
         </button>
       </div>
 
-      {/* Error message */}
+      <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
+        Tinh nang xoa anh da tam khoa tren giao dien demo.
+      </p>
+
       {error && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
+        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-600">
           {error}
         </div>
       )}
 
-      {/* Loading */}
       {loading && (
-        <div className="text-center py-8">
-          <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-2"></div>
-          <p className="text-gray-500">Đang tải ảnh...</p>
+        <div className="py-8 text-center">
+          <div className="mx-auto mb-2 h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent" />
+          <p className="text-gray-500">Dang tai anh...</p>
         </div>
       )}
 
-      {/* Empty state */}
       {!loading && images.length === 0 && (
-        <div className="text-center py-8 text-gray-500">
-          <p>Chưa có ảnh nào được tải lên</p>
+        <div className="py-8 text-center text-gray-500">
+          <p>Chua co anh nao duoc tai len</p>
         </div>
       )}
 
-      {/* Image grid */}
       {!loading && images.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
           {images.map((image) => (
             <div
               key={image.id}
-              className="relative group bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+              className="group relative overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-shadow hover:shadow-md"
             >
-              {/* Image */}
-              <div className="aspect-square relative">
+              <div className="relative aspect-square">
                 <img
                   src={image.url}
                   alt={image.name}
-                  className="w-full h-full object-cover cursor-pointer"
+                  className="h-full w-full cursor-pointer object-cover"
                   onClick={() => {
                     setSelectedImage(image.url);
                     onImageSelect?.(image.url);
                   }}
                 />
-                
-                {/* Overlay controls */}
+
                 {showControls && (
-                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                  <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
                     <button
                       onClick={() => setSelectedImage(image.url)}
-                      className="p-2 bg-white/20 rounded-full hover:bg-white/40 transition-colors"
-                      title="Xem ảnh"
+                      className="rounded-full bg-white/20 p-2 transition-colors hover:bg-white/40"
+                      title="Xem anh"
                     >
-                      <Eye className="w-4 h-4 text-white" />
+                      <Eye className="h-4 w-4 text-white" />
                     </button>
-                    
+
                     <a
                       href={image.url}
                       download={image.name}
-                      className="p-2 bg-white/20 rounded-full hover:bg-white/40 transition-colors"
-                      title="Tải xuống"
+                      className="rounded-full bg-white/20 p-2 transition-colors hover:bg-white/40"
+                      title="Tai xuong"
                     >
-                      <Download className="w-4 h-4 text-white" />
+                      <Download className="h-4 w-4 text-white" />
                     </a>
-                    
-                    <button
-                      onClick={() => deleteImage(image.id, image.name)}
-                      disabled={deletingId === image.id}
-                      className="p-2 bg-red-500/80 rounded-full hover:bg-red-600/80 transition-colors disabled:opacity-50"
-                      title="Xóa ảnh"
-                    >
-                      <Trash2 className="w-4 h-4 text-white" />
-                    </button>
                   </div>
                 )}
               </div>
-              
-              {/* Info */}
+
               <div className="p-3">
-                <p className="text-sm font-medium text-gray-900 truncate" title={image.name}>
+                <p className="truncate text-sm font-medium text-gray-900" title={image.name}>
                   {image.name}
                 </p>
-                <div className="text-xs text-gray-500 mt-1 space-y-1">
+                <div className="mt-1 space-y-1 text-xs text-gray-500">
                   <p>{formatFileSize(image.size)}</p>
                   <p>{formatDate(image.uploadedAt)}</p>
                 </div>
@@ -199,24 +162,23 @@ const UserImageGallery: React.FC<UserImageGalleryProps> = ({
         </div>
       )}
 
-      {/* Image preview modal */}
       {selectedImage && (
         <div
-          className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4"
           onClick={() => setSelectedImage(null)}
         >
-          <div className="relative max-w-4xl max-h-full">
+          <div className="relative max-h-full max-w-4xl">
             <img
               src={selectedImage}
               alt="Preview"
-              className="max-w-full max-h-full object-contain"
+              className="max-h-full max-w-full object-contain"
               onClick={(e) => e.stopPropagation()}
             />
             <button
               onClick={() => setSelectedImage(null)}
-              className="absolute top-4 right-4 p-2 bg-black/50 text-white rounded-full hover:bg-black/70 transition-colors"
+              className="absolute right-4 top-4 rounded-full bg-black/50 p-2 text-white transition-colors hover:bg-black/70"
             >
-              ✕
+              x
             </button>
           </div>
         </div>

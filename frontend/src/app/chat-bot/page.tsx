@@ -24,13 +24,34 @@ import { MobileSourceDrawer } from '@/components/chat/MobileUI';
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 const SOURCE_REFERENCE_DISPLAY_THRESHOLD = 0.65;
 
+const sortSourceReferences = (sourceReferences: SourceReference[] = []) =>
+  [...sourceReferences].sort((a, b) => (b.relevance_score || 0) - (a.relevance_score || 0));
+
+const selectDisplaySourceReferences = (
+  sourceReferences: SourceReference[] = [],
+  limit = 5,
+) => {
+  const sorted = sortSourceReferences(sourceReferences);
+  if (sorted.length === 0) {
+    return [];
+  }
+
+  const aboveThreshold = sorted.filter(
+    (ref) => (ref.relevance_score || 0) >= SOURCE_REFERENCE_DISPLAY_THRESHOLD,
+  );
+
+  if (aboveThreshold.length > 0) {
+    return aboveThreshold.slice(0, limit);
+  }
+
+  return sorted.slice(0, Math.min(limit, 2));
+};
+
 const filterVisibleSourceReferences = (sourceReferences: SourceReference[] = []) =>
-  sourceReferences.filter((ref) => (ref.relevance_score || 0) >= SOURCE_REFERENCE_DISPLAY_THRESHOLD);
+  selectDisplaySourceReferences(sourceReferences, sourceReferences.length || 2);
 
 const rankVisibleSourceReferences = (sourceReferences: SourceReference[] = [], limit = 5) =>
-  filterVisibleSourceReferences(sourceReferences)
-    .sort((a, b) => (b.relevance_score || 0) - (a.relevance_score || 0))
-    .slice(0, limit);
+  selectDisplaySourceReferences(sourceReferences, limit);
 
 const FIXED_SUGGESTED_QUESTIONS = [
   'Chỉ tiêu tuyển sinh vào Trường Đại học An Ninh Nhân Dân?',
@@ -110,7 +131,7 @@ const ProcessingIndicator: React.FC<ProcessingIndicatorProps> = ({ currentStatus
         className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition-colors mb-2 group"
       >
         <Sparkles className="w-4 h-4 text-amber-500 animate-pulse" />
-        <span className="font-medium">Hiện tiến trình tư duy</span>
+        <span className="font-medium">Tiến trình xử lý</span>
         {isExpanded ? (
           <ChevronUp className="w-4 h-4 transition-transform group-hover:scale-110" />
         ) : (
