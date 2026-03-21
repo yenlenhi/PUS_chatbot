@@ -239,6 +239,21 @@ class DocumentChunk(BaseModel):
     char_count: Optional[int] = Field(
         None, description="Number of characters in the chunk"
     )
+    school_code: Optional[str] = Field(
+        None, description="Owning school code when inferred, e.g. T04"
+    )
+    school_symbol: Optional[str] = Field(
+        None, description="Owning school symbol when inferred, e.g. ANS"
+    )
+    admission_cycle: Optional[int] = Field(
+        None, description="Admission cycle year associated with the chunk"
+    )
+    scope: Optional[str] = Field(
+        None, description="Metadata scope: school_specific, system_wide, or general"
+    )
+    doc_type: Optional[str] = Field(
+        None, description="Structured document type such as quota, methods, timeline, scores, exam"
+    )
 
 
 class EmbeddingData(BaseModel):

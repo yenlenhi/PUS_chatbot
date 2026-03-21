@@ -22,12 +22,20 @@ from sentence_transformers import CrossEncoder
 from src.utils.logger import log
 from src.utils.admission_document_priority import (
     compute_priority_adjustment,
+    filter_chunks_by_metadata,
     enrich_query_for_primary_school,
     enrich_query_for_current_cycle,
     infer_target_year,
     is_admission_query,
     is_personnel_query,
     query_targets_primary_school,
+)
+from src.utils.admission_answer_guardrails import (
+    build_answer_repair_prompt,
+    build_safe_admission_fallback_answer,
+    build_structured_admission_answer,
+    should_use_structured_pipeline,
+    validate_admission_answer,
 )
 
 from config.settings import (
@@ -282,6 +290,14 @@ class RAGService:
             if not hybrid_results:
                 log.warning(f"No chunks found for query: {query}")
                 return []
+
+            hybrid_results, filter_info = filter_chunks_by_metadata(query, hybrid_results)
+            if filter_info.get("applied"):
+                log.info(
+                    "Metadata filter applied before rerank: "
+                    f"stage={filter_info.get('stage')} "
+                    f"matched={filter_info.get('matched')}/{filter_info.get('total')}"
+                )
 
             log.info(f"Hybrid search found {len(hybrid_results)} chunks.")
 
@@ -1180,10 +1196,25 @@ Hướng dẫn:
             content = chunk.get("content", "").strip()
             document_year = chunk.get("document_year")
             source_url = chunk.get("source_url")
+            school_code = chunk.get("school_code")
+            school_symbol = chunk.get("school_symbol")
+            admission_cycle = chunk.get("admission_cycle")
+            source_scope = chunk.get("scope")
+            doc_type = chunk.get("doc_type")
 
             metadata_parts = [f"Nguon: {source}", f"Trang: {page}"]
             if document_year:
                 metadata_parts.append(f"Nam tai lieu: {document_year}")
+            if admission_cycle and admission_cycle != document_year:
+                metadata_parts.append(f"Chu ky tuyen sinh: {admission_cycle}")
+            if school_code:
+                metadata_parts.append(f"Ma truong: {school_code}")
+            if school_symbol:
+                metadata_parts.append(f"Ky hieu truong: {school_symbol}")
+            if source_scope:
+                metadata_parts.append(f"Pham vi: {source_scope}")
+            if doc_type:
+                metadata_parts.append(f"Loai tai lieu: {doc_type}")
             if source_url:
                 metadata_parts.append(f"URL nguon: {source_url}")
 
@@ -1633,6 +1664,68 @@ Trả lời:"""
 
 {memory_section}CÂU HỎI: {query}"""
 
+    def try_build_structured_admission_answer(
+        self, query: str, relevant_chunks: List[Dict[str, Any]], language: str = "vi"
+    ) -> Optional[str]:
+        if not should_use_structured_pipeline(query):
+            return None
+
+        answer = build_structured_admission_answer(query, relevant_chunks, language)
+        if answer:
+            log.info("[STRUCTURED] Returning structured admission answer")
+        return answer
+
+    def repair_admission_answer_if_needed(
+        self,
+        query: str,
+        answer: str,
+        context: str,
+        relevant_chunks: List[Dict[str, Any]],
+        language: str = "vi",
+    ) -> tuple[str, List[str]]:
+        violations = validate_admission_answer(query, answer, relevant_chunks)
+        if not violations:
+            return answer, []
+
+        log.warning(f"[GUARDRAIL] Answer violations detected: {violations}")
+        repaired_answer = answer
+
+        if LLM_PROVIDER.lower() == "gemini":
+            try:
+                repair_prompt = build_answer_repair_prompt(
+                    query=query,
+                    context=context,
+                    draft_answer=answer,
+                    violations=violations,
+                    language=language,
+                )
+                repair_response = gemini_service.generate_response(
+                    prompt=repair_prompt, temperature=0.0
+                )
+                if repair_response and repair_response.strip():
+                    repaired_answer = repair_response.strip()
+            except Exception as exc:
+                log.warning(f"[GUARDRAIL] Repair call failed: {exc}")
+
+        remaining_violations = validate_admission_answer(
+            query, repaired_answer, relevant_chunks
+        )
+        if remaining_violations:
+            structured_answer = self.try_build_structured_admission_answer(
+                query, relevant_chunks, language=language
+            )
+            if structured_answer:
+                return structured_answer, remaining_violations
+
+            return (
+                build_safe_admission_fallback_answer(
+                    query, remaining_violations, language=language
+                ),
+                remaining_violations,
+            )
+
+        return repaired_answer, violations
+
     def _rewrite_query_with_history(
         self, query: str, history: List[Dict[str, str]]
     ) -> str:
@@ -1921,7 +2014,14 @@ Trả lời:"""
 
             # Generate answer using the configured LLM provider
             answer = None
-            if LLM_PROVIDER.lower() == "gemini":
+            structured_answer_used = False
+            structured_answer = self.try_build_structured_admission_answer(
+                query, relevant_chunks, language=language
+            )
+            if structured_answer:
+                answer = structured_answer
+                structured_answer_used = True
+            elif LLM_PROVIDER.lower() == "gemini":
                 log.info("Calling Gemini service to generate response...")
                 # Gemini API works best with a single, consolidated prompt
                 full_prompt = f"{system_prompt}\n\n{user_prompt}"
@@ -1973,9 +2073,21 @@ Trả lời:"""
                 confidence = 0.0
             else:
                 log.debug(f"Raw answer from LLM: {repr(answer[:100])}...")
-                # Add engagement prompt if not already present
-                answer = self._add_engagement_prompt(answer, query, language)
-                log.debug("Answer with engagement prompt added")
+                if not structured_answer_used:
+                    answer, violations = self.repair_admission_answer_if_needed(
+                        query,
+                        answer,
+                        context,
+                        relevant_chunks,
+                        language=language,
+                    )
+                    if violations:
+                        log.info(
+                            f"[GUARDRAIL] Final answer corrected after violations: {violations}"
+                        )
+                    # Add engagement prompt if not already present
+                    answer = self._add_engagement_prompt(answer, query, language)
+                    log.debug("Answer with engagement prompt added")
 
             # Update conversation history (in-memory cache)
             self.conversations[conversation_id].append(

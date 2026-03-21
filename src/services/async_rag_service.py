@@ -21,10 +21,14 @@ from src.utils.admission_document_priority import (
     enrich_query_for_current_cycle,
     enrich_query_for_primary_school,
 )
+from src.utils.admission_answer_guardrails import (
+    build_answer_repair_prompt,
+    build_safe_admission_fallback_answer,
+    validate_admission_answer,
+)
 from src.utils.fixed_admission_faq import get_fixed_admission_faq
 from src.services.async_gemini_service import (
     generate_response_async,
-    generate_response_stream_async,
     generate_vision_response_async,
     normalize_question_async,
 )
@@ -396,6 +400,73 @@ class AsyncRAGService:
             return enriched_query, True
 
         return enriched_query, current_cycle_enriched or primary_school_enriched
+
+    async def _repair_answer_if_needed(
+        self,
+        query: str,
+        answer: str,
+        context: str,
+        relevant_chunks: List[Dict[str, Any]],
+        language: str = "vi",
+    ) -> Tuple[str, List[str]]:
+        violations = validate_admission_answer(query, answer, relevant_chunks)
+        if not violations:
+            return answer, []
+
+        log.warning(f"[ASYNC GUARDRAIL] Answer violations detected: {violations}")
+        repaired_answer = answer
+        try:
+            repair_prompt = build_answer_repair_prompt(
+                query=query,
+                context=context,
+                draft_answer=answer,
+                violations=violations,
+                language=language,
+            )
+            repair_response = await generate_response_async(prompt=repair_prompt)
+            if repair_response and repair_response.strip():
+                repaired_answer = repair_response.strip()
+        except Exception as exc:
+            log.warning(f"[ASYNC GUARDRAIL] Repair call failed: {exc}")
+
+        remaining = validate_admission_answer(query, repaired_answer, relevant_chunks)
+        if remaining:
+            structured_answer = self.rag_service.try_build_structured_admission_answer(
+                query, relevant_chunks, language=language
+            )
+            if structured_answer:
+                return structured_answer, remaining
+
+            return (
+                build_safe_admission_fallback_answer(
+                    query, remaining, language=language
+                ),
+                remaining,
+            )
+
+        return repaired_answer, violations
+
+    def _split_answer_for_stream(self, answer: str, max_chars: int = 220) -> List[str]:
+        if not answer:
+            return []
+
+        paragraphs = [part for part in answer.split("\n\n") if part.strip()]
+        chunks: List[str] = []
+        current = ""
+
+        for paragraph in paragraphs:
+            candidate = paragraph if not current else f"{current}\n\n{paragraph}"
+            if len(candidate) <= max_chars:
+                current = candidate
+                continue
+            if current:
+                chunks.append(current)
+            current = paragraph
+
+        if current:
+            chunks.append(current)
+
+        return chunks or [answer]
 
     def _should_return_score_clarification(
         self, original_query: str, retrieval_query: str
@@ -1033,6 +1104,10 @@ class AsyncRAGService:
                     )
                 context += attachment_context
 
+            structured_answer = self.rag_service.try_build_structured_admission_answer(
+                query, relevant_chunks, language=language
+            )
+
             # Create prompts
             prompt_started_at = time.perf_counter()
             system_prompt = self.rag_service.create_system_prompt(language=language)
@@ -1049,12 +1124,15 @@ class AsyncRAGService:
                 performance["needs_grounding"] = needs_grounding
 
             # Generate answer using ASYNC Gemini call
-            log.info(f"[ASYNC] Calling Gemini API (grounding={needs_grounding})...")
-            generation_started_at = time.perf_counter()
-            answer = await generate_response_async(
-                prompt=full_prompt, enable_grounding=needs_grounding
-            )
-            self._record_stage(performance, "generation", generation_started_at)
+            if structured_answer:
+                answer = structured_answer
+            else:
+                log.info(f"[ASYNC] Calling Gemini API (grounding={needs_grounding})...")
+                generation_started_at = time.perf_counter()
+                answer = await generate_response_async(
+                    prompt=full_prompt, enable_grounding=needs_grounding
+                )
+                self._record_stage(performance, "generation", generation_started_at)
 
             follow_up_questions: List[str] = []
 
@@ -1064,6 +1142,18 @@ class AsyncRAGService:
                 answer = "Xin lỗi, tôi không thể trả lời câu hỏi này lúc này. Vui lòng thử lại sau."
                 confidence = 0.0
             else:
+                if not structured_answer:
+                    answer, violations = await self._repair_answer_if_needed(
+                        query,
+                        answer,
+                        context,
+                        relevant_chunks,
+                        language=language,
+                    )
+                    if violations:
+                        log.info(
+                            f"[ASYNC GUARDRAIL] Final answer corrected after violations: {violations}"
+                        )
                 # Add engagement prompt
                 engagement_started_at = time.perf_counter()
                 follow_up_questions = self.rag_service.generate_structured_follow_up_questions(
@@ -1532,22 +1622,47 @@ class AsyncRAGService:
             else:
                 log.info("[ASYNC STREAM] Grounding DISABLED (using internal documents)")
 
-            # TRUE ASYNC STREAMING from Gemini
-            full_answer = ""
+            structured_answer = self.rag_service.try_build_structured_admission_answer(
+                query, relevant_chunks, language=language
+            )
+            full_answer = structured_answer or ""
             first_token_ms = None
-            generation_started_at = time.perf_counter()
-            async for text_chunk in generate_response_stream_async(
-                prompt=full_prompt, enable_grounding=needs_grounding
-            ):
-                if first_token_ms is None and text_chunk:
+
+            if structured_answer:
+                if full_answer:
                     first_token_ms = round(
                         (time.perf_counter() - request_started_at) * 1000, 2
                     )
-                full_answer += text_chunk
-                yield {"type": "answer_chunk", "content": text_chunk}
-            self._record_stage(
-                performance, "generation_stream", generation_started_at
-            )
+                for text_chunk in self._split_answer_for_stream(full_answer):
+                    yield {"type": "answer_chunk", "content": text_chunk}
+            else:
+                generation_started_at = time.perf_counter()
+                generated_answer = await generate_response_async(
+                    prompt=full_prompt, enable_grounding=needs_grounding
+                )
+                self._record_stage(
+                    performance, "generation_stream", generation_started_at
+                )
+                full_answer = generated_answer or ""
+                if full_answer:
+                    full_answer, violations = await self._repair_answer_if_needed(
+                        query,
+                        full_answer,
+                        context,
+                        relevant_chunks,
+                        language=language,
+                    )
+                    if violations:
+                        log.info(
+                            f"[ASYNC STREAM GUARDRAIL] Final answer corrected after violations: {violations}"
+                        )
+
+                if full_answer:
+                    first_token_ms = round(
+                        (time.perf_counter() - request_started_at) * 1000, 2
+                    )
+                    for text_chunk in self._split_answer_for_stream(full_answer):
+                        yield {"type": "answer_chunk", "content": text_chunk}
 
             follow_up_questions: List[str] = []
 

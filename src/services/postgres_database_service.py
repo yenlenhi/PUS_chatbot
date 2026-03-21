@@ -8,6 +8,10 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from src.utils.logger import log
 from src.models.schemas import DocumentChunk
+from src.utils.admission_document_priority import (
+    infer_document_metadata,
+    resolve_source_metadata,
+)
 from config.settings import DATABASE_URL
 
 
@@ -93,12 +97,25 @@ class PostgresDatabaseService:
                         chunk_type VARCHAR(50) DEFAULT 'content',
                         word_count INTEGER,
                         char_count INTEGER,
+                        school_code VARCHAR(20),
+                        school_symbol VARCHAR(20),
+                        admission_cycle INTEGER,
+                        scope VARCHAR(50),
+                        doc_type VARCHAR(50),
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     )
                 """
                     )
                 )
+                for ddl in (
+                    "ALTER TABLE chunks ADD COLUMN IF NOT EXISTS school_code VARCHAR(20)",
+                    "ALTER TABLE chunks ADD COLUMN IF NOT EXISTS school_symbol VARCHAR(20)",
+                    "ALTER TABLE chunks ADD COLUMN IF NOT EXISTS admission_cycle INTEGER",
+                    "ALTER TABLE chunks ADD COLUMN IF NOT EXISTS scope VARCHAR(50)",
+                    "ALTER TABLE chunks ADD COLUMN IF NOT EXISTS doc_type VARCHAR(50)",
+                ):
+                    conn.execute(text(ddl))
 
                 # Create embeddings table with pgvector
                 # Use EMBEDDING_DIMENSION from settings (default: 384)
@@ -144,6 +161,21 @@ class PostgresDatabaseService:
                 )
                 conn.execute(
                     text(
+                        "CREATE INDEX IF NOT EXISTS idx_chunks_school_cycle ON chunks(school_code, admission_cycle)"
+                    )
+                )
+                conn.execute(
+                    text(
+                        "CREATE INDEX IF NOT EXISTS idx_chunks_doc_type ON chunks(doc_type)"
+                    )
+                )
+                conn.execute(
+                    text(
+                        "CREATE INDEX IF NOT EXISTS idx_chunks_scope ON chunks(scope)"
+                    )
+                )
+                conn.execute(
+                    text(
                         "CREATE INDEX IF NOT EXISTS idx_embeddings_chunk_id ON embeddings(chunk_id)"
                     )
                 )
@@ -184,11 +216,76 @@ class PostgresDatabaseService:
                 )
 
                 conn.commit()
+                self._backfill_chunk_metadata(conn)
                 log.info("✅ Database tables created successfully")
 
         except Exception as e:
             log.error(f"❌ Error creating tables: {e}")
             raise
+
+    def _backfill_chunk_metadata(self, conn) -> None:
+        """Infer and persist metadata for legacy chunks that lack structured fields."""
+        try:
+            result = conn.execute(
+                text(
+                    """
+                SELECT id, source_file, heading_text, content,
+                       school_code, school_symbol, admission_cycle, scope, doc_type
+                FROM chunks
+                WHERE school_code IS NULL
+                   OR school_symbol IS NULL
+                   OR admission_cycle IS NULL
+                   OR scope IS NULL
+                   OR doc_type IS NULL
+            """
+                )
+            )
+            rows = result.fetchall()
+            if not rows:
+                return
+
+            for row in rows:
+                source_file = row[1]
+                source_metadata = resolve_source_metadata(source_file)
+                inferred = infer_document_metadata(
+                    source_file,
+                    source_url=source_metadata.get("url"),
+                    heading_text=row[2],
+                    content=row[3],
+                )
+                conn.execute(
+                    text(
+                        """
+                    UPDATE chunks
+                    SET school_code = COALESCE(school_code, :school_code),
+                        school_symbol = COALESCE(school_symbol, :school_symbol),
+                        admission_cycle = COALESCE(
+                            admission_cycle,
+                            :admission_cycle
+                        ),
+                        scope = COALESCE(scope, :scope),
+                        doc_type = COALESCE(doc_type, :doc_type)
+                    WHERE id = :chunk_id
+                """
+                    ),
+                    {
+                        "chunk_id": row[0],
+                        "school_code": inferred.get("school_code"),
+                        "school_symbol": inferred.get("school_symbol"),
+                        "admission_cycle": (
+                            inferred.get("admission_cycle")
+                            or source_metadata.get("admission_cycle")
+                            or source_metadata.get("document_year")
+                        ),
+                        "scope": inferred.get("scope"),
+                        "doc_type": inferred.get("doc_type"),
+                    },
+                )
+
+            conn.commit()
+            log.info(f"✅ Backfilled metadata for {len(rows)} chunks")
+        except Exception as exc:
+            log.warning(f"Could not backfill chunk metadata: {exc}")
 
     def get_all_display_names(self) -> dict:
         """Return all document display names as {source_file: display_name}."""
@@ -242,6 +339,13 @@ class PostgresDatabaseService:
             chunk_ids = []
 
             for chunk in chunks:
+                source_metadata = resolve_source_metadata(chunk.source_file)
+                inferred_metadata = infer_document_metadata(
+                    chunk.source_file,
+                    source_url=source_metadata.get("url"),
+                    heading_text=chunk.heading_text,
+                    content=chunk.content,
+                )
                 # Insert chunk
                 result = session.execute(
                     text(
@@ -250,13 +354,15 @@ class PostgresDatabaseService:
                         content, source_file, page_number, chunk_index,
                         heading_text, heading_level, heading_number, parent_heading,
                         is_sub_chunk, sub_chunk_index, total_sub_chunks, chunk_type,
-                        word_count, char_count
+                        word_count, char_count, school_code, school_symbol,
+                        admission_cycle, scope, doc_type
                     )
                     VALUES (
                         :content, :source_file, :page_number, :chunk_index,
                         :heading_text, :heading_level, :heading_number, :parent_heading,
                         :is_sub_chunk, :sub_chunk_index, :total_sub_chunks, :chunk_type,
-                        :word_count, :char_count
+                        :word_count, :char_count, :school_code, :school_symbol,
+                        :admission_cycle, :scope, :doc_type
                     )
                     RETURNING id
                 """
@@ -276,6 +382,14 @@ class PostgresDatabaseService:
                         "chunk_type": chunk.chunk_type,
                         "word_count": chunk.word_count,
                         "char_count": chunk.char_count,
+                        "school_code": chunk.school_code or inferred_metadata.get("school_code"),
+                        "school_symbol": chunk.school_symbol
+                        or inferred_metadata.get("school_symbol"),
+                        "admission_cycle": chunk.admission_cycle
+                        or inferred_metadata.get("admission_cycle")
+                        or source_metadata.get("document_year"),
+                        "scope": chunk.scope or inferred_metadata.get("scope"),
+                        "doc_type": chunk.doc_type or inferred_metadata.get("doc_type"),
                     },
                 )
 
@@ -356,12 +470,14 @@ class PostgresDatabaseService:
 
             if active_only:
                 query = """
-                    SELECT id, content, source_file, page_number, heading_text
+                    SELECT id, content, source_file, page_number, heading_text,
+                           school_code, school_symbol, admission_cycle, scope, doc_type
                     FROM chunks WHERE is_active = true ORDER BY id
                 """
             else:
                 query = """
-                    SELECT id, content, source_file, page_number, heading_text
+                    SELECT id, content, source_file, page_number, heading_text,
+                           school_code, school_symbol, admission_cycle, scope, doc_type
                     FROM chunks ORDER BY id
                 """
 
@@ -374,6 +490,11 @@ class PostgresDatabaseService:
                     "source_file": row[2],
                     "page_number": row[3],
                     "heading_text": row[4],
+                    "school_code": row[5],
+                    "school_symbol": row[6],
+                    "admission_cycle": row[7],
+                    "scope": row[8],
+                    "doc_type": row[9],
                 }
                 for row in rows
             ]
@@ -495,7 +616,8 @@ class PostgresDatabaseService:
                 text(
                     """
                 SELECT id, content, source_file, page_number, chunk_index,
-                       heading_text, heading_level, heading_number, parent_heading
+                       heading_text, heading_level, heading_number, parent_heading,
+                       school_code, school_symbol, admission_cycle, scope, doc_type
                 FROM chunks
                 WHERE source_file = :source_file AND chunk_index = :chunk_index
                 LIMIT 1
@@ -516,6 +638,11 @@ class PostgresDatabaseService:
                     "heading_level": row[6],
                     "heading_number": row[7],
                     "parent_heading": row[8],
+                    "school_code": row[9],
+                    "school_symbol": row[10],
+                    "admission_cycle": row[11],
+                    "scope": row[12],
+                    "doc_type": row[13],
                 }
             return None
         except Exception as e:

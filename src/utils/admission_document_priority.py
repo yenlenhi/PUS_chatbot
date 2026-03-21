@@ -11,7 +11,7 @@ import re
 import unicodedata
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import urlparse
 
 log = logging.getLogger(__name__)
@@ -120,6 +120,37 @@ _SYSTEM_WIDE_DOC_TERMS = (
     "toan nganh",
     "bo cong an",
 )
+_QUOTA_QUERY_TERMS = ("chi tieu", "so luong")
+_METHOD_QUERY_TERMS = ("phuong thuc",)
+_TIMELINE_QUERY_TERMS = (
+    "moc thoi gian",
+    "thoi gian",
+    "dang ky",
+    "xac nhan nhap hoc",
+    "nhap hoc",
+)
+_SCORE_QUERY_TERMS = ("diem chuan", "diem xet", "diem trung tuyen", "diem")
+_EXAM_QUERY_TERMS = (
+    "ma bai thi",
+    "bai thi danh gia",
+    "cau truc de thi",
+    "cau truc bai thi",
+)
+_DOC_TYPE_HINTS = (
+    ("quota", _QUOTA_QUERY_TERMS),
+    ("methods", _METHOD_QUERY_TERMS),
+    ("timeline", _TIMELINE_QUERY_TERMS),
+    ("scores", _SCORE_QUERY_TERMS),
+    ("exam", _EXAM_QUERY_TERMS),
+)
+_SCHOOL_CODE_HINTS = (
+    ("T04", "ANS", ("truong dai hoc an ninh nhan dan", "t04", "ans")),
+    ("T01", "ANH", ("hoc vien an ninh nhan dan", "t01", "anh")),
+    ("T02", "CSH", ("hoc vien canh sat nhan dan", "t02", "csh")),
+    ("T03", None, ("truong dai hoc canh sat nhan dan", "t03")),
+    ("T05", None, ("t05",)),
+    ("T06", None, ("truong dai hoc phong chay chua chay", "t06", "pccc")),
+)
 _SOURCE_AUTHORITY_BONUS = (
     ("dhannd.bocongan.gov.vn", 0.14, "school"),
     ("dhannd.edu.vn", 0.14, "school"),
@@ -211,6 +242,95 @@ def infer_target_year(query: Optional[str]) -> Optional[int]:
         return current_year
 
     return current_year
+
+
+def infer_query_doc_type(query: Optional[str]) -> Optional[str]:
+    normalized_query = _normalize_text(query)
+    if not normalized_query:
+        return None
+
+    for doc_type, terms in _DOC_TYPE_HINTS:
+        if any(term in normalized_query for term in terms):
+            return doc_type
+
+    return None
+
+
+def infer_document_metadata(
+    source_name: Optional[str],
+    source_url: Optional[str] = None,
+    heading_text: Optional[str] = None,
+    content: Optional[str] = None,
+) -> Dict[str, Any]:
+    normalized_blob = " ".join(
+        part
+        for part in (
+            _normalize_text(source_name),
+            _normalize_text(source_url),
+            _normalize_text(heading_text),
+            _normalize_text(str(content or "")[:1600]),
+        )
+        if part
+    ).strip()
+
+    school_code = None
+    school_symbol = None
+    for candidate_code, candidate_symbol, terms in _SCHOOL_CODE_HINTS:
+        if any(term in normalized_blob for term in terms):
+            school_code = candidate_code
+            school_symbol = candidate_symbol
+            break
+
+    if school_code == "T04" and not school_symbol:
+        school_symbol = "ANS"
+
+    if school_code:
+        scope = "school_specific"
+    elif any(term in normalized_blob for term in _SYSTEM_WIDE_DOC_TERMS):
+        scope = "system_wide"
+    else:
+        scope = "general"
+
+    admission_cycle = (
+        _extract_year_from_text(source_name)
+        or _extract_year_from_text(source_url)
+        or _extract_year_from_text(heading_text)
+        or _extract_year_from_text(content)
+    )
+
+    doc_type = None
+    for candidate_doc_type, terms in _DOC_TYPE_HINTS:
+        if any(term in normalized_blob for term in terms):
+            doc_type = candidate_doc_type
+            break
+
+    return {
+        "school_code": school_code,
+        "school_symbol": school_symbol,
+        "admission_cycle": admission_cycle,
+        "scope": scope,
+        "doc_type": doc_type or "general",
+    }
+
+
+def build_query_metadata_filters(query: Optional[str]) -> Dict[str, Any]:
+    filters: Dict[str, Any] = {}
+    if not query:
+        return filters
+
+    if query_targets_primary_school(query):
+        filters["school_code"] = "T04"
+        filters["school_symbol"] = "ANS"
+
+    target_year = infer_target_year(query)
+    if is_admission_query(query) and target_year is not None:
+        filters["admission_cycle"] = target_year
+
+    doc_type = infer_query_doc_type(query)
+    if doc_type:
+        filters["doc_type"] = doc_type
+
+    return filters
 
 
 def _build_current_cycle_query(raw_query: str, normalized_query: str) -> tuple[str, bool]:
@@ -316,6 +436,7 @@ def _load_pdf_registry() -> Dict[str, Dict[str, Any]]:
         domain = urlparse(url).netloc.lower()
         authority_bonus, authority_label = _get_source_authority(domain)
         year = _extract_year_from_text(name) or _extract_year_from_text(url)
+        inferred_metadata = infer_document_metadata(name, source_url=url)
         current = registry.get(normalized_name)
 
         candidate = {
@@ -324,6 +445,11 @@ def _load_pdf_registry() -> Dict[str, Dict[str, Any]]:
             "authority_bonus": authority_bonus,
             "authority_label": authority_label,
             "document_year": year,
+            "school_code": inferred_metadata.get("school_code"),
+            "school_symbol": inferred_metadata.get("school_symbol"),
+            "admission_cycle": inferred_metadata.get("admission_cycle") or year,
+            "scope": inferred_metadata.get("scope"),
+            "doc_type": inferred_metadata.get("doc_type"),
         }
 
         if current is None:
@@ -357,18 +483,30 @@ def resolve_source_metadata(source_name: Optional[str]) -> Dict[str, Any]:
         domain = urlparse(raw_source).netloc.lower()
 
     authority_bonus, authority_label = _get_source_authority(domain)
+    inferred_metadata = infer_document_metadata(raw_source, source_url=raw_source)
     return {
         "url": raw_source if domain else None,
         "domain": domain or None,
         "authority_bonus": authority_bonus,
         "authority_label": authority_label,
         "document_year": _extract_year_from_text(raw_source),
+        "school_code": inferred_metadata.get("school_code"),
+        "school_symbol": inferred_metadata.get("school_symbol"),
+        "admission_cycle": inferred_metadata.get("admission_cycle"),
+        "scope": inferred_metadata.get("scope"),
+        "doc_type": inferred_metadata.get("doc_type"),
     }
 
 
 def enrich_chunk_source_metadata(chunk: Dict[str, Any]) -> Dict[str, Any]:
     source_name = chunk.get("source_file") or chunk.get("source") or ""
     metadata = resolve_source_metadata(source_name)
+    inferred_chunk_metadata = infer_document_metadata(
+        source_name,
+        source_url=metadata.get("url"),
+        heading_text=chunk.get("heading_text") or chunk.get("heading"),
+        content=chunk.get("content"),
+    )
 
     if not chunk.get("document_year"):
         document_year = metadata.get("document_year") or _extract_year_from_text(
@@ -383,7 +521,133 @@ def enrich_chunk_source_metadata(chunk: Dict[str, Any]) -> Dict[str, Any]:
     if not chunk.get("source_authority") and metadata.get("authority_label"):
         chunk["source_authority"] = metadata["authority_label"]
 
+    for field in ("school_code", "school_symbol", "scope", "doc_type"):
+        if not chunk.get(field) and inferred_chunk_metadata.get(field):
+            chunk[field] = inferred_chunk_metadata[field]
+
+    admission_cycle = (
+        chunk.get("admission_cycle")
+        or inferred_chunk_metadata.get("admission_cycle")
+        or chunk.get("document_year")
+        or metadata.get("admission_cycle")
+        or metadata.get("document_year")
+    )
+    if admission_cycle is not None and not chunk.get("admission_cycle"):
+        chunk["admission_cycle"] = admission_cycle
+
     return metadata
+
+
+def filter_chunks_by_metadata(
+    query: Optional[str], chunks: List[Dict[str, Any]]
+) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
+    if not chunks:
+        return chunks, {"applied": False, "stage": "empty"}
+
+    filters = build_query_metadata_filters(query)
+    if not filters:
+        for chunk in chunks:
+            enrich_chunk_source_metadata(chunk)
+        return chunks, {"applied": False, "stage": "no_filters"}
+
+    for chunk in chunks:
+        enrich_chunk_source_metadata(chunk)
+
+    school_code = filters.get("school_code")
+    admission_cycle = filters.get("admission_cycle")
+    doc_type = filters.get("doc_type")
+    allow_system_wide = doc_type in {"methods", "timeline", "exam"}
+
+    def _match(
+        chunk: Dict[str, Any],
+        *,
+        require_school: bool = False,
+        require_cycle: bool = False,
+        require_doc_type: bool = False,
+        allow_system_scope: bool = False,
+    ) -> bool:
+        if require_school and school_code:
+            if chunk.get("school_code") != school_code:
+                if not (
+                    allow_system_scope and chunk.get("scope") == "system_wide"
+                ):
+                    return False
+
+        if require_cycle and admission_cycle is not None:
+            if chunk.get("admission_cycle") != admission_cycle:
+                return False
+
+        if require_doc_type and doc_type:
+            if chunk.get("doc_type") != doc_type:
+                return False
+
+        return True
+
+    candidate_stages = [
+        (
+            "strict_school_cycle_doc_type",
+            dict(
+                require_school=bool(school_code),
+                require_cycle=bool(admission_cycle),
+                require_doc_type=bool(doc_type),
+                allow_system_scope=False,
+            ),
+        ),
+        (
+            "school_doc_type",
+            dict(
+                require_school=bool(school_code),
+                require_cycle=False,
+                require_doc_type=bool(doc_type),
+                allow_system_scope=False,
+            ),
+        ),
+    ]
+
+    if school_code:
+        candidate_stages.append(
+            (
+                "school_only",
+                dict(
+                    require_school=True,
+                    require_cycle=False,
+                    require_doc_type=False,
+                    allow_system_scope=allow_system_wide,
+                ),
+            )
+        )
+
+    if doc_type:
+        candidate_stages.append(
+            (
+                "doc_type_only",
+                dict(
+                    require_school=False,
+                    require_cycle=False,
+                    require_doc_type=True,
+                    allow_system_scope=False,
+                ),
+            )
+        )
+
+    for stage_name, stage_kwargs in candidate_stages:
+        filtered = [chunk for chunk in chunks if _match(chunk, **stage_kwargs)]
+        if filtered:
+            return filtered, {
+                "applied": True,
+                "stage": stage_name,
+                "filters": filters,
+                "matched": len(filtered),
+                "total": len(chunks),
+            }
+
+    return chunks, {
+        "applied": False,
+        "stage": "fallback_original",
+        "filters": filters,
+        "matched": len(chunks),
+        "total": len(chunks),
+    }
 
 
 def compute_priority_adjustment(query: Optional[str], chunk: Dict[str, Any]) -> float:
