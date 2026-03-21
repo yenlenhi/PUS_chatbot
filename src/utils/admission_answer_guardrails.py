@@ -478,6 +478,285 @@ def _build_score_answer(query: str, chunks: List[Dict[str, Any]]) -> Optional[st
     return "\n".join(lines)
 
 
+def _build_score_answer_v2(query: str, chunks: List[Dict[str, Any]]) -> Optional[str]:
+    def _score_source_priority(chunk: Dict[str, Any]) -> tuple[float, int]:
+        source_file = str(chunk.get("source_file") or chunk.get("source") or "")
+        heading = str(chunk.get("heading_text") or chunk.get("heading") or "")
+        content = str(chunk.get("content") or "")
+        normalized = _normalize_text(" ".join([source_file, heading, content[:400]]))
+
+        priority = 0.0
+        if "diem chuan" in normalized or "diem trung tuyen" in normalized:
+            priority += 6.0
+        if "giai doan" in normalized or re.search(r"20\d{2}\s*[-_]\s*20\d{2}", source_file):
+            priority += 2.0
+        if "t04" in normalized or "ans" in normalized:
+            priority += 1.0
+
+        document_year = chunk.get("document_year")
+        if isinstance(document_year, int):
+            priority += document_year / 10000.0
+
+        return priority, len(content)
+
+    def _select_primary_score_chunks() -> List[Dict[str, Any]]:
+        groups: Dict[str, Dict[str, Any]] = {}
+        for chunk in chunks[:10]:
+            source_file = str(chunk.get("source_file") or chunk.get("source") or "").strip()
+            if not source_file:
+                source_file = "__unknown_score_source__"
+
+            priority, content_length = _score_source_priority(chunk)
+            entry = groups.setdefault(
+                source_file,
+                {"priority": 0.0, "content_length": 0, "chunks": []},
+            )
+            entry["priority"] += priority
+            entry["content_length"] += content_length
+            entry["chunks"].append(chunk)
+
+        if not groups:
+            return chunks[:6]
+
+        best_source = max(
+            groups.items(),
+            key=lambda item: (
+                item[1]["priority"],
+                len(item[1]["chunks"]),
+                item[1]["content_length"],
+            ),
+        )[0]
+        return groups[best_source]["chunks"]
+
+    def _split_score_segments(text: str) -> List[str]:
+        prepared = text.replace("||", "\n")
+        segments: List[str] = []
+        for raw_line in prepared.splitlines():
+            line = raw_line.strip(" -•\t")
+            if line:
+                segments.append(line)
+        return segments
+
+    def _normalize_score_value(value: str) -> str:
+        return value.replace(",", ".")
+
+    def _contains_score_header(text: str) -> bool:
+        normalized = _normalize_text(text)
+        return any(
+            phrase in normalized
+            for phrase in (
+                "diem chuan",
+                "diem trung tuyen",
+                "vung tuyen sinh",
+                "dia ban",
+                "doi tuong",
+                "to hop a01",
+                "to hop c03",
+                "to hop d01",
+            )
+        )
+
+    def _detect_score_columns(text: str) -> List[str]:
+        normalized = _normalize_text(text)
+        if (
+            "to hop a01" in normalized
+            and "to hop c03" in normalized
+            and "to hop d01" in normalized
+        ):
+            return ["A01", "C03", "D01"]
+        if "doi tuong nam" in normalized and "doi tuong nu" in normalized:
+            return ["Nam", "Nữ"]
+        return []
+
+    def _build_row_label(parts: List[str], default_label: str) -> str:
+        cleaned_parts = [part.strip(" :;-") for part in parts if part.strip(" :;-")]
+        return " / ".join(cleaned_parts) or default_label
+
+    def _beautify_score_label(label: str) -> str:
+        pretty = label
+        replacements = (
+            (r"\bPhia Nam\b", "Phía Nam"),
+            (r"\bPhia Bac\b", "Phía Bắc"),
+            (r"\bDia ban\b", "Địa bàn"),
+            (r"\bVung\b", "Vùng"),
+            (r"\bNu\b", "Nữ"),
+            (r"\bNganh/nhom nganh\b", "Ngành/nhóm ngành"),
+        )
+        for pattern, replacement in replacements:
+            pretty = re.sub(pattern, replacement, pretty, flags=re.IGNORECASE)
+        return pretty
+
+    primary_chunks = _select_primary_score_chunks()
+    if not primary_chunks:
+        return None
+
+    rows: List[tuple[str, str, str]] = []
+    seen: set[tuple[str, str, str]] = set()
+
+    for chunk in primary_chunks:
+        heading = (chunk.get("heading_text") or chunk.get("heading") or "").strip()
+        default_label = heading or "Ngành/nhóm ngành"
+        content = str(chunk.get("content") or "")
+
+        segments: List[str] = []
+        if heading:
+            segments.append(heading)
+        segments.extend(_split_score_segments(content))
+
+        current_year: Optional[str] = None
+        current_columns: List[str] = []
+
+        for segment in segments:
+            segment_years = _YEAR_PATTERN.findall(segment)
+            if segment_years and _contains_score_header(segment):
+                current_year = segment_years[-1]
+
+            detected_columns = _detect_score_columns(segment)
+            if detected_columns:
+                current_columns = detected_columns
+
+            table_candidate = segment
+            if "|" in segment and not segment.lstrip().startswith("|"):
+                table_candidate = f"| {segment.strip().strip('|')} |"
+
+            cells = _extract_table_cells(table_candidate)
+            if cells:
+                row_year = current_year
+                label_parts: List[str] = []
+                score_values: List[str] = []
+
+                for cell in cells:
+                    normalized_cell = _normalize_text(cell)
+                    cell_years = _YEAR_PATTERN.findall(cell)
+                    if cell_years and _contains_score_header(cell):
+                        row_year = cell_years[-1]
+                        detected_columns = _detect_score_columns(cell)
+                        if detected_columns:
+                            current_columns = detected_columns
+                        continue
+
+                    if normalized_cell in {
+                        "dia ban",
+                        "doi tuong",
+                        "vung tuyen sinh",
+                        "to hop a01",
+                        "to hop c03",
+                        "to hop d01",
+                        "doi tuong nam diem chuan",
+                        "doi tuong nu diem chuan",
+                    }:
+                        detected_columns = _detect_score_columns(cell)
+                        if detected_columns:
+                            current_columns = detected_columns
+                        continue
+
+                    numeric_scores = [
+                        _normalize_score_value(value)
+                        for value in _SCORE_VALUE_PATTERN.findall(cell)
+                    ]
+                    if numeric_scores:
+                        score_values.extend(numeric_scores)
+                    else:
+                        if normalized_cell not in {"dia ban", "doi tuong"}:
+                            label_parts.append(cell)
+
+                if row_year and score_values:
+                    base_label = _beautify_score_label(
+                        _build_row_label(label_parts, default_label)
+                    )
+
+                    if current_columns and len(score_values) >= len(current_columns):
+                        for index, column in enumerate(current_columns):
+                            row = (row_year, f"{base_label} / {column}", score_values[index])
+                            if row not in seen:
+                                seen.add(row)
+                                rows.append(row)
+                        continue
+
+                    if len(score_values) >= 3:
+                        for column, score in zip(["A01", "C03", "D01"], score_values[:3]):
+                            row = (row_year, f"{base_label} / {column}", score)
+                            if row not in seen:
+                                seen.add(row)
+                                rows.append(row)
+                        continue
+
+                    if len(score_values) == 2:
+                        pair_labels = (
+                            current_columns[:2] if len(current_columns) >= 2 else ["Mốc 1", "Mốc 2"]
+                        )
+                        for column, score in zip(pair_labels, score_values):
+                            row = (row_year, f"{base_label} / {column}", score)
+                            if row not in seen:
+                                seen.add(row)
+                                rows.append(row)
+                        continue
+
+                    row = (row_year, base_label, score_values[0])
+                    if row not in seen:
+                        seen.add(row)
+                        rows.append(row)
+                    continue
+
+            for match in _SCORE_ROW_PATTERN.finditer(segment):
+                year = match.group(1)
+                score = _normalize_score_value(match.group(2))
+                row = (year, _beautify_score_label(default_label), score)
+                if row in seen:
+                    continue
+                seen.add(row)
+                rows.append(row)
+                current_year = year
+
+    if not rows:
+        return None
+
+    detailed_years = {
+        year for year, label, _ in rows if _normalize_text(label) != "nganh nhom nganh"
+    }
+    rows = [
+        row
+        for row in rows
+        if not (
+            _normalize_text(row[1]) == "nganh nhom nganh"
+            and row[0] in detailed_years
+        )
+    ]
+
+    if not rows:
+        return None
+
+    rows.sort(
+        key=lambda item: (
+            int(item[0]) if item[0].isdigit() else 0,
+            item[1],
+            item[2],
+        )
+    )
+
+    covered_years = sorted({year for year, _, _ in rows})
+    lines = [
+        "### Bảng điểm tuyển sinh",
+        "",
+        "Tôi đã tổng hợp các mốc điểm đọc được từ tài liệu điểm chuẩn để bạn dễ đối chiếu theo từng năm.",
+        "",
+        "| Năm | Hạng mục | Điểm |",
+        "| --- | --- | ---: |",
+    ]
+    for year, label, score in rows[:200]:
+        lines.append(f"| {year} | {label} | {score} |")
+
+    if len(covered_years) > 1:
+        lines.extend(
+            [
+                "",
+                f"Các mốc điểm truy xuất được hiện đang bao phủ {covered_years[0]}-{covered_years[-1]}.",
+            ]
+        )
+
+    return "\n".join(lines)
+
+
 def _build_comprehensive_score_answer(
     query: str, chunks: List[Dict[str, Any]]
 ) -> Optional[str]:
@@ -817,7 +1096,7 @@ def build_structured_admission_answer(
     if doc_type == "timeline":
         return _build_timeline_answer(query, chunks)
     if doc_type == "scores":
-        return _build_comprehensive_score_answer(query, chunks)
+        return _build_score_answer_v2(query, chunks)
 
     return None
 

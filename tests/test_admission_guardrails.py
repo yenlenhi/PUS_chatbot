@@ -210,10 +210,47 @@ def test_build_structured_score_answer_aggregates_all_years_from_primary_score_d
     answer = build_structured_admission_answer(query, chunks, language="vi")
 
     assert answer is not None
-    assert "| --- | --- | ---: | ---: | ---: | --- |" in answer
-    assert "| 2020 | Phia Nam | 14.69 | 17.25 |  |" in answer
-    assert "| 2021 | Phia Nam | 15.32 | 18.10 |  |" in answer
-    assert "| 2022 | Phia Nam | 16.48 | 19.05 |  |" in answer
-    assert "| 2023 | Phia Nam | 18.62 | 21.14 |  |" in answer
-    assert "| 2024 | Phia Nam | 19.40 | 22.05 |  |" in answer
-    assert "| 2025 | Phia Nam | 20.10 | 22.80 |  |" in answer
+    assert "| Năm | Hạng mục | Điểm |" in answer
+    assert "| 2020 | Phía Nam / Nam | 14.69 |" in answer
+    assert "| 2020 | Phía Nam / Nữ | 17.25 |" in answer
+    assert "| 2021 | Phía Nam / Nam | 15.32 |" in answer
+    assert "| 2021 | Phía Nam / Nữ | 18.10 |" in answer
+    assert "| 2022 | Phía Nam / Nam | 16.48 |" in answer
+    assert "| 2022 | Phía Nam / Nữ | 19.05 |" in answer
+    assert "| 2023 | Phía Nam / Nam | 18.62 |" in answer
+    assert "| 2023 | Phía Nam / Nữ | 21.14 |" in answer
+    assert "| 2024 | Phía Nam / Nam | 19.40 |" in answer
+    assert "| 2024 | Phía Nam / Nữ | 22.05 |" in answer
+    assert "| 2025 | Phía Nam / Nam | 20.10 |" in answer
+    assert "| 2025 | Phía Nam / Nữ | 22.80 |" in answer
+    assert "Trích từ" not in answer
+
+
+def test_build_structured_score_answer_expands_a01_c03_d01_rows():
+    query = "so sanh diem chuan cac nam"
+    chunks = [
+        {
+            "source_file": "iem_Chuan_ai_Hoc_An_Ninh_Nhan_Dan_2020-2025.pdf",
+            "heading_text": "Bang diem chuan",
+            "content": (
+                "Diem chuan nam 2021 | Dia ban | Doi tuong | To hop A01 | To hop C03 | To hop D01 || "
+                "Dia ban 4 | Nam | 26.11 | 25.21 | 25.89 || "
+                "Dia ban 4 | Nu | 27.35 | 27.63 | 27.20 || "
+                "Dia ban 5 | Nam | 26.36 | 26.53 | 26.88 ||"
+            ),
+            "document_year": 2025,
+        }
+    ]
+
+    answer = build_structured_admission_answer(query, chunks, language="vi")
+
+    assert answer is not None
+    assert "| 2021 | Địa bàn 4 / Nam / A01 | 26.11 |" in answer
+    assert "| 2021 | Địa bàn 4 / Nam / C03 | 25.21 |" in answer
+    assert "| 2021 | Địa bàn 4 / Nam / D01 | 25.89 |" in answer
+    assert "| 2021 | Địa bàn 4 / Nữ / A01 | 27.35 |" in answer
+    assert "| 2021 | Địa bàn 4 / Nữ / C03 | 27.63 |" in answer
+    assert "| 2021 | Địa bàn 4 / Nữ / D01 | 27.20 |" in answer
+    assert "| 2021 | Địa bàn 5 / Nam / A01 | 26.36 |" in answer
+    assert "| 2021 | Địa bàn 5 / Nam / C03 | 26.53 |" in answer
+    assert "| 2021 | Địa bàn 5 / Nam / D01 | 26.88 |" in answer
