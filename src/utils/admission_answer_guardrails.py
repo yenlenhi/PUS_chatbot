@@ -443,6 +443,7 @@ def _build_score_answer(query: str, chunks: List[Dict[str, Any]]) -> Optional[st
 
     for chunk in chunks[:6]:
         heading = (chunk.get("heading_text") or chunk.get("heading") or "").strip()
+        default_label = heading or "Nganh/nhom nganh"
         major = heading or "Ngành/nhóm ngành"
         content = str(chunk.get("content") or "")
         for raw_line in content.splitlines():
@@ -581,6 +582,7 @@ def _build_comprehensive_score_answer(
         if heading:
             segments.append(heading)
         segments.extend(_split_score_segments(content))
+        default_label = heading or "Nganh/nhom nganh"
 
         current_year: Optional[str] = None
         for segment in segments:
@@ -627,15 +629,34 @@ def _build_comprehensive_score_answer(
                     else:
                         generic_scores.extend(numeric_scores)
 
-                male_score = explicit_male or (generic_scores[0] if generic_scores else "")
-                female_score = (
-                    explicit_female
-                    or (generic_scores[1] if len(generic_scores) > 1 else "")
+                generic_scores = list(dict.fromkeys(generic_scores))
+                label = " / ".join(label_parts) or default_label
+                label_normalized = _normalize_text(label)
+                label_has_gender = (
+                    ("doi tuong nam" in label_normalized)
+                    or ("doi tuong nu" in label_normalized)
+                    or (
+                        label_normalized not in {"phia nam", "phia bac"}
+                        and (
+                            label_normalized.endswith(" nam")
+                            or label_normalized.endswith(" nu")
+                        )
+                    )
                 )
-                other_score = ", ".join(generic_scores[2:]) if len(generic_scores) > 2 else ""
+
+                if label_has_gender and not explicit_male and not explicit_female:
+                    male_score = ""
+                    female_score = ""
+                    other_score = ", ".join(generic_scores)
+                else:
+                    male_score = explicit_male or (generic_scores[0] if generic_scores else "")
+                    female_score = (
+                        explicit_female
+                        or (generic_scores[1] if len(generic_scores) > 1 else "")
+                    )
+                    other_score = ", ".join(generic_scores[2:]) if len(generic_scores) > 2 else ""
 
                 if row_year and (male_score or female_score or other_score):
-                    label = " / ".join(label_parts) or default_label
                     key = (row_year, label, male_score, female_score, other_score)
                     if key not in seen:
                         seen.add(key)
@@ -646,7 +667,7 @@ def _build_comprehensive_score_answer(
                                 "male": male_score,
                                 "female": female_score,
                                 "score": other_score,
-                                "note": f"Trich tu {source_hint}",
+                                "note": f"Tr\u00edch t\u1eeb {source_hint}",
                                 "source": source_file,
                             }
                         )
@@ -668,11 +689,30 @@ def _build_comprehensive_score_answer(
                             "male": "",
                             "female": "",
                             "score": score,
-                            "note": f"Trich tu {source_hint}",
+                            "note": f"Tr\u00edch t\u1eeb {source_hint}",
                             "source": source_file,
                         }
                     )
                 current_year = pair_matches[-1].group(1)
+
+    if not rows:
+        return None
+
+    detailed_years = {
+        row["year"]
+        for row in rows
+        if row["male"]
+        or row["female"]
+        or _normalize_text(row["label"]) != "nganh nhom nganh"
+    }
+    rows = [
+        row
+        for row in rows
+        if not (
+            _normalize_text(row["label"]) == "nganh nhom nganh"
+            and row["year"] in detailed_years
+        )
+    ]
 
     if not rows:
         return None
@@ -701,6 +741,17 @@ def _build_comprehensive_score_answer(
         "",
     ]
 
+    lines = [
+        "### B\u1ea3ng \u0111i\u1ec3m tuy\u1ec3n sinh",
+        "",
+        (
+            "T\u00f4i \u0111ang \u01b0u ti\u00ean t\u00e0i li\u1ec7u \u0111i\u1ec3m chu\u1ea9n truy xu\u1ea5t \u0111\u01b0\u1ee3c g\u1ea7n nh\u1ea5t "
+            "v\u00e0 t\u1ed5ng h\u1ee3p t\u1ea5t c\u1ea3 c\u00e1c m\u1ed1c \u0111i\u1ec3m \u0111\u1ecdc \u0111\u01b0\u1ee3c trong c\u00f9ng t\u1eadp t\u00e0i li\u1ec7u "
+            "\u0111\u1ec3 b\u1ea1n d\u1ec5 \u0111\u1ed1i chi\u1ebfu theo t\u1eebng n\u0103m."
+        ),
+        "",
+    ]
+
     if has_gender_scores:
         lines.extend(
             [
@@ -725,6 +776,13 @@ def _build_comprehensive_score_answer(
                 f"| {row['year']} | {row['label']} | {score_value} | {row['note']} |"
             )
 
+    if has_gender_scores and len(lines) >= 6:
+        lines[4] = "| N\u0103m | H\u1ea1ng m\u1ee5c | Nam | N\u1eef | \u0110i\u1ec3m kh\u00e1c | Ghi ch\u00fa |"
+        lines[5] = "| --- | --- | ---: | ---: | ---: | --- |"
+    elif len(lines) >= 6:
+        lines[4] = "| N\u0103m | H\u1ea1ng m\u1ee5c | \u0110i\u1ec3m | Ghi ch\u00fa |"
+        lines[5] = "| --- | --- | ---: | --- |"
+
     if len(covered_years) > 1:
         lines.extend(
             [
@@ -735,6 +793,11 @@ def _build_comprehensive_score_answer(
                     "riÃªng theo tá»«ng nÄƒm hoáº·c so sÃ¡nh xu hÆ°á»›ng tÄƒng/giáº£m."
                 ),
             ]
+        )
+        lines[-1] = (
+            f"C\u00e1c m\u1ed1c \u0111i\u1ec3m truy xu\u1ea5t \u0111\u01b0\u1ee3c hi\u1ec7n \u0111ang bao ph\u1ee7 "
+            f"{covered_years[0]}-{covered_years[-1]}. N\u1ebfu b\u1ea1n c\u1ea7n, t\u00f4i c\u00f3 th\u1ec3 t\u00e1ch "
+            "ri\u00eang theo t\u1eebng n\u0103m ho\u1eb7c so s\u00e1nh xu h\u01b0\u1edbng t\u0103ng/gi\u1ea3m."
         )
 
     return "\n".join(lines)
