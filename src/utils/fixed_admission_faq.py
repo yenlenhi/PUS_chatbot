@@ -33,7 +33,14 @@ def _build_fixed_faq_catalog() -> list[Dict[str, Any]]:
                 "Thông báo chỉ tiêu tuyển sinh tuyển mới đào tạo trình độ đại học năm 2026",
                 "Bảng chỉ tiêu tuyển sinh CAND năm 2026",
             ],
+            "follow_up_questions": [
+                "Điều kiện sơ tuyển vào Trường Đại học An Ninh Nhân Dân là gì?",
+                "Hồ sơ sơ tuyển cần chuẩn bị những gì?",
+                "Phương thức 1 và phương thức 2 khác nhau thế nào?",
+            ],
             "answer": """### Chỉ tiêu tuyển sinh năm 2026 vào Trường Đại học An ninh nhân dân (T04)
+
+Nếu bạn đang quan tâm đến chỉ tiêu của Trường Đại học An ninh nhân dân trong mùa tuyển sinh 2026, bảng dưới đây là phần thông tin cốt lõi và dễ theo dõi nhất. Theo tài liệu tuyển sinh năm 2026, trường tuyển sinh nhóm ngành nghiệp vụ An ninh tại địa bàn phía Nam và phân bổ chỉ tiêu theo từng phương thức như sau:
 
 | Trường/nhóm ngành | Ký hiệu trường | Mã ngành | Địa bàn tuyển sinh | Tổng chỉ tiêu | Phương thức 1 | Phương thức 2 |
 | --- | --- | --- | --- | ---: | --- | --- |
@@ -49,7 +56,7 @@ def _build_fixed_faq_catalog() -> list[Dict[str, Any]]:
 | Ký hiệu trường | ANS |
 | Địa bàn tuyển sinh | Phía Nam |
 
-Ghi chú: Bảng bạn cung cấp thể hiện chỉ tiêu của Trường Đại học An ninh nhân dân (T04) cho nhóm ngành nghiệp vụ An ninh, chia theo Phương thức 1 và Phương thức 2.""",
+Bạn có thể hiểu nhanh rằng T04 tuyển 100 chỉ tiêu cho nhóm ngành nghiệp vụ An ninh, trong đó chỉ tiêu được chia đều giữa Phương thức 1 và Phương thức 2.""",
         },
         {
             "key": "exam_codes",
@@ -63,7 +70,14 @@ Ghi chú: Bảng bạn cung cấp thể hiện chỉ tiêu của Trường Đạ
             "sources": [
                 "Tổ chức Bài thi đánh giá của Bộ Công an năm 2026",
             ],
+            "follow_up_questions": [
+                "Nên chọn mã CA1, CA2, CA3 hay CA4 như thế nào?",
+                "Ngày thi và thời gian làm bài cụ thể ra sao?",
+                "Cách đăng ký mã bài thi đánh giá của Bộ Công an như thế nào?",
+            ],
             "answer": """### Ký hiệu mã bài thi đánh giá của Bộ Công an năm 2026
+
+Bài thi đánh giá của Bộ Công an năm 2026 gồm 4 mã bài thi. Mỗi thí sinh chọn 1 mã phù hợp với môn tự chọn của mình, còn phần tự luận và phần trắc nghiệm bắt buộc là khung chung. Bảng dưới đây giúp bạn nhìn ra ngay sự khác nhau giữa các mã:
 
 | Mã bài thi | Phần tự luận bắt buộc | Trắc nghiệm bắt buộc | Trắc nghiệm tự chọn |
 | --- | --- | --- | --- |
@@ -81,11 +95,11 @@ Ghi chú: Bảng bạn cung cấp thể hiện chỉ tiêu của Trường Đạ
 | Ngày thi | 21/6/2026 |
 | Hình thức thi | Thi viết |
 
-Thí sinh chọn 1 trong 4 mã bài thi để đăng ký dự thi.""",
+Điểm khác nhau chính giữa các mã CA1 đến CA4 nằm ở môn trắc nghiệm tự chọn, nên bạn nên chọn mã phù hợp với thế mạnh và tổ hợp dự định đăng ký.""",
         },
         {
             "key": "exam_structure",
-            "question": "Câu trúc đề thi tuyển sinh đại học chính quy tuyển mới?",
+            "question": "Cấu trúc đề thi tuyển sinh đại học chính quy tuyển mới?",
             "match": lambda q: (
                 "cau truc de thi" in q
                 or "cau truc bai thi" in q
@@ -95,7 +109,14 @@ Thí sinh chọn 1 trong 4 mã bài thi để đăng ký dự thi.""",
             "sources": [
                 "Cấu trúc đề thi tuyển sinh đại học chính quy tuyển mới năm 2026",
             ],
+            "follow_up_questions": [
+                "Bài thi có bao nhiêu câu và bao nhiêu điểm?",
+                "Phần tự chọn của từng mã CA khác nhau thế nào?",
+                "Tỷ lệ kiến thức lớp 10, 11, 12 được phân bố ra sao?",
+            ],
             "answer": """### Cấu trúc đề thi tuyển sinh đại học chính quy tuyển mới
+
+Nếu bạn muốn hình dung nhanh đề thi năm 2026 gồm những phần nào, bảng dưới đây sẽ cho bạn cái nhìn tổng quát trước khi đi vào từng thành phần chi tiết. Bài thi được thiết kế theo 3 phần, làm trong 180 phút và chấm trên thang điểm 100.
 
 | Nội dung | Thông tin |
 | --- | --- |
@@ -126,7 +147,7 @@ Thí sinh chọn 1 trong 4 mã bài thi để đăng ký dự thi.""",
 | Mức độ vận dụng | 50% số câu |
 | Mức độ vận dụng cao | 20% số câu |
 
-Ghi chú: Môn tự chọn tương ứng theo mã bài thi là Vật lí (CA1), Hóa học (CA2), Sinh học (CA3), Địa lí (CA4).""",
+Môn trắc nghiệm tự chọn sẽ thay đổi theo mã bài thi: Vật lí (CA1), Hóa học (CA2), Sinh học (CA3) hoặc Địa lí (CA4).""",
         },
         {
             "key": "admission_methods",
@@ -136,7 +157,14 @@ Ghi chú: Môn tự chọn tương ứng theo mã bài thi là Vật lí (CA1), 
             "sources": [
                 "Phương thức tuyển sinh đại học chính quy tuyển mới năm 2026",
             ],
+            "follow_up_questions": [
+                "Điều kiện áp dụng từng phương thức tuyển sinh là gì?",
+                "Phương thức 2 cần những chứng chỉ ngoại ngữ nào?",
+                "Phương thức 3 tính điểm xét tuyển ra sao?",
+            ],
             "answer": """### Các phương thức tuyển sinh
+
+Trong kỳ tuyển sinh đại học chính quy tuyển mới năm 2026, khối trường Công an nhân dân áp dụng 3 phương thức tuyển sinh chính. Mỗi phương thức có điều kiện và cách sử dụng kết quả khác nhau, nên bạn nên nhìn tổng thể trước rồi mới đi sâu vào phương thức phù hợp với hồ sơ của mình.
 
 | Phương thức | Nội dung |
 | --- | --- |
@@ -148,11 +176,11 @@ Ghi chú: Môn tự chọn tương ứng theo mã bài thi là Vật lí (CA1), 
 
 | Nội dung | Ghi chú |
 | --- | --- |
-| Bài thi sử dụng kết hợp | Bài thi đánh giá của Bộ Công an |
+| Bài thi dùng để kết hợp | Bài thi đánh giá của Bộ Công an |
 | Đối với phương thức 2 | Cần có chứng chỉ ngoại ngữ quốc tế theo quy định |
 | Đối với phương thức 3 | Kết hợp điểm thi tốt nghiệp THPT và bài thi đánh giá của Bộ Công an |
 
-Nếu bạn muốn, tôi có thể tách tiếp từng phương thức thành điều kiện áp dụng, hồ sơ và cách tính điểm.""",
+Nếu bạn đang cân nhắc lựa chọn phương thức, bước tiếp theo nên là đối chiếu điều kiện áp dụng, hồ sơ cần nộp và cách tính điểm của từng phương thức.""",
         },
     ]
 
@@ -171,6 +199,7 @@ def get_fixed_admission_faq(query: Optional[str]) -> Optional[Dict[str, Any]]:
                 "question": item["question"],
                 "answer": item["answer"],
                 "sources": item["sources"],
+                "follow_up_questions": item.get("follow_up_questions", []),
                 "confidence": 0.98,
             }
 

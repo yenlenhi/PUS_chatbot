@@ -35,7 +35,7 @@ const rankVisibleSourceReferences = (sourceReferences: SourceReference[] = [], l
 const FIXED_SUGGESTED_QUESTIONS = [
   'Chỉ tiêu tuyển sinh vào Trường Đại học An Ninh Nhân Dân?',
   'Ký hiệu mã bài thi đánh giá của Bộ Công an?',
-  'Câu trúc đề thi tuyển sinh đại học chính quy tuyển mới?',
+  'Cấu trúc đề thi tuyển sinh đại học chính quy tuyển mới?',
   'Các phương thức tuyển sinh?'
 ] as const;
 

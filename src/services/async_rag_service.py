@@ -224,11 +224,23 @@ class AsyncRAGService:
     ) -> Dict[str, Any]:
         answer = faq.get("answer", "")
         sources = faq.get("sources", [])
+        follow_up_questions = faq.get("follow_up_questions", [])
+        if not follow_up_questions and answer:
+            # Fixed FAQ responses short-circuit before the normal engagement stage,
+            # so fall back to the shared deterministic follow-up generator when
+            # no curated suggestions are provided in the FAQ catalog.
+            follow_up_questions = self.rag_service.generate_structured_follow_up_questions(
+                query,
+                answer,
+                language=language,
+                sources=sources,
+                attachments=[],
+            )
         confidence = faq.get("confidence", 0.98)
 
         return {
             "answer": answer,
-            "follow_up_questions": [],
+            "follow_up_questions": follow_up_questions,
             "sources": sources,
             "source_references": [],
             "attachments": [],
@@ -1191,6 +1203,7 @@ class AsyncRAGService:
                     "attachments": [],
                     "chart_data": [],
                     "images": [],
+                    "follow_up_questions": response["follow_up_questions"],
                     "normalization_applied": False,
                     "original_query": None,
                     "normalized_query": None,
