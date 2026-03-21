@@ -574,7 +574,7 @@ class AsyncRAGService:
         """
         import re
 
-        query_lower = query.lower().strip()
+        query_lower = self._normalize_router_text(query)
         query_tokens = query_lower.split()
 
         # ── needs_normalization ─────────────────────────────────────────────
@@ -599,7 +599,7 @@ class AsyncRAGService:
         has_abbrev = any(re.search(p, query_lower) for p in abbrev_patterns)
         # Very short unclear query (< 4 words, not a greeting)
         is_too_short = len(query_tokens) < 4 and not any(
-            g in query_lower for g in ["xin chào", "hello", "hi", "chào"]
+            g in query_lower for g in ["xin chao", "hello", "hi", "chao"]
         )
         needs_normalization = (
             has_abbrev or is_too_short
@@ -608,29 +608,37 @@ class AsyncRAGService:
         # ── needs_rewrite ───────────────────────────────────────────────────
         # Query uses reference expressions that only make sense with prior context
         reference_patterns = [
-            r"\b(đó|kia|vậy|nêu trên|như vậy|đã nêu)\b",
-            r"ngành (này|đó|kia|trên|vừa|đã (nói|đề cập))",
-            r"trường (này|đó|kia)",
-            r"^(còn|thế còn|vậy thì|vậy còn|thế thì)\b",
-            r"^(ngoài ra|bên cạnh đó)",
-            r"\btại sao\b.+\b(vậy|thế)\b",
-            r"(môn học|điểm chuẩn|học phí|chỉ tiêu).*(đó|kia|trên)",
+            r"\b(do|kia|vay|neu tren|nhu vay|da neu)\b",
+            r"nganh (nay|do|kia|tren|vua|da (noi|de cap))",
+            r"truong (nay|do|kia)",
+            r"^(con|the con|vay thi|vay con|the thi)\b",
+            r"^(ngoai ra|ben canh do)",
+            r"\btai sao\b.+\b(vay|the)\b",
+            r"(mon hoc|diem chuan|hoc phi|chi tieu).*(do|kia|tren)",
         ]
         has_reference = any(re.search(p, query_lower) for p in reference_patterns)
-        needs_rewrite = has_reference and conv_turn_count > 0
+        has_context_dependent_followup = self._is_context_dependent_followup(
+            query_lower, query_tokens
+        )
+        needs_rewrite = (
+            conv_turn_count > 0
+            and (has_reference or has_context_dependent_followup or is_too_short)
+        )
 
         # ── needs_memory ────────────────────────────────────────────────────
         # Only load long-term memory for older conversations that explicitly
         # refer back to earlier parts of the dialogue
         memory_back_ref_patterns = [
-            r"\b(trước đó|hồi nãy|lúc nãy|vừa rồi)\b",
-            r"\b(đã hỏi|đã nói|đã đề cập|như đã)\b",
-            r"\b(nhớ lại|nhắc lại|giải thích lại|nói lại)\b",
+            r"\b(truoc do|hoi nay|luc nay|vua roi)\b",
+            r"\b(da hoi|da noi|da de cap|nhu da)\b",
+            r"\b(nho lai|nhac lai|giai thich lai|noi lai)\b",
         ]
         has_memory_ref = any(
             re.search(p, query_lower) for p in memory_back_ref_patterns
         )
-        needs_memory = conv_turn_count > 4 and (has_memory_ref or has_reference)
+        needs_memory = conv_turn_count > 4 and (
+            has_memory_ref or has_reference or has_context_dependent_followup
+        )
 
         log.info(
             f"[ROUTER] normalize={needs_normalization} rewrite={needs_rewrite} "
