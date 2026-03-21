@@ -1,5 +1,6 @@
 from src.utils.admission_answer_guardrails import (
     build_structured_admission_answer,
+    normalize_answer_markdown,
     validate_admission_answer,
 )
 from src.utils.admission_document_priority import (
@@ -85,3 +86,17 @@ def test_build_structured_timeline_answer_from_retrieved_chunks():
     assert "| Mốc | Thời gian | Ghi chú |" in answer
     assert "15/3/2026 đến 25/4/2026" in answer
     assert "30/8/2026" in answer
+
+
+def test_normalize_answer_markdown_inserts_blank_lines_around_tables():
+    raw_answer = (
+        "1. Đối với hệ Đại học chính quy tuyển mới| Phương thức | Điều kiện |\n"
+        "| --- | --- |\n"
+        "| Phương thức 1 | Tuyển thẳng |\n"
+        "### 2. Đối với hệ Tiến sĩ"
+    )
+
+    normalized = normalize_answer_markdown(raw_answer)
+
+    assert "tuyển mới\n\n| Phương thức | Điều kiện |" in normalized
+    assert "| Phương thức 1 | Tuyển thẳng |\n\n### 2." in normalized

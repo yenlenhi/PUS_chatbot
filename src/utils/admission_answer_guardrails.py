@@ -28,6 +28,7 @@ _SCORE_ROW_PATTERN = re.compile(
     r"\b(20\d{2})\b.*?\b(\d{2}(?:[.,]\d{1,2})?)\b",
     re.IGNORECASE,
 )
+_INLINE_TABLE_PATTERN = re.compile(r"([^\n])(\|(?:[^|\n]+\|){2,}.*)")
 
 
 def _normalize_text(value: Optional[str]) -> str:
@@ -55,6 +56,34 @@ def _answer_mentions_system_wide_context(answer: str) -> bool:
             "tong chi tieu cua cac truong cand",
         )
     )
+
+
+def normalize_answer_markdown(answer: str) -> str:
+    if not answer:
+        return answer
+
+    normalized_answer = answer.replace("\r\n", "\n").replace("\r", "\n")
+    normalized_answer = _INLINE_TABLE_PATTERN.sub(r"\1\n\n\2", normalized_answer)
+
+    lines = normalized_answer.split("\n")
+    rebuilt: List[str] = []
+    previous_was_table = False
+
+    for line in lines:
+        stripped = line.strip()
+        is_table_line = stripped.startswith("|") and stripped.count("|") >= 2
+
+        if is_table_line and rebuilt and rebuilt[-1].strip() and not previous_was_table:
+            rebuilt.append("")
+
+        if not is_table_line and previous_was_table and stripped:
+            if rebuilt and rebuilt[-1].strip():
+                rebuilt.append("")
+
+        rebuilt.append(line)
+        previous_was_table = is_table_line
+
+    return "\n".join(rebuilt)
 
 
 def validate_admission_answer(

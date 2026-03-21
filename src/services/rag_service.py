@@ -34,6 +34,7 @@ from src.utils.admission_answer_guardrails import (
     build_answer_repair_prompt,
     build_safe_admission_fallback_answer,
     build_structured_admission_answer,
+    normalize_answer_markdown,
     should_use_structured_pipeline,
     validate_admission_answer,
 )
@@ -1673,7 +1674,7 @@ Trả lời:"""
         answer = build_structured_admission_answer(query, relevant_chunks, language)
         if answer:
             log.info("[STRUCTURED] Returning structured admission answer")
-        return answer
+        return normalize_answer_markdown(answer) if answer else answer
 
     def repair_admission_answer_if_needed(
         self,
@@ -1685,7 +1686,7 @@ Trả lời:"""
     ) -> tuple[str, List[str]]:
         violations = validate_admission_answer(query, answer, relevant_chunks)
         if not violations:
-            return answer, []
+            return normalize_answer_markdown(answer), []
 
         log.warning(f"[GUARDRAIL] Answer violations detected: {violations}")
         repaired_answer = answer
@@ -1715,16 +1716,18 @@ Trả lời:"""
                 query, relevant_chunks, language=language
             )
             if structured_answer:
-                return structured_answer, remaining_violations
+                return normalize_answer_markdown(structured_answer), remaining_violations
 
             return (
-                build_safe_admission_fallback_answer(
-                    query, remaining_violations, language=language
+                normalize_answer_markdown(
+                    build_safe_admission_fallback_answer(
+                        query, remaining_violations, language=language
+                    )
                 ),
                 remaining_violations,
             )
 
-        return repaired_answer, violations
+        return normalize_answer_markdown(repaired_answer), violations
 
     def _rewrite_query_with_history(
         self, query: str, history: List[Dict[str, str]]

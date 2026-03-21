@@ -24,6 +24,7 @@ from src.utils.admission_document_priority import (
 from src.utils.admission_answer_guardrails import (
     build_answer_repair_prompt,
     build_safe_admission_fallback_answer,
+    normalize_answer_markdown,
     validate_admission_answer,
 )
 from src.utils.fixed_admission_faq import get_fixed_admission_faq
@@ -411,7 +412,7 @@ class AsyncRAGService:
     ) -> Tuple[str, List[str]]:
         violations = validate_admission_answer(query, answer, relevant_chunks)
         if not violations:
-            return answer, []
+            return normalize_answer_markdown(answer), []
 
         log.warning(f"[ASYNC GUARDRAIL] Answer violations detected: {violations}")
         repaired_answer = answer
@@ -435,22 +436,25 @@ class AsyncRAGService:
                 query, relevant_chunks, language=language
             )
             if structured_answer:
-                return structured_answer, remaining
+                return normalize_answer_markdown(structured_answer), remaining
 
             return (
-                build_safe_admission_fallback_answer(
-                    query, remaining, language=language
+                normalize_answer_markdown(
+                    build_safe_admission_fallback_answer(
+                        query, remaining, language=language
+                    )
                 ),
                 remaining,
             )
 
-        return repaired_answer, violations
+        return normalize_answer_markdown(repaired_answer), violations
 
     def _split_answer_for_stream(self, answer: str, max_chars: int = 220) -> List[str]:
         if not answer:
             return []
 
-        paragraphs = [part for part in answer.split("\n\n") if part.strip()]
+        normalized_answer = normalize_answer_markdown(answer)
+        paragraphs = [part for part in normalized_answer.split("\n\n") if part.strip()]
         chunks: List[str] = []
         current = ""
 
@@ -460,13 +464,13 @@ class AsyncRAGService:
                 current = candidate
                 continue
             if current:
-                chunks.append(current)
+                chunks.append(f"{current}\n\n")
             current = paragraph
 
         if current:
             chunks.append(current)
 
-        return chunks or [answer]
+        return chunks or [normalized_answer]
 
     def _should_return_score_clarification(
         self, original_query: str, retrieval_query: str
