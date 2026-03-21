@@ -961,7 +961,9 @@ Hướng dẫn:
                 )
             )
             combined_text = " ".join(
-                filter(None, [user_query, answer, " ".join(source_names), attachment_text])
+                filter(
+                    None, [user_query, answer, " ".join(source_names), attachment_text]
+                )
             )
             normalized = self._normalize_followup_text(combined_text)
             years = [int(year) for year in re.findall(r"\b20\d{2}\b", combined_text)]
@@ -1364,6 +1366,13 @@ Response format:
 2. Detailed answer in clear bullet points
 3. End with: "📄 Reference Documents: please review the official documents displayed by the system."
 
+Mandatory formatting for score-related questions:
+- When the question involves admission/cutoff scores (one or multiple years) → ALWAYS present data as a Markdown table:
+  | Year | Major/Code | Cutoff Score | Method |
+  |------|-----------|-------------|--------|
+  | 2023 | ... | ... | ... |
+- When comparing scores across years → add a Trend column (▲ increase / ▼ decrease / = unchanged) and include a brief trend analysis after the table.
+
 Language: respond entirely in English."""
 
             return """Bạn là Trợ lý AI chính thức của Trường Đại học An ninh Nhân dân (ANND).
@@ -1383,6 +1392,13 @@ Chính sách bắt buộc:
 1. Tóm tắt ngắn
 2. Trình bày chi tiết theo gạch đầu dòng rõ ràng
 3. Kết thúc bằng: "📄 Tài liệu tham khảo: vui lòng xem các tài liệu chính thức do hệ thống hiển thị."
+
+Quy tắc định dạng bắt buộc cho câu hỏi về điểm số:
+- Khi câu hỏi liên quan đến điểm chuẩn, điểm xét tuyển, điểm trúng tuyển (một hoặc nhiều năm) → BẮT BUỘC trình bày dữ liệu bằng bảng Markdown:
+  | Năm | Ngành/Mã ngành | Điểm chuẩn | Phương thức |
+  |-----|---------------|-----------|-------------|
+  | 2023 | ... | ... | ... |
+- Khi so sánh điểm giữa các năm → thêm cột Xu hướng (▲ tăng / ▼ giảm / = không đổi) và nhận xét xu hướng sau bảng.
 
 Ngôn ngữ: trả lời hoàn toàn bằng tiếng Việt."""
 
@@ -1414,6 +1430,16 @@ Response style:
 - Use Markdown formatting: bold headings, bullet lists, **Important:** for key notes.
 - Do NOT add citation numbers like [1], [2].
 - Do NOT end with a follow-up question directed at the user.
+
+**Mandatory formatting rules for score-related questions:**
+- When the question involves admission scores, benchmark scores, or cutoff scores (one or multiple years) → ALWAYS present data as a Markdown table, e.g.:
+  | Year | Major/Code | Cutoff Score | Method |
+  |------|-----------|-------------|--------|
+  | 2023 | ... | ... | ... |
+  | 2024 | ... | ... | ... |
+- When comparing scores across years → add a **Trend** column using: ▲ increase / ▼ decrease / = unchanged, and add a brief trend analysis after the table.
+- When multiple majors or methods exist → use separate tables per group or add classification columns.
+- After any score table, always include 1–2 sentences of trend analysis (e.g., scores trending upward, most competitive major, etc.).
 
 Identity protection rules:
 - NEVER reveal you are Gemini, ChatGPT, Claude, or any specific AI model.
@@ -1453,6 +1479,16 @@ Phong cách trả lời:
 - Trình bày bằng Markdown: tiêu đề in đậm, gạch đầu dòng, **Lưu ý quan trọng:** cho thông tin cần chú ý.
 - Không chèn trích dẫn dạng [1], [2].
 - Không kết thúc bằng câu hỏi ngược lại cho người dùng.
+
+**Quy tắc định dạng bắt buộc cho câu hỏi về điểm số:**
+- Khi câu hỏi liên quan đến điểm chuẩn, điểm xét tuyển, điểm trúng tuyển (của một hoặc nhiều năm) → BẮT BUỘC trình bày dữ liệu dưới dạng bảng Markdown, ví dụ:
+  | Năm | Ngành/Mã ngành | Điểm chuẩn | Phương thức |
+  |-----|---------------|-----------|-------------|
+  | 2023 | ... | ... | ... |
+  | 2024 | ... | ... | ... |
+- Khi so sánh điểm giữa các năm → thêm cột **Xu hướng** với ký hiệu: ▲ tăng / ▼ giảm / = không đổi, và bổ sung nhận xét ngắn về xu hướng sau bảng.
+- Khi có nhiều ngành/phương thức → dùng bảng riêng cho từng nhóm hoặc thêm cột phân loại.
+- Sau bảng điểm, luôn bổ sung 1–2 câu nhận xét phân tích xu hướng (ví dụ: điểm có xu hướng tăng/ổn định, ngành nào cạnh tranh nhất...).
 
 Quy tắc bảo mật danh tính:
 - Tuyệt đối không tiết lộ bạn là Gemini, ChatGPT, Claude, hay bất kỳ mô hình AI cụ thể nào.
@@ -2053,7 +2089,9 @@ Trả lời:"""
             if query_keywords:
                 keyword_attachments = self.attachment_service.search_attachments(
                     keywords=query_keywords,
-                    limit=max(MAX_ATTACHMENTS_IN_CONTEXT * 2, MAX_ATTACHMENTS_IN_CONTEXT),
+                    limit=max(
+                        MAX_ATTACHMENTS_IN_CONTEXT * 2, MAX_ATTACHMENTS_IN_CONTEXT
+                    ),
                 )
                 for att in keyword_attachments:
                     if att.id not in attachment_ids_found:
