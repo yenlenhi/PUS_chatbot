@@ -52,6 +52,172 @@ const filterVisibleSourceReferences = (sourceReferences: SourceReference[] = [])
 const rankVisibleSourceReferences = (sourceReferences: SourceReference[] = [], limit = 5) =>
   selectDisplaySourceReferences(sourceReferences, limit);
 
+const INLINE_TABLE_PATTERN = /([^\n])(\|(?:[^|\n]+\|){2,}.*)/g;
+const TABLE_SEPARATOR_PATTERN = /^:?-{3,}:?$/;
+
+const extractTableCells = (line: string): string[] | null => {
+  const stripped = line.trim();
+  if (!stripped.startsWith('|')) {
+    return null;
+  }
+
+  let body = stripped.slice(1);
+  if (body.endsWith('|')) {
+    body = body.slice(0, -1);
+  }
+
+  const cells = body
+    .split('|')
+    .map((cell) => cell.trim())
+    .filter(Boolean);
+
+  return cells.length > 0 ? cells : null;
+};
+
+const isTableSeparatorCells = (cells: string[]) =>
+  cells.length > 0 && cells.every((cell) => TABLE_SEPARATOR_PATTERN.test(cell));
+
+const repairFragmentedTableBlock = (blockLines: string[]): string[] | null => {
+  const compactLines = blockLines.filter((line) => line.trim());
+  if (compactLines.length < 3) {
+    return null;
+  }
+
+  const parsedRows: string[][] = [];
+  for (const line of compactLines) {
+    const cells = extractTableCells(line);
+    if (!cells) {
+      return null;
+    }
+    parsedRows.push(cells);
+  }
+
+  const separatorStart = parsedRows.findIndex((cells) => isTableSeparatorCells(cells));
+  if (separatorStart <= 0) {
+    return null;
+  }
+
+  const headerCells = parsedRows.slice(0, separatorStart).flat();
+  const separatorCells: string[] = [];
+  let separatorEnd = separatorStart;
+
+  while (separatorEnd < parsedRows.length && isTableSeparatorCells(parsedRows[separatorEnd])) {
+    separatorCells.push(...parsedRows[separatorEnd]);
+    separatorEnd += 1;
+  }
+
+  if (headerCells.length < 2 || headerCells.length !== separatorCells.length) {
+    return null;
+  }
+
+  const targetColumns = headerCells.length;
+  const rebuiltBlock = [
+    `| ${headerCells.join(' | ')} |`,
+    `| ${separatorCells.join(' | ')} |`,
+  ];
+
+  let currentCells: string[] = [];
+  for (const cells of parsedRows.slice(separatorEnd)) {
+    if (isTableSeparatorCells(cells)) {
+      return null;
+    }
+
+    currentCells = [...currentCells, ...cells];
+    while (currentCells.length >= targetColumns) {
+      rebuiltBlock.push(`| ${currentCells.slice(0, targetColumns).join(' | ')} |`);
+      currentCells = currentCells.slice(targetColumns);
+    }
+  }
+
+  if (currentCells.length > 0) {
+    rebuiltBlock.push(
+      `| ${[
+        ...currentCells,
+        ...Array(targetColumns - currentCells.length).fill(''),
+      ].join(' | ')} |`,
+    );
+  }
+
+  return rebuiltBlock.length > 2 ? rebuiltBlock : null;
+};
+
+const repairFragmentedTableBlocks = (lines: string[]): string[] => {
+  const rebuiltLines: string[] = [];
+  let index = 0;
+
+  while (index < lines.length) {
+    const currentLine = lines[index];
+    if (currentLine.trim().startsWith('|')) {
+      const block = [currentLine];
+      index += 1;
+
+      while (index < lines.length) {
+        const candidate = lines[index];
+        if (candidate.trim() && !candidate.trim().startsWith('|')) {
+          break;
+        }
+        block.push(candidate);
+        index += 1;
+      }
+
+      rebuiltLines.push(...(repairFragmentedTableBlock(block) || block));
+      continue;
+    }
+
+    rebuiltLines.push(currentLine);
+    index += 1;
+  }
+
+  return rebuiltLines;
+};
+
+const normalizeMarkdownTables = (content: string): string => {
+  if (!content) {
+    return content;
+  }
+
+  const normalized = content.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  const inlineTableExpanded = normalized.replace(INLINE_TABLE_PATTERN, '$1\n\n$2');
+  const lines = repairFragmentedTableBlocks(inlineTableExpanded.split('\n'));
+  const rebuilt: string[] = [];
+  let previousWasTable = false;
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index];
+    const stripped = line.trim();
+    const isTableLine = stripped.startsWith('|') && stripped.includes('|', 1);
+    const nextLine = lines[index + 1]?.trim() || '';
+    const nextIsTableLine = nextLine.startsWith('|') && nextLine.includes('|', 1);
+
+    if (!stripped && previousWasTable && nextIsTableLine) {
+      continue;
+    }
+
+    if (isTableLine && rebuilt.length > 0 && rebuilt[rebuilt.length - 1].trim() && !previousWasTable) {
+      rebuilt.push('');
+    }
+
+    if (!isTableLine && previousWasTable && stripped) {
+      if (rebuilt.length > 0 && rebuilt[rebuilt.length - 1].trim()) {
+        rebuilt.push('');
+      }
+    }
+
+    rebuilt.push(line);
+    previousWasTable = isTableLine;
+  }
+
+  return rebuilt.join('\n');
+};
+
+const hasPotentialMarkdownTable = (content: string): boolean => {
+  if (!content || !content.includes('|')) {
+    return false;
+  }
+
+  return content.includes('| ---') || content.includes('\n|') || content.includes('| ');
+};
+
 const FIXED_SUGGESTED_QUESTIONS = [
   'Chỉ tiêu tuyển sinh vào Trường Đại học An Ninh Nhân Dân?',
   'Ký hiệu mã bài thi đánh giá của Bộ Công an?',
@@ -474,7 +640,11 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
 }) => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   // Typewriter animation - use reasonable speed (5ms) and add 3 chars at a time
-  const shouldAnimate = message.sender === 'bot' && isLatest && message.id !== '1';
+  const shouldAnimate =
+    message.sender === 'bot' &&
+    isLatest &&
+    message.id !== '1' &&
+    !hasPotentialMarkdownTable(message.content);
   const { displayedText, isComplete } = useTypewriter(message.content, 5, shouldAnimate);
 
   const contentToShow = shouldAnimate ? displayedText : message.content;
@@ -526,6 +696,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
     message.followUpQuestions && message.followUpQuestions.length > 0
       ? contentToShow
       : parsedFollowUps.mainContent;
+  const renderedMainContent = normalizeMarkdownTables(mainContent);
 
   // User message with separate avatar
   if (message.sender === 'user') {
@@ -626,12 +797,12 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
       <div className="max-w-[90%] sm:max-w-[85%] md:max-w-[80%] bg-white rounded-xl sm:rounded-2xl rounded-tl-sm p-3 sm:p-4 shadow-sm sm:shadow-md border border-gray-100">
         <div className="text-sm markdown-body leading-relaxed text-gray-800">
           {/* Show Processing Indicator when content is empty (streaming just started) */}
-          {!mainContent && isLatest && (
+          {!renderedMainContent && isLatest && (
             <ProcessingIndicator currentStatus={processingStatus} completedSteps={completedSteps} />
           )}
 
           {/* Render markdown content when available */}
-          {mainContent && (
+          {renderedMainContent && (
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               components={{
@@ -678,12 +849,12 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                 },
               }}
             >
-              {mainContent}
+              {renderedMainContent}
             </ReactMarkdown>
           )}
 
           {/* Typing cursor while streaming */}
-          {shouldAnimate && !isComplete && mainContent && (
+          {shouldAnimate && !isComplete && renderedMainContent && (
             <span className="inline-block w-2 h-4 bg-red-500 animate-pulse ml-1 align-middle"></span>
           )}
         </div>
