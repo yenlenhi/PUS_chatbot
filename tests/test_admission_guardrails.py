@@ -175,3 +175,45 @@ def test_build_reference_year_bridge_answer_adds_current_cycle_disclaimer():
     assert "2026" in bridged
     assert "tham khao" in bridged
     assert "nam 2025" in bridged
+
+
+def test_build_structured_score_answer_aggregates_all_years_from_primary_score_doc():
+    query = "so sanh diem chuan cac nam"
+    chunks = [
+        {
+            "source_file": "iem_Chuan_ai_Hoc_An_Ninh_Nhan_Dan_2020-2025.pdf",
+            "heading_text": "Bang tong hop diem chuan",
+            "content": (
+                "Chi tiet diem chuan nam 2020 | Vung tuyen sinh | Doi tuong Nam (Diem chuan) | "
+                "Doi tuong Nu (Diem chuan) || Phia Nam | 14.69 | 17.25 || "
+                "Chi tiet diem chuan nam 2021 | Vung tuyen sinh | Doi tuong Nam (Diem chuan) | "
+                "Doi tuong Nu (Diem chuan) || Phia Nam | 15.32 | 18.10 || "
+                "Chi tiet diem chuan nam 2022 | Vung tuyen sinh | Doi tuong Nam (Diem chuan) | "
+                "Doi tuong Nu (Diem chuan) || Phia Nam | 16.48 | 19.05 || "
+                "Chi tiet diem chuan nam 2023 | Vung tuyen sinh | Doi tuong Nam (Diem chuan) | "
+                "Doi tuong Nu (Diem chuan) || Phia Nam | 18.62 | 21.14 || "
+                "Chi tiet diem chuan nam 2024 | Vung tuyen sinh | Doi tuong Nam (Diem chuan) | "
+                "Doi tuong Nu (Diem chuan) || Phia Nam | 19.40 | 22.05 || "
+                "Chi tiet diem chuan nam 2025 | Vung tuyen sinh | Doi tuong Nam (Diem chuan) | "
+                "Doi tuong Nu (Diem chuan) || Phia Nam | 20.10 | 22.80 ||"
+            ),
+            "document_year": 2025,
+        },
+        {
+            "source_file": "So_tay_BDCL_2025_T04.pdf",
+            "heading_text": "So chuan",
+            "content": "Noi dung khong phai diem chuan tuyen sinh.",
+            "document_year": 2025,
+        },
+    ]
+
+    answer = build_structured_admission_answer(query, chunks, language="vi")
+
+    assert answer is not None
+    assert "| --- | --- | ---: | ---: | ---: | --- |" in answer
+    assert "| 2020 | Phia Nam | 14.69 | 17.25 |  |" in answer
+    assert "| 2021 | Phia Nam | 15.32 | 18.10 |  |" in answer
+    assert "| 2022 | Phia Nam | 16.48 | 19.05 |  |" in answer
+    assert "| 2023 | Phia Nam | 18.62 | 21.14 |  |" in answer
+    assert "| 2024 | Phia Nam | 19.40 | 22.05 |  |" in answer
+    assert "| 2025 | Phia Nam | 20.10 | 22.80 |  |" in answer

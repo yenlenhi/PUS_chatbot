@@ -28,6 +28,8 @@ _SCORE_ROW_PATTERN = re.compile(
     r"\b(20\d{2})\b.*?\b(\d{2}(?:[.,]\d{1,2})?)\b",
     re.IGNORECASE,
 )
+_YEAR_PATTERN = re.compile(r"\b(20\d{2})\b")
+_SCORE_VALUE_PATTERN = re.compile(r"\b\d{2}(?:[.,]\d{1,2})?\b")
 _INLINE_TABLE_PATTERN = re.compile(r"([^\n])(\|(?:[^|\n]+\|){2,}.*)")
 _TABLE_SEPARATOR_PATTERN = re.compile(r"^:?-{3,}:?$")
 
@@ -475,6 +477,269 @@ def _build_score_answer(query: str, chunks: List[Dict[str, Any]]) -> Optional[st
     return "\n".join(lines)
 
 
+def _build_comprehensive_score_answer(
+    query: str, chunks: List[Dict[str, Any]]
+) -> Optional[str]:
+    def _source_label(source_file: str) -> str:
+        label = re.sub(r"\.pdf$", "", source_file or "", flags=re.IGNORECASE)
+        label = re.sub(r"[_-]+", " ", label).strip()
+        return label or "tai lieu diem chuan"
+
+    def _score_source_priority(chunk: Dict[str, Any]) -> tuple[float, int]:
+        source_file = str(chunk.get("source_file") or chunk.get("source") or "")
+        heading = str(chunk.get("heading_text") or chunk.get("heading") or "")
+        content = str(chunk.get("content") or "")
+        normalized = _normalize_text(" ".join([source_file, heading, content[:400]]))
+
+        priority = 0.0
+        if "diem chuan" in normalized or "diem trung tuyen" in normalized:
+            priority += 6.0
+        if "giai doan" in normalized or re.search(r"20\d{2}\s*[-_]\s*20\d{2}", source_file):
+            priority += 2.0
+        if "t04" in normalized or "ans" in normalized:
+            priority += 1.0
+        document_year = chunk.get("document_year")
+        if isinstance(document_year, int):
+            priority += document_year / 10000.0
+
+        return priority, len(content)
+
+    def _select_primary_score_chunks() -> List[Dict[str, Any]]:
+        groups: Dict[str, Dict[str, Any]] = {}
+        for chunk in chunks[:10]:
+            source_file = str(chunk.get("source_file") or chunk.get("source") or "").strip()
+            if not source_file:
+                source_file = "__unknown_score_source__"
+
+            priority, content_length = _score_source_priority(chunk)
+            entry = groups.setdefault(
+                source_file,
+                {"priority": 0.0, "content_length": 0, "chunks": []},
+            )
+            entry["priority"] += priority
+            entry["content_length"] += content_length
+            entry["chunks"].append(chunk)
+
+        if not groups:
+            return chunks[:6]
+
+        best_source = max(
+            groups.items(),
+            key=lambda item: (
+                item[1]["priority"],
+                len(item[1]["chunks"]),
+                item[1]["content_length"],
+            ),
+        )[0]
+        return groups[best_source]["chunks"]
+
+    def _split_score_segments(text: str) -> List[str]:
+        prepared = text.replace("||", "\n")
+        segments: List[str] = []
+        for raw_line in prepared.splitlines():
+            line = raw_line.strip(" -â€¢\t")
+            if line:
+                segments.append(line)
+        return segments
+
+    def _normalize_score_value(value: str) -> str:
+        return value.replace(",", ".")
+
+    def _contains_score_header(text: str) -> bool:
+        normalized = _normalize_text(text)
+        return any(
+            phrase in normalized
+            for phrase in (
+                "diem chuan",
+                "vung tuyen sinh",
+                "doi tuong nam",
+                "doi tuong nu",
+                "nam diem chuan",
+                "nu diem chuan",
+            )
+        )
+
+    primary_chunks = _select_primary_score_chunks()
+    if not primary_chunks:
+        return None
+
+    primary_source_file = str(
+        primary_chunks[0].get("source_file") or primary_chunks[0].get("source") or ""
+    )
+    source_hint = _source_label(primary_source_file)
+
+    rows: List[Dict[str, str]] = []
+    seen: set[tuple[str, str, str, str, str]] = set()
+
+    for chunk in primary_chunks:
+        source_file = str(chunk.get("source_file") or chunk.get("source") or "")
+        heading = (chunk.get("heading_text") or chunk.get("heading") or "").strip()
+        default_label = heading or "NgÃ nh/nhÃ³m ngÃ nh"
+        content = str(chunk.get("content") or "")
+
+        segments: List[str] = []
+        if heading:
+            segments.append(heading)
+        segments.extend(_split_score_segments(content))
+
+        current_year: Optional[str] = None
+        for segment in segments:
+            years_in_segment = _YEAR_PATTERN.findall(segment)
+            if years_in_segment and _contains_score_header(segment):
+                current_year = years_in_segment[-1]
+
+            table_candidate = segment
+            if "|" in segment and not segment.lstrip().startswith("|"):
+                table_candidate = f"| {segment.strip().strip('|')} |"
+
+            cells = _extract_table_cells(table_candidate)
+            if cells:
+                row_year = current_year
+                label_parts: List[str] = []
+                explicit_male = ""
+                explicit_female = ""
+                generic_scores: List[str] = []
+
+                for cell in cells:
+                    normalized_cell = _normalize_text(cell)
+                    cell_years = _YEAR_PATTERN.findall(cell)
+                    if cell_years and _contains_score_header(cell):
+                        row_year = cell_years[-1]
+                        continue
+
+                    numeric_scores = [
+                        _normalize_score_value(value)
+                        for value in _SCORE_VALUE_PATTERN.findall(cell)
+                    ]
+                    if not numeric_scores:
+                        if not _contains_score_header(cell):
+                            label_parts.append(cell)
+                        continue
+
+                    if "doi tuong nam" in normalized_cell or re.search(
+                        r"\bnam\b", normalized_cell
+                    ):
+                        explicit_male = numeric_scores[-1]
+                    elif "doi tuong nu" in normalized_cell or re.search(
+                        r"\bnu\b", normalized_cell
+                    ):
+                        explicit_female = numeric_scores[-1]
+                    else:
+                        generic_scores.extend(numeric_scores)
+
+                male_score = explicit_male or (generic_scores[0] if generic_scores else "")
+                female_score = (
+                    explicit_female
+                    or (generic_scores[1] if len(generic_scores) > 1 else "")
+                )
+                other_score = ", ".join(generic_scores[2:]) if len(generic_scores) > 2 else ""
+
+                if row_year and (male_score or female_score or other_score):
+                    label = " / ".join(label_parts) or default_label
+                    key = (row_year, label, male_score, female_score, other_score)
+                    if key not in seen:
+                        seen.add(key)
+                        rows.append(
+                            {
+                                "year": row_year,
+                                "label": label,
+                                "male": male_score,
+                                "female": female_score,
+                                "score": other_score,
+                                "note": f"Trich tu {source_hint}",
+                                "source": source_file,
+                            }
+                        )
+                    continue
+
+            pair_matches = list(_SCORE_ROW_PATTERN.finditer(segment))
+            if pair_matches:
+                for match in pair_matches:
+                    year = match.group(1)
+                    score = _normalize_score_value(match.group(2))
+                    key = (year, default_label, "", "", score)
+                    if key in seen:
+                        continue
+                    seen.add(key)
+                    rows.append(
+                        {
+                            "year": year,
+                            "label": default_label,
+                            "male": "",
+                            "female": "",
+                            "score": score,
+                            "note": f"Trich tu {source_hint}",
+                            "source": source_file,
+                        }
+                    )
+                current_year = pair_matches[-1].group(1)
+
+    if not rows:
+        return None
+
+    rows.sort(
+        key=lambda item: (
+            int(item["year"]) if item["year"].isdigit() else 0,
+            item["label"],
+            item["male"],
+            item["female"],
+            item["score"],
+        )
+    )
+
+    has_gender_scores = any(row["male"] or row["female"] for row in rows)
+    covered_years = sorted({row["year"] for row in rows})
+
+    lines = [
+        "### Báº£ng Ä‘iá»ƒm tuyá»ƒn sinh",
+        "",
+        (
+            "TÃ´i Ä‘ang Æ°u tiÃªn tÃ i liá»‡u Ä‘iá»ƒm chuáº©n truy xuáº¥t Ä‘Æ°á»£c gáº§n nháº¥t "
+            "vÃ  tá»•ng há»£p táº¥t cáº£ cÃ¡c má»‘c Ä‘iá»ƒm Ä‘á»c Ä‘Æ°á»£c trong cÃ¹ng táº­p tÃ i liá»‡u "
+            "Ä‘á»ƒ báº¡n dá»… Ä‘á»‘i chiáº¿u theo tá»«ng nÄƒm."
+        ),
+        "",
+    ]
+
+    if has_gender_scores:
+        lines.extend(
+            [
+                "| NÄƒm | Háº¡ng má»¥c | Nam | Ná»¯ | Äiá»ƒm khÃ¡c | Ghi chÃº |",
+                "| --- | --- | ---: | ---: | ---: | --- |",
+            ]
+        )
+        for row in rows[:40]:
+            lines.append(
+                f"| {row['year']} | {row['label']} | {row['male']} | {row['female']} | {row['score']} | {row['note']} |"
+            )
+    else:
+        lines.extend(
+            [
+                "| NÄƒm | Háº¡ng má»¥c | Äiá»ƒm | Ghi chÃº |",
+                "| --- | --- | ---: | --- |",
+            ]
+        )
+        for row in rows[:40]:
+            score_value = row["score"] or row["male"] or row["female"]
+            lines.append(
+                f"| {row['year']} | {row['label']} | {score_value} | {row['note']} |"
+            )
+
+    if len(covered_years) > 1:
+        lines.extend(
+            [
+                "",
+                (
+                    f"CÃ¡c má»‘c Ä‘iá»ƒm truy xuáº¥t Ä‘Æ°á»£c hiá»‡n Ä‘ang bao phá»§ "
+                    f"{covered_years[0]}-{covered_years[-1]}. Náº¿u báº¡n cáº§n, tÃ´i cÃ³ thá»ƒ táº¡ch "
+                    "riÃªng theo tá»«ng nÄƒm hoáº·c so sÃ¡nh xu hÆ°á»›ng tÄƒng/giáº£m."
+                ),
+            ]
+        )
+
+    return "\n".join(lines)
+
+
 def build_structured_admission_answer(
     query: str, chunks: List[Dict[str, Any]], language: str = "vi"
 ) -> Optional[str]:
@@ -489,7 +754,7 @@ def build_structured_admission_answer(
     if doc_type == "timeline":
         return _build_timeline_answer(query, chunks)
     if doc_type == "scores":
-        return _build_score_answer(query, chunks)
+        return _build_comprehensive_score_answer(query, chunks)
 
     return None
 
