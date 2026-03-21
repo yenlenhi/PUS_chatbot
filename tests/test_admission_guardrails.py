@@ -1,4 +1,5 @@
 from src.utils.admission_answer_guardrails import (
+    build_reference_year_bridge_answer,
     build_structured_admission_answer,
     normalize_answer_markdown,
     validate_admission_answer,
@@ -66,6 +67,19 @@ def test_validate_admission_answer_flags_2025_for_implicit_current_cycle():
     assert "older_year_presented_as_current" in violations
 
 
+def test_validate_admission_answer_allows_2025_when_clearly_marked_as_reference():
+    query = "dieu kien ap dung cua tung phuong thuc xet tuyen"
+    answer = (
+        "Hien tai tai lieu duoc cung cap chi thong tin ve quy dinh cua nam 2025. "
+        "Ban co the tham khao cac dieu kien nay lam co so, con viec ap dung cho 2026 "
+        "se theo huong dan moi nhat."
+    )
+
+    violations = validate_admission_answer(query, answer)
+
+    assert "older_year_presented_as_current" not in violations
+
+
 def test_build_structured_timeline_answer_from_retrieved_chunks():
     query = "moc thoi gian dang ky va xac nhan nhap hoc"
     chunks = [
@@ -100,3 +114,33 @@ def test_normalize_answer_markdown_inserts_blank_lines_around_tables():
 
     assert "tuyển mới\n\n| Phương thức | Điều kiện |" in normalized
     assert "| Phương thức 1 | Tuyển thẳng |\n\n### 2." in normalized
+
+
+def test_normalize_answer_markdown_removes_blank_lines_inside_table():
+    raw_answer = (
+        "Sự khác biệt như sau:\n\n"
+        "| Mã bài thi |\n\n"
+        "| Phần Tự luận bắt buộc |\n\n"
+        "| Phần Trắc nghiệm tự chọn |\n\n"
+        "| :--- |\n\n"
+        "| :--- |\n\n"
+        "| :--- |\n\n"
+        "| CA1 |\n\n"
+        "| Ngữ văn |\n\n"
+        "| Vật lí |"
+    )
+
+    normalized = normalize_answer_markdown(raw_answer)
+
+    assert "|\n\n| Phần" not in normalized
+    assert "| Mã bài thi |\n| Phần Tự luận bắt buộc |\n| Phần Trắc nghiệm tự chọn |" in normalized
+    assert "| :--- |\n| :--- |\n| :--- |" in normalized
+
+
+def test_build_reference_year_bridge_answer_adds_current_cycle_disclaimer():
+    bridged = build_reference_year_bridge_answer(
+        "Noi dung tham khao tu tai lieu nam 2025.", language="vi"
+    )
+
+    assert "mặc định ưu tiên năm" in bridged
+    assert "năm 2025" in bridged

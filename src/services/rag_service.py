@@ -32,6 +32,7 @@ from src.utils.admission_document_priority import (
 )
 from src.utils.admission_answer_guardrails import (
     build_answer_repair_prompt,
+    build_reference_year_bridge_answer,
     build_safe_admission_fallback_answer,
     build_structured_admission_answer,
     normalize_answer_markdown,
@@ -1712,6 +1713,14 @@ Trả lời:"""
             query, repaired_answer, relevant_chunks
         )
         if remaining_violations:
+            if set(remaining_violations) == {"older_year_presented_as_current"}:
+                return (
+                    build_reference_year_bridge_answer(
+                        repaired_answer, language=language
+                    ),
+                    remaining_violations,
+                )
+
             structured_answer = self.try_build_structured_admission_answer(
                 query, relevant_chunks, language=language
             )

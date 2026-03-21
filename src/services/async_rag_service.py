@@ -23,6 +23,7 @@ from src.utils.admission_document_priority import (
 )
 from src.utils.admission_answer_guardrails import (
     build_answer_repair_prompt,
+    build_reference_year_bridge_answer,
     build_safe_admission_fallback_answer,
     normalize_answer_markdown,
     validate_admission_answer,
@@ -432,6 +433,14 @@ class AsyncRAGService:
 
         remaining = validate_admission_answer(query, repaired_answer, relevant_chunks)
         if remaining:
+            if set(remaining) == {"older_year_presented_as_current"}:
+                return (
+                    build_reference_year_bridge_answer(
+                        repaired_answer, language=language
+                    ),
+                    remaining,
+                )
+
             structured_answer = self.rag_service.try_build_structured_admission_answer(
                 query, relevant_chunks, language=language
             )

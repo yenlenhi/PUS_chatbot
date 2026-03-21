@@ -58,6 +58,50 @@ def _answer_mentions_system_wide_context(answer: str) -> bool:
     )
 
 
+def _answer_acknowledges_reference_year(answer: str, reference_year: int) -> bool:
+    normalized = _normalize_text(answer)
+    year_phrase = str(reference_year)
+
+    reference_markers = (
+        "tham khao",
+        "lam co so",
+        "tam thoi",
+        "tai lieu hien co",
+        "tai lieu duoc cung cap",
+        "chi de cap",
+        "chi thong tin",
+        "chua co tai lieu",
+        "chua co van ban",
+        "chua du can cu xac nhan",
+        "chua du co so xac nhan",
+        "chua xac nhan chinh thuc",
+        "se duoc cap nhat",
+        "theo huong dan moi nhat",
+        "huong dan moi nhat",
+        "doi chieu",
+        "so sanh",
+        "tai lieu cu",
+        "nam truoc",
+        "gan nhat",
+    )
+
+    has_reference_marker = any(marker in normalized for marker in reference_markers)
+    has_reference_year_context = (
+        year_phrase in normalized
+        and any(
+            phrase in normalized
+            for phrase in (
+                f"nam {reference_year}",
+                f"quy dinh cua nam {reference_year}",
+                f"tai lieu nam {reference_year}",
+                f"thong tin nam {reference_year}",
+            )
+        )
+    )
+
+    return has_reference_marker and has_reference_year_context
+
+
 def normalize_answer_markdown(answer: str) -> str:
     if not answer:
         return answer
@@ -69,9 +113,14 @@ def normalize_answer_markdown(answer: str) -> str:
     rebuilt: List[str] = []
     previous_was_table = False
 
-    for line in lines:
+    for index, line in enumerate(lines):
         stripped = line.strip()
         is_table_line = stripped.startswith("|") and stripped.count("|") >= 2
+        next_line = lines[index + 1].strip() if index + 1 < len(lines) else ""
+        next_is_table_line = next_line.startswith("|") and next_line.count("|") >= 2
+
+        if not stripped and previous_was_table and next_is_table_line:
+            continue
 
         if is_table_line and rebuilt and rebuilt[-1].strip() and not previous_was_table:
             rebuilt.append("")
@@ -110,17 +159,7 @@ def validate_admission_answer(
         and target_year == current_year
         and "2025" in normalized_answer
     ):
-        if not any(
-            marker in normalized_answer
-            for marker in (
-                "tham khao cu",
-                "doi chieu",
-                "so sanh",
-                "khong du co so",
-                "khong du can cu",
-                "tai lieu cu",
-            )
-        ):
+        if not _answer_acknowledges_reference_year(answer, 2025):
             violations.append("older_year_presented_as_current")
 
     return violations
@@ -153,6 +192,7 @@ Rules:
 - If the query is about People's Security University by default, do not mention T05.
 - Do not present the whole-system CAND quota 1,870 as if it were T04-specific.
 - If the user did not specify a year, treat the question as the current cycle year {dt.datetime.now().year}.
+- If the available documents only confirm older-year information such as 2025, you may still answer using that material as reference, but you must label it clearly as reference/temporary basis and state that 2026 depends on the latest official guidance.
 - If the documents are insufficient, state that clearly instead of guessing.
 - Prefer Markdown tables for quota, methods, timeline, and score questions.
 """
@@ -176,6 +216,7 @@ Yêu cầu bắt buộc:
 - Nếu câu hỏi mặc định thuộc phạm vi Trường Đại học An ninh nhân dân, tuyệt đối không được ghi T05.
 - Không được trình bày 1.870 chỉ tiêu như thể là chỉ tiêu riêng của T04.
 - Nếu người dùng không nêu năm, phải hiểu theo chu kỳ tuyển sinh hiện tại năm {dt.datetime.now().year}.
+- Nếu tài liệu hiện có mới xác nhận đến năm cũ như 2025, vẫn được phép trả lời theo hướng tham khảo gần nhất, nhưng phải nói thật rõ đây là căn cứ tham khảo/tạm thời và việc áp dụng cho 2026 phụ thuộc hướng dẫn chính thức mới nhất.
 - Nếu tài liệu không đủ căn cứ, phải nói rõ là chưa đủ căn cứ thay vì suy đoán.
 - Với câu hỏi về chỉ tiêu, phương thức, mốc thời gian, điểm số, ưu tiên trình bày bằng bảng Markdown.
 """
@@ -211,6 +252,30 @@ def build_safe_admission_fallback_answer(
         f"{notice_block}\n\n"
         "Vui lòng xem các tài liệu tuyển sinh chính thức mà hệ thống đã ưu tiên hiển thị cho T04."
     )
+
+
+def build_reference_year_bridge_answer(
+    answer: str,
+    *,
+    current_year: Optional[int] = None,
+    reference_year: int = 2025,
+    language: str = "vi",
+) -> str:
+    current_year = current_year or dt.datetime.now().year
+    if language == "en":
+        prefix = (
+            f"Current-cycle note: this chatbot defaults to admission cycle {current_year}. "
+            f"The current answer is based on the latest available reference documents from {reference_year}, "
+            "so treat it as a provisional reference until the official latest guidance is published.\n\n"
+        )
+        return normalize_answer_markdown(f"{prefix}{answer}")
+
+    prefix = (
+        f"Lưu ý theo chu kỳ tuyển sinh hiện tại: chatbot này mặc định ưu tiên năm {current_year}. "
+        f"Hiện câu trả lời dưới đây đang dựa trên tài liệu tham khảo gần nhất của năm {reference_year}, "
+        "vì vậy bạn nên hiểu đây là căn cứ tham khảo tạm thời cho đến khi có hướng dẫn chính thức mới nhất.\n\n"
+    )
+    return normalize_answer_markdown(f"{prefix}{answer}")
 
 
 def _build_timeline_answer(query: str, chunks: List[Dict[str, Any]]) -> Optional[str]:
