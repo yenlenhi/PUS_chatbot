@@ -21,6 +21,7 @@ from src.utils.admission_document_priority import (
     enrich_query_for_current_cycle,
     enrich_query_for_primary_school,
     infer_query_doc_type,
+    is_personnel_query,
 )
 from src.utils.admission_answer_guardrails import (
     build_answer_repair_prompt,
@@ -368,17 +369,44 @@ class AsyncRAGService:
         enriched_query, primary_school_enriched = enrich_query_for_primary_school(
             enriched_query
         )
+        personnel_enriched = False
         if primary_school_enriched:
             log.info(
                 f"[ASYNC] Applied primary-school enrichment: '{retrieval_query[:60]}' -> '{enriched_query[:120]}'"
             )
+
+        if is_personnel_query(retrieval_query or original_query):
+            normalized_personnel_query = self._normalize_for_match(
+                enriched_query or original_query
+            )
+            personnel_terms: List[str] = []
+            if "co cau to chuc" not in normalized_personnel_query:
+                personnel_terms.append("co cau to chuc")
+            if "nhan su" not in normalized_personnel_query:
+                personnel_terms.append("nhan su")
+            if "ban giam hieu" not in normalized_personnel_query:
+                personnel_terms.append("ban giam hieu")
+
+            enriched_personnel_query = " ".join(
+                part for part in [enriched_query.strip(), *personnel_terms] if part
+            ).strip()
+            if enriched_personnel_query != enriched_query:
+                enriched_query = enriched_personnel_query
+                personnel_enriched = True
+                log.info(
+                    f"[ASYNC] Applied personnel enrichment: '{retrieval_query[:60]}' -> '{enriched_query[:120]}'"
+                )
+
         metadata = self._get_score_query_metadata(retrieval_query or original_query)
         if not metadata["needs_synonym_expansion"]:
             if current_cycle_enriched:
                 log.info(
                     f"[ASYNC] Applied current-cycle enrichment: '{retrieval_query[:60]}' -> '{enriched_query[:120]}'"
                 )
-            return enriched_query, current_cycle_enriched or primary_school_enriched
+            return (
+                enriched_query,
+                current_cycle_enriched or primary_school_enriched or personnel_enriched,
+            )
 
         normalized = self._normalize_for_match(enriched_query or original_query)
         enrichment_terms: List[str] = []
@@ -402,7 +430,10 @@ class AsyncRAGService:
             )
             return enriched_query, True
 
-        return enriched_query, current_cycle_enriched or primary_school_enriched
+        return (
+            enriched_query,
+            current_cycle_enriched or primary_school_enriched or personnel_enriched,
+        )
 
     async def _repair_answer_if_needed(
         self,
@@ -488,12 +519,95 @@ class AsyncRAGService:
         metadata = self._get_score_query_metadata(retrieval_query or original_query)
         return metadata["is_under_specified"]
 
+    def _is_authoritative_personnel_chunk(self, chunk: Dict[str, Any]) -> bool:
+        if not chunk:
+            return False
+
+        school_code = chunk.get("school_code")
+        if school_code and school_code != "T04":
+            return False
+
+        if chunk.get("doc_type") == "personnel":
+            return True
+
+        combined_text = " ".join(
+            str(part or "")
+            for part in (
+                chunk.get("source_file") or chunk.get("source"),
+                chunk.get("heading_text") or chunk.get("heading"),
+                str(chunk.get("content") or "")[:400],
+            )
+        )
+        normalized_chunk = self._normalize_for_match(combined_text)
+        personnel_markers = (
+            "co cau to chuc",
+            "nhan su",
+            "ban giam hieu",
+            "lanh dao",
+        )
+        school_markers = ("an ninh nhan dan", "t04")
+        return any(marker in normalized_chunk for marker in personnel_markers) and (
+            school_code == "T04"
+            or any(marker in normalized_chunk for marker in school_markers)
+        )
+
+    def _filter_authoritative_personnel_chunks(
+        self,
+        original_query: str,
+        retrieval_query: str,
+        relevant_chunks: List[Dict[str, Any]],
+    ) -> Tuple[List[Dict[str, Any]], bool]:
+        if not is_personnel_query(retrieval_query or original_query):
+            return relevant_chunks, False
+
+        filtered_chunks = [
+            chunk
+            for chunk in relevant_chunks
+            if self._is_authoritative_personnel_chunk(chunk)
+        ]
+        return filtered_chunks, True
+
+    def _has_authoritative_personnel_evidence(
+        self,
+        original_query: str,
+        retrieval_query: str,
+        relevant_chunks: List[Dict[str, Any]],
+    ) -> bool:
+        if not is_personnel_query(retrieval_query or original_query):
+            return False
+
+        return any(
+            self._is_authoritative_personnel_chunk(chunk)
+            for chunk in relevant_chunks[:5]
+        )
+
+    def _build_personnel_evidence_required_answer(self, language: str = "vi") -> str:
+        if language == "en":
+            return (
+                "I can only confirm leadership, staff, or organizational information "
+                "when it is grounded in the school's official organization/personnel document. "
+                "I have not retrieved that document for this answer, so I cannot confirm who "
+                "currently holds this position."
+            )
+
+        return (
+            "Toi chi co the xac nhan thong tin lanh dao, can bo hoac co cau to chuc khi "
+            "truy xuat duoc dung tai lieu Co cau to chuc va Nhan su hoac tai lieu nhan su "
+            "chinh thuc cua Nha truong. Hien toi chua lay duoc dung tai lieu do, nen chua "
+            "the khang dinh ai dang giu chuc danh nay."
+        )
+
     def _should_bypass_low_confidence_policy(
         self,
         original_query: str,
         retrieval_query: str,
         relevant_chunks: List[Dict[str, Any]],
     ) -> bool:
+        if self._has_authoritative_personnel_evidence(
+            original_query, retrieval_query, relevant_chunks
+        ):
+            return True
+
         metadata = self._get_score_query_metadata(retrieval_query or original_query)
         if not metadata["has_score_signal"] or metadata["is_under_specified"]:
             return False
@@ -1110,6 +1224,56 @@ class AsyncRAGService:
                 performance["retrieval_cache_hit"] = retrieval_cache_hit
                 performance["retrieved_chunk_count"] = len(relevant_chunks)
 
+            relevant_chunks, personnel_required = (
+                self._filter_authoritative_personnel_chunks(
+                    query, normalized_query, relevant_chunks
+                )
+            )
+            if personnel_required and not relevant_chunks:
+                finalized_performance = self._finalize_performance(
+                    performance,
+                    request_started_at,
+                    response_path="policy",
+                    policy_applied="missing_personnel_source",
+                    normalization_applied=normalization_applied,
+                    rewrite_applied=rewrite_applied,
+                    memory_loaded=memory_loaded,
+                )
+                response = self._build_policy_payload(
+                    "insufficient_evidence",
+                    conversation_id,
+                    language,
+                    source_references=[],
+                    sources=[],
+                    confidence=0.0,
+                    normalization_applied=normalization_applied,
+                    original_query=query,
+                    normalized_query=normalized_query,
+                    performance=finalized_performance,
+                    answer_override=self._build_personnel_evidence_required_answer(
+                        language
+                    ),
+                )
+                self._update_conversation_history(
+                    conversation_id, query, response["answer"]
+                )
+                asyncio.create_task(
+                    self._save_conversation_async(
+                        conversation_id,
+                        query,
+                        response["answer"],
+                        [],
+                        0.0,
+                        normalization_applied,
+                        normalized_query,
+                    )
+                )
+                self._log_performance(conversation_id, finalized_performance)
+                return response
+
+            if performance is not None:
+                performance["retrieved_chunk_count"] = len(relevant_chunks)
+
             # Create context and sources
             post_retrieval_started_at = time.perf_counter()
             context = self.rag_service.create_context(relevant_chunks)
@@ -1640,6 +1804,65 @@ class AsyncRAGService:
             self._record_stage(performance, "retrieval", retrieval_started_at)
             if performance is not None:
                 performance["retrieval_cache_hit"] = retrieval_cache_hit
+                performance["retrieved_chunk_count"] = len(relevant_chunks)
+
+            relevant_chunks, personnel_required = (
+                self._filter_authoritative_personnel_chunks(
+                    query, normalized_query, relevant_chunks
+                )
+            )
+            if personnel_required and not relevant_chunks:
+                finalized_performance = self._finalize_performance(
+                    performance,
+                    request_started_at,
+                    response_path="policy",
+                    policy_applied="missing_personnel_source",
+                    normalization_applied=normalization_applied,
+                    rewrite_applied=rewrite_applied,
+                    memory_loaded=memory_loaded,
+                )
+                yield {
+                    "type": "sources",
+                    "sources": [],
+                    "source_references": [],
+                    "confidence": 0.0,
+                }
+                yield {
+                    "type": "answer_chunk",
+                    "content": self._build_personnel_evidence_required_answer(
+                        language
+                    ),
+                }
+                yield {
+                    "type": "complete",
+                    "attachments": [],
+                    "chart_data": [],
+                    "images": [],
+                    "normalization_applied": normalization_applied,
+                    "original_query": query if normalization_applied else None,
+                    "normalized_query": normalized_query if normalization_applied else None,
+                    "performance": finalized_performance,
+                }
+                asyncio.create_task(
+                    self._save_conversation_async(
+                        conversation_id,
+                        query,
+                        self._build_personnel_evidence_required_answer(language),
+                        [],
+                        0.0,
+                        normalization_applied,
+                        normalized_query,
+                    )
+                )
+                self._update_conversation_history(
+                    conversation_id,
+                    query,
+                    self._build_personnel_evidence_required_answer(language),
+                )
+                self._log_performance(conversation_id, finalized_performance)
+                return
+
+            if performance is not None:
                 performance["retrieved_chunk_count"] = len(relevant_chunks)
 
             post_retrieval_started_at = time.perf_counter()

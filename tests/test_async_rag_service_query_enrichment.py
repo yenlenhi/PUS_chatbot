@@ -70,3 +70,56 @@ def test_under_specified_score_query_does_not_bypass_low_confidence_policy():
     )
 
     assert should_bypass is False
+
+
+def test_personnel_query_is_enriched_for_org_structure_retrieval():
+    service = AsyncRAGService()
+
+    enriched_query, enriched = service._enrich_retrieval_query(
+        "ai la hieu truong", "ai la hieu truong"
+    )
+
+    assert enriched is True
+    assert "co cau to chuc" in enriched_query
+    assert "nhan su" in enriched_query
+    assert "ban giam hieu" in enriched_query
+
+
+def test_personnel_query_requires_authoritative_personnel_chunk():
+    service = AsyncRAGService()
+
+    filtered_chunks, required = service._filter_authoritative_personnel_chunks(
+        "ai la hieu truong",
+        "ai la hieu truong",
+        [
+            {
+                "source_file": "Quy_che_dao_tao_dai_hoc.pdf",
+                "heading_text": "Quy che dao tao",
+                "content": "Mot doan van ban cu co nhac den ten hieu truong.",
+                "doc_type": "general",
+            }
+        ],
+    )
+
+    assert required is True
+    assert filtered_chunks == []
+
+
+def test_personnel_query_with_org_structure_chunk_bypasses_low_confidence_policy():
+    service = AsyncRAGService()
+
+    should_bypass = service._should_bypass_low_confidence_policy(
+        "ai la hieu truong",
+        "ai la hieu truong",
+        [
+            {
+                "source_file": "Co_cau_to_chuc_va_Nhan_su_T04_Cap_nhat_2026.pdf",
+                "heading_text": "Co cau to chuc va nhan su",
+                "content": "Ban giam hieu va lanh dao nha truong.",
+                "doc_type": "personnel",
+                "school_code": "T04",
+            }
+        ],
+    )
+
+    assert should_bypass is True
