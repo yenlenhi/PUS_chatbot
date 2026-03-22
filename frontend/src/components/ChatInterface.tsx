@@ -289,7 +289,34 @@ ${source.content ? `📝 Nội dung liên quan:\n${source.content.substring(0, 3
                 <div className="flex-1 min-w-0">
                   <div className="text-sm markdown-body leading-relaxed">
                     {renderedContent ? (
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        components={{
+                          table({ children }) {
+                            return (
+                              <div className="overflow-x-auto my-3">
+                                <table className="min-w-full border-collapse border border-gray-300 text-xs">
+                                  {children}
+                                </table>
+                              </div>
+                            );
+                          },
+                          th({ children }) {
+                            return (
+                              <th className="border border-gray-300 bg-gray-100 px-3 py-2 text-left font-semibold">
+                                {children}
+                              </th>
+                            );
+                          },
+                          td({ children }) {
+                            return (
+                              <td className="border border-gray-300 px-3 py-2">
+                                {children}
+                              </td>
+                            );
+                          },
+                        }}
+                      >
                         {renderedContent}
                       </ReactMarkdown>
                     ) : message.isStreaming ? (

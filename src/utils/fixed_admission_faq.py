@@ -22,6 +22,10 @@ def _normalize(text: Optional[str]) -> str:
     return re.sub(r"\s+", " ", normalized).strip()
 
 
+def _contains_any_term(normalized_query: str, terms: tuple[str, ...]) -> bool:
+    return any(term in normalized_query for term in terms)
+
+
 _PRIMARY_SCHOOL_TERMS = (
     "an ninh nhan dan",
     "truong dai hoc an ninh nhan dan",
@@ -115,13 +119,13 @@ def _is_short_title_lookup(normalized_query: str, title: str) -> bool:
 
 
 def _targets_primary_school_default(normalized_query: str) -> bool:
-    if any(term in normalized_query for term in _SYSTEM_WIDE_TERMS):
+    if _contains_any_term(normalized_query, _SYSTEM_WIDE_TERMS):
         return False
 
-    if any(term in normalized_query for term in _OTHER_SCHOOL_TERMS):
+    if _contains_any_term(normalized_query, _OTHER_SCHOOL_TERMS):
         return False
 
-    if any(term in normalized_query for term in _PRIMARY_SCHOOL_TERMS):
+    if _contains_any_term(normalized_query, _PRIMARY_SCHOOL_TERMS):
         return True
 
     return True
@@ -131,7 +135,7 @@ def _is_primary_school_quota_query(normalized_query: str) -> bool:
     if "chi tieu" not in normalized_query:
         return False
 
-    if any(term in normalized_query for term in _PRIMARY_SCHOOL_TERMS):
+    if _contains_any_term(normalized_query, _PRIMARY_SCHOOL_TERMS):
         return True
 
     return _targets_primary_school_default(normalized_query) and any(
@@ -143,7 +147,7 @@ def _is_primary_school_overview_query(normalized_query: str) -> bool:
     if not _targets_primary_school_default(normalized_query):
         return False
 
-    if any(term in normalized_query for term in _OVERVIEW_EXCLUDED_TERMS):
+    if _contains_any_term(normalized_query, _OVERVIEW_EXCLUDED_TERMS):
         return False
 
     padded_query = f" {normalized_query} "
@@ -177,10 +181,7 @@ def _is_primary_school_rector_query(normalized_query: str) -> bool:
     if not _targets_primary_school_default(normalized_query):
         return False
 
-    if any(
-        term in normalized_query
-        for term in ("pho hieu truong", "hieu pho", "ban giam hieu")
-    ):
+    if _contains_any_term(normalized_query, ("pho hieu truong", "hieu pho", "ban giam hieu")):
         return False
 
     if _is_short_title_lookup(normalized_query, "hieu truong"):
@@ -199,27 +200,27 @@ def _is_primary_school_rector_query(normalized_query: str) -> bool:
 
 
 def _is_primary_school_vice_rector_query(normalized_query: str) -> bool:
-    return _targets_primary_school_default(normalized_query) and any(
-        term in normalized_query
-        for term in (
+    return _targets_primary_school_default(normalized_query) and _contains_any_term(
+        normalized_query,
+        (
             "pho hieu truong",
             "cac pho hieu truong",
             "hieu pho",
             "hieu truong pho",
-        )
+        ),
     )
 
 
 def _is_primary_school_leadership_query(normalized_query: str) -> bool:
-    return _targets_primary_school_default(normalized_query) and any(
-        term in normalized_query
-        for term in (
+    return _targets_primary_school_default(normalized_query) and _contains_any_term(
+        normalized_query,
+        (
             "ban giam hieu",
             "lanh dao nha truong",
             "co cau to chuc bo may",
             "co cau to chuc",
             "bo may nha truong",
-        )
+        ),
     )
 
 

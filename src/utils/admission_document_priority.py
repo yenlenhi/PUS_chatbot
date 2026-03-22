@@ -190,29 +190,44 @@ def _normalize_source_name(value: Optional[str]) -> str:
     return _normalize_text(Path(str(value)).stem)
 
 
+def _contains_any_term(value: str, terms: tuple[str, ...]) -> bool:
+    return any(term in value for term in terms)
+
+
 def _extract_year_from_text(value: Optional[str]) -> Optional[int]:
     if not value:
         return None
 
-    years = [int(match) for match in _YEAR_PATTERN.findall(str(value))]
+    years = _extract_years_from_text(value)
     if not years:
         return None
+    return years[-1]
 
-    plausible_years = [year for year in years if 2015 <= year <= 2100]
-    if not plausible_years:
-        return None
 
-    return max(plausible_years)
+def _extract_years_from_text(value: Optional[str]) -> List[int]:
+    if not value:
+        return []
+
+    years = [int(match) for match in _YEAR_PATTERN.findall(str(value))]
+    plausible_years = sorted({year for year in years if 2015 <= year <= 2100})
+    return plausible_years
+
+
+def _extract_merged_years(*values: Optional[str]) -> List[int]:
+    merged: set[int] = set()
+    for value in values:
+        merged.update(_extract_years_from_text(value))
+    return sorted(merged)
 
 
 def is_admission_query(query: Optional[str]) -> bool:
     normalized_query = _normalize_text(query)
-    return any(term in normalized_query for term in _ADMISSION_TERMS)
+    return _contains_any_term(normalized_query, _ADMISSION_TERMS)
 
 
 def is_personnel_query(query: Optional[str]) -> bool:
     normalized_query = _normalize_text(query)
-    return any(term in normalized_query for term in _PERSONNEL_TERMS)
+    return _contains_any_term(normalized_query, _PERSONNEL_TERMS)
 
 
 def has_explicit_year(query: Optional[str]) -> bool:
@@ -225,13 +240,13 @@ def query_targets_primary_school(query: Optional[str]) -> bool:
     if not normalized_query:
         return False
 
-    if any(term in normalized_query for term in _SYSTEM_WIDE_QUERY_TERMS):
+    if _contains_any_term(normalized_query, _SYSTEM_WIDE_QUERY_TERMS):
         return False
 
-    if any(term in normalized_query for term in _OTHER_SCHOOL_TERMS):
+    if _contains_any_term(normalized_query, _OTHER_SCHOOL_TERMS):
         return False
 
-    if any(term in normalized_query for term in _PRIMARY_SCHOOL_TERMS):
+    if _contains_any_term(normalized_query, _PRIMARY_SCHOOL_TERMS):
         return True
 
     return is_admission_query(query) or is_personnel_query(query)
@@ -246,11 +261,7 @@ def infer_target_year(query: Optional[str]) -> Optional[int]:
     if not is_admission_query(query):
         return None
 
-    current_year = dt.datetime.now().year
-    if any(hint in normalized_query for hint in _CURRENT_CYCLE_HINTS):
-        return current_year
-
-    return current_year
+    return dt.datetime.now().year
 
 
 def infer_query_doc_type(query: Optional[str]) -> Optional[str]:
@@ -262,7 +273,7 @@ def infer_query_doc_type(query: Optional[str]) -> Optional[str]:
         return "personnel"
 
     for doc_type, terms in _DOC_TYPE_HINTS:
-        if any(term in normalized_query for term in terms):
+        if _contains_any_term(normalized_query, terms):
             return doc_type
 
     return None
@@ -288,7 +299,7 @@ def infer_document_metadata(
     school_code = None
     school_symbol = None
     for candidate_code, candidate_symbol, terms in _SCHOOL_CODE_HINTS:
-        if any(term in normalized_blob for term in terms):
+        if _contains_any_term(normalized_blob, terms):
             school_code = candidate_code
             school_symbol = candidate_symbol
             break
@@ -298,28 +309,29 @@ def infer_document_metadata(
 
     if school_code:
         scope = "school_specific"
-    elif any(term in normalized_blob for term in _SYSTEM_WIDE_DOC_TERMS):
+    elif _contains_any_term(normalized_blob, _SYSTEM_WIDE_DOC_TERMS):
         scope = "system_wide"
     else:
         scope = "general"
 
-    admission_cycle = (
-        _extract_year_from_text(source_name)
-        or _extract_year_from_text(source_url)
-        or _extract_year_from_text(heading_text)
-        or _extract_year_from_text(content)
+    admission_years = _extract_merged_years(
+        source_name,
+        source_url,
+        heading_text,
+        str(content or "")[:1600],
     )
+    admission_cycle = admission_years[-1] if admission_years else None
 
     doc_type = None
-    if any(term in normalized_blob for term in _PERSONNEL_DOC_STRONG_TERMS):
+    if _contains_any_term(normalized_blob, _PERSONNEL_DOC_STRONG_TERMS):
         doc_type = "personnel"
-    elif any(term in normalized_blob for term in _PERSONNEL_DOC_TERMS) and not any(
-        term in normalized_blob for term in _ADMISSION_DOC_TERMS
+    elif _contains_any_term(normalized_blob, _PERSONNEL_DOC_TERMS) and not _contains_any_term(
+        normalized_blob, _ADMISSION_DOC_TERMS
     ):
         doc_type = "personnel"
     else:
         for candidate_doc_type, terms in _DOC_TYPE_HINTS:
-            if any(term in normalized_blob for term in terms):
+            if _contains_any_term(normalized_blob, terms):
                 doc_type = candidate_doc_type
                 break
 
@@ -327,6 +339,7 @@ def infer_document_metadata(
         "school_code": school_code,
         "school_symbol": school_symbol,
         "admission_cycle": admission_cycle,
+        "admission_years": admission_years,
         "scope": scope,
         "doc_type": doc_type or "general",
     }
@@ -383,23 +396,6 @@ def enrich_query_for_current_cycle(query: Optional[str]) -> tuple[str, bool]:
     normalized_query = _normalize_text(raw_query)
     return _build_current_cycle_query(raw_query, normalized_query)
 
-    current_year = dt.datetime.now().year
-    enrichment_terms = []
-
-    current_year_phrase = f"nam {current_year}"
-    if current_year_phrase not in normalized_query:
-        enrichment_terms.append(f"năm {current_year}")
-
-    if "ky tuyen sinh hien tai" not in normalized_query:
-        enrichment_terms.append("kỳ tuyển sinh hiện tại")
-
-    if "tuyen sinh" not in normalized_query:
-        enrichment_terms.append("tuyển sinh")
-
-    enriched_query = " ".join(
-        part for part in [raw_query, *enrichment_terms] if part
-    ).strip()
-    return enriched_query, enriched_query != raw_query
 
 
 def enrich_query_for_primary_school(query: Optional[str]) -> tuple[str, bool]:
@@ -455,7 +451,8 @@ def _load_pdf_registry() -> Dict[str, Dict[str, Any]]:
 
         domain = urlparse(url).netloc.lower()
         authority_bonus, authority_label = _get_source_authority(domain)
-        year = _extract_year_from_text(name) or _extract_year_from_text(url)
+        years = _extract_merged_years(name, url)
+        year = years[-1] if years else None
         inferred_metadata = infer_document_metadata(name, source_url=url)
         current = registry.get(normalized_name)
 
@@ -465,9 +462,11 @@ def _load_pdf_registry() -> Dict[str, Dict[str, Any]]:
             "authority_bonus": authority_bonus,
             "authority_label": authority_label,
             "document_year": year,
+            "document_years": years,
             "school_code": inferred_metadata.get("school_code"),
             "school_symbol": inferred_metadata.get("school_symbol"),
             "admission_cycle": inferred_metadata.get("admission_cycle") or year,
+            "admission_years": inferred_metadata.get("admission_years") or years,
             "scope": inferred_metadata.get("scope"),
             "doc_type": inferred_metadata.get("doc_type"),
         }
@@ -504,15 +503,18 @@ def resolve_source_metadata(source_name: Optional[str]) -> Dict[str, Any]:
 
     authority_bonus, authority_label = _get_source_authority(domain)
     inferred_metadata = infer_document_metadata(raw_source, source_url=raw_source)
+    years = _extract_years_from_text(raw_source)
     return {
         "url": raw_source if domain else None,
         "domain": domain or None,
         "authority_bonus": authority_bonus,
         "authority_label": authority_label,
-        "document_year": _extract_year_from_text(raw_source),
+        "document_year": years[-1] if years else None,
+        "document_years": years,
         "school_code": inferred_metadata.get("school_code"),
         "school_symbol": inferred_metadata.get("school_symbol"),
         "admission_cycle": inferred_metadata.get("admission_cycle"),
+        "admission_years": inferred_metadata.get("admission_years") or years,
         "scope": inferred_metadata.get("scope"),
         "doc_type": inferred_metadata.get("doc_type"),
     }
@@ -535,6 +537,15 @@ def enrich_chunk_source_metadata(chunk: Dict[str, Any]) -> Dict[str, Any]:
         if document_year is not None:
             chunk["document_year"] = document_year
 
+    if not chunk.get("document_years"):
+        document_years = (
+            metadata.get("document_years")
+            or inferred_chunk_metadata.get("admission_years")
+            or _extract_years_from_text(source_name)
+        )
+        if document_years:
+            chunk["document_years"] = document_years
+
     if not chunk.get("source_url") and metadata.get("url"):
         chunk["source_url"] = metadata["url"]
 
@@ -544,6 +555,9 @@ def enrich_chunk_source_metadata(chunk: Dict[str, Any]) -> Dict[str, Any]:
     for field in ("school_code", "school_symbol", "scope", "doc_type"):
         if not chunk.get(field) and inferred_chunk_metadata.get(field):
             chunk[field] = inferred_chunk_metadata[field]
+
+    if not chunk.get("admission_years") and inferred_chunk_metadata.get("admission_years"):
+        chunk["admission_years"] = inferred_chunk_metadata["admission_years"]
 
     admission_cycle = (
         chunk.get("admission_cycle")
@@ -556,6 +570,92 @@ def enrich_chunk_source_metadata(chunk: Dict[str, Any]) -> Dict[str, Any]:
         chunk["admission_cycle"] = admission_cycle
 
     return metadata
+
+
+def _build_filter_candidate_stages(
+    *,
+    school_code: Optional[str],
+    admission_cycle: Optional[int],
+    doc_type: Optional[str],
+    allow_system_wide: bool,
+    exclude_scores_when_doc_type_differs: bool,
+) -> List[Tuple[str, Dict[str, Any]]]:
+    candidate_stages: List[Tuple[str, Dict[str, Any]]] = [
+        (
+            "strict_school_cycle_doc_type",
+            dict(
+                require_school=bool(school_code),
+                require_cycle=bool(admission_cycle),
+                require_doc_type=bool(doc_type),
+                allow_system_scope=False,
+            ),
+        ),
+        (
+            "school_doc_type",
+            dict(
+                require_school=bool(school_code),
+                require_cycle=False,
+                require_doc_type=bool(doc_type),
+                allow_system_scope=False,
+            ),
+        ),
+    ]
+
+    if school_code and doc_type:
+        candidate_stages.append(
+            (
+                "school_only_non_score",
+                dict(
+                    require_school=True,
+                    require_cycle=False,
+                    require_doc_type=False,
+                    allow_system_scope=allow_system_wide,
+                    exclude_score_docs=exclude_scores_when_doc_type_differs,
+                ),
+            )
+        )
+
+    if school_code:
+        candidate_stages.append(
+            (
+                "school_only",
+                dict(
+                    require_school=True,
+                    require_cycle=False,
+                    require_doc_type=False,
+                    allow_system_scope=allow_system_wide,
+                    exclude_score_docs=False,
+                ),
+            )
+        )
+
+    if doc_type:
+        candidate_stages.append(
+            (
+                "doc_type_only",
+                dict(
+                    require_school=False,
+                    require_cycle=False,
+                    require_doc_type=True,
+                    allow_system_scope=False,
+                    exclude_score_docs=False,
+                ),
+            )
+        )
+
+    return candidate_stages
+
+
+def _chunk_covers_year(chunk: Dict[str, Any], target_year: int) -> bool:
+    admission_years = chunk.get("admission_years") or []
+    if isinstance(admission_years, list) and target_year in admission_years:
+        return True
+
+    document_years = chunk.get("document_years") or []
+    if isinstance(document_years, list) and target_year in document_years:
+        return True
+
+    return chunk.get("admission_cycle") == target_year
 
 
 def filter_chunks_by_metadata(
@@ -596,7 +696,7 @@ def filter_chunks_by_metadata(
                     return False
 
         if require_cycle and admission_cycle is not None:
-            if chunk.get("admission_cycle") != admission_cycle:
+            if not _chunk_covers_year(chunk, admission_cycle):
                 return False
 
         if require_doc_type and doc_type:
@@ -608,79 +708,13 @@ def filter_chunks_by_metadata(
 
         return True
 
-    candidate_stages = [
-        (
-            "strict_school_cycle_doc_type",
-            dict(
-                require_school=bool(school_code),
-                require_cycle=bool(admission_cycle),
-                require_doc_type=bool(doc_type),
-                allow_system_scope=False,
-            ),
-        ),
-        (
-            "school_doc_type",
-            dict(
-                require_school=bool(school_code),
-                require_cycle=False,
-                require_doc_type=bool(doc_type),
-                allow_system_scope=False,
-            ),
-        ),
-    ]
-
-    if school_code and doc_type:
-        candidate_stages.append(
-            (
-                "doc_type_only",
-                dict(
-                    require_school=False,
-                    require_cycle=False,
-                    require_doc_type=True,
-                    allow_system_scope=False,
-                    exclude_score_docs=False,
-                ),
-            )
-        )
-        candidate_stages.append(
-            (
-                "school_only_non_score",
-                dict(
-                    require_school=True,
-                    require_cycle=False,
-                    require_doc_type=False,
-                    allow_system_scope=allow_system_wide,
-                    exclude_score_docs=exclude_scores_when_doc_type_differs,
-                ),
-            )
-        )
-
-    if school_code:
-        candidate_stages.append(
-            (
-                "school_only",
-                dict(
-                    require_school=True,
-                    require_cycle=False,
-                    require_doc_type=False,
-                    allow_system_scope=allow_system_wide,
-                    exclude_score_docs=False,
-                ),
-            )
-        )
-    elif doc_type:
-        candidate_stages.append(
-            (
-                "doc_type_only",
-                dict(
-                    require_school=False,
-                    require_cycle=False,
-                    require_doc_type=True,
-                    allow_system_scope=False,
-                    exclude_score_docs=False,
-                ),
-            )
-        )
+    candidate_stages = _build_filter_candidate_stages(
+        school_code=school_code,
+        admission_cycle=admission_cycle,
+        doc_type=doc_type,
+        allow_system_wide=allow_system_wide,
+        exclude_scores_when_doc_type_differs=exclude_scores_when_doc_type_differs,
+    )
 
     for stage_name, stage_kwargs in candidate_stages:
         filtered = [chunk for chunk in chunks if _match(chunk, **stage_kwargs)]
@@ -714,12 +748,15 @@ def compute_priority_adjustment(query: Optional[str], chunk: Dict[str, Any]) -> 
 
     target_year = infer_target_year(query)
     document_year = chunk.get("document_year")
+    admission_years = chunk.get("admission_years") or chunk.get("document_years") or []
     authority_bonus = float(metadata.get("authority_bonus") or 0.0)
     personnel_query = is_personnel_query(query)
     primary_school_query = query_targets_primary_school(query)
 
     year_bonus = 0.0
-    if target_year is not None and document_year is not None:
+    if target_year is not None and isinstance(admission_years, list) and target_year in admission_years:
+        year_bonus = 0.22
+    elif target_year is not None and document_year is not None:
         year_gap = document_year - target_year
         if year_gap == 0:
             year_bonus = 0.22

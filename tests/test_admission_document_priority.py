@@ -113,6 +113,18 @@ def test_infer_document_metadata_marks_org_structure_pdf_as_personnel():
     assert metadata["doc_type"] == "personnel"
 
 
+def test_infer_document_metadata_preserves_multi_year_coverage():
+    metadata = infer_document_metadata(
+        "Tong_hop_diem_chuan_T04_giai_doan_2020_2025.pdf",
+        heading_text="Tong hop diem chuan 2020-2025",
+        content="Du lieu diem chuan cac nam 2020, 2021, 2022, 2023, 2024, 2025.",
+    )
+
+    assert metadata["admission_cycle"] == 2025
+    assert metadata["admission_years"] == [2020, 2021, 2022, 2023, 2024, 2025]
+    assert metadata["doc_type"] == "scores"
+
+
 def test_filter_chunks_by_metadata_prefers_t04_personnel_document():
     query = "hieu truong hien nay la ai"
     chunks = [
@@ -251,3 +263,80 @@ def test_filter_chunks_by_metadata_prefers_eligibility_docs_over_timeline_docs()
 
     assert metadata["applied"] is True
     assert all(chunk.get("doc_type") == "eligibility" for chunk in filtered)
+
+
+def test_filter_chunks_by_metadata_matches_multi_year_score_doc_for_requested_year():
+    query = "diem chuan truong dai hoc an ninh nhan dan 2024"
+    chunks = [
+        {
+            "source_file": "Tong_hop_diem_chuan_T04_2020_2025.pdf",
+            "school_code": "T04",
+            "doc_type": "scores",
+            "scope": "school_specific",
+            "admission_cycle": 2025,
+            "admission_years": [2020, 2021, 2022, 2023, 2024, 2025],
+            "content": "Du lieu diem chuan 2020-2025.",
+        },
+        {
+            "source_file": "Thong_bao_tuyen_sinh_T04_2026.pdf",
+            "school_code": "T04",
+            "doc_type": "methods",
+            "scope": "school_specific",
+            "admission_cycle": 2026,
+            "content": "Phuong thuc tuyen sinh 2026.",
+        },
+    ]
+
+    filtered, metadata = filter_chunks_by_metadata(query, chunks)
+
+    assert metadata["applied"] is True
+    assert metadata["stage"] == "strict_school_cycle_doc_type"
+    assert [chunk["source_file"] for chunk in filtered] == [
+        "Tong_hop_diem_chuan_T04_2020_2025.pdf"
+    ]
+
+
+def test_filter_chunks_by_metadata_prefers_t04_general_doc_before_wrong_school_doc_type_match():
+    query = "diem chuan truong dai hoc an ninh nhan dan 2026"
+    chunks = [
+        {
+            "source_file": "wrong_school_scores.pdf",
+            "school_code": "T05",
+            "doc_type": "scores",
+            "scope": "school_specific",
+            "content": "Diem chuan cua truong khac.",
+        },
+        {
+            "source_file": "t04_general.pdf",
+            "school_code": "T04",
+            "doc_type": "general",
+            "scope": "school_specific",
+            "content": "Thong tin tong hop cua T04.",
+        },
+    ]
+
+    filtered, metadata = filter_chunks_by_metadata(query, chunks)
+
+    assert metadata["applied"] is True
+    assert metadata["stage"] in {"school_only_non_score", "school_only"}
+    assert [chunk["source_file"] for chunk in filtered] == ["t04_general.pdf"]
+
+
+def test_priority_adjustment_treats_multi_year_doc_as_exact_match_for_requested_year():
+    query = "diem chuan truong dai hoc an ninh nhan dan 2024"
+    multi_year_chunk = {
+        "source_file": "Tong_hop_diem_chuan_T04_2020_2025.pdf",
+        "content": "Du lieu diem chuan 2020-2025.",
+        "document_year": 2025,
+        "admission_years": [2020, 2021, 2022, 2023, 2024, 2025],
+    }
+    unrelated_newer_chunk = {
+        "source_file": "Thong_bao_tuyen_sinh_T04_2026.pdf",
+        "content": "Thong bao tuyen sinh nam 2026.",
+        "document_year": 2026,
+        "doc_type": "methods",
+    }
+
+    assert compute_priority_adjustment(
+        query, multi_year_chunk
+    ) > compute_priority_adjustment(query, unrelated_newer_chunk)

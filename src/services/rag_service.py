@@ -294,7 +294,9 @@ class RAGService:
                 log.warning(f"No chunks found for query: {query}")
                 return []
 
-            hybrid_results, filter_info = filter_chunks_by_metadata(query, hybrid_results)
+            hybrid_results, filter_info = filter_chunks_by_metadata(
+                query, hybrid_results
+            )
             if filter_info.get("applied"):
                 log.info(
                     "Metadata filter applied before rerank: "
@@ -319,9 +321,7 @@ class RAGService:
             # Final ranking
             final_chunks = self._final_ranking(expanded_chunks, query)
             selected_chunks = final_chunks[:top_k]
-            selected_chunks = self._expand_score_source_context(
-                selected_chunks, query
-            )
+            selected_chunks = self._expand_score_source_context(selected_chunks, query)
             return selected_chunks
 
         except Exception as e:
@@ -1260,6 +1260,7 @@ Hướng dẫn:
             page = chunk.get("page_number", "N/A")
             content = chunk.get("content", "").strip()
             document_year = chunk.get("document_year")
+            admission_years = chunk.get("admission_years") or chunk.get("document_years")
             source_url = chunk.get("source_url")
             school_code = chunk.get("school_code")
             school_symbol = chunk.get("school_symbol")
@@ -1270,6 +1271,10 @@ Hướng dẫn:
             metadata_parts = [f"Nguon: {source}", f"Trang: {page}"]
             if document_year:
                 metadata_parts.append(f"Nam tai lieu: {document_year}")
+            if isinstance(admission_years, list) and len(admission_years) > 1:
+                metadata_parts.append(
+                    f"Dai nam bao phu: {admission_years[0]}-{admission_years[-1]}"
+                )
             if admission_cycle and admission_cycle != document_year:
                 metadata_parts.append(f"Chu ky tuyen sinh: {admission_cycle}")
             if school_code:
@@ -1393,10 +1398,11 @@ Response format:
 3. End with: "📄 Reference Documents: please review the official documents displayed by the system."
 
 Mandatory formatting for score-related questions:
-- When the question involves admission/cutoff scores (one or multiple years) → ALWAYS present data as a Markdown table:
+- When the question involves admission/cutoff scores for **multiple years or multiple majors** → present data as a Markdown table:
   | Year | Major/Code | Cutoff Score | Method |
   |------|-----------|-------------|--------|
   | 2023 | ... | ... | ... |
+- When there is only **a single data point** (one major, one year, one method) → a concise inline sentence is preferred over a table.
 - When comparing scores across years → add a Trend column (▲ increase / ▼ decrease / = unchanged) and include a brief trend analysis after the table.
 
 Language: respond entirely in English."""
@@ -1420,10 +1426,11 @@ Chính sách bắt buộc:
 3. Kết thúc bằng: "📄 Tài liệu tham khảo: vui lòng xem các tài liệu chính thức do hệ thống hiển thị."
 
 Quy tắc định dạng bắt buộc cho câu hỏi về điểm số:
-- Khi câu hỏi liên quan đến điểm chuẩn, điểm xét tuyển, điểm trúng tuyển (một hoặc nhiều năm) → BẮT BUỘC trình bày dữ liệu bằng bảng Markdown:
+- Khi câu hỏi liên quan đến điểm chuẩn, điểm xét tuyển, điểm trúng tuyển và có **nhiều năm hoặc nhiều ngành** → trình bày dữ liệu bằng bảng Markdown:
   | Năm | Ngành/Mã ngành | Điểm chuẩn | Phương thức |
   |-----|---------------|-----------|-------------|
   | 2023 | ... | ... | ... |
+- Khi chỉ có **một điểm duy nhất** (một ngành, một năm, một phương thức) → ưu tiên trình bày bằng câu ngắn gọn thay vì bảng.
 - Khi so sánh điểm giữa các năm → thêm cột Xu hướng (▲ tăng / ▼ giảm / = không đổi) và nhận xét xu hướng sau bảng.
 
 Ngôn ngữ: trả lời hoàn toàn bằng tiếng Việt."""
@@ -1458,11 +1465,12 @@ Response style:
 - Do NOT end with a follow-up question directed at the user.
 
 **Mandatory formatting rules for score-related questions:**
-- When the question involves admission scores, benchmark scores, or cutoff scores (one or multiple years) → ALWAYS present data as a Markdown table, e.g.:
+- When the question involves admission scores, benchmark scores, or cutoff scores for **multiple years or multiple majors** → present data as a Markdown table, e.g.:
   | Year | Major/Code | Cutoff Score | Method |
   |------|-----------|-------------|--------|
   | 2023 | ... | ... | ... |
   | 2024 | ... | ... | ... |
+- When there is only **a single data point** (one major, one year, one method) → a concise inline sentence is preferred over a table.
 - When comparing scores across years → add a **Trend** column using: ▲ increase / ▼ decrease / = unchanged, and add a brief trend analysis after the table.
 - When multiple majors or methods exist → use separate tables per group or add classification columns.
 - After any score table, always include 1–2 sentences of trend analysis (e.g., scores trending upward, most competitive major, etc.).
@@ -1507,11 +1515,12 @@ Phong cách trả lời:
 - Không kết thúc bằng câu hỏi ngược lại cho người dùng.
 
 **Quy tắc định dạng bắt buộc cho câu hỏi về điểm số:**
-- Khi câu hỏi liên quan đến điểm chuẩn, điểm xét tuyển, điểm trúng tuyển (của một hoặc nhiều năm) → BẮT BUỘC trình bày dữ liệu dưới dạng bảng Markdown, ví dụ:
+- Khi câu hỏi liên quan đến điểm chuẩn, điểm xét tuyển, điểm trúng tuyển và có **nhiều năm hoặc nhiều ngành** → trình bày dữ liệu dưới dạng bảng Markdown, ví dụ:
   | Năm | Ngành/Mã ngành | Điểm chuẩn | Phương thức |
   |-----|---------------|-----------|-------------|
   | 2023 | ... | ... | ... |
   | 2024 | ... | ... | ... |
+- Khi chỉ có **một điểm duy nhất** (một ngành, một năm, một phương thức) → ưu tiên dùng câu ngắn gọn thay vì bảng.
 - Khi so sánh điểm giữa các năm → thêm cột **Xu hướng** với ký hiệu: ▲ tăng / ▼ giảm / = không đổi, và bổ sung nhận xét ngắn về xu hướng sau bảng.
 - Khi có nhiều ngành/phương thức → dùng bảng riêng cho từng nhóm hoặc thêm cột phân loại.
 - Sau bảng điểm, luôn bổ sung 1–2 câu nhận xét phân tích xu hướng (ví dụ: điểm có xu hướng tăng/ổn định, ngành nào cạnh tranh nhất...).
@@ -1584,9 +1593,7 @@ MAC DINH THEO CHU KY TUYEN SINH HIEN TAI:
 - Khong duoc trinh bay thong tin cua nam 2025 tro ve truoc nhu thong tin hien hanh neu nguoi dung khong hoi ro nam do.
 """
 
-    def _create_timeline_prompt_guidance(
-        self, query: str, language: str = "vi"
-    ) -> str:
+    def _create_timeline_prompt_guidance(self, query: str, language: str = "vi") -> str:
         if infer_query_doc_type(query) != "timeline":
             return ""
 
@@ -1756,7 +1763,7 @@ Instructions:
 - If the user asks about the current admission cycle or does not specify a year, prioritize the newest official year shown in the context (for example 2026).
 - If multiple years appear, use the newest official year as the main basis and mention older years only when comparing them explicitly.
 - Do not answer beyond the evidence in the documents.
-- For admission score / cutoff score / score comparison questions, ALWAYS use a Markdown table.
+- For admission score / cutoff score / score comparison questions with multiple years or majors, use a Markdown table; for a single data point, a concise inline sentence is preferred.
 - When comparing multiple years, use columns such as: Year | Major/Code | Score | Method | Trend.
 - After any score table, add 1-2 short sentences highlighting the trend or key comparison.
 - Structure the answer as: short summary, detailed bullets, reference reminder.
@@ -1787,7 +1794,7 @@ Hướng dẫn:
 - Nếu người dùng hỏi về kỳ tuyển sinh hiện tại hoặc không nêu rõ năm, ưu tiên tài liệu có năm mới nhất trong ngữ cảnh (ví dụ 2026).
 - Nếu trong ngữ cảnh có nhiều năm, dùng tài liệu chính thức mới nhất làm căn cứ chính; chỉ nhắc tài liệu cũ hơn khi cần đối chiếu và phải nêu rõ năm.
 - Không trả lời vượt quá bằng chứng trong tài liệu.
-- Với câu hỏi về điểm chuẩn, điểm xét tuyển, điểm trúng tuyển hoặc so sánh điểm, BẮT BUỘC dùng bảng Markdown.
+- Với câu hỏi về điểm chuẩn, điểm xét tuyển, điểm trúng tuyển có nhiều năm hoặc nhiều ngành, dùng bảng Markdown; nếu chỉ có một điểm duy nhất, ưu tiên câu ngắn gọn thay vì bảng.
 - Khi so sánh nhiều năm, ưu tiên các cột: Năm | Ngành/Mã ngành | Điểm | Phương thức | Xu hướng.
 - Sau bảng điểm, luôn thêm 1-2 câu nhận xét ngắn về xu hướng hoặc điểm nổi bật.
 - Trình bày theo cấu trúc: tóm tắt ngắn, chi tiết theo gạch đầu dòng, nhắc xem tài liệu tham khảo.
@@ -1872,7 +1879,10 @@ Trả lời:"""
                 query, relevant_chunks, language=language
             )
             if structured_answer:
-                return normalize_answer_markdown(structured_answer), remaining_violations
+                return (
+                    normalize_answer_markdown(structured_answer),
+                    remaining_violations,
+                )
 
             return (
                 normalize_answer_markdown(

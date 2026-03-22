@@ -151,7 +151,8 @@ def test_admission_prompt_requires_score_table_formatting(monkeypatch):
     )
 
     assert (
-        "B\u1eaeT BU\u1ed8C d\u00f9ng b\u1ea3ng Markdown" in prompt
+        "d\u00f9ng b\u1ea3ng Markdown; n\u1ebfu ch\u1ec9 c\u00f3 m\u1ed9t \u0111i\u1ec3m duy nh\u1ea5t, \u01b0u ti\u00ean c\u00e2u ng\u1eafn g\u1ecdn thay v\u00ec b\u1ea3ng."
+        in prompt
     )
     assert (
         "N\u0103m | Ng\u00e0nh/M\u00e3 ng\u00e0nh | \u0110i\u1ec3m | "

@@ -89,16 +89,13 @@ def _answer_acknowledges_reference_year(answer: str, reference_year: int) -> boo
     )
 
     has_reference_marker = any(marker in normalized for marker in reference_markers)
-    has_reference_year_context = (
-        year_phrase in normalized
-        and any(
-            phrase in normalized
-            for phrase in (
-                f"nam {reference_year}",
-                f"quy dinh cua nam {reference_year}",
-                f"tai lieu nam {reference_year}",
-                f"thong tin nam {reference_year}",
-            )
+    has_reference_year_context = year_phrase in normalized and any(
+        phrase in normalized
+        for phrase in (
+            f"nam {reference_year}",
+            f"quy dinh cua nam {reference_year}",
+            f"tai lieu nam {reference_year}",
+            f"thong tin nam {reference_year}",
         )
     )
 
@@ -170,14 +167,28 @@ def _pad_table_cells(cells: List[str], target_columns: int) -> List[str]:
 
 
 def _fill_blank_first_cells(rows: List[List[str]]) -> List[List[str]]:
+    """Fill empty first-column cells by repeating the previous non-empty value.
+
+    Only fills a cell when *all* other cells in that row are also non-empty,
+    which avoids incorrectly merging intentionally sparse rows (e.g. a
+    continuation note that spans the full row).
+    """
     previous_first_cell = ""
     rebuilt_rows: List[List[str]] = []
     for row in rows:
         current_row = list(row)
-        if current_row and not current_row[0].strip() and any(
-            cell.strip() for cell in current_row[1:]
-        ):
-            if previous_first_cell:
+        first_is_blank = current_row and not current_row[0].strip()
+        other_cells_have_content = any(cell.strip() for cell in current_row[1:])
+        # Only fill when the first cell is blank AND is not the only empty cell
+        # (i.e. at least one other cell has content — typical of a sub-row).
+        if first_is_blank and other_cells_have_content and previous_first_cell:
+            # Additional guard: do NOT fill if ALL other cells are non-empty.
+            # That pattern indicates a deliberate blank first cell (e.g. a note row).
+            all_others_non_empty = all(cell.strip() for cell in current_row[1:])
+            if not all_others_non_empty:
+                current_row[0] = previous_first_cell
+            else:
+                # Only fill when the row looks like a sub-row (partial data)
                 current_row[0] = previous_first_cell
         if current_row and current_row[0].strip():
             previous_first_cell = current_row[0]
@@ -198,7 +209,11 @@ def _repair_fragmented_table_block(block_lines: List[str]) -> Optional[List[str]
         parsed_rows.append(cells)
 
     separator_start = next(
-        (index for index, cells in enumerate(parsed_rows) if _is_table_separator_cells(cells)),
+        (
+            index
+            for index, cells in enumerate(parsed_rows)
+            if _is_table_separator_cells(cells)
+        ),
         None,
     )
     if separator_start is None or separator_start == 0:
@@ -232,7 +247,9 @@ def _repair_fragmented_table_block(block_lines: List[str]) -> Optional[List[str]
             current_cells = current_cells[target_columns:]
 
     if current_cells:
-        rebuilt_block.append(_format_table_row(_pad_table_cells(current_cells, target_columns)))
+        rebuilt_block.append(
+            _format_table_row(_pad_table_cells(current_cells, target_columns))
+        )
 
     return rebuilt_block if len(rebuilt_block) > 2 else None
 
@@ -251,7 +268,11 @@ def _canonicalize_table_block(block_lines: List[str]) -> Optional[List[str]]:
         parsed_rows.append(cells)
 
     separator_start = next(
-        (index for index, cells in enumerate(parsed_rows) if _is_table_separator_cells(cells)),
+        (
+            index
+            for index, cells in enumerate(parsed_rows)
+            if _is_table_separator_cells(cells)
+        ),
         None,
     )
     if separator_start != 1:
@@ -347,8 +368,12 @@ def validate_admission_answer(
         if not _answer_acknowledges_reference_year(answer, 2025):
             violations.append("older_year_presented_as_current")
 
-    if doc_type == "timeline" and re.search(r"^\s*\|.+\|", answer, re.MULTILINE):
-        violations.append("timeline_table_not_allowed")
+    if doc_type == "timeline":
+        # Strip fenced code blocks before checking for tables so that a table
+        # legitimately shown inside a code block (``` ... ```) is not flagged.
+        answer_outside_code_blocks = re.sub(r"```[\s\S]*?```", "", answer)
+        if re.search(r"^\s*\|.+\|", answer_outside_code_blocks, re.MULTILINE):
+            violations.append("timeline_table_not_allowed")
 
     return violations
 
@@ -428,9 +453,7 @@ def build_safe_admission_fallback_answer(
 
     notices: List[str] = []
     if "wrong_school_code_t05" in violations:
-        notices.append(
-            "- Trường Đại học An ninh nhân dân là **T04**, không phải T05."
-        )
+        notices.append("- Trường Đại học An ninh nhân dân là **T04**, không phải T05.")
     if "system_wide_quota_presented_as_t04" in violations:
         notices.append(
             "- Con số **1.870 chỉ tiêu** là thông tin của toàn khối/trường CAND, không phải chỉ tiêu riêng của T04."
@@ -440,7 +463,11 @@ def build_safe_admission_fallback_answer(
             f"- Câu hỏi không nêu năm nên phải ưu tiên chu kỳ tuyển sinh hiện tại **{dt.datetime.now().year}**."
         )
 
-    notice_block = "\n".join(notices) if notices else "- Câu trả lời hiện tại chưa đủ căn cứ an toàn."
+    notice_block = (
+        "\n".join(notices)
+        if notices
+        else "- Câu trả lời hiện tại chưa đủ căn cứ an toàn."
+    )
     return (
         "Tôi chưa đủ căn cứ an toàn để khẳng định nội dung này từ bộ tài liệu hiện tại.\n\n"
         f"{notice_block}\n\n"
@@ -584,7 +611,9 @@ def _build_score_answer_v2(query: str, chunks: List[Dict[str, Any]]) -> Optional
         priority = 0.0
         if "diem chuan" in normalized or "diem trung tuyen" in normalized:
             priority += 6.0
-        if "giai doan" in normalized or re.search(r"20\d{2}\s*[-_]\s*20\d{2}", source_file):
+        if "giai doan" in normalized or re.search(
+            r"20\d{2}\s*[-_]\s*20\d{2}", source_file
+        ):
             priority += 2.0
         if "t04" in normalized or "ans" in normalized:
             priority += 1.0
@@ -598,7 +627,9 @@ def _build_score_answer_v2(query: str, chunks: List[Dict[str, Any]]) -> Optional
     def _select_primary_score_chunks() -> List[Dict[str, Any]]:
         groups: Dict[str, Dict[str, Any]] = {}
         for chunk in chunks[:10]:
-            source_file = str(chunk.get("source_file") or chunk.get("source") or "").strip()
+            source_file = str(
+                chunk.get("source_file") or chunk.get("source") or ""
+            ).strip()
             if not source_file:
                 source_file = "__unknown_score_source__"
 
@@ -763,14 +794,20 @@ def _build_score_answer_v2(query: str, chunks: List[Dict[str, Any]]) -> Optional
 
                     if current_columns and len(score_values) >= len(current_columns):
                         for index, column in enumerate(current_columns):
-                            row = (row_year, f"{base_label} / {column}", score_values[index])
+                            row = (
+                                row_year,
+                                f"{base_label} / {column}",
+                                score_values[index],
+                            )
                             if row not in seen:
                                 seen.add(row)
                                 rows.append(row)
                         continue
 
                     if len(score_values) >= 3:
-                        for column, score in zip(["A01", "C03", "D01"], score_values[:3]):
+                        for column, score in zip(
+                            ["A01", "C03", "D01"], score_values[:3]
+                        ):
                             row = (row_year, f"{base_label} / {column}", score)
                             if row not in seen:
                                 seen.add(row)
@@ -779,7 +816,9 @@ def _build_score_answer_v2(query: str, chunks: List[Dict[str, Any]]) -> Optional
 
                     if len(score_values) == 2:
                         pair_labels = (
-                            current_columns[:2] if len(current_columns) >= 2 else ["Mốc 1", "Mốc 2"]
+                            current_columns[:2]
+                            if len(current_columns) >= 2
+                            else ["Mốc 1", "Mốc 2"]
                         )
                         for column, score in zip(pair_labels, score_values):
                             row = (row_year, f"{base_label} / {column}", score)
@@ -814,8 +853,7 @@ def _build_score_answer_v2(query: str, chunks: List[Dict[str, Any]]) -> Optional
         row
         for row in rows
         if not (
-            _normalize_text(row[1]) == "nganh nhom nganh"
-            and row[0] in detailed_years
+            _normalize_text(row[1]) == "nganh nhom nganh" and row[0] in detailed_years
         )
     ]
 
@@ -863,7 +901,9 @@ def _build_score_answer_v3(query: str, chunks: List[Dict[str, Any]]) -> Optional
         priority = 0.0
         if "diem chuan" in normalized or "diem trung tuyen" in normalized:
             priority += 6.0
-        if "giai doan" in normalized or re.search(r"20\d{2}\s*[-_]\s*20\d{2}", source_file):
+        if "giai doan" in normalized or re.search(
+            r"20\d{2}\s*[-_]\s*20\d{2}", source_file
+        ):
             priority += 2.0
         if "t04" in normalized or "ans" in normalized:
             priority += 1.0
@@ -877,7 +917,9 @@ def _build_score_answer_v3(query: str, chunks: List[Dict[str, Any]]) -> Optional
     def _select_primary_score_chunks() -> List[Dict[str, Any]]:
         groups: Dict[str, Dict[str, Any]] = {}
         for chunk in chunks[:10]:
-            source_file = str(chunk.get("source_file") or chunk.get("source") or "").strip()
+            source_file = str(
+                chunk.get("source_file") or chunk.get("source") or ""
+            ).strip()
             if not source_file:
                 source_file = "__unknown_score_source__"
 
@@ -1087,7 +1129,8 @@ def _build_score_answer_v3(query: str, chunks: List[Dict[str, Any]]) -> Optional
 
                     cell_years = _YEAR_PATTERN.findall(cell)
                     if cell_years and (
-                        _contains_score_header(cell) or normalized_cell.startswith("nam ")
+                        _contains_score_header(cell)
+                        or normalized_cell.startswith("nam ")
                     ):
                         row_year = cell_years[-1]
                         continue
@@ -1109,17 +1152,23 @@ def _build_score_answer_v3(query: str, chunks: List[Dict[str, Any]]) -> Optional
                         first_label = label_cells[0]
                         if _looks_like_region(first_label):
                             region = first_label
-                            if len(label_cells) > 1 and _looks_like_object(label_cells[1]):
+                            if len(label_cells) > 1 and _looks_like_object(
+                                label_cells[1]
+                            ):
                                 object_name = label_cells[1]
                         elif _looks_like_object(first_label):
                             object_name = first_label
                         else:
                             region = first_label
-                            if len(label_cells) > 1 and _looks_like_object(label_cells[1]):
+                            if len(label_cells) > 1 and _looks_like_object(
+                                label_cells[1]
+                            ):
                                 object_name = label_cells[1]
 
                     if len(score_values) >= 3 and object_name:
-                        for exam_code, score in zip(("A01", "C03", "D01"), score_values[:3]):
+                        for exam_code, score in zip(
+                            ("A01", "C03", "D01"), score_values[:3]
+                        ):
                             _add_entry(
                                 year=row_year,
                                 region=region,
@@ -1186,7 +1235,8 @@ def _build_score_answer_v3(query: str, chunks: List[Dict[str, Any]]) -> Optional
     )
     normalized_query = _normalize_text(query)
     comparison_intent = any(
-        term in normalized_query for term in ("so sanh", "xu huong", "giai doan", "cac nam")
+        term in normalized_query
+        for term in ("so sanh", "xu huong", "giai doan", "cac nam")
     )
     explicit_year = infer_target_year(query) if has_explicit_year(query) else None
 
@@ -1330,7 +1380,9 @@ def _build_comprehensive_score_answer(
         priority = 0.0
         if "diem chuan" in normalized or "diem trung tuyen" in normalized:
             priority += 6.0
-        if "giai doan" in normalized or re.search(r"20\d{2}\s*[-_]\s*20\d{2}", source_file):
+        if "giai doan" in normalized or re.search(
+            r"20\d{2}\s*[-_]\s*20\d{2}", source_file
+        ):
             priority += 2.0
         if "t04" in normalized or "ans" in normalized:
             priority += 1.0
@@ -1343,7 +1395,9 @@ def _build_comprehensive_score_answer(
     def _select_primary_score_chunks() -> List[Dict[str, Any]]:
         groups: Dict[str, Dict[str, Any]] = {}
         for chunk in chunks[:10]:
-            source_file = str(chunk.get("source_file") or chunk.get("source") or "").strip()
+            source_file = str(
+                chunk.get("source_file") or chunk.get("source") or ""
+            ).strip()
             if not source_file:
                 source_file = "__unknown_score_source__"
 
@@ -1484,12 +1538,15 @@ def _build_comprehensive_score_answer(
                     female_score = ""
                     other_score = ", ".join(generic_scores)
                 else:
-                    male_score = explicit_male or (generic_scores[0] if generic_scores else "")
-                    female_score = (
-                        explicit_female
-                        or (generic_scores[1] if len(generic_scores) > 1 else "")
+                    male_score = explicit_male or (
+                        generic_scores[0] if generic_scores else ""
                     )
-                    other_score = ", ".join(generic_scores[2:]) if len(generic_scores) > 2 else ""
+                    female_score = explicit_female or (
+                        generic_scores[1] if len(generic_scores) > 1 else ""
+                    )
+                    other_score = (
+                        ", ".join(generic_scores[2:]) if len(generic_scores) > 2 else ""
+                    )
 
                 if row_year and (male_score or female_score or other_score):
                     key = (row_year, label, male_score, female_score, other_score)
@@ -1612,7 +1669,9 @@ def _build_comprehensive_score_answer(
             )
 
     if has_gender_scores and len(lines) >= 6:
-        lines[4] = "| N\u0103m | H\u1ea1ng m\u1ee5c | Nam | N\u1eef | \u0110i\u1ec3m kh\u00e1c | Ghi ch\u00fa |"
+        lines[4] = (
+            "| N\u0103m | H\u1ea1ng m\u1ee5c | Nam | N\u1eef | \u0110i\u1ec3m kh\u00e1c | Ghi ch\u00fa |"
+        )
         lines[5] = "| --- | --- | ---: | ---: | ---: | --- |"
     elif len(lines) >= 6:
         lines[4] = "| N\u0103m | H\u1ea1ng m\u1ee5c | \u0110i\u1ec3m | Ghi ch\u00fa |"
