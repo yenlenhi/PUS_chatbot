@@ -5,6 +5,8 @@ from src.utils.admission_document_priority import (
     enrich_query_for_primary_school,
     enrich_query_for_current_cycle,
     filter_chunks_by_metadata,
+    infer_document_metadata,
+    infer_query_doc_type,
     infer_target_year,
     is_admission_query,
     is_personnel_query,
@@ -91,6 +93,65 @@ def test_personnel_query_prefers_org_structure_document():
     assert compute_priority_adjustment(query, org_chunk) > compute_priority_adjustment(
         query, generic_chunk
     )
+
+
+def test_personnel_query_maps_to_personnel_doc_type_and_primary_school():
+    query = "hieu truong hien nay la ai"
+
+    assert infer_query_doc_type(query) == "personnel"
+    assert query_targets_primary_school(query) is True
+
+
+def test_infer_document_metadata_marks_org_structure_pdf_as_personnel():
+    metadata = infer_document_metadata(
+        "Co_cau_to_chuc_va_Nhan_su_T04_Cap_nhat_2026.pdf",
+        heading_text="Co cau to chuc va nhan su",
+        content="Ban giam hieu va lanh dao nha truong.",
+    )
+
+    assert metadata["school_code"] == "T04"
+    assert metadata["doc_type"] == "personnel"
+
+
+def test_filter_chunks_by_metadata_prefers_t04_personnel_document():
+    query = "hieu truong hien nay la ai"
+    chunks = [
+        {
+            "source_file": "Co_cau_to_chuc_va_Nhan_su_T04_Cap_nhat_2026.pdf",
+            "heading_text": "Co cau to chuc va nhan su",
+            "content": "Ban giam hieu va lanh dao nha truong.",
+        },
+        {
+            "source_file": "Bai_phat_bieu_tong_ket_2021.pdf",
+            "heading_text": "Phat bieu cua hieu truong",
+            "content": "Noi dung tong ket co nhac den ten hieu truong cu.",
+        },
+    ]
+
+    filtered, info = filter_chunks_by_metadata(query, chunks)
+
+    assert info["applied"] is True
+    assert filtered
+    assert all(chunk.get("doc_type") == "personnel" for chunk in filtered)
+    assert all(chunk.get("school_code") == "T04" for chunk in filtered)
+
+
+def test_priority_adjustment_prefers_newer_personnel_document_over_older_one():
+    query = "hieu truong hien nay la ai"
+    current_year = dt.datetime.now().year
+
+    newer_chunk = {
+        "source_file": f"Co_cau_to_chuc_va_Nhan_su_T04_Cap_nhat_{current_year}.pdf",
+        "content": f"Ban giam hieu va lanh dao nha truong nam {current_year}.",
+    }
+    older_chunk = {
+        "source_file": "Co_cau_to_chuc_va_Nhan_su_T04_2021.pdf",
+        "content": "Ban giam hieu va lanh dao nha truong nam 2021.",
+    }
+
+    assert compute_priority_adjustment(
+        query, newer_chunk
+    ) > compute_priority_adjustment(query, older_chunk)
 
 
 def test_primary_school_enrichment_applies_to_generic_admission_query():

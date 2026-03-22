@@ -1551,6 +1551,7 @@ HUONG DAN BAT BUOC CHO CAU HOI VE CAN BO / LANH DAO / CO CAU TO CHUC:
 - Uu tien tuyet doi cac doan trich co nguon/tieu de lien quan den co cau to chuc, nhan su, ban giam hieu, lanh dao, khoa, phong ban, don vi.
 - Khong mo dau bang cau tu gioi thieu ban than.
 - Khong suy dien cap bac, hoc ham, hoc vi, don vi, thoi diem bo nhiem, hay cac cum nhu "hien nay", "van dang duong nhiem" neu tai lieu khong ghi ro.
+- Neu nhieu tai lieu neu cac ten khac nhau cho cung mot chuc danh, uu tien tai lieu nhan su/co cau to chuc co Nam tai lieu moi nhat hoac co dau hieu cap nhat/moi nhat, va neu ro tai lieu cu chi mang tinh tham khao lich su.
 - Neu cau hoi hoi ve mot nguoi hoac mot chuc danh, trinh bay bang bang Markdown voi cac cot: Ho va ten | Chuc vu | Don vi | Ghi chu.
 - Neu cau hoi hoi ve nhieu can bo hoac co cau don vi, dung bang Markdown voi cac cot: STT | Ho va ten/Don vi | Chuc vu | Ghi chu.
 - Neu tai lieu chi xac nhan duoc mot phan thong tin, neu ro phan nao chua du co so xac nhan tu tai lieu da cung cap.

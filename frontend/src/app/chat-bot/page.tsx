@@ -79,12 +79,13 @@ const extractTableCells = (line: string): string[] | null => {
     body = body.slice(0, -1);
   }
 
-  const cells = body
-    .split('|')
-    .map((cell) => cell.trim())
-    .filter(Boolean);
+  const cells = body.split('|').map((cell) => cell.trim());
+  if (cells.some((cell) => cell.length > 0)) {
+    return cells;
+  }
 
-  return cells.length > 0 ? cells : null;
+  // Preserve explicit blank cells so fragmented rows like "|" + "| Nữ" can be repaired.
+  return stripped.replace(/\|/g, '').trim() === '' ? [''] : null;
 };
 
 const isTableSeparatorCells = (cells: string[]) =>

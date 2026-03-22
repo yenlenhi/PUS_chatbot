@@ -178,6 +178,7 @@ def test_personnel_prompt_requires_doc_grounded_table_formatting():
 
     assert "HUONG DAN BAT BUOC CHO CAU HOI VE CAN BO / LANH DAO / CO CAU TO CHUC" in prompt
     assert "Khong suy dien cap bac" in prompt
+    assert "uu tien tai lieu nhan su/co cau to chuc co Nam tai lieu moi nhat" in prompt
     assert "Ho va ten | Chuc vu | Don vi | Ghi chu" in prompt
 
 

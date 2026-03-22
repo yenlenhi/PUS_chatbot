@@ -41,12 +41,12 @@ const extractTableCells = (line: string): string[] | null => {
     body = body.slice(0, -1);
   }
 
-  const cells = body
-    .split('|')
-    .map((cell) => cell.trim())
-    .filter(Boolean);
+  const cells = body.split('|').map((cell) => cell.trim());
+  if (cells.some((cell) => cell.length > 0)) {
+    return cells;
+  }
 
-  return cells.length > 0 ? cells : null;
+  return stripped.replace(/\|/g, '').trim() === '' ? [''] : null;
 };
 
 const normalizeSnippetForDisplay = (snippet?: string, multiline = false): string => {

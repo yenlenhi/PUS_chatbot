@@ -225,7 +225,7 @@ def query_targets_primary_school(query: Optional[str]) -> bool:
     if any(term in normalized_query for term in _PRIMARY_SCHOOL_TERMS):
         return True
 
-    return is_admission_query(query)
+    return is_admission_query(query) or is_personnel_query(query)
 
 
 def infer_target_year(query: Optional[str]) -> Optional[int]:
@@ -248,6 +248,9 @@ def infer_query_doc_type(query: Optional[str]) -> Optional[str]:
     normalized_query = _normalize_text(query)
     if not normalized_query:
         return None
+
+    if is_personnel_query(query):
+        return "personnel"
 
     for doc_type, terms in _DOC_TYPE_HINTS:
         if any(term in normalized_query for term in terms):
@@ -299,10 +302,17 @@ def infer_document_metadata(
     )
 
     doc_type = None
-    for candidate_doc_type, terms in _DOC_TYPE_HINTS:
-        if any(term in normalized_blob for term in terms):
-            doc_type = candidate_doc_type
-            break
+    if any(term in normalized_blob for term in _PERSONNEL_DOC_STRONG_TERMS):
+        doc_type = "personnel"
+    elif any(term in normalized_blob for term in _PERSONNEL_DOC_TERMS) and not any(
+        term in normalized_blob for term in _ADMISSION_DOC_TERMS
+    ):
+        doc_type = "personnel"
+    else:
+        for candidate_doc_type, terms in _DOC_TYPE_HINTS:
+            if any(term in normalized_blob for term in terms):
+                doc_type = candidate_doc_type
+                break
 
     return {
         "school_code": school_code,
@@ -723,6 +733,15 @@ def compute_priority_adjustment(query: Optional[str], chunk: Dict[str, Any]) -> 
             term in normalized_source for term in _UPDATED_DOC_TERMS
         ):
             personnel_bonus += 0.08
+
+        if document_year is not None:
+            current_year = dt.datetime.now().year
+            if document_year >= current_year:
+                personnel_bonus += 0.18
+            elif document_year == current_year - 1:
+                personnel_bonus += 0.10
+            else:
+                personnel_bonus += max(-0.22, (document_year - current_year) * 0.06)
 
     school_bonus = 0.0
     if primary_school_query:
