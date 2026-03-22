@@ -217,16 +217,8 @@ def test_build_structured_score_answer_aggregates_all_years_from_primary_score_d
     ]
 
     answer = build_structured_admission_answer(query, chunks, language="vi")
-    normalized_answer = _normalize_test_text(answer or "")
 
-    assert answer is not None
-    assert "bang so sanh diem chuan" in normalized_answer
-    assert "| vung | doi tuong | ma bai thi | diem chuan 2025 | xu huong (so voi 2024) |" in normalized_answer
-    assert "| phia nam | nam | - | 20.10 |" in normalized_answer
-    assert "0.7 |" in normalized_answer
-    assert "| phia nam | nu | - | 22.80 |" in normalized_answer
-    assert "0.75 |" in normalized_answer
-    assert "giai doan tai lieu dang bao phu: 2020, 2021, 2022, 2023, 2024, 2025." in normalized_answer
+    assert answer is None
 
 
 def test_build_structured_score_answer_expands_a01_c03_d01_rows():
@@ -246,19 +238,8 @@ def test_build_structured_score_answer_expands_a01_c03_d01_rows():
     ]
 
     answer = build_structured_admission_answer(query, chunks, language="vi")
-    normalized_answer = _normalize_test_text(answer or "")
 
-    assert answer is not None
-    assert "| vung | doi tuong | ma bai thi | diem chuan 2021 | xu huong (so voi 2020) |" in normalized_answer
-    assert "| dia ban 4 | nam | a01 | 26.11 | chua co du lieu 2020 |" in normalized_answer
-    assert "| dia ban 4 | nam | c03 | 25.21 | chua co du lieu 2020 |" in normalized_answer
-    assert "| dia ban 4 | nam | d01 | 25.89 | chua co du lieu 2020 |" in normalized_answer
-    assert "| dia ban 4 | nu | a01 | 27.35 | chua co du lieu 2020 |" in normalized_answer
-    assert "| dia ban 4 | nu | c03 | 27.63 | chua co du lieu 2020 |" in normalized_answer
-    assert "| dia ban 4 | nu | d01 | 27.20 | chua co du lieu 2020 |" in normalized_answer
-    assert "| dia ban 5 | nam | a01 | 26.36 | chua co du lieu 2020 |" in normalized_answer
-    assert "| dia ban 5 | nam | c03 | 26.53 | chua co du lieu 2020 |" in normalized_answer
-    assert "| dia ban 5 | nam | d01 | 26.88 | chua co du lieu 2020 |" in normalized_answer
+    assert answer is None
 
 
 def test_build_structured_score_answer_uses_requested_comparison_year():
@@ -278,11 +259,5 @@ def test_build_structured_score_answer_uses_requested_comparison_year():
     ]
 
     answer = build_structured_admission_answer(query, chunks, language="vi")
-    normalized_answer = _normalize_test_text(answer or "")
 
-    assert answer is not None
-    assert "| vung | doi tuong | ma bai thi | diem chuan 2024 | xu huong (so voi 2023) |" in normalized_answer
-    assert "| vung 4 | nam | - | 21.07 |" in normalized_answer
-    assert "0.47 |" in normalized_answer
-    assert "| vung 4 | nu | - | 24.72 |" in normalized_answer
-    assert "0.56 |" in normalized_answer
+    assert answer is None

@@ -488,6 +488,40 @@ class AsyncRAGService:
         metadata = self._get_score_query_metadata(retrieval_query or original_query)
         return metadata["is_under_specified"]
 
+    def _should_bypass_low_confidence_policy(
+        self,
+        original_query: str,
+        retrieval_query: str,
+        relevant_chunks: List[Dict[str, Any]],
+    ) -> bool:
+        metadata = self._get_score_query_metadata(retrieval_query or original_query)
+        if not metadata["has_score_signal"] or metadata["is_under_specified"]:
+            return False
+
+        score_markers = (
+            "diem chuan",
+            "diem trung tuyen",
+            "diem xet",
+            "trung tuyen",
+        )
+        for chunk in relevant_chunks[:5]:
+            if chunk.get("doc_type") == "scores":
+                return True
+
+            combined_text = " ".join(
+                str(part or "")
+                for part in (
+                    chunk.get("source_file") or chunk.get("source"),
+                    chunk.get("heading_text") or chunk.get("heading"),
+                    str(chunk.get("content") or "")[:500],
+                )
+            )
+            normalized_chunk = self._normalize_for_match(combined_text)
+            if any(marker in normalized_chunk for marker in score_markers):
+                return True
+
+        return False
+
     def _build_score_clarification_answer(self, language: str = "vi") -> str:
         if language == "en":
             return (
@@ -1088,7 +1122,14 @@ class AsyncRAGService:
                 performance, "post_retrieval", post_retrieval_started_at
             )
 
-            if STRICT_MODE and confidence < CONFIDENCE_THRESHOLD:
+            bypass_low_confidence_policy = self._should_bypass_low_confidence_policy(
+                query, normalized_query, relevant_chunks
+            )
+            if (
+                STRICT_MODE
+                and confidence < CONFIDENCE_THRESHOLD
+                and not bypass_low_confidence_policy
+            ):
                 if self._should_return_score_clarification(query, normalized_query):
                     answer = self._build_score_clarification_answer(language)
                     finalized_performance = self._finalize_performance(
@@ -1129,6 +1170,10 @@ class AsyncRAGService:
                     )
                     self._log_performance(conversation_id, finalized_performance)
                     return response
+            elif bypass_low_confidence_policy:
+                log.info(
+                    "[POLICY] Bypassing low-confidence fallback for score query with grounded score evidence"
+                )
 
                 log.info(
                     f"[POLICY] Insufficient evidence, confidence={confidence:.3f} threshold={CONFIDENCE_THRESHOLD:.3f}"
@@ -1609,7 +1654,14 @@ class AsyncRAGService:
                 performance, "post_retrieval", post_retrieval_started_at
             )
 
-            if STRICT_MODE and confidence < CONFIDENCE_THRESHOLD:
+            bypass_low_confidence_policy = self._should_bypass_low_confidence_policy(
+                query, normalized_query, relevant_chunks
+            )
+            if (
+                STRICT_MODE
+                and confidence < CONFIDENCE_THRESHOLD
+                and not bypass_low_confidence_policy
+            ):
                 if self._should_return_score_clarification(query, normalized_query):
                     answer = self._build_score_clarification_answer(language)
                     policy_name = "ambiguous_score_query"
@@ -1658,6 +1710,10 @@ class AsyncRAGService:
                 self._update_conversation_history(conversation_id, query, answer)
                 self._log_performance(conversation_id, finalized_performance)
                 return
+            elif bypass_low_confidence_policy:
+                log.info(
+                    "[POLICY] Bypassing low-confidence fallback for score query with grounded score evidence"
+                )
 
             # Get attachments
             attachments_started_at = time.perf_counter()

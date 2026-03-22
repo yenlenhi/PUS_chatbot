@@ -86,7 +86,7 @@ def _build_fixed_faq_catalog() -> list[Dict[str, Any]]:
             ],
             "answer": """### Chỉ tiêu tuyển sinh năm 2026 vào Trường Đại học An ninh nhân dân (T04)
 
-Theo đúng bảng chỉ tiêu bạn cung cấp, Trường Đại học An ninh nhân dân (T04), ký hiệu trường ANS, tuyển sinh nhóm ngành nghiệp vụ An ninh tại địa bàn phía Nam với tổng 220 chỉ tiêu. Dưới đây là bản tóm lược bám sát nội dung của bảng:
+Thông tin dưới đây tóm lược chỉ tiêu tuyển sinh năm 2026 của Trường Đại học An ninh nhân dân (T04), ký hiệu trường ANS, đối với nhóm ngành nghiệp vụ An ninh tại địa bàn phía Nam:
 
 | Trường/nhóm ngành | Ký hiệu trường | Mã ngành | Địa bàn tuyển sinh | Tổng chỉ tiêu | PT1 Nam | PT1 Nữ | PT2, PT3 Nam | PT2, PT3 Nữ | Tổ hợp xét tuyển | Mã bài thi đánh giá |
 | --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | --- | --- |
@@ -104,7 +104,7 @@ Theo đúng bảng chỉ tiêu bạn cung cấp, Trường Đại học An ninh 
 | Tổ hợp xét tuyển | A00, A01, C03, D01, X02, X03, X04 |
 | Mã bài thi đánh giá | CA1, CA2, CA3, CA4 |
 
-Điểm cần lưu ý là bản trả lời cũ `100 chỉ tiêu` không còn đúng với bảng anh cung cấp. Với FAQ cứng này, hệ thống phải trả theo mốc `220 chỉ tiêu` của T04, đồng thời hiển thị luôn tổ hợp xét tuyển và mã bài thi đánh giá để người xem dễ đối chiếu.""",
+Tóm lại, tổng chỉ tiêu của T04 là `220`, đồng thời áp dụng các tổ hợp xét tuyển và mã bài thi đánh giá như trong bảng trên để bạn tiện đối chiếu.""",
         },
         {
             "key": "exam_codes",

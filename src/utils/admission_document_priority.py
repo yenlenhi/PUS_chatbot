@@ -391,14 +391,15 @@ def enrich_query_for_primary_school(query: Optional[str]) -> tuple[str, bool]:
     normalized_query = _normalize_text(raw_query)
     enrichment_terms = []
 
-    if "truong dai hoc an ninh nhan dan" not in normalized_query:
-        enrichment_terms.append("Truong Dai hoc An ninh Nhan dan")
+    school_missing = "truong dai hoc an ninh nhan dan" not in normalized_query
+    t04_missing = "t04" not in normalized_query
 
-    if "t04" not in normalized_query:
+    if school_missing and t04_missing:
+        enrichment_terms.append("Trường Đại Học An Ninh Nhân Dân T04")
+    elif school_missing:
+        enrichment_terms.append("Trường Đại Học An Ninh Nhân Dân")
+    elif t04_missing:
         enrichment_terms.append("T04")
-
-    if "ans" not in normalized_query:
-        enrichment_terms.append("ANS")
 
     enriched_query = " ".join(
         part for part in [raw_query, *enrichment_terms] if part

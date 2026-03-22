@@ -1555,15 +1555,13 @@ def build_structured_admission_answer(
     doc_type = infer_query_doc_type(query)
     if doc_type == "timeline":
         return _build_timeline_answer(query, chunks)
-    if doc_type == "scores":
-        return _build_score_answer_v3(query, chunks)
 
     return None
 
 
 def should_use_structured_pipeline(query: str) -> bool:
     doc_type = infer_query_doc_type(query)
-    return doc_type in {"quota", "methods", "timeline", "scores", "exam"}
+    return doc_type in {"quota", "methods", "timeline", "exam"}
 
 
 def get_structured_answer_metadata(query: str) -> Dict[str, Any]:

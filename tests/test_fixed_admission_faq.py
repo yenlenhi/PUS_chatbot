@@ -7,7 +7,7 @@ def test_quota_question_returns_fixed_answer_with_intro_and_follow_ups():
     )
 
     assert faq is not None
-    assert "Theo đúng bảng chỉ tiêu bạn cung cấp" in faq["answer"]
+    assert "Thông tin dưới đây tóm lược chỉ tiêu tuyển sinh năm 2026" in faq["answer"]
     assert "220" in faq["answer"]
     assert "A00, A01, C03, D01, X02, X03, X04" in faq["answer"]
     assert "CA1, CA2, CA3, CA4" in faq["answer"]
@@ -19,6 +19,19 @@ def test_quota_question_returns_fixed_answer_with_intro_and_follow_ups():
         "Điều kiện sơ tuyển vào Trường Đại học An Ninh Nhân Dân là gì?"
         in faq["follow_up_questions"]
     )
+
+
+def test_quota_question_answer_does_not_leak_internal_prompt_language():
+    faq = get_fixed_admission_faq(
+        "Chỉ tiêu tuyển sinh vào Trường Đại học An Ninh Nhân Dân?"
+    )
+
+    assert faq is not None
+    assert "bạn cung cấp" not in faq["answer"]
+    assert "bảng anh cung cấp" not in faq["answer"]
+    assert "FAQ cứng" not in faq["answer"]
+    assert "hệ thống phải" not in faq["answer"]
+    assert "bản trả lời cũ" not in faq["answer"]
 
 
 def test_generic_quota_and_combination_query_defaults_to_t04_fixed_answer():

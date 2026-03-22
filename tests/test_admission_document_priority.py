@@ -100,9 +100,9 @@ def test_primary_school_enrichment_applies_to_generic_admission_query():
 
     assert query_targets_primary_school(query)
     assert enriched is True
-    assert "Truong Dai hoc An ninh Nhan dan" in enriched_query
+    assert "Trường Đại Học An Ninh Nhân Dân" in enriched_query
     assert "T04" in enriched_query
-    assert "ANS" in enriched_query
+    assert "ANS" not in enriched_query
 
 
 def test_priority_adjustment_prefers_t04_over_system_wide_or_t05_chunks():
