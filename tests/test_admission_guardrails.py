@@ -9,6 +9,7 @@ from src.utils.admission_answer_guardrails import (
 from src.utils.admission_document_priority import (
     filter_chunks_by_metadata,
     infer_document_metadata,
+    infer_query_doc_type,
 )
 
 
@@ -109,6 +110,24 @@ def test_build_structured_timeline_answer_from_retrieved_chunks():
     assert "15/3/2026" in answer
     assert "25/4/2026" in answer
     assert "30/8/2026" in answer
+
+
+def test_eligibility_query_does_not_use_structured_timeline_pipeline():
+    query = "tieu chuan suc khoe, chinh tri hoac do tuoi"
+    chunks = [
+        {
+            "source_file": "Thong bao tuyen sinh T04 2026.pdf",
+            "heading_text": "Dieu kien du tuyen",
+            "content": (
+                "Tieu chuan suc khoe: dat yeu cau theo quy dinh.\n"
+                "Tieu chuan chinh tri: dam bao theo quy dinh hien hanh.\n"
+                "Do tuoi: trong gioi han quy dinh."
+            ),
+        }
+    ]
+
+    assert infer_query_doc_type(query) == "eligibility"
+    assert build_structured_admission_answer(query, chunks, language="vi") is None
 
 
 def test_normalize_answer_markdown_inserts_blank_lines_around_tables():

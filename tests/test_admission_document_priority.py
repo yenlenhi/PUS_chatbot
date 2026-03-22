@@ -218,3 +218,36 @@ def test_filter_chunks_by_metadata_prefers_method_docs_over_score_docs():
 
     assert metadata["applied"] is True
     assert all(chunk.get("doc_type") == "methods" for chunk in filtered)
+
+
+def test_eligibility_query_maps_to_eligibility_not_timeline():
+    query = "tieu chuan suc khoe, chinh tri hoac do tuoi"
+
+    assert infer_query_doc_type(query) == "eligibility"
+
+
+def test_filter_chunks_by_metadata_prefers_eligibility_docs_over_timeline_docs():
+    query = "tieu chuan suc khoe, chinh tri hoac do tuoi"
+    chunks = [
+        {
+            "source_file": "Thong_bao_tuyen_sinh_T04_2026.pdf",
+            "content": "Tieu chuan suc khoe, ly lich chinh tri va do tuoi doi voi thi sinh du tuyen.",
+            "school_code": "T04",
+            "admission_cycle": dt.datetime.now().year,
+            "doc_type": "eligibility",
+            "scope": "school_specific",
+        },
+        {
+            "source_file": "Thong_bao_tuyen_sinh_T04_2026.pdf",
+            "content": "Moc thoi gian dang ky, xac nhan nhap hoc va nhap hoc.",
+            "school_code": "T04",
+            "admission_cycle": dt.datetime.now().year,
+            "doc_type": "timeline",
+            "scope": "school_specific",
+        },
+    ]
+
+    filtered, metadata = filter_chunks_by_metadata(query, chunks)
+
+    assert metadata["applied"] is True
+    assert all(chunk.get("doc_type") == "eligibility" for chunk in filtered)

@@ -122,6 +122,14 @@ _SYSTEM_WIDE_DOC_TERMS = (
 )
 _QUOTA_QUERY_TERMS = ("chi tieu", "so luong")
 _METHOD_QUERY_TERMS = ("phuong thuc",)
+_ELIGIBILITY_QUERY_TERMS = (
+    "dieu kien",
+    "tieu chuan",
+    "suc khoe",
+    "chinh tri",
+    "do tuoi",
+    "ly lich",
+)
 _TIMELINE_QUERY_TERMS = (
     "moc thoi gian",
     "thoi gian",
@@ -139,6 +147,7 @@ _EXAM_QUERY_TERMS = (
 _DOC_TYPE_HINTS = (
     ("quota", _QUOTA_QUERY_TERMS),
     ("methods", _METHOD_QUERY_TERMS),
+    ("eligibility", _ELIGIBILITY_QUERY_TERMS),
     ("timeline", _TIMELINE_QUERY_TERMS),
     ("scores", _SCORE_QUERY_TERMS),
     ("exam", _EXAM_QUERY_TERMS),
