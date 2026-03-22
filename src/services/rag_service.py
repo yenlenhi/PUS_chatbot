@@ -1607,6 +1607,54 @@ HUONG DAN BAT BUOC CHO CAU HOI VE MOC THOI GIAN:
 - Moi moc can neu ro thoi gian truoc, sau do moi den noi dung hanh dong/ghi chu.
 """
 
+    def _create_grounded_flex_prompt_guidance(
+        self, query: str, language: str = "vi"
+    ) -> str:
+        if not is_admission_query(query):
+            return ""
+
+        if language == "en":
+            return """
+
+GROUNDED ANSWERING FLEXIBILITY:
+- If at least one directly relevant official excerpt is available, answer from the confirmed parts instead of refusing generically.
+- If the evidence only confirms part of the answer, clearly separate the confirmed part from the unconfirmed part.
+- If the latest available excerpt is from an older year, you may still use it as reference, but you must label the year clearly and avoid presenting it as the current cycle by default.
+"""
+
+        return """
+
+HUONG DAN NOI LONG DE TRA LOI LINH HOAT:
+- Neu da co it nhat mot doan trich chinh thuc lien quan truc tiep, hay tra loi phan thong tin xac nhan duoc thay vi tu choi chung chung.
+- Neu bang chung chi xac nhan duoc mot phan, hay tach ro phan da xac nhan va phan chua du co so.
+- Neu doan trich moi nhat hien co thuoc nam cu hon, van duoc phep dung lam tai lieu tham khao, nhung phai neu ro nam va khong trinh bay nhu thong tin hien hanh mac dinh.
+"""
+
+    def _create_table_format_prompt_guidance(
+        self, query: str, language: str = "vi"
+    ) -> str:
+        if infer_query_doc_type(query) not in {"scores", "quota", "methods", "exam"}:
+            return ""
+
+        if language == "en":
+            return """
+
+CANONICAL MARKDOWN TABLE RULES:
+- Keep every table row on a single line.
+- Every row must have exactly the same number of columns as the header.
+- Never leave the first cell blank to imitate merged rows; repeat the region/major/method value on every row.
+- Do not split one header or one row across multiple lines.
+"""
+
+        return """
+
+QUY TAC BANG MARKDOWN CANONICAL:
+- Moi hang trong bang phai nam tren mot dong duy nhat.
+- Moi hang phai co dung so cot nhu hang tieu de.
+- Tuyet doi khong de trong o dau dong de gia lap gop dong; hay lap lai day du gia tri vung/nganh/phuong thuc o moi hang.
+- Khong duoc tach mot hang tieu de hoac mot hang du lieu thanh nhieu dong.
+"""
+
     def _create_primary_school_prompt_guidance(
         self, query: str, language: str = "vi"
     ) -> str:
@@ -1657,6 +1705,12 @@ MAC DINH THEO PHAM VI TRUONG DAI HOC AN NINH NHAN DAN:
         current_cycle_guidance = self._create_current_cycle_prompt_guidance(
             query, language=language
         )
+        grounded_flex_guidance = self._create_grounded_flex_prompt_guidance(
+            query, language=language
+        )
+        table_format_guidance = self._create_table_format_prompt_guidance(
+            query, language=language
+        )
         timeline_guidance = self._create_timeline_prompt_guidance(
             query, language=language
         )
@@ -1667,6 +1721,8 @@ MAC DINH THEO PHAM VI TRUONG DAI HOC AN NINH NHAN DAN:
             guidance
             for guidance in (
                 current_cycle_guidance,
+                grounded_flex_guidance,
+                table_format_guidance,
                 timeline_guidance,
                 primary_school_guidance,
                 personnel_guidance,

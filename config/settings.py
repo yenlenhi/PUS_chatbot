@@ -67,8 +67,9 @@ ADMISSION_ONLY_MODE = os.getenv("ADMISSION_ONLY_MODE", "false").lower() == "true
 STRICT_MODE = os.getenv("STRICT_MODE", "true").lower() == "true"
 
 # Minimum confidence threshold to provide an answer (0.0 - 1.0)
-# If confidence < threshold, bot will return fallback response
-CONFIDENCE_THRESHOLD = float(os.getenv("CONFIDENCE_THRESHOLD", "0.6"))
+# If confidence < threshold AND query is an ambiguous score query, bot returns clarification
+# For non-score queries the bot still attempts to answer using available context
+CONFIDENCE_THRESHOLD = float(os.getenv("CONFIDENCE_THRESHOLD", "0.45"))
 
 # Require source citation in answers
 REQUIRE_SOURCE_CITATION = os.getenv("REQUIRE_SOURCE_CITATION", "true").lower() == "true"
@@ -185,8 +186,8 @@ SIMILARITY_THRESHOLD = float(os.getenv("SIMILARITY_THRESHOLD", "0.35"))
 # ============================================
 # Weight for dense retrieval (0-1), sparse gets (1 - DENSE_WEIGHT)
 DENSE_WEIGHT = float(os.getenv("DENSE_WEIGHT", "0.7"))
-# Minimum similarity score for dense retrieval (increased for accuracy)
-DENSE_SIMILARITY_THRESHOLD = float(os.getenv("DENSE_SIMILARITY_THRESHOLD", "0.5"))
+# Minimum similarity score for dense retrieval (aligned with SIMILARITY_THRESHOLD for better recall)
+DENSE_SIMILARITY_THRESHOLD = float(os.getenv("DENSE_SIMILARITY_THRESHOLD", "0.35"))
 # Minimum BM25 score for sparse retrieval (increased for accuracy)
 SPARSE_SIMILARITY_THRESHOLD = float(os.getenv("SPARSE_SIMILARITY_THRESHOLD", "0.2"))
 RETRIEVAL_INITIAL_K_MULTIPLIER = int(os.getenv("RETRIEVAL_INITIAL_K_MULTIPLIER", "2"))

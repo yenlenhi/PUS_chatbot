@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import type { SourceReference } from '@/types';
 import { getDocumentDisplayName } from '@/lib/documentNames';
+import { normalizeSnippetForDisplay } from '@/lib/markdownTables';
 
 interface DocumentSidebarProps {
   sourceReferences: SourceReference[];
@@ -27,53 +28,6 @@ interface DocumentSidebarProps {
 }
 
 type MergedRef = SourceReference & { all_pages: (number | null)[] };
-
-const TABLE_SEPARATOR_PATTERN = /^:?-{3,}:?$/;
-
-const extractTableCells = (line: string): string[] | null => {
-  const stripped = line.trim();
-  if (!stripped.startsWith('|')) {
-    return null;
-  }
-
-  let body = stripped.slice(1);
-  if (body.endsWith('|')) {
-    body = body.slice(0, -1);
-  }
-
-  const cells = body.split('|').map((cell) => cell.trim());
-  if (cells.some((cell) => cell.length > 0)) {
-    return cells;
-  }
-
-  return stripped.replace(/\|/g, '').trim() === '' ? [''] : null;
-};
-
-const normalizeSnippetForDisplay = (snippet?: string, multiline = false): string => {
-  if (!snippet) {
-    return '';
-  }
-
-  const lines = snippet
-    .replace(/\r\n/g, '\n')
-    .split('\n')
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line) => {
-      const cells = extractTableCells(line);
-      if (cells) {
-        if (cells.every((cell) => TABLE_SEPARATOR_PATTERN.test(cell))) {
-          return '';
-        }
-        return cells.join(' | ');
-      }
-
-      return line.replace(/\|{2,}/g, ' | ').replace(/\s+/g, ' ').trim();
-    })
-    .filter(Boolean);
-
-  return multiline ? lines.join('\n') : lines.join(' ');
-};
 
 const DocumentSidebar: React.FC<DocumentSidebarProps> = ({
   sourceReferences,

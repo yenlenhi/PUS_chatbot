@@ -91,6 +91,31 @@ const extractTableCells = (line: string): string[] | null => {
 const isTableSeparatorCells = (cells: string[]) =>
   cells.length > 0 && cells.every((cell) => TABLE_SEPARATOR_PATTERN.test(cell));
 
+const formatTableRow = (cells: string[]) => `| ${cells.map((cell) => cell.trim()).join(' | ')} |`;
+
+const padTableCells = (cells: string[], targetColumns: number) => {
+  if (cells.length >= targetColumns) {
+    return cells.slice(0, targetColumns);
+  }
+
+  return [...cells, ...Array(targetColumns - cells.length).fill('')];
+};
+
+const fillBlankFirstCells = (rows: string[][]): string[][] => {
+  let previousFirstCell = '';
+
+  return rows.map((row) => {
+    const currentRow = [...row];
+    if (!currentRow[0]?.trim() && currentRow.slice(1).some((cell) => cell.trim()) && previousFirstCell) {
+      currentRow[0] = previousFirstCell;
+    }
+    if (currentRow[0]?.trim()) {
+      previousFirstCell = currentRow[0];
+    }
+    return currentRow;
+  });
+};
+
 const repairFragmentedTableBlock = (blockLines: string[]): string[] | null => {
   const compactLines = blockLines.filter((line) => line.trim());
   if (compactLines.length < 3) {
@@ -138,21 +163,67 @@ const repairFragmentedTableBlock = (blockLines: string[]): string[] | null => {
 
     currentCells = [...currentCells, ...cells];
     while (currentCells.length >= targetColumns) {
-      rebuiltBlock.push(`| ${currentCells.slice(0, targetColumns).join(' | ')} |`);
+      rebuiltBlock.push(formatTableRow(currentCells.slice(0, targetColumns)));
       currentCells = currentCells.slice(targetColumns);
     }
   }
 
   if (currentCells.length > 0) {
-    rebuiltBlock.push(
-      `| ${[
-        ...currentCells,
-        ...Array(targetColumns - currentCells.length).fill(''),
-      ].join(' | ')} |`,
-    );
+    rebuiltBlock.push(formatTableRow(padTableCells(currentCells, targetColumns)));
   }
 
   return rebuiltBlock.length > 2 ? rebuiltBlock : null;
+};
+
+const canonicalizeTableBlock = (blockLines: string[]): string[] | null => {
+  const repairedBlock = repairFragmentedTableBlock(blockLines);
+  const compactLines = (repairedBlock || blockLines).filter((line) => line.trim());
+  if (compactLines.length < 3) {
+    return repairedBlock;
+  }
+
+  const parsedRows: string[][] = [];
+  for (const line of compactLines) {
+    const cells = extractTableCells(line);
+    if (!cells) {
+      return repairedBlock;
+    }
+    parsedRows.push(cells);
+  }
+
+  const separatorStart = parsedRows.findIndex((cells) => isTableSeparatorCells(cells));
+  if (separatorStart !== 1) {
+    return repairedBlock;
+  }
+
+  const targetColumns = parsedRows[0].length;
+  if (targetColumns < 2) {
+    return repairedBlock;
+  }
+
+  const headerCells = padTableCells(parsedRows[0], targetColumns);
+  const separatorCells = padTableCells(parsedRows[1], targetColumns).map((cell) =>
+    TABLE_SEPARATOR_PATTERN.test(cell) ? cell : '---',
+  );
+
+  const rebuiltBlock = [
+    formatTableRow(headerCells),
+    formatTableRow(separatorCells),
+  ];
+
+  const canonicalRows = fillBlankFirstCells(
+    parsedRows.slice(2).map((cells) => padTableCells(cells, targetColumns)),
+  );
+
+  for (const cells of canonicalRows) {
+    if (isTableSeparatorCells(cells)) {
+      continue;
+    }
+
+    rebuiltBlock.push(formatTableRow(cells));
+  }
+
+  return rebuiltBlock.length > 2 ? rebuiltBlock : repairedBlock;
 };
 
 const repairFragmentedTableBlocks = (lines: string[]): string[] => {
@@ -174,7 +245,7 @@ const repairFragmentedTableBlocks = (lines: string[]): string[] => {
         index += 1;
       }
 
-      rebuiltLines.push(...(repairFragmentedTableBlock(block) || block));
+      rebuiltLines.push(...(canonicalizeTableBlock(block) || block));
       continue;
     }
 

@@ -66,6 +66,20 @@ def test_validate_admission_answer_flags_wrong_t05_and_systemwide_quota():
     assert "system_wide_quota_presented_as_t04" in violations
 
 
+def test_validate_admission_answer_flags_t01_or_anh_for_t04_identity_queries():
+    query = "thong tin ve truong dai hoc an ninh nhan dan"
+    answer = (
+        "Ten truong: Truong Dai hoc An ninh Nhan dan. "
+        "Ky hieu truong: ANH. "
+        "Ma truong: T01. "
+        "Don vi nay la Hoc vien An ninh Nhan dan."
+    )
+
+    violations = validate_admission_answer(query, answer)
+
+    assert "wrong_school_identity_t01_or_anh" in violations
+
+
 def test_validate_admission_answer_flags_2025_for_implicit_current_cycle():
     query = "moc thoi gian dang ky va nhap hoc"
     answer = "Nam 2025, thoi gian dang ky du tuyen bat dau tu thang 3."
@@ -238,7 +252,31 @@ def test_normalize_answer_markdown_repairs_fragmented_table_with_blank_leading_c
     )
     assert "| :--- | :--- | :---: | :---: | :---: |" in normalized
     assert "| Vung 4 (Nam Trung Bo) | Nam | 21.07 | 22.68 | Tang |" in normalized
-    assert "|  | Nu | 24.72 | 26.05 | Tang |" in normalized
+    assert "| Vung 4 (Nam Trung Bo) | Nu | 24.72 | 26.05 | Tang |" in normalized
+
+
+def test_normalize_answer_markdown_repairs_score_comparison_table_with_year_columns():
+    raw_answer = (
+        "Bang so sanh chi tiet diem chuan (2023 - 2025)\n"
+        "Duoi day la bang tong hop diem chuan:\n\n"
+        "| Vung tuyen sinh\n\n"
+        "| Gioi tinh | Nam 2023 | Nam 2024 | Nam 2025 | Xu huong (2024-2025) |\n\n"
+        "| :---\n\n"
+        "| :--- | :--- | :--- | :--- | :--- |\n\n"
+        "| Vung 4 (Nam Trung Bo)\n\n"
+        "| Nam | 20.60 | 21.07 | 22.68 | Tang |\n\n"
+        "|\n\n"
+        "| Nu | 24.16 | 24.21 | 26.05 | Tang |"
+    )
+
+    normalized = normalize_answer_markdown(raw_answer)
+
+    assert (
+        "| Vung tuyen sinh | Gioi tinh | Nam 2023 | Nam 2024 | Nam 2025 | Xu huong (2024-2025) |"
+        in normalized
+    )
+    assert "| Vung 4 (Nam Trung Bo) | Nam | 20.60 | 21.07 | 22.68 | Tang |" in normalized
+    assert "| Vung 4 (Nam Trung Bo) | Nu | 24.16 | 24.21 | 26.05 | Tang |" in normalized
 
 
 def test_build_reference_year_bridge_answer_adds_current_cycle_disclaimer():

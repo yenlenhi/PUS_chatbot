@@ -157,6 +157,8 @@ def test_admission_prompt_requires_score_table_formatting(monkeypatch):
         "N\u0103m | Ng\u00e0nh/M\u00e3 ng\u00e0nh | \u0110i\u1ec3m | "
         "Ph\u01b0\u01a1ng th\u1ee9c | Xu h\u01b0\u1edbng." in prompt
     )
+    assert "QUY TAC BANG MARKDOWN CANONICAL" in prompt
+    assert "Tuyet doi khong de trong o dau dong de gia lap gop dong" in prompt
 
 
 def test_frontend_next_config_disables_production_browser_source_maps():
@@ -195,6 +197,8 @@ def test_implicit_admission_timeline_prompt_defaults_to_current_cycle():
     assert "MAC DINH THEO CHU KY TUYEN SINH HIEN TAI" in prompt
     assert f"nam {dt.datetime.now().year}" in prompt
     assert "Khong duoc trinh bay thong tin cua nam 2025 tro ve truoc" in prompt
+    assert "HUONG DAN NOI LONG DE TRA LOI LINH HOAT" in prompt
+    assert "Neu da co it nhat mot doan trich chinh thuc lien quan truc tiep" in prompt
     assert "HUONG DAN BAT BUOC CHO CAU HOI VE MOC THOI GIAN" in prompt
     assert "Tuyet doi khong dung bang Markdown" in prompt
 

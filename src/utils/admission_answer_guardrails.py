@@ -159,6 +159,32 @@ def _is_table_separator_cells(cells: List[str]) -> bool:
     return bool(cells) and all(_TABLE_SEPARATOR_PATTERN.match(cell) for cell in cells)
 
 
+def _format_table_row(cells: List[str]) -> str:
+    return "| " + " | ".join(cell.strip() for cell in cells) + " |"
+
+
+def _pad_table_cells(cells: List[str], target_columns: int) -> List[str]:
+    if len(cells) >= target_columns:
+        return cells[:target_columns]
+    return cells + [""] * (target_columns - len(cells))
+
+
+def _fill_blank_first_cells(rows: List[List[str]]) -> List[List[str]]:
+    previous_first_cell = ""
+    rebuilt_rows: List[List[str]] = []
+    for row in rows:
+        current_row = list(row)
+        if current_row and not current_row[0].strip() and any(
+            cell.strip() for cell in current_row[1:]
+        ):
+            if previous_first_cell:
+                current_row[0] = previous_first_cell
+        if current_row and current_row[0].strip():
+            previous_first_cell = current_row[0]
+        rebuilt_rows.append(current_row)
+    return rebuilt_rows
+
+
 def _repair_fragmented_table_block(block_lines: List[str]) -> Optional[List[str]]:
     compact_lines = [line for line in block_lines if line.strip()]
     if len(compact_lines) < 3:
@@ -201,16 +227,60 @@ def _repair_fragmented_table_block(block_lines: List[str]) -> Optional[List[str]
         if _is_table_separator_cells(cells):
             return None
         current_cells.extend(cells)
-        if len(current_cells) == target_columns:
-            rebuilt_block.append("| " + " | ".join(current_cells) + " |")
-            current_cells = []
-        elif len(current_cells) > target_columns:
-            return None
+        while len(current_cells) >= target_columns:
+            rebuilt_block.append(_format_table_row(current_cells[:target_columns]))
+            current_cells = current_cells[target_columns:]
 
     if current_cells:
-        return None
+        rebuilt_block.append(_format_table_row(_pad_table_cells(current_cells, target_columns)))
 
     return rebuilt_block if len(rebuilt_block) > 2 else None
+
+
+def _canonicalize_table_block(block_lines: List[str]) -> Optional[List[str]]:
+    repaired_block = _repair_fragmented_table_block(block_lines)
+    compact_lines = [line for line in (repaired_block or block_lines) if line.strip()]
+    if len(compact_lines) < 3:
+        return repaired_block
+
+    parsed_rows: List[List[str]] = []
+    for line in compact_lines:
+        cells = _extract_table_cells(line)
+        if not cells:
+            return repaired_block
+        parsed_rows.append(cells)
+
+    separator_start = next(
+        (index for index, cells in enumerate(parsed_rows) if _is_table_separator_cells(cells)),
+        None,
+    )
+    if separator_start != 1:
+        return repaired_block
+
+    target_columns = len(parsed_rows[0])
+    if target_columns < 2:
+        return repaired_block
+
+    header_cells = _pad_table_cells(parsed_rows[0], target_columns)
+    separator_cells = [
+        cell if _TABLE_SEPARATOR_PATTERN.match(cell) else "---"
+        for cell in _pad_table_cells(parsed_rows[1], target_columns)
+    ]
+
+    rebuilt_block = [
+        _format_table_row(header_cells),
+        _format_table_row(separator_cells),
+    ]
+
+    canonical_rows = _fill_blank_first_cells(
+        [_pad_table_cells(cells, target_columns) for cells in parsed_rows[2:]]
+    )
+    for cells in canonical_rows:
+        if _is_table_separator_cells(cells):
+            continue
+        rebuilt_block.append(_format_table_row(cells))
+
+    return rebuilt_block if len(rebuilt_block) > 2 else repaired_block
 
 
 def _repair_fragmented_table_blocks(lines: List[str]) -> List[str]:
@@ -229,8 +299,7 @@ def _repair_fragmented_table_blocks(lines: List[str]) -> List[str]:
                 block.append(candidate)
                 index += 1
 
-            repaired = _repair_fragmented_table_block(block)
-            rebuilt_lines.extend(repaired or block)
+            rebuilt_lines.extend(_canonicalize_table_block(block) or block)
             continue
 
         rebuilt_lines.append(current_line)
@@ -248,6 +317,17 @@ def validate_admission_answer(
 
     if query_targets_primary_school(query) and re.search(r"\bt05\b", normalized_answer):
         violations.append("wrong_school_code_t05")
+
+    if query_targets_primary_school(query):
+        wrong_t01_markers = (
+            "hoc vien an ninh nhan dan",
+            "ma truong t01",
+            "ma truong la t01",
+            "ky hieu truong anh",
+            "ky hieu truong la anh",
+        )
+        if any(marker in normalized_answer for marker in wrong_t01_markers):
+            violations.append("wrong_school_identity_t01_or_anh")
 
     compact_answer = normalized_answer.replace(" ", "")
     if query_targets_primary_school(query) and (
@@ -303,6 +383,8 @@ Rules:
 - If the available documents only confirm older-year information such as 2025, you may still answer using that material as reference, but you must label it clearly as reference/temporary basis and state that 2026 depends on the latest official guidance.
 - If the documents are insufficient, state that clearly instead of guessing.
 - Prefer Markdown tables for quota, methods, and score questions.
+- When you use a Markdown table, keep each row on a single line and keep the same number of columns in every row.
+- Never leave the first cell blank to imitate merged rows; repeat the row label in every row.
 - For timeline questions, do NOT use Markdown tables; use short bullets or numbered items instead.
 """
 
@@ -328,6 +410,8 @@ Yêu cầu bắt buộc:
 - Nếu tài liệu hiện có mới xác nhận đến năm cũ như 2025, vẫn được phép trả lời theo hướng tham khảo gần nhất, nhưng phải nói thật rõ đây là căn cứ tham khảo/tạm thời và việc áp dụng cho 2026 phụ thuộc hướng dẫn chính thức mới nhất.
 - Nếu tài liệu không đủ căn cứ, phải nói rõ là chưa đủ căn cứ thay vì suy đoán.
 - Với câu hỏi về chỉ tiêu, phương thức, điểm số, ưu tiên trình bày bằng bảng Markdown.
+- Khi dùng bảng Markdown, mỗi hàng phải nằm trên một dòng duy nhất và mọi hàng phải có cùng số cột như hàng tiêu đề.
+- Tuyệt đối không để trống ô đầu dòng để giả lập gộp dòng; hãy lặp lại nhãn dòng ở mọi hàng.
 - Với câu hỏi về mốc thời gian, tuyệt đối không dùng bảng Markdown; hãy trình bày theo gạch đầu dòng hoặc danh sách đánh số.
 """
 

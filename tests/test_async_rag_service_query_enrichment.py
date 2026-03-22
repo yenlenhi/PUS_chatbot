@@ -123,3 +123,26 @@ def test_personnel_query_with_org_structure_chunk_bypasses_low_confidence_policy
     )
 
     assert should_bypass is True
+
+
+def test_timeline_query_with_grounded_timeline_chunk_bypasses_low_confidence_policy():
+    service = AsyncRAGService()
+
+    should_bypass = service._should_bypass_low_confidence_policy(
+        "toi muon biet moc thoi gian dang ky va xac nhan nhap hoc",
+        "toi muon biet moc thoi gian dang ky va xac nhan nhap hoc",
+        [
+            {
+                "source_file": "Thong_bao_tuyen_sinh_T04_2026.pdf",
+                "heading_text": "Moc thoi gian dang ky va nhap hoc",
+                "content": (
+                    "Dang ky du tuyen tu 15/3/2026 den 25/4/2026. "
+                    "Xac nhan nhap hoc truoc 30/8/2026."
+                ),
+                "doc_type": "timeline",
+                "school_code": "T04",
+            }
+        ],
+    )
+
+    assert should_bypass is True

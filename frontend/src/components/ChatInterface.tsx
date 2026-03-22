@@ -11,6 +11,7 @@ import FeedbackButtons from './FeedbackButtons';
 import AttachmentList from './chat/AttachmentList';
 import { SSEParser } from '@/utils/sseUtils';
 import { ProcessingSteps, MessageSkeleton } from './chat/LoadingStates';
+import { normalizeMarkdownTables } from '@/lib/markdownTables';
 
 const ChatInterface = () => {
   const [conversationId] = useState(() => `web-chat-${Date.now()}`);
@@ -268,7 +269,10 @@ ${source.content ? `📝 Nội dung liên quan:\n${source.content.substring(0, 3
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-6 space-y-6">
-        {messages.map((message) => (
+        {messages.map((message) => {
+          const renderedContent = normalizeMarkdownTables(message.content || '');
+
+          return (
           <div key={message.id} className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
             <div className={`max-w-[85%] p-4 rounded-lg shadow-sm ${message.sender === 'user' ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-800'}`}>
               <div className="flex items-start space-x-3">
@@ -284,9 +288,9 @@ ${source.content ? `📝 Nội dung liên quan:\n${source.content.substring(0, 3
                 {message.sender === 'user' && <User className="w-5 h-5 mt-0.5 flex-shrink-0" />}
                 <div className="flex-1 min-w-0">
                   <div className="text-sm markdown-body leading-relaxed">
-                    {message.content ? (
+                    {renderedContent ? (
                       <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                        {message.content}
+                        {renderedContent}
                       </ReactMarkdown>
                     ) : message.isStreaming ? (
                       <div className="flex items-center space-x-2 text-gray-500 italic">
@@ -335,7 +339,8 @@ ${source.content ? `📝 Nội dung liên quan:\n${source.content.substring(0, 3
               </div>
             </div>
           </div>
-        ))}
+          );
+        })}
 
         {/* Enhanced Processing Steps - shows during streaming with no content yet */}
         {isTyping && !currentStreamingContent && streamingStatus && (

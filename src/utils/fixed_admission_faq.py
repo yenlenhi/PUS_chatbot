@@ -49,6 +49,69 @@ _SYSTEM_WIDE_TERMS = (
     "toan nganh cong an",
     "bo cong an",
 )
+_TITLE_LOOKUP_EXCLUDED_TERMS = (
+    "quyen han",
+    "tham quyen",
+    "nhiem vu",
+    "chuc nang",
+    "vai tro",
+    "trach nhiem",
+    "bo nhiem",
+    "quy che",
+    "quy dinh",
+)
+_OVERVIEW_EXCLUDED_TERMS = (
+    "chi tieu",
+    "phuong thuc",
+    "diem chuan",
+    "diem xet",
+    "diem trung tuyen",
+    "moc thoi gian",
+    "thoi gian tuyen sinh",
+    "bai thi danh gia",
+    "cau truc de thi",
+)
+
+
+def _is_short_title_lookup(normalized_query: str, title: str) -> bool:
+    if title not in normalized_query:
+        return False
+
+    if any(term in normalized_query for term in _TITLE_LOOKUP_EXCLUDED_TERMS):
+        return False
+
+    if normalized_query == title:
+        return True
+
+    allowed_context_terms = {
+        "ai",
+        "la",
+        "cua",
+        "nha",
+        "truong",
+        "dai",
+        "hoc",
+        "an",
+        "ninh",
+        "nhan",
+        "dan",
+        "t04",
+        "ans",
+        "hien",
+        "nay",
+        "thong",
+        "tin",
+        "ve",
+        "cho",
+        "toi",
+        "biet",
+        "xin",
+    }
+    tokens = normalized_query.split()
+    title_tokens = set(title.split())
+    return len(tokens) <= 10 and all(
+        token in allowed_context_terms or token in title_tokens for token in tokens
+    )
 
 
 def _targets_primary_school_default(normalized_query: str) -> bool:
@@ -76,6 +139,40 @@ def _is_primary_school_quota_query(normalized_query: str) -> bool:
     )
 
 
+def _is_primary_school_overview_query(normalized_query: str) -> bool:
+    if not _targets_primary_school_default(normalized_query):
+        return False
+
+    if any(term in normalized_query for term in _OVERVIEW_EXCLUDED_TERMS):
+        return False
+
+    padded_query = f" {normalized_query} "
+    if any(
+        marker in padded_query
+        for marker in (
+            " hieu truong ",
+            " pho hieu truong ",
+            " ban giam hieu ",
+        )
+    ):
+        return False
+
+    return any(
+        term in normalized_query
+        for term in (
+            "gioi thieu truong",
+            "gioi thieu ve truong",
+            "thong tin ve truong",
+            "thong tin co ban",
+            "truong dai hoc an ninh nhan dan la truong nao",
+            "ma truong",
+            "ky hieu truong",
+            "dia chi truong",
+            "co quan chu quan",
+        )
+    )
+
+
 def _is_primary_school_rector_query(normalized_query: str) -> bool:
     if not _targets_primary_school_default(normalized_query):
         return False
@@ -85,6 +182,9 @@ def _is_primary_school_rector_query(normalized_query: str) -> bool:
         for term in ("pho hieu truong", "hieu pho", "ban giam hieu")
     ):
         return False
+
+    if _is_short_title_lookup(normalized_query, "hieu truong"):
+        return True
 
     return any(
         term in normalized_query
@@ -125,6 +225,28 @@ def _is_primary_school_leadership_query(normalized_query: str) -> bool:
 
 def _build_fixed_faq_catalog() -> list[Dict[str, Any]]:
     return [
+        {
+            "key": "school_overview_t04",
+            "question": "Thong tin co ban ve Truong Dai hoc An ninh Nhan dan la gi?",
+            "match": _is_primary_school_overview_query,
+            "sources": [
+                "Thong tin nhan dien chinh thuc cua Truong Dai hoc An ninh Nhan dan",
+            ],
+            "follow_up_questions": [
+                "Ma truong tuyen sinh cua Truong la gi?",
+                "Dia chi cua Truong o dau?",
+                "Toi muon biet them ve chi tieu tuyen sinh cua Truong.",
+            ],
+            "answer": """### Thông tin cơ bản về Trường Đại học An ninh Nhân dân
+
+- **Tên trường:** Trường Đại học An ninh Nhân dân.
+- **Mã trường tuyển sinh:** **T04**.
+- **Ký hiệu trường:** **ANS**.
+- **Cơ quan chủ quản:** **Bộ Công an**.
+- **Địa chỉ:** **Km 18, Xa lộ Hà Nội, phường Linh Trung, thành phố Thủ Đức, Thành phố Hồ Chí Minh**.
+
+Lưu ý để tránh nhầm lẫn: **T04 / ANS** là thông tin của **Trường Đại học An ninh Nhân dân**. Các ký hiệu như **T01 / ANH** thuộc đơn vị khác, không phải Trường Đại học An ninh Nhân dân.""",
+        },
         {
             "key": "rector_t04",
             "question": "Ai là Hiệu trưởng Trường Đại học An ninh Nhân dân?",

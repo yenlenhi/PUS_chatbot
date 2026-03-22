@@ -22,6 +22,7 @@ from src.utils.admission_document_priority import (
     enrich_query_for_primary_school,
     infer_query_doc_type,
     is_personnel_query,
+    query_targets_primary_school,
 )
 from src.utils.admission_answer_guardrails import (
     build_answer_repair_prompt,
@@ -208,9 +209,11 @@ class AsyncRAGService:
         answer_override: Optional[str] = None,
     ) -> Dict[str, Any]:
         return {
-            "answer": answer_override
-            if answer_override is not None
-            else self.scope_service.build_policy_answer(policy, language),
+            "answer": (
+                answer_override
+                if answer_override is not None
+                else self.scope_service.build_policy_answer(policy, language)
+            ),
             "follow_up_questions": [],
             "sources": sources or [],
             "source_references": source_references or [],
@@ -241,12 +244,14 @@ class AsyncRAGService:
             # Fixed FAQ responses short-circuit before the normal engagement stage,
             # so fall back to the shared deterministic follow-up generator when
             # no curated suggestions are provided in the FAQ catalog.
-            follow_up_questions = self.rag_service.generate_structured_follow_up_questions(
-                query,
-                answer,
-                language=language,
-                sources=sources,
-                attachments=[],
+            follow_up_questions = (
+                self.rag_service.generate_structured_follow_up_questions(
+                    query,
+                    answer,
+                    language=language,
+                    sources=sources,
+                    attachments=[],
+                )
             )
         confidence = faq.get("confidence", 0.98)
 
@@ -344,7 +349,10 @@ class AsyncRAGService:
             or "nganh" in normalized
         )
         is_under_specified = (
-            has_score_signal and token_count <= 5 and not has_year and not has_major_hint
+            has_score_signal
+            and token_count <= 5
+            and not has_year
+            and not has_major_hint
         )
         needs_synonym_expansion = has_score_signal and (
             has_generic_score_term or (token_count <= 5 and not has_explicit_score_term)
@@ -608,6 +616,11 @@ class AsyncRAGService:
         ):
             return True
 
+        if self._has_grounded_reference_evidence(
+            original_query, retrieval_query, relevant_chunks
+        ):
+            return True
+
         metadata = self._get_score_query_metadata(retrieval_query or original_query)
         if not metadata["has_score_signal"] or metadata["is_under_specified"]:
             return False
@@ -636,19 +649,94 @@ class AsyncRAGService:
 
         return False
 
+    def _has_grounded_reference_evidence(
+        self,
+        original_query: str,
+        retrieval_query: str,
+        relevant_chunks: List[Dict[str, Any]],
+    ) -> bool:
+        query_doc_type = infer_query_doc_type(retrieval_query or original_query)
+        if query_doc_type not in {
+            "timeline",
+            "methods",
+            "quota",
+            "eligibility",
+            "exam",
+        }:
+            return False
+
+        doc_type_markers = {
+            "timeline": (
+                "moc thoi gian",
+                "thoi gian",
+                "dang ky",
+                "xac nhan nhap hoc",
+                "nhap hoc",
+                "chieu sinh",
+            ),
+            "methods": (
+                "phuong thuc",
+                "pt1",
+                "pt2",
+                "pt3",
+                "xet tuyen",
+            ),
+            "quota": ("chi tieu", "so luong"),
+            "eligibility": (
+                "dieu kien",
+                "tieu chuan",
+                "suc khoe",
+                "chinh tri",
+                "do tuoi",
+                "ly lich",
+            ),
+            "exam": (
+                "ma bai thi",
+                "bai thi danh gia",
+                "cau truc de thi",
+                "cau truc bai thi",
+            ),
+        }
+        require_t04 = query_targets_primary_school(original_query)
+
+        for chunk in relevant_chunks[:5]:
+            school_code = chunk.get("school_code")
+            if require_t04 and school_code and school_code != "T04":
+                continue
+
+            if chunk.get("doc_type") == query_doc_type:
+                return True
+
+            combined_text = " ".join(
+                str(part or "")
+                for part in (
+                    chunk.get("source_file") or chunk.get("source"),
+                    chunk.get("heading_text") or chunk.get("heading"),
+                    str(chunk.get("content") or "")[:500],
+                )
+            )
+            normalized_chunk = self._normalize_for_match(combined_text)
+            if any(
+                marker in normalized_chunk
+                for marker in doc_type_markers[query_doc_type]
+            ):
+                return True
+
+        return False
+
     def _build_score_clarification_answer(self, language: str = "vi") -> str:
         if language == "en":
             return (
                 "Do you want the admission cutoff score for a specific year or major? "
-                "For example: \"admission cutoff score 2025\" or "
-                "\"cybersecurity cutoff score 2025\". If you want, I can also provide "
+                'For example: "admission cutoff score 2025" or '
+                '"cybersecurity cutoff score 2025". If you want, I can also provide '
                 "the latest cutoff score available in the official documents."
             )
 
         return (
             "Bạn muốn tra điểm chuẩn tuyển sinh theo năm nào hoặc ngành nào? "
-            "Ví dụ: \"điểm chuẩn tuyển sinh 2025\" hoặc "
-            "\"điểm chuẩn ngành An ninh mạng năm 2025\". Nếu cần, tôi cũng có thể "
+            'Ví dụ: "điểm chuẩn tuyển sinh 2025" hoặc '
+            '"điểm chuẩn ngành An ninh mạng năm 2025". Nếu cần, tôi cũng có thể '
             "cung cấp điểm chuẩn gần nhất đang có trong tài liệu chính thức."
         )
 
@@ -787,8 +875,7 @@ class AsyncRAGService:
             r"\b(phuong thuc do|nganh do|truong do|mon do)\b",
         ]
         if any(
-            re.search(pattern, normalized_query)
-            for pattern in short_followup_patterns
+            re.search(pattern, normalized_query) for pattern in short_followup_patterns
         ):
             return True
 
@@ -799,7 +886,10 @@ class AsyncRAGService:
 
     def _get_last_user_query(self, history: List[Dict[str, Any]]) -> str:
         for message in reversed(history):
-            if message.get("role") == "user" and str(message.get("content") or "").strip():
+            if (
+                message.get("role") == "user"
+                and str(message.get("content") or "").strip()
+            ):
                 return str(message.get("content")).strip()
         return ""
 
@@ -918,9 +1008,8 @@ class AsyncRAGService:
         has_context_dependent_followup = self._is_context_dependent_followup(
             query_lower, query_tokens
         )
-        needs_rewrite = (
-            conv_turn_count > 0
-            and (has_reference or has_context_dependent_followup or is_too_short)
+        needs_rewrite = conv_turn_count > 0 and (
+            has_reference or has_context_dependent_followup or is_too_short
         )
 
         # ── needs_memory ────────────────────────────────────────────────────
@@ -1282,9 +1371,7 @@ class AsyncRAGService:
             # Build source references
             source_references = self._build_source_references(relevant_chunks)
             confidence = self._calculate_confidence(relevant_chunks)
-            self._record_stage(
-                performance, "post_retrieval", post_retrieval_started_at
-            )
+            self._record_stage(performance, "post_retrieval", post_retrieval_started_at)
 
             bypass_low_confidence_policy = self._should_bypass_low_confidence_policy(
                 query, normalized_query, relevant_chunks
@@ -1336,47 +1423,8 @@ class AsyncRAGService:
                     return response
             elif bypass_low_confidence_policy:
                 log.info(
-                    "[POLICY] Bypassing low-confidence fallback for score query with grounded score evidence"
+                    "[POLICY] Bypassing low-confidence fallback due to grounded document evidence"
                 )
-
-                log.info(
-                    f"[POLICY] Insufficient evidence, confidence={confidence:.3f} threshold={CONFIDENCE_THRESHOLD:.3f}"
-                )
-                finalized_performance = self._finalize_performance(
-                    performance,
-                    request_started_at,
-                    response_path="policy",
-                    policy_applied="insufficient_evidence",
-                    normalization_applied=normalization_applied,
-                    rewrite_applied=rewrite_applied,
-                    memory_loaded=memory_loaded,
-                )
-                response = self._build_policy_payload(
-                    "insufficient_evidence",
-                    conversation_id,
-                    language,
-                    source_references=source_references,
-                    sources=sources,
-                    confidence=confidence,
-                    normalization_applied=normalization_applied,
-                    original_query=query,
-                    normalized_query=normalized_query,
-                    performance=finalized_performance,
-                )
-                self._update_conversation_history(conversation_id, query, response["answer"])
-                asyncio.create_task(
-                    self._save_conversation_async(
-                        conversation_id,
-                        query,
-                        response["answer"],
-                        sources,
-                        confidence,
-                        normalization_applied,
-                        normalized_query,
-                    )
-                )
-                self._log_performance(conversation_id, finalized_performance)
-                return response
 
             # Get attachments
             attachments_started_at = time.perf_counter()
@@ -1447,12 +1495,14 @@ class AsyncRAGService:
                         )
                 # Add engagement prompt
                 engagement_started_at = time.perf_counter()
-                follow_up_questions = self.rag_service.generate_structured_follow_up_questions(
-                    effective_query,
-                    answer,
-                    language=language,
-                    sources=sources,
-                    attachments=attachments,
+                follow_up_questions = (
+                    self.rag_service.generate_structured_follow_up_questions(
+                        effective_query,
+                        answer,
+                        language=language,
+                        sources=sources,
+                        attachments=attachments,
+                    )
                 )
                 self._record_stage(performance, "engagement", engagement_started_at)
 
@@ -1473,9 +1523,7 @@ class AsyncRAGService:
 
             # Detect chart data
             chart_started_at = time.perf_counter()
-            chart_data = self.rag_service._detect_chart_request(
-                effective_query, answer
-            )
+            chart_data = self.rag_service._detect_chart_request(effective_query, answer)
             self._record_stage(performance, "chart_detection", chart_started_at)
 
             finalized_performance = self._finalize_performance(
@@ -1829,9 +1877,7 @@ class AsyncRAGService:
                 }
                 yield {
                     "type": "answer_chunk",
-                    "content": self._build_personnel_evidence_required_answer(
-                        language
-                    ),
+                    "content": self._build_personnel_evidence_required_answer(language),
                 }
                 yield {
                     "type": "complete",
@@ -1840,7 +1886,9 @@ class AsyncRAGService:
                     "images": [],
                     "normalization_applied": normalization_applied,
                     "original_query": query if normalization_applied else None,
-                    "normalized_query": normalized_query if normalization_applied else None,
+                    "normalized_query": (
+                        normalized_query if normalization_applied else None
+                    ),
                     "performance": finalized_performance,
                 }
                 asyncio.create_task(
@@ -1873,9 +1921,7 @@ class AsyncRAGService:
 
             source_references = self._build_source_references(relevant_chunks)
             confidence = self._calculate_confidence(relevant_chunks)
-            self._record_stage(
-                performance, "post_retrieval", post_retrieval_started_at
-            )
+            self._record_stage(performance, "post_retrieval", post_retrieval_started_at)
 
             bypass_low_confidence_policy = self._should_bypass_low_confidence_policy(
                 query, normalized_query, relevant_chunks
@@ -1888,54 +1934,55 @@ class AsyncRAGService:
                 if self._should_return_score_clarification(query, normalized_query):
                     answer = self._build_score_clarification_answer(language)
                     policy_name = "ambiguous_score_query"
+                    finalized_performance = self._finalize_performance(
+                        performance,
+                        request_started_at,
+                        response_path="policy",
+                        policy_applied=policy_name,
+                        normalization_applied=normalization_applied,
+                        rewrite_applied=rewrite_applied,
+                        memory_loaded=memory_loaded,
+                    )
+                    yield {
+                        "type": "sources",
+                        "sources": sources,
+                        "source_references": source_references,
+                        "confidence": confidence,
+                    }
+                    yield {"type": "answer_chunk", "content": answer}
+                    yield {
+                        "type": "complete",
+                        "attachments": [],
+                        "chart_data": [],
+                        "images": [],
+                        "normalization_applied": normalization_applied,
+                        "original_query": query if normalization_applied else None,
+                        "normalized_query": (
+                            normalized_query if normalization_applied else None
+                        ),
+                        "performance": finalized_performance,
+                    }
+                    asyncio.create_task(
+                        self._save_conversation_async(
+                            conversation_id,
+                            query,
+                            answer,
+                            sources,
+                            confidence,
+                            normalization_applied,
+                            normalized_query,
+                        )
+                    )
+                    self._update_conversation_history(conversation_id, query, answer)
+                    self._log_performance(conversation_id, finalized_performance)
+                    return
                 else:
-                    answer = self.scope_service.build_policy_answer(
-                        "insufficient_evidence", language
+                    log.info(
+                        f"[POLICY] Low confidence ({confidence:.3f} < {CONFIDENCE_THRESHOLD:.3f}) but proceeding to LLM for non-score query"
                     )
-                    policy_name = "insufficient_evidence"
-                finalized_performance = self._finalize_performance(
-                    performance,
-                    request_started_at,
-                    response_path="policy",
-                    policy_applied=policy_name,
-                    normalization_applied=normalization_applied,
-                    rewrite_applied=rewrite_applied,
-                    memory_loaded=memory_loaded,
-                )
-                yield {
-                    "type": "sources",
-                    "sources": sources,
-                    "source_references": source_references,
-                    "confidence": confidence,
-                }
-                yield {"type": "answer_chunk", "content": answer}
-                yield {
-                    "type": "complete",
-                    "attachments": [],
-                    "chart_data": [],
-                    "images": [],
-                    "normalization_applied": normalization_applied,
-                    "original_query": query if normalization_applied else None,
-                    "normalized_query": normalized_query if normalization_applied else None,
-                    "performance": finalized_performance,
-                }
-                asyncio.create_task(
-                    self._save_conversation_async(
-                        conversation_id,
-                        query,
-                        answer,
-                        sources,
-                        confidence,
-                        normalization_applied,
-                        normalized_query,
-                    )
-                )
-                self._update_conversation_history(conversation_id, query, answer)
-                self._log_performance(conversation_id, finalized_performance)
-                return
             elif bypass_low_confidence_policy:
                 log.info(
-                    "[POLICY] Bypassing low-confidence fallback for score query with grounded score evidence"
+                    "[POLICY] Bypassing low-confidence fallback due to grounded document evidence"
                 )
 
             # Get attachments
@@ -2045,12 +2092,14 @@ class AsyncRAGService:
             # Build structured follow-up suggestions
             if full_answer:
                 engagement_started_at = time.perf_counter()
-                follow_up_questions = self.rag_service.generate_structured_follow_up_questions(
-                    effective_query,
-                    full_answer,
-                    language=language,
-                    sources=sources,
-                    attachments=attachments,
+                follow_up_questions = (
+                    self.rag_service.generate_structured_follow_up_questions(
+                        effective_query,
+                        full_answer,
+                        language=language,
+                        sources=sources,
+                        attachments=attachments,
+                    )
                 )
                 self._record_stage(performance, "engagement", engagement_started_at)
 
