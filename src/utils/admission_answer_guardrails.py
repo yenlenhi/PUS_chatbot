@@ -147,8 +147,12 @@ def _extract_table_cells(line: str) -> Optional[List[str]]:
     if body.endswith("|"):
         body = body[:-1]
 
-    cells = [cell.strip() for cell in body.split("|") if cell.strip()]
-    return cells or None
+    cells = [cell.strip() for cell in body.split("|")]
+    if any(cell for cell in cells):
+        return cells
+
+    # Preserve explicit blank cells so fragmented rows like "|" + "| Nu" can be repaired.
+    return [""] if stripped.strip("|").strip() == "" else None
 
 
 def _is_table_separator_cells(cells: List[str]) -> bool:

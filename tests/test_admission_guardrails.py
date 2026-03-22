@@ -176,6 +176,38 @@ def test_normalize_answer_markdown_repairs_fragmented_multi_column_table():
     assert "| 2023 | Nganh/nhom nganh | 18.62 | Theo tai lieu truy xuat |" in normalized
 
 
+def test_normalize_answer_markdown_repairs_fragmented_table_with_blank_leading_cells():
+    raw_answer = (
+        "Chi tiet diem chuan tham khao:\n\n"
+        "| Vung tuyen sinh\n\n"
+        "| Gioi tinh\n\n"
+        "| Diem chuan 2024\n\n"
+        "| Diem chuan 2025 | Xu huong |\n\n"
+        "| :---\n\n"
+        "| :---\n\n"
+        "| :---:\n\n"
+        "| :---: | :---: |\n\n"
+        "| Vung 4 (Nam Trung Bo)\n\n"
+        "| Nam\n\n"
+        "| 21.07\n\n"
+        "| 22.68 | Tang |\n\n"
+        "|\n\n"
+        "| Nu\n\n"
+        "| 24.72\n\n"
+        "| 26.05 | Tang |"
+    )
+
+    normalized = normalize_answer_markdown(raw_answer)
+
+    assert (
+        "| Vung tuyen sinh | Gioi tinh | Diem chuan 2024 | Diem chuan 2025 | Xu huong |"
+        in normalized
+    )
+    assert "| :--- | :--- | :---: | :---: | :---: |" in normalized
+    assert "| Vung 4 (Nam Trung Bo) | Nam | 21.07 | 22.68 | Tang |" in normalized
+    assert "|  | Nu | 24.72 | 26.05 | Tang |" in normalized
+
+
 def test_build_reference_year_bridge_answer_adds_current_cycle_disclaimer():
     bridged = build_reference_year_bridge_answer(
         "Noi dung tham khao tu tai lieu nam 2025.", language="vi"
