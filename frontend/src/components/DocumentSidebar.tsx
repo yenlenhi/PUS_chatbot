@@ -28,6 +28,53 @@ interface DocumentSidebarProps {
 
 type MergedRef = SourceReference & { all_pages: (number | null)[] };
 
+const TABLE_SEPARATOR_PATTERN = /^:?-{3,}:?$/;
+
+const extractTableCells = (line: string): string[] | null => {
+  const stripped = line.trim();
+  if (!stripped.startsWith('|')) {
+    return null;
+  }
+
+  let body = stripped.slice(1);
+  if (body.endsWith('|')) {
+    body = body.slice(0, -1);
+  }
+
+  const cells = body
+    .split('|')
+    .map((cell) => cell.trim())
+    .filter(Boolean);
+
+  return cells.length > 0 ? cells : null;
+};
+
+const normalizeSnippetForDisplay = (snippet?: string, multiline = false): string => {
+  if (!snippet) {
+    return '';
+  }
+
+  const lines = snippet
+    .replace(/\r\n/g, '\n')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const cells = extractTableCells(line);
+      if (cells) {
+        if (cells.every((cell) => TABLE_SEPARATOR_PATTERN.test(cell))) {
+          return '';
+        }
+        return cells.join(' | ');
+      }
+
+      return line.replace(/\|{2,}/g, ' | ').replace(/\s+/g, ' ').trim();
+    })
+    .filter(Boolean);
+
+  return multiline ? lines.join('\n') : lines.join(' ');
+};
+
 const DocumentSidebar: React.FC<DocumentSidebarProps> = ({
   sourceReferences,
   isOpen,
@@ -133,7 +180,7 @@ const DocumentSidebar: React.FC<DocumentSidebarProps> = ({
 
       {/* Sidebar panel */}
       <div
-        className={`fixed top-0 right-0 h-full bg-white z-30 flex flex-col transition-transform duration-300 ease-in-out shadow-2xl border-l border-gray-200 ${
+        className={`fixed top-14 sm:top-16 md:top-20 right-0 h-[calc(100vh-3.5rem)] sm:h-[calc(100vh-4rem)] md:h-[calc(100vh-5rem)] bg-white z-30 flex flex-col transition-transform duration-300 ease-in-out shadow-2xl border-l border-gray-200 ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         } w-[calc(100vw-2rem)] max-w-sm sm:w-80 md:w-96`}
       >
@@ -262,7 +309,7 @@ const DocumentSidebar: React.FC<DocumentSidebarProps> = ({
                     {/* Snippet */}
                     {ref.content_snippet && (
                       <p className="text-xs text-gray-500 mt-2 leading-relaxed line-clamp-2">
-                        {ref.content_snippet}
+                        {normalizeSnippetForDisplay(ref.content_snippet)}
                       </p>
                     )}
 
@@ -316,7 +363,7 @@ const DocumentSidebar: React.FC<DocumentSidebarProps> = ({
                         </div>
                       )}
                       <p className="text-xs text-gray-600 leading-relaxed max-h-36 overflow-y-auto whitespace-pre-wrap">
-                        {ref.content_snippet}
+                        {normalizeSnippetForDisplay(ref.content_snippet, true)}
                       </p>
                       {/* Action row inside expanded */}
                       <div className="flex items-center gap-2 mt-3">
@@ -369,7 +416,7 @@ const DocumentSidebar: React.FC<DocumentSidebarProps> = ({
       {/* Mobile overlay */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black/20 backdrop-blur-[1px] z-20 md:hidden"
+          className="fixed inset-0 top-14 sm:top-16 md:top-20 bg-black/20 backdrop-blur-[1px] z-20 md:hidden"
           onClick={onToggle}
         />
       )}

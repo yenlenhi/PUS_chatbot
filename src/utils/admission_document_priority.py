@@ -557,6 +557,7 @@ def filter_chunks_by_metadata(
     admission_cycle = filters.get("admission_cycle")
     doc_type = filters.get("doc_type")
     allow_system_wide = doc_type in {"methods", "timeline", "exam"}
+    exclude_scores_when_doc_type_differs = bool(doc_type and doc_type != "scores")
 
     def _match(
         chunk: Dict[str, Any],
@@ -565,6 +566,7 @@ def filter_chunks_by_metadata(
         require_cycle: bool = False,
         require_doc_type: bool = False,
         allow_system_scope: bool = False,
+        exclude_score_docs: bool = False,
     ) -> bool:
         if require_school and school_code:
             if chunk.get("school_code") != school_code:
@@ -580,6 +582,9 @@ def filter_chunks_by_metadata(
         if require_doc_type and doc_type:
             if chunk.get("doc_type") != doc_type:
                 return False
+
+        if exclude_score_docs and chunk.get("doc_type") == "scores":
+            return False
 
         return True
 
@@ -604,6 +609,32 @@ def filter_chunks_by_metadata(
         ),
     ]
 
+    if school_code and doc_type:
+        candidate_stages.append(
+            (
+                "doc_type_only",
+                dict(
+                    require_school=False,
+                    require_cycle=False,
+                    require_doc_type=True,
+                    allow_system_scope=False,
+                    exclude_score_docs=False,
+                ),
+            )
+        )
+        candidate_stages.append(
+            (
+                "school_only_non_score",
+                dict(
+                    require_school=True,
+                    require_cycle=False,
+                    require_doc_type=False,
+                    allow_system_scope=allow_system_wide,
+                    exclude_score_docs=exclude_scores_when_doc_type_differs,
+                ),
+            )
+        )
+
     if school_code:
         candidate_stages.append(
             (
@@ -613,11 +644,11 @@ def filter_chunks_by_metadata(
                     require_cycle=False,
                     require_doc_type=False,
                     allow_system_scope=allow_system_wide,
+                    exclude_score_docs=False,
                 ),
             )
         )
-
-    if doc_type:
+    elif doc_type:
         candidate_stages.append(
             (
                 "doc_type_only",
@@ -626,6 +657,7 @@ def filter_chunks_by_metadata(
                     require_cycle=False,
                     require_doc_type=True,
                     allow_system_scope=False,
+                    exclude_score_docs=False,
                 ),
             )
         )

@@ -1,3 +1,5 @@
+import unicodedata
+
 from src.utils.admission_answer_guardrails import (
     build_reference_year_bridge_answer,
     build_structured_admission_answer,
@@ -8,6 +10,13 @@ from src.utils.admission_document_priority import (
     filter_chunks_by_metadata,
     infer_document_metadata,
 )
+
+
+def _normalize_test_text(value: str) -> str:
+    normalized = unicodedata.normalize("NFD", value)
+    normalized = normalized.replace("đ", "d").replace("Đ", "D")
+    normalized = "".join(ch for ch in normalized if unicodedata.category(ch) != "Mn")
+    return normalized.lower()
 
 
 def test_infer_document_metadata_for_t04_quota_doc():
@@ -208,26 +217,20 @@ def test_build_structured_score_answer_aggregates_all_years_from_primary_score_d
     ]
 
     answer = build_structured_admission_answer(query, chunks, language="vi")
+    normalized_answer = _normalize_test_text(answer or "")
 
     assert answer is not None
-    assert "| Năm | Hạng mục | Điểm |" in answer
-    assert "| 2020 | Phía Nam / Nam | 14.69 |" in answer
-    assert "| 2020 | Phía Nam / Nữ | 17.25 |" in answer
-    assert "| 2021 | Phía Nam / Nam | 15.32 |" in answer
-    assert "| 2021 | Phía Nam / Nữ | 18.10 |" in answer
-    assert "| 2022 | Phía Nam / Nam | 16.48 |" in answer
-    assert "| 2022 | Phía Nam / Nữ | 19.05 |" in answer
-    assert "| 2023 | Phía Nam / Nam | 18.62 |" in answer
-    assert "| 2023 | Phía Nam / Nữ | 21.14 |" in answer
-    assert "| 2024 | Phía Nam / Nam | 19.40 |" in answer
-    assert "| 2024 | Phía Nam / Nữ | 22.05 |" in answer
-    assert "| 2025 | Phía Nam / Nam | 20.10 |" in answer
-    assert "| 2025 | Phía Nam / Nữ | 22.80 |" in answer
-    assert "Trích từ" not in answer
+    assert "bang so sanh diem chuan" in normalized_answer
+    assert "| vung | doi tuong | ma bai thi | diem chuan 2025 | xu huong (so voi 2024) |" in normalized_answer
+    assert "| phia nam | nam | - | 20.10 |" in normalized_answer
+    assert "0.7 |" in normalized_answer
+    assert "| phia nam | nu | - | 22.80 |" in normalized_answer
+    assert "0.75 |" in normalized_answer
+    assert "giai doan tai lieu dang bao phu: 2020, 2021, 2022, 2023, 2024, 2025." in normalized_answer
 
 
 def test_build_structured_score_answer_expands_a01_c03_d01_rows():
-    query = "so sanh diem chuan cac nam"
+    query = "so sanh diem chuan nam 2021"
     chunks = [
         {
             "source_file": "iem_Chuan_ai_Hoc_An_Ninh_Nhan_Dan_2020-2025.pdf",
@@ -243,14 +246,43 @@ def test_build_structured_score_answer_expands_a01_c03_d01_rows():
     ]
 
     answer = build_structured_admission_answer(query, chunks, language="vi")
+    normalized_answer = _normalize_test_text(answer or "")
 
     assert answer is not None
-    assert "| 2021 | Địa bàn 4 / Nam / A01 | 26.11 |" in answer
-    assert "| 2021 | Địa bàn 4 / Nam / C03 | 25.21 |" in answer
-    assert "| 2021 | Địa bàn 4 / Nam / D01 | 25.89 |" in answer
-    assert "| 2021 | Địa bàn 4 / Nữ / A01 | 27.35 |" in answer
-    assert "| 2021 | Địa bàn 4 / Nữ / C03 | 27.63 |" in answer
-    assert "| 2021 | Địa bàn 4 / Nữ / D01 | 27.20 |" in answer
-    assert "| 2021 | Địa bàn 5 / Nam / A01 | 26.36 |" in answer
-    assert "| 2021 | Địa bàn 5 / Nam / C03 | 26.53 |" in answer
-    assert "| 2021 | Địa bàn 5 / Nam / D01 | 26.88 |" in answer
+    assert "| vung | doi tuong | ma bai thi | diem chuan 2021 | xu huong (so voi 2020) |" in normalized_answer
+    assert "| dia ban 4 | nam | a01 | 26.11 | chua co du lieu 2020 |" in normalized_answer
+    assert "| dia ban 4 | nam | c03 | 25.21 | chua co du lieu 2020 |" in normalized_answer
+    assert "| dia ban 4 | nam | d01 | 25.89 | chua co du lieu 2020 |" in normalized_answer
+    assert "| dia ban 4 | nu | a01 | 27.35 | chua co du lieu 2020 |" in normalized_answer
+    assert "| dia ban 4 | nu | c03 | 27.63 | chua co du lieu 2020 |" in normalized_answer
+    assert "| dia ban 4 | nu | d01 | 27.20 | chua co du lieu 2020 |" in normalized_answer
+    assert "| dia ban 5 | nam | a01 | 26.36 | chua co du lieu 2020 |" in normalized_answer
+    assert "| dia ban 5 | nam | c03 | 26.53 | chua co du lieu 2020 |" in normalized_answer
+    assert "| dia ban 5 | nam | d01 | 26.88 | chua co du lieu 2020 |" in normalized_answer
+
+
+def test_build_structured_score_answer_uses_requested_comparison_year():
+    query = "so sanh diem chuan nam 2024"
+    chunks = [
+        {
+            "source_file": "iem_Chuan_ai_Hoc_An_Ninh_Nhan_Dan_2020-2025.pdf",
+            "heading_text": "Bang diem chuan",
+            "content": (
+                "Chi tiet diem chuan nam 2023 | Vung tuyen sinh | Doi tuong Nam (Diem chuan) | "
+                "Doi tuong Nu (Diem chuan) || Vung 4 | 20.60 | 24.16 || "
+                "Chi tiet diem chuan nam 2024 | Vung tuyen sinh | Doi tuong Nam (Diem chuan) | "
+                "Doi tuong Nu (Diem chuan) || Vung 4 | 21.07 | 24.72 ||"
+            ),
+            "document_year": 2025,
+        }
+    ]
+
+    answer = build_structured_admission_answer(query, chunks, language="vi")
+    normalized_answer = _normalize_test_text(answer or "")
+
+    assert answer is not None
+    assert "| vung | doi tuong | ma bai thi | diem chuan 2024 | xu huong (so voi 2023) |" in normalized_answer
+    assert "| vung 4 | nam | - | 21.07 |" in normalized_answer
+    assert "0.47 |" in normalized_answer
+    assert "| vung 4 | nu | - | 24.72 |" in normalized_answer
+    assert "0.56 |" in normalized_answer

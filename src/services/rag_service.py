@@ -1924,6 +1924,7 @@ Trả lời:"""
                 retrieval_query
             )
             retrieval_query = school_query
+            effective_query = rewritten_query
             if retrieval_enriched:
                 log.info(
                     f"Applied current-cycle retrieval enrichment: '{rewritten_query[:60]}' -> '{retrieval_query[:120]}'"
@@ -2011,7 +2012,7 @@ Trả lời:"""
             # Create system prompt and user prompt with memory context
             system_prompt = self.create_system_prompt(language=language)
             user_prompt = self.create_user_prompt(
-                query, context, memory_context, language=language
+                effective_query, context, memory_context, language=language
             )
 
             # Log context and prompts for debugging
@@ -2028,7 +2029,7 @@ Trả lời:"""
             answer = None
             structured_answer_used = False
             structured_answer = self.try_build_structured_admission_answer(
-                query, relevant_chunks, language=language
+                effective_query, relevant_chunks, language=language
             )
             if structured_answer:
                 answer = structured_answer
@@ -2164,12 +2165,12 @@ Trả lời:"""
                 log.warning(f"Could not save conversation to DB: {save_error}")
 
             # Detect if chart visualization is needed
-            chart_data = self._detect_chart_request(query, answer)
+            chart_data = self._detect_chart_request(effective_query, answer)
             if chart_data:
                 log.info(f"📊 Generated {len(chart_data)} chart(s) for visualization")
 
             # Detect if chart visualization is needed
-            chart_data = self._detect_chart_request(query, answer)
+            chart_data = self._detect_chart_request(effective_query, answer)
             if chart_data:
                 log.info(f"📊 Generated {len(chart_data)} chart(s) for visualization")
 
@@ -2417,6 +2418,7 @@ Trả lời:"""
                 retrieval_query
             )
             retrieval_query = school_query
+            effective_query = rewritten_query
             if retrieval_enriched:
                 log.info(
                     f"Applied current-cycle retrieval enrichment: '{rewritten_query[:60]}' -> '{retrieval_query[:120]}'"
@@ -2528,7 +2530,7 @@ Trả lời:"""
 
             system_prompt = self.create_system_prompt(language=language)
             user_prompt = self.create_user_prompt(
-                query, context, memory_context, language=language
+                effective_query, context, memory_context, language=language
             )
 
             full_prompt = f"{system_prompt}\n\n{user_prompt}"
@@ -2544,7 +2546,7 @@ Trả lời:"""
                 # Store original length before adding engagement
                 original_length = len(full_answer)
                 enhanced_answer = self._add_engagement_prompt(
-                    full_answer, query, language
+                    full_answer, effective_query, language
                 )
 
                 # If engagement was added, stream the additional part
@@ -2559,7 +2561,7 @@ Trả lời:"""
             # Just keeping the variable 'attachments'
 
             # Step 8: Detect charts
-            chart_data = self._detect_chart_request(query, full_answer)
+            chart_data = self._detect_chart_request(effective_query, full_answer)
 
             # Step 9: Send final metadata
             yield {

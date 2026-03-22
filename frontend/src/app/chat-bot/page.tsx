@@ -52,6 +52,19 @@ const filterVisibleSourceReferences = (sourceReferences: SourceReference[] = [])
 const rankVisibleSourceReferences = (sourceReferences: SourceReference[] = [], limit = 5) =>
   selectDisplaySourceReferences(sourceReferences, limit);
 
+const formatMessageTimestamp = (timestamp?: string | Date): string => {
+  if (!timestamp) {
+    return '';
+  }
+
+  const date = timestamp instanceof Date ? timestamp : new Date(timestamp);
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+
+  return date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+};
+
 const INLINE_TABLE_PATTERN = /([^\n])(\|(?:[^|\n]+\|){2,}.*)/g;
 const TABLE_SEPARATOR_PATTERN = /^:?-{3,}:?$/;
 
@@ -742,9 +755,11 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
 
             {/* Footer: time and copy button */}
             <div className="flex items-center justify-end gap-2 mt-1.5 px-1">
-              <span className="text-xs text-gray-400 opacity-0 group-hover/msg:opacity-100 transition-opacity duration-200">
-                {(message.timestamp instanceof Date ? message.timestamp : new Date(message.timestamp)).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
-              </span>
+              {formatMessageTimestamp(message.timestamp) && (
+                <span className="text-xs text-gray-400 opacity-0 group-hover/msg:opacity-100 transition-opacity duration-200">
+                  {formatMessageTimestamp(message.timestamp)}
+                </span>
+              )}
               <button
                 onClick={() => onCopy(message.content)}
                 className={`flex items-center gap-1 px-2 py-0.5 text-xs rounded-md transition-all duration-200 ${isCopied
@@ -984,9 +999,11 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
 
         {/* Footer */}
         <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-gray-100">
-          <span className="text-xs text-gray-400 opacity-0 group-hover/msg:opacity-100 transition-opacity duration-200">
-            {(message.timestamp instanceof Date ? message.timestamp : new Date(message.timestamp)).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
-          </span>
+          {formatMessageTimestamp(message.timestamp) && (
+            <span className="text-xs text-gray-400 opacity-0 group-hover/msg:opacity-100 transition-opacity duration-200">
+              {formatMessageTimestamp(message.timestamp)}
+            </span>
+          )}
 
           {message.id !== '1' && isComplete && (
             <>
@@ -1084,7 +1101,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
 };
 
 const ChatBotPage = () => {
-  const [conversationId] = useState(() => `web-chat-${Date.now()}`);
+  const [conversationId, setConversationId] = useState('web-chat');
   const [language, setLanguage] = useState<'vi' | 'en'>('vi'); // Language toggle state
   const [messages, setMessages] = useState<Message[]>(() => [
     {
@@ -1092,7 +1109,7 @@ const ChatBotPage = () => {
       role: 'assistant',
       content: 'Xin chào! Tôi là PSU ChatBot của Trường Đại học An ninh Nhân dân. Tôi chỉ hỗ trợ tra cứu thông tin tuyển sinh chính thức như điều kiện tuyển sinh, phương thức xét tuyển, chỉ tiêu, hồ sơ, lịch tuyển sinh và thủ tục nhập học. Bạn cần tôi tra cứu nội dung tuyển sinh nào?',
       sender: 'bot',
-      timestamp: new Date()
+      timestamp: ''
     }
   ]);
   const [inputMessage, setInputMessage] = useState('');
@@ -1106,6 +1123,14 @@ const ChatBotPage = () => {
   const [previewImage, setPreviewImage] = useState<string | null>(null); // For image preview modal
   const [showDisclaimer, setShowDisclaimer] = useState(false); // Toggle for disclaimer
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const uniqueId =
+      typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+        ? crypto.randomUUID()
+        : `${Date.now()}`;
+    setConversationId(`web-chat-${uniqueId}`);
+  }, []);
 
   // Document sidebar state
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -1491,7 +1516,7 @@ const ChatBotPage = () => {
       style={{ backgroundImage: "url('/assests/background_image.jpg')" }}
     >
       {/* Enhanced Header with Glassmorphism */}
-      <header className="backdrop-blur-xl bg-white/80 shadow-xl border-b-4 border-red-600 sticky top-0 z-10 transition-all duration-300">
+      <header className="backdrop-blur-xl bg-white/80 shadow-xl border-b-4 border-red-600 sticky top-0 z-40 transition-all duration-300">
         <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
           <div className="flex items-center justify-between h-14 sm:h-16 md:h-20">
             <div className="flex items-center space-x-2 sm:space-x-3 md:space-x-4 min-w-0 flex-1">

@@ -4,6 +4,7 @@ from src.utils.admission_document_priority import (
     compute_priority_adjustment,
     enrich_query_for_primary_school,
     enrich_query_for_current_cycle,
+    filter_chunks_by_metadata,
     infer_target_year,
     is_admission_query,
     is_personnel_query,
@@ -129,3 +130,30 @@ def test_priority_adjustment_prefers_t04_over_system_wide_or_t05_chunks():
 
     assert t04_score > system_score
     assert t04_score > t05_score
+
+
+def test_filter_chunks_by_metadata_prefers_method_docs_over_score_docs():
+    query = "dieu kien ap dung cua tung phuong thuc xet tuyen"
+    chunks = [
+        {
+            "source_file": "Thong_bao_tuyen_sinh_T04_2026.pdf",
+            "content": "Phuong thuc 1, phuong thuc 2, phuong thuc 3.",
+            "school_code": "T04",
+            "admission_cycle": dt.datetime.now().year,
+            "doc_type": "methods",
+            "scope": "school_specific",
+        },
+        {
+            "source_file": "Diem_chuan_T04_2025.pdf",
+            "content": "Diem chuan nam 2025.",
+            "school_code": "T04",
+            "admission_cycle": 2025,
+            "doc_type": "scores",
+            "scope": "school_specific",
+        },
+    ]
+
+    filtered, metadata = filter_chunks_by_metadata(query, chunks)
+
+    assert metadata["applied"] is True
+    assert all(chunk.get("doc_type") == "methods" for chunk in filtered)

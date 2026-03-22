@@ -20,6 +20,7 @@ from src.utils.logger import log
 from src.utils.admission_document_priority import (
     enrich_query_for_current_cycle,
     enrich_query_for_primary_school,
+    infer_query_doc_type,
 )
 from src.utils.admission_answer_guardrails import (
     build_answer_repair_prompt,
@@ -442,7 +443,7 @@ class AsyncRAGService:
                 )
 
             structured_answer = self.rag_service.try_build_structured_admission_answer(
-                query, relevant_chunks, language=language
+                effective_query, relevant_chunks, language=language
             )
             if structured_answer:
                 return normalize_answer_markdown(structured_answer), remaining
@@ -647,6 +648,61 @@ class AsyncRAGService:
             token in {"nam", "2024", "2025", "2026", "do", "kia", "nay"}
             for token in query_tokens
         )
+
+    def _get_last_user_query(self, history: List[Dict[str, Any]]) -> str:
+        for message in reversed(history):
+            if message.get("role") == "user" and str(message.get("content") or "").strip():
+                return str(message.get("content")).strip()
+        return ""
+
+    def _rewrite_context_dependent_followup_locally(
+        self, query: str, normalized_query: str, history: List[Dict[str, Any]]
+    ) -> Optional[str]:
+        year_match = re.search(r"\b(20\d{2})\b", normalized_query or "")
+        previous_user_query = self._get_last_user_query(history)
+        if not year_match or not previous_user_query:
+            return None
+
+        year = int(year_match.group(1))
+        previous_doc_type = infer_query_doc_type(previous_user_query)
+        previous_normalized = self._normalize_router_text(previous_user_query)
+
+        if previous_doc_type == "scores":
+            if any(
+                term in previous_normalized
+                for term in ("so sanh", "cac nam", "xu huong", "giai doan")
+            ):
+                return (
+                    f"So sánh điểm chuẩn năm {year} với năm {year - 1} "
+                    "của Trường Đại học An ninh nhân dân (T04)"
+                )
+            return f"Điểm chuẩn năm {year} của Trường Đại học An ninh nhân dân (T04)"
+
+        if previous_doc_type == "timeline":
+            return (
+                f"Mốc thời gian tuyển sinh và nhập học năm {year} "
+                "của Trường Đại học An ninh nhân dân (T04)"
+            )
+
+        if previous_doc_type == "methods":
+            return (
+                f"Điều kiện áp dụng của từng phương thức xét tuyển năm {year} "
+                "của Trường Đại học An ninh nhân dân (T04)"
+            )
+
+        if previous_doc_type == "quota":
+            return (
+                f"Chỉ tiêu tuyển sinh năm {year} "
+                "của Trường Đại học An ninh nhân dân (T04)"
+            )
+
+        if previous_doc_type == "exam":
+            return (
+                f"Thông tin bài thi đánh giá của Bộ Công an năm {year} "
+                "áp dụng cho Trường Đại học An ninh nhân dân (T04)"
+            )
+
+        return None
 
     def _classify_query(self, query: str, conv_turn_count: int) -> dict:
         """
@@ -926,6 +982,18 @@ class AsyncRAGService:
             if intent["needs_rewrite"] and current_history:
                 rewrite_started_at = time.perf_counter()
                 try:
+                    local_rewrite = self._rewrite_context_dependent_followup_locally(
+                        query, normalized_query, current_history
+                    )
+                    if local_rewrite and local_rewrite.strip() != normalized_query:
+                        log.info(
+                            f"[ASYNC] Rewritten locally: '{normalized_query[:40]}' -> '{local_rewrite.strip()[:60]}'"
+                        )
+                        rewrite_applied = True
+                        if performance is not None:
+                            performance["rewrite_applied"] = True
+                        normalized_query = local_rewrite.strip()
+
                     formatted_history = "\n".join(
                         [
                             f"{msg['role']}: {msg['content']}"
@@ -963,6 +1031,7 @@ class AsyncRAGService:
             else:
                 log.info("[ASYNC] Skip rewrite (query is self-contained)")
 
+            effective_query = normalized_query
             retrieval_query, _ = self._enrich_retrieval_query(query, normalized_query)
 
             # Step 3: Memory — only for long conversations with explicit back-references
@@ -1125,12 +1194,12 @@ class AsyncRAGService:
             prompt_started_at = time.perf_counter()
             system_prompt = self.rag_service.create_system_prompt(language=language)
             user_prompt = self.rag_service.create_user_prompt(
-                query, context, memory_context, language=language
+                effective_query, context, memory_context, language=language
             )
 
             # Grounding: only for real-time queries (lãnh đạo, sự kiện, tin tức...)
             full_prompt, needs_grounding = self._build_generation_prompt(
-                query, language, system_prompt, user_prompt
+                effective_query, language, system_prompt, user_prompt
             )
             self._record_stage(performance, "prompt_build", prompt_started_at)
             if performance is not None:
@@ -1157,7 +1226,7 @@ class AsyncRAGService:
             else:
                 if not structured_answer:
                     answer, violations = await self._repair_answer_if_needed(
-                        query,
+                        effective_query,
                         answer,
                         context,
                         relevant_chunks,
@@ -1170,7 +1239,7 @@ class AsyncRAGService:
                 # Add engagement prompt
                 engagement_started_at = time.perf_counter()
                 follow_up_questions = self.rag_service.generate_structured_follow_up_questions(
-                    query,
+                    effective_query,
                     answer,
                     language=language,
                     sources=sources,
@@ -1195,7 +1264,9 @@ class AsyncRAGService:
 
             # Detect chart data
             chart_started_at = time.perf_counter()
-            chart_data = self.rag_service._detect_chart_request(query, answer)
+            chart_data = self.rag_service._detect_chart_request(
+                effective_query, answer
+            )
             self._record_stage(performance, "chart_detection", chart_started_at)
 
             finalized_performance = self._finalize_performance(
@@ -1430,6 +1501,18 @@ class AsyncRAGService:
             if intent["needs_rewrite"] and current_history:
                 rewrite_started_at = time.perf_counter()
                 try:
+                    local_rewrite = self._rewrite_context_dependent_followup_locally(
+                        query, normalized_query, current_history
+                    )
+                    if local_rewrite and local_rewrite.strip() != normalized_query:
+                        log.info(
+                            f"[ASYNC STREAM] Rewritten locally: '{normalized_query[:40]}' -> '{local_rewrite.strip()[:60]}'"
+                        )
+                        rewrite_applied = True
+                        if performance is not None:
+                            performance["rewrite_applied"] = True
+                        normalized_query = local_rewrite.strip()
+
                     formatted_history = "\n".join(
                         [
                             f"{msg['role']}: {msg['content']}"
@@ -1467,6 +1550,7 @@ class AsyncRAGService:
             else:
                 log.info("[ASYNC STREAM] Skip rewrite (query is self-contained)")
 
+            effective_query = normalized_query
             retrieval_query, _ = self._enrich_retrieval_query(query, normalized_query)
 
             # Step 3: Memory — only for long conversations with explicit back-references
@@ -1620,12 +1704,12 @@ class AsyncRAGService:
             prompt_started_at = time.perf_counter()
             system_prompt = self.rag_service.create_system_prompt(language=language)
             user_prompt = self.rag_service.create_user_prompt(
-                query, context, memory_context, language=language
+                effective_query, context, memory_context, language=language
             )
 
             # Grounding: only for real-time queries (lãnh đạo, sự kiện, tin tức...)
             full_prompt, needs_grounding = self._build_generation_prompt(
-                query, language, system_prompt, user_prompt
+                effective_query, language, system_prompt, user_prompt
             )
             self._record_stage(performance, "prompt_build", prompt_started_at)
             if performance is not None:
@@ -1636,7 +1720,7 @@ class AsyncRAGService:
                 log.info("[ASYNC STREAM] Grounding DISABLED (using internal documents)")
 
             structured_answer = self.rag_service.try_build_structured_admission_answer(
-                query, relevant_chunks, language=language
+                effective_query, relevant_chunks, language=language
             )
             full_answer = structured_answer or ""
             first_token_ms = None
@@ -1659,7 +1743,7 @@ class AsyncRAGService:
                 full_answer = generated_answer or ""
                 if full_answer:
                     full_answer, violations = await self._repair_answer_if_needed(
-                        query,
+                        effective_query,
                         full_answer,
                         context,
                         relevant_chunks,
@@ -1683,7 +1767,7 @@ class AsyncRAGService:
             if full_answer:
                 engagement_started_at = time.perf_counter()
                 follow_up_questions = self.rag_service.generate_structured_follow_up_questions(
-                    query,
+                    effective_query,
                     full_answer,
                     language=language,
                     sources=sources,
@@ -1693,7 +1777,9 @@ class AsyncRAGService:
 
             # Detect charts
             chart_started_at = time.perf_counter()
-            chart_data = self.rag_service._detect_chart_request(query, full_answer)
+            chart_data = self.rag_service._detect_chart_request(
+                effective_query, full_answer
+            )
             self._record_stage(performance, "chart_detection", chart_started_at)
 
             finalized_performance = self._finalize_performance(
