@@ -244,6 +244,7 @@ def validate_admission_answer(
 ) -> List[str]:
     violations: List[str] = []
     normalized_answer = _normalize_text(answer)
+    doc_type = infer_query_doc_type(query)
 
     if query_targets_primary_school(query) and re.search(r"\bt05\b", normalized_answer):
         violations.append("wrong_school_code_t05")
@@ -265,6 +266,9 @@ def validate_admission_answer(
     ):
         if not _answer_acknowledges_reference_year(answer, 2025):
             violations.append("older_year_presented_as_current")
+
+    if doc_type == "timeline" and re.search(r"^\s*\|.+\|", answer, re.MULTILINE):
+        violations.append("timeline_table_not_allowed")
 
     return violations
 
@@ -298,7 +302,8 @@ Rules:
 - If the user did not specify a year, treat the question as the current cycle year {dt.datetime.now().year}.
 - If the available documents only confirm older-year information such as 2025, you may still answer using that material as reference, but you must label it clearly as reference/temporary basis and state that 2026 depends on the latest official guidance.
 - If the documents are insufficient, state that clearly instead of guessing.
-- Prefer Markdown tables for quota, methods, timeline, and score questions.
+- Prefer Markdown tables for quota, methods, and score questions.
+- For timeline questions, do NOT use Markdown tables; use short bullets or numbered items instead.
 """
 
     return f"""Hãy sửa lại bản nháp câu trả lời dưới đây để loại bỏ toàn bộ lỗi chính sách.
@@ -322,7 +327,8 @@ Yêu cầu bắt buộc:
 - Nếu người dùng không nêu năm, phải hiểu theo chu kỳ tuyển sinh hiện tại năm {dt.datetime.now().year}.
 - Nếu tài liệu hiện có mới xác nhận đến năm cũ như 2025, vẫn được phép trả lời theo hướng tham khảo gần nhất, nhưng phải nói thật rõ đây là căn cứ tham khảo/tạm thời và việc áp dụng cho 2026 phụ thuộc hướng dẫn chính thức mới nhất.
 - Nếu tài liệu không đủ căn cứ, phải nói rõ là chưa đủ căn cứ thay vì suy đoán.
-- Với câu hỏi về chỉ tiêu, phương thức, mốc thời gian, điểm số, ưu tiên trình bày bằng bảng Markdown.
+- Với câu hỏi về chỉ tiêu, phương thức, điểm số, ưu tiên trình bày bằng bảng Markdown.
+- Với câu hỏi về mốc thời gian, tuyệt đối không dùng bảng Markdown; hãy trình bày theo gạch đầu dòng hoặc danh sách đánh số.
 """
 
 
@@ -431,14 +437,16 @@ def _build_timeline_answer(query: str, chunks: List[Dict[str, Any]]) -> Optional
         "",
         "Dưới đây là các mốc thời gian nổi bật tôi trích được từ tài liệu tuyển sinh liên quan:",
         "",
-        "| Mốc | Thời gian | Ghi chú |",
-        "| --- | --- | --- |",
     ]
-    for label, timeline_text, note in rows[:8]:
-        safe_note = note.replace("|", "/")
-        lines.append(f"| {label} | {timeline_text} | {safe_note} |")
+    for index, (label, timeline_text, note) in enumerate(rows[:8], start=1):
+        safe_note = note.replace("|", "/").strip()
+        lines.append(f"{index}. **{label}**")
+        lines.append(f"- Thời gian: {timeline_text}")
+        if safe_note and safe_note != label:
+            lines.append(f"- Ghi chú: {safe_note}")
+        lines.append("")
 
-    return "\n".join(lines)
+    return "\n".join(line for line in lines).strip()
 
 
 def _build_score_answer(query: str, chunks: List[Dict[str, Any]]) -> Optional[str]:

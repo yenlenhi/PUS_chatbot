@@ -195,6 +195,8 @@ def test_implicit_admission_timeline_prompt_defaults_to_current_cycle():
     assert "MAC DINH THEO CHU KY TUYEN SINH HIEN TAI" in prompt
     assert f"nam {dt.datetime.now().year}" in prompt
     assert "Khong duoc trinh bay thong tin cua nam 2025 tro ve truoc" in prompt
+    assert "HUONG DAN BAT BUOC CHO CAU HOI VE MOC THOI GIAN" in prompt
+    assert "Tuyet doi khong dung bang Markdown" in prompt
 
 
 def test_generic_admission_prompt_defaults_to_t04_scope():

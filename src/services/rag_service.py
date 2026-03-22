@@ -1584,6 +1584,29 @@ MAC DINH THEO CHU KY TUYEN SINH HIEN TAI:
 - Khong duoc trinh bay thong tin cua nam 2025 tro ve truoc nhu thong tin hien hanh neu nguoi dung khong hoi ro nam do.
 """
 
+    def _create_timeline_prompt_guidance(
+        self, query: str, language: str = "vi"
+    ) -> str:
+        if infer_query_doc_type(query) != "timeline":
+            return ""
+
+        if language == "en":
+            return """
+
+MANDATORY RULES FOR TIMELINE QUESTIONS:
+- Absolutely do NOT use Markdown tables.
+- Present the answer as short bullets or a numbered list in chronological order.
+- For each milestone, state the time first, then the action or note.
+"""
+
+        return """
+
+HUONG DAN BAT BUOC CHO CAU HOI VE MOC THOI GIAN:
+- Tuyet doi khong dung bang Markdown.
+- Hay trinh bay bang gach dau dong hoac danh sach danh so theo thu tu thoi gian.
+- Moi moc can neu ro thoi gian truoc, sau do moi den noi dung hanh dong/ghi chu.
+"""
+
     def _create_primary_school_prompt_guidance(
         self, query: str, language: str = "vi"
     ) -> str:
@@ -1634,6 +1657,9 @@ MAC DINH THEO PHAM VI TRUONG DAI HOC AN NINH NHAN DAN:
         current_cycle_guidance = self._create_current_cycle_prompt_guidance(
             query, language=language
         )
+        timeline_guidance = self._create_timeline_prompt_guidance(
+            query, language=language
+        )
         primary_school_guidance = self._create_primary_school_prompt_guidance(
             query, language=language
         )
@@ -1641,6 +1667,7 @@ MAC DINH THEO PHAM VI TRUONG DAI HOC AN NINH NHAN DAN:
             guidance
             for guidance in (
                 current_cycle_guidance,
+                timeline_guidance,
                 primary_school_guidance,
                 personnel_guidance,
             )

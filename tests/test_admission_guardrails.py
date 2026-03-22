@@ -105,11 +105,25 @@ def test_build_structured_timeline_answer_from_retrieved_chunks():
     answer = build_structured_admission_answer(query, chunks, language="vi")
 
     assert answer is not None
-    assert "| --- | --- | --- |" in answer
+    assert "1. **Dang ky du tuyen**" in answer
+    assert "| --- | --- | --- |" not in answer
     assert "Dang ky du tuyen" in answer
     assert "15/3/2026" in answer
     assert "25/4/2026" in answer
     assert "30/8/2026" in answer
+
+
+def test_validate_admission_answer_flags_timeline_markdown_table():
+    query = "moc thoi gian dang ky va xac nhan nhap hoc"
+    answer = (
+        "| Moc | Thoi gian | Ghi chu |\n"
+        "| --- | --- | --- |\n"
+        "| Dang ky du tuyen | 15/3/2026 den 25/4/2026 | Theo thong bao |\n"
+    )
+
+    violations = validate_admission_answer(query, answer)
+
+    assert "timeline_table_not_allowed" in violations
 
 
 def test_eligibility_query_does_not_use_structured_timeline_pipeline():
