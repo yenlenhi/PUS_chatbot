@@ -25,6 +25,7 @@ from src.utils.admission_document_priority import (
     filter_chunks_by_metadata,
     enrich_query_for_primary_school,
     enrich_query_for_current_cycle,
+    infer_query_doc_type,
     infer_target_year,
     is_admission_query,
     is_personnel_query,
@@ -317,7 +318,11 @@ class RAGService:
 
             # Final ranking
             final_chunks = self._final_ranking(expanded_chunks, query)
-            return final_chunks[:top_k]
+            selected_chunks = final_chunks[:top_k]
+            selected_chunks = self._expand_score_source_context(
+                selected_chunks, query
+            )
+            return selected_chunks
 
         except Exception as e:
             log.error(f"Error during retrieve_relevant_chunks: {e}")
@@ -439,6 +444,64 @@ class RAGService:
         except Exception as e:
             log.error(f"Error getting adjacent chunk: {e}")
             return None
+
+    def _should_expand_score_source_context(
+        self, chunks: List[Dict[str, Any]], query: str
+    ) -> bool:
+        return bool(chunks) and infer_query_doc_type(query) == "scores"
+
+    def _expand_score_source_context(
+        self, chunks: List[Dict[str, Any]], query: str, max_chunks: int = 24
+    ) -> List[Dict[str, Any]]:
+        if not self._should_expand_score_source_context(chunks, query):
+            return chunks
+
+        source_scores: Dict[str, float] = {}
+        for chunk in chunks:
+            source_file = chunk.get("source_file") or chunk.get("source")
+            if not source_file:
+                continue
+            source_scores[source_file] = source_scores.get(source_file, 0.0) + float(
+                chunk.get("rerank_score")
+                or chunk.get("combined_score")
+                or chunk.get("dense_score")
+                or 0.0
+            )
+
+        if not source_scores:
+            return chunks
+
+        primary_source = max(source_scores.items(), key=lambda item: item[1])[0]
+        source_chunks = self.db_service.get_chunks_by_source_file(
+            primary_source, limit=max_chunks, active_only=True
+        )
+        if not source_chunks:
+            return chunks
+
+        existing_ids = {
+            chunk.get("id", chunk.get("chunk_id"))
+            for chunk in chunks
+            if chunk.get("id", chunk.get("chunk_id")) is not None
+        }
+        expanded_chunks = list(chunks)
+        added = 0
+
+        for chunk in source_chunks:
+            chunk_id = chunk.get("id", chunk.get("chunk_id"))
+            if chunk_id in existing_ids:
+                continue
+            chunk["source_expansion"] = True
+            expanded_chunks.append(chunk)
+            if chunk_id is not None:
+                existing_ids.add(chunk_id)
+            added += 1
+
+        if added:
+            log.info(
+                f"Expanded score source context with {added} additional chunks from {primary_source}"
+            )
+
+        return expanded_chunks
 
     def _is_chunk_relevant(self, chunk: Dict[str, Any], query: str) -> bool:
         """Check if a chunk is relevant to the query using simple keyword matching"""

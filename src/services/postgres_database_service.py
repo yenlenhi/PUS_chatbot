@@ -651,6 +651,65 @@ class PostgresDatabaseService:
         finally:
             session.close()
 
+    def get_chunks_by_source_file(
+        self, source_file: str, limit: int = 50, active_only: bool = True
+    ) -> List[Dict[str, Any]]:
+        """Get ordered chunks for a specific source file."""
+        try:
+            session = self.SessionLocal()
+            if active_only:
+                query = """
+                    SELECT id, content, source_file, page_number, chunk_index,
+                           heading_text, heading_level, heading_number, parent_heading,
+                           school_code, school_symbol, admission_cycle, scope, doc_type
+                    FROM chunks
+                    WHERE source_file = :source_file AND is_active = true
+                    ORDER BY COALESCE(page_number, 0), COALESCE(chunk_index, 0), id
+                    LIMIT :limit
+                """
+            else:
+                query = """
+                    SELECT id, content, source_file, page_number, chunk_index,
+                           heading_text, heading_level, heading_number, parent_heading,
+                           school_code, school_symbol, admission_cycle, scope, doc_type
+                    FROM chunks
+                    WHERE source_file = :source_file
+                    ORDER BY COALESCE(page_number, 0), COALESCE(chunk_index, 0), id
+                    LIMIT :limit
+                """
+
+            result = session.execute(
+                text(query), {"source_file": source_file, "limit": limit}
+            )
+
+            chunks = []
+            for row in result.fetchall():
+                chunks.append(
+                    {
+                        "id": row[0],
+                        "content": row[1],
+                        "source_file": row[2],
+                        "page_number": row[3],
+                        "chunk_index": row[4],
+                        "heading_text": row[5],
+                        "heading_level": row[6],
+                        "heading_number": row[7],
+                        "parent_heading": row[8],
+                        "school_code": row[9],
+                        "school_symbol": row[10],
+                        "admission_cycle": row[11],
+                        "scope": row[12],
+                        "doc_type": row[13],
+                    }
+                )
+
+            return chunks
+        except Exception as e:
+            log.error(f"❌ Error getting chunks by source file {source_file}: {e}")
+            return []
+        finally:
+            session.close()
+
     def get_database_stats(self) -> Dict[str, int]:
         """Get database statistics"""
         try:

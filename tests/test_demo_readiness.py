@@ -66,6 +66,44 @@ def test_chart_requests_do_not_return_placeholder_chart_data():
     assert charts == []
 
 
+def test_score_queries_expand_additional_chunks_from_same_source():
+    rag_module = _load_rag_module()
+    service = rag_module.RAGService.__new__(rag_module.RAGService)
+    service.db_service = types.SimpleNamespace(
+        get_chunks_by_source_file=lambda source_file, limit=24, active_only=True: [
+            {
+                "id": 1,
+                "source_file": source_file,
+                "content": "Diem chuan nam 2023",
+                "page_number": 1,
+                "chunk_index": 1,
+            },
+            {
+                "id": 2,
+                "source_file": source_file,
+                "content": "Diem chuan nam 2022",
+                "page_number": 2,
+                "chunk_index": 2,
+            },
+        ]
+    )
+
+    expanded = service._expand_score_source_context(
+        [
+            {
+                "id": 1,
+                "source_file": "Diem_chuan_T04_2020_2025.pdf",
+                "content": "Diem chuan nam 2023",
+                "rerank_score": 0.91,
+            }
+        ],
+        "so sanh diem chuan cac nam",
+    )
+
+    assert len(expanded) == 2
+    assert any(chunk.get("source_expansion") for chunk in expanded if chunk.get("id") == 2)
+
+
 def test_async_source_references_include_document_metadata():
     async_rag_module = importlib.import_module("src.services.async_rag_service")
     service = async_rag_module.AsyncRAGService.__new__(
