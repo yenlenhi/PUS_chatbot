@@ -32,19 +32,23 @@ const DocumentRepository: React.FC<DocumentRepositoryProps> = ({
   isOpen,
   onClose,
   onOpenDocument,
-  backendUrl = 'http://localhost:8000'
+  backendUrl = ''
 }) => {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [filteredDocs, setFilteredDocs] = useState<Document[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const normalizedBackendUrl = backendUrl.replace(/\/$/, '');
+  const documentsApiUrl = `${normalizedBackendUrl}/api/documents`;
+  const getDocumentApiUrl = (filename: string) =>
+    `${normalizedBackendUrl}/api/documents/${encodeURIComponent(filename)}`;
 
   const fetchDocuments = async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${backendUrl}/api/v1/documents`);
+      const response = await fetch(documentsApiUrl);
       if (!response.ok) throw new Error('Failed to fetch documents');
       const data = await response.json();
       setDocuments(data.documents || []);
@@ -96,7 +100,7 @@ const DocumentRepository: React.FC<DocumentRepositoryProps> = ({
   };
 
   const handleDownload = (filename: string) => {
-    window.open(`${backendUrl}/api/v1/documents/${encodeURIComponent(filename)}`, '_blank');
+    window.open(getDocumentApiUrl(filename), '_blank');
   };
 
   if (!isOpen) return null;

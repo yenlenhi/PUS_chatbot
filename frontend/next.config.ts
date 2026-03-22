@@ -26,7 +26,7 @@ const nextConfig: NextConfig = {
               "img-src 'self' data: https:",
               "font-src 'self' data:",
               `connect-src 'self' ${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'} https://*.supabase.co`,
-              "frame-src 'self'",
+              "frame-src 'self' https://*.supabase.co",
               "object-src 'none'",
             ].join('; '),
           },

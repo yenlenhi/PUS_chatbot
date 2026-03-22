@@ -20,6 +20,58 @@ class AttachmentService:
         self.supabase = get_supabase_storage_service()
         self.forms_dir = Path("data/forms")
         self.forms_dir.mkdir(parents=True, exist_ok=True)
+        self._chunk_attachment_fk_column: Optional[str] = None
+        self._chunk_attachment_fk_column_checked = False
+
+    def _resolve_chunk_attachment_fk_column(self, conn) -> Optional[str]:
+        """Resolve the attachment foreign-key column used by chunk_attachments."""
+        if self._chunk_attachment_fk_column_checked:
+            return self._chunk_attachment_fk_column
+
+        try:
+            result = conn.execute(
+                text(
+                    """
+                    SELECT column_name
+                    FROM information_schema.columns
+                    WHERE table_name = 'chunk_attachments'
+                    ORDER BY ordinal_position
+                """
+                )
+            )
+            column_names = [row[0] for row in result.fetchall()]
+        except Exception as exc:
+            log.warning(f"Could not inspect chunk_attachments schema: {exc}")
+            self._chunk_attachment_fk_column_checked = True
+            self._chunk_attachment_fk_column = None
+            return None
+
+        preferred_columns = (
+            "attachment_id",
+            "document_attachment_id",
+            "file_attachment_id",
+        )
+        for column_name in preferred_columns:
+            if column_name in column_names:
+                self._chunk_attachment_fk_column = column_name
+                self._chunk_attachment_fk_column_checked = True
+                return column_name
+
+        fallback_columns = [
+            column_name
+            for column_name in column_names
+            if column_name not in {"chunk_id", "relevance_score", "created_at", "updated_at"}
+            and column_name.endswith("_id")
+        ]
+        self._chunk_attachment_fk_column = fallback_columns[0] if fallback_columns else None
+        self._chunk_attachment_fk_column_checked = True
+
+        if self._chunk_attachment_fk_column is None:
+            log.warning(
+                "chunk_attachments table does not expose a supported attachment foreign-key column"
+            )
+
+        return self._chunk_attachment_fk_column
 
     def create_attachment(
         self,
@@ -88,13 +140,20 @@ class AttachmentService:
         """
         try:
             with self.db.engine.connect() as conn:
+                attachment_fk_column = self._resolve_chunk_attachment_fk_column(conn)
+                if not attachment_fk_column:
+                    log.warning(
+                        "Skipping chunk attachment linking because the attachment foreign-key column could not be resolved"
+                    )
+                    return
+
                 for chunk_id in chunk_ids:
                     conn.execute(
                         text(
-                            """
-                            INSERT INTO chunk_attachments (chunk_id, attachment_id, relevance_score)
+                            f"""
+                            INSERT INTO chunk_attachments (chunk_id, {attachment_fk_column}, relevance_score)
                             VALUES (:chunk_id, :attachment_id, :relevance_score)
-                            ON CONFLICT (chunk_id, attachment_id) DO UPDATE
+                            ON CONFLICT (chunk_id, {attachment_fk_column}) DO UPDATE
                             SET relevance_score = :relevance_score
                         """
                         ),
@@ -129,14 +188,21 @@ class AttachmentService:
 
         try:
             with self.db.engine.connect() as conn:
+                attachment_fk_column = self._resolve_chunk_attachment_fk_column(conn)
+                if not attachment_fk_column:
+                    return []
+
                 query = """
                     SELECT DISTINCT a.id, a.filename, a.mime_type, a.file_path, 
                            a.file_size, a.description, a.keywords, a.category
                     FROM document_attachments a
-                    JOIN chunk_attachments ca ON a.id = ca.attachment_id
+                    JOIN chunk_attachments ca ON a.id = ca.__ATTACHMENT_FK_COLUMN__
                     WHERE ca.chunk_id = ANY(:chunk_ids) AND a.is_active = TRUE
                     ORDER BY a.id
                 """
+                query = query.replace(
+                    "__ATTACHMENT_FK_COLUMN__", attachment_fk_column
+                )
                 params: Dict[str, Any] = {"chunk_ids": chunk_ids}
                 if limit is not None and limit > 0:
                     query += " LIMIT :limit"

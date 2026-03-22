@@ -104,6 +104,34 @@ def test_score_queries_expand_additional_chunks_from_same_source():
     assert any(chunk.get("source_expansion") for chunk in expanded if chunk.get("id") == 2)
 
 
+def test_score_source_expansion_skips_non_score_sources():
+    rag_module = _load_rag_module()
+    service = rag_module.RAGService.__new__(rag_module.RAGService)
+    service.db_service = types.SimpleNamespace(
+        get_chunks_by_source_file=lambda *args, **kwargs: (_ for _ in ()).throw(
+            AssertionError("non-score sources must not be expanded")
+        )
+    )
+
+    expanded = service._expand_score_source_context(
+        [
+            {
+                "id": 1,
+                "source_file": "So_tay_BDCL_2025_T04.pdf",
+                "content": "So tay bao dam chat luong cua nha truong.",
+                "doc_type": "general",
+                "rerank_score": 0.91,
+            }
+        ],
+        "so sanh diem chuan",
+    )
+
+    assert len(expanded) == 1
+    assert expanded[0]["source_file"] == "So_tay_BDCL_2025_T04.pdf"
+    assert expanded[0]["doc_type"] == "general"
+    assert not expanded[0].get("source_expansion")
+
+
 def test_async_source_references_include_document_metadata():
     async_rag_module = importlib.import_module("src.services.async_rag_service")
     service = async_rag_module.AsyncRAGService.__new__(

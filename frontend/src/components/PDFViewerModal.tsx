@@ -18,18 +18,21 @@ const PDFViewerModal: React.FC<PDFViewerModalProps> = ({
   onClose,
   filename,
   initialPage = 1,
-  backendUrl = 'http://localhost:8000',
+  backendUrl = '',
   useSupabase = true // Default to Supabase Storage
 }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(initialPage);
   const [totalPages, setTotalPages] = useState<number | null>(null);
+  const normalizedBackendUrl = backendUrl.replace(/\/$/, '');
+  const documentApiUrl = `${normalizedBackendUrl}/api/documents/${encodeURIComponent(filename)}`;
+  const documentInfoUrl = `${documentApiUrl}/info`;
 
   // Use Supabase Storage URL or fallback to backend API
   const pdfUrl = useSupabase 
     ? getDocumentUrl(filename)
-    : `${backendUrl}/api/v1/documents/${encodeURIComponent(filename)}`;
+    : documentApiUrl;
 
   const handlePrevPage = useCallback(() => {
     if (currentPage > 1) setCurrentPage(p => p - 1);
@@ -46,7 +49,7 @@ const PDFViewerModal: React.FC<PDFViewerModalProps> = ({
       setError(null);
       
       // Fetch document info for page count
-      fetch(`${backendUrl}/api/v1/documents/${encodeURIComponent(filename)}/info`)
+      fetch(documentInfoUrl)
         .then(res => res.json())
         .then(data => {
           if (data.page_count) {
@@ -55,7 +58,7 @@ const PDFViewerModal: React.FC<PDFViewerModalProps> = ({
         })
         .catch(err => console.log('Could not fetch page count:', err));
     }
-  }, [isOpen, filename, initialPage, backendUrl]);
+  }, [isOpen, filename, initialPage, documentInfoUrl]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

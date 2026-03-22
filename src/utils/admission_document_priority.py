@@ -40,6 +40,19 @@ _ADMISSION_DOC_TERMS = (
     "huong dan",
     "de an",
 )
+_TIMELINE_DOC_STRONG_TERMS = (
+    "moc thoi gian",
+    "thong bao tuyen sinh",
+    "thong bao chieu sinh",
+    "huong dan nhap hoc",
+    "giay bao nhap hoc",
+    "xac nhan nhap hoc",
+)
+_REGULATION_DOC_TERMS = (
+    "quy che dao tao",
+    "quy dinh dao tao",
+    "chuong trinh dao tao",
+)
 _PERSONNEL_TERMS = (
     "hieu truong",
     "pho hieu truong",
@@ -285,12 +298,19 @@ def infer_document_metadata(
     heading_text: Optional[str] = None,
     content: Optional[str] = None,
 ) -> Dict[str, Any]:
-    normalized_blob = " ".join(
+    normalized_title_blob = " ".join(
         part
         for part in (
             _normalize_text(source_name),
             _normalize_text(source_url),
             _normalize_text(heading_text),
+        )
+        if part
+    ).strip()
+    normalized_blob = " ".join(
+        part
+        for part in (
+            normalized_title_blob,
             _normalize_text(str(content or "")[:1600]),
         )
         if part
@@ -329,11 +349,21 @@ def infer_document_metadata(
         normalized_blob, _ADMISSION_DOC_TERMS
     ):
         doc_type = "personnel"
+    elif _contains_any_term(normalized_title_blob, _REGULATION_DOC_TERMS) and not _contains_any_term(
+        normalized_title_blob, _ADMISSION_DOC_TERMS
+    ):
+        doc_type = "general"
     else:
         for candidate_doc_type, terms in _DOC_TYPE_HINTS:
-            if _contains_any_term(normalized_blob, terms):
+            if _contains_any_term(normalized_title_blob, terms):
                 doc_type = candidate_doc_type
                 break
+
+        if doc_type is None:
+            for candidate_doc_type, terms in _DOC_TYPE_HINTS:
+                if _contains_any_term(normalized_blob, terms):
+                    doc_type = candidate_doc_type
+                    break
 
     return {
         "school_code": school_code,
@@ -394,6 +424,10 @@ def enrich_query_for_current_cycle(query: Optional[str]) -> tuple[str, bool]:
         return raw_query, False
 
     normalized_query = _normalize_text(raw_query)
+    doc_type = infer_query_doc_type(raw_query)
+    if doc_type == "scores":
+        return raw_query, False
+
     return _build_current_cycle_query(raw_query, normalized_query)
 
 
@@ -601,7 +635,7 @@ def _build_filter_candidate_stages(
         ),
     ]
 
-    if school_code and doc_type:
+    if school_code and doc_type and doc_type != "scores":
         candidate_stages.append(
             (
                 "school_only_non_score",
@@ -740,12 +774,16 @@ def compute_priority_adjustment(query: Optional[str], chunk: Dict[str, Any]) -> 
     source_name = chunk.get("source_file") or chunk.get("source") or ""
     normalized_source = _normalize_text(source_name)
     normalized_heading = _normalize_text(chunk.get("heading_text") or chunk.get("heading"))
+    normalized_title_blob = " ".join(
+        part for part in (normalized_source, normalized_heading) if part
+    ).strip()
     normalized_content = _normalize_text(str(chunk.get("content") or "")[:1600])
     normalized_chunk_text = " ".join(
         part for part in (normalized_source, normalized_heading, normalized_content) if part
     ).strip()
     metadata = enrich_chunk_source_metadata(chunk)
 
+    query_doc_type = infer_query_doc_type(query)
     target_year = infer_target_year(query)
     document_year = chunk.get("document_year")
     admission_years = chunk.get("admission_years") or chunk.get("document_years") or []
@@ -789,6 +827,32 @@ def compute_priority_adjustment(query: Optional[str], chunk: Dict[str, Any]) -> 
             else:
                 personnel_bonus += max(-0.22, (document_year - current_year) * 0.06)
 
+    timeline_bonus = 0.0
+    if query_doc_type == "timeline":
+        has_timeline_notice_title = any(
+            term in normalized_title_blob for term in _TIMELINE_DOC_STRONG_TERMS
+        )
+        has_timeline_context = any(
+            term in normalized_chunk_text
+            for term in (
+                "dang ky",
+                "du tuyen",
+                "xac nhan nhap hoc",
+                "nhap hoc",
+                "chieu sinh",
+            )
+        )
+
+        if has_timeline_notice_title:
+            timeline_bonus += 0.26
+        elif "thong bao" in normalized_title_blob and has_timeline_context:
+            timeline_bonus += 0.16
+
+        if _contains_any_term(normalized_title_blob, _REGULATION_DOC_TERMS):
+            timeline_bonus -= 0.32
+        elif "quy che" in normalized_title_blob and "dao tao" in normalized_title_blob:
+            timeline_bonus -= 0.24
+
     school_bonus = 0.0
     if primary_school_query:
         if any(
@@ -813,6 +877,7 @@ def compute_priority_adjustment(query: Optional[str], chunk: Dict[str, Any]) -> 
         + authority_bonus
         + title_bonus
         + personnel_bonus
+        + timeline_bonus
         + school_bonus
         + draft_penalty
     )

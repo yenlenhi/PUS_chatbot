@@ -125,6 +125,19 @@ def test_infer_document_metadata_preserves_multi_year_coverage():
     assert metadata["doc_type"] == "scores"
 
 
+def test_infer_document_metadata_keeps_training_regulation_out_of_timeline_doc_type():
+    metadata = infer_document_metadata(
+        "Quy_che_dao_tao_dai_hoc.pdf",
+        heading_text="Quy che dao tao dai hoc",
+        content=(
+            "Thong tin ve dang ky hoc phan, nhap hoc va cac moc thoi gian lien quan "
+            "den quy trinh dao tao."
+        ),
+    )
+
+    assert metadata["doc_type"] == "general"
+
+
 def test_filter_chunks_by_metadata_prefers_t04_personnel_document():
     query = "hieu truong hien nay la ai"
     chunks = [
@@ -203,6 +216,32 @@ def test_priority_adjustment_prefers_t04_over_system_wide_or_t05_chunks():
 
     assert t04_score > system_score
     assert t04_score > t05_score
+
+
+def test_priority_adjustment_prefers_timeline_notice_over_training_regulation():
+    query = "toi muon biet moc thoi gian dang ky va xac nhan nhap hoc"
+
+    notice_chunk = {
+        "source_file": "Thong_bao_tuyen_sinh_T04_2026.pdf",
+        "heading_text": "Moc thoi gian dang ky va nhap hoc",
+        "content": (
+            "Dang ky du tuyen tu 15/3/2026 den 25/4/2026. "
+            "Xac nhan nhap hoc truoc 30/8/2026."
+        ),
+    }
+    regulation_chunk = {
+        "source_file": "Quy_che_dao_tao_dai_hoc.pdf",
+        "heading_text": "Quy che dao tao dai hoc",
+        "content": (
+            "4. Trieu tap hoc vien trung tuyen va nhap hoc. "
+            "a) Giay bao nhap hoc. "
+            "Trong thoi gian khong qua 05 ngay lam viec, Hieu truong ban hanh quyet dinh."
+        ),
+    }
+
+    assert compute_priority_adjustment(query, notice_chunk) > compute_priority_adjustment(
+        query, regulation_chunk
+    )
 
 
 def test_filter_chunks_by_metadata_prefers_method_docs_over_score_docs():

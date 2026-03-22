@@ -663,18 +663,30 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
               components={{
                 code({ className, children, ...props }) {
                   const match = /language-(\w+)/.exec(className || '');
+                  // Inline code: no language class AND no newline in content
                   const isInline = !match && (children?.toString().indexOf('\n') === -1);
-                  return !isInline && match ? (
-                    <SyntaxHighlighter
-                      style={oneDark as Record<string, React.CSSProperties>}
-                      language={match[1]}
-                      PreTag="div"
-                      className="rounded-lg text-xs my-2"
-                    >
-                      {String(children).replace(/\n$/, '')}
-                    </SyntaxHighlighter>
-                  ) : (
-                    <code className={`${className} bg-gray-200 text-red-600 px-1 py-0.5 rounded text-xs`} {...props}>
+                  if (match) {
+                    return (
+                      <SyntaxHighlighter
+                        style={oneDark as Record<string, React.CSSProperties>}
+                        language={match[1]}
+                        PreTag="div"
+                        className="rounded-lg text-xs my-2"
+                      >
+                        {String(children).replace(/\n$/, '')}
+                      </SyntaxHighlighter>
+                    );
+                  }
+                  if (isInline) {
+                    return (
+                      <code className="bg-gray-200 text-red-600 px-1 py-0.5 rounded text-xs" {...props}>
+                        {children}
+                      </code>
+                    );
+                  }
+                  // Fenced block without language specifier
+                  return (
+                    <code className={`${className || ''} block bg-gray-900 text-gray-100 p-3 rounded-lg text-xs my-2 overflow-x-auto whitespace-pre`} {...props}>
                       {children}
                     </code>
                   );
@@ -1412,7 +1424,7 @@ const ChatBotPage = () => {
               </div>
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="group hidden md:flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-gray-50 to-gray-100 hover:from-gray-100 hover:to-gray-200 text-gray-700 rounded-xl transition-all duration-300 text-sm font-medium relative shadow-sm hover:shadow-md hover:scale-105"
+                className="group flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-gray-50 to-gray-100 hover:from-gray-100 hover:to-gray-200 text-gray-700 rounded-xl transition-all duration-300 text-sm font-medium relative shadow-sm hover:shadow-md hover:scale-105"
               >
                 <Book className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover:scale-110 transition-transform" />
                 <span className="hidden sm:inline">{language === 'vi' ? 'Nguồn' : 'Sources'}</span>

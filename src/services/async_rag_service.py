@@ -255,11 +255,30 @@ class AsyncRAGService:
             )
         confidence = faq.get("confidence", 0.98)
 
+        # Build minimal source references from FAQ source display names so the
+        # sidebar can show them.  FAQ source entries are human‑readable display
+        # names rather than raw file paths, so we use them as both filename and
+        # display_name.
+        faq_source_refs = [
+            {
+                "chunk_id": str(idx),
+                "filename": src,
+                "page_number": None,
+                "heading": None,
+                "content_snippet": None,
+                "relevance_score": confidence,
+                "document_year": None,
+                "source_url": None,
+                "display_name": src,
+            }
+            for idx, src in enumerate(sources)
+        ]
+
         return {
             "answer": answer,
             "follow_up_questions": follow_up_questions,
             "sources": sources,
-            "source_references": [],
+            "source_references": faq_source_refs,
             "attachments": [],
             "confidence": confidence,
             "conversation_id": conversation_id,
@@ -339,6 +358,10 @@ class AsyncRAGService:
             )
         ) or normalized.startswith("nganh ")
         token_count = len(normalized.split())
+        has_comparison_intent = any(
+            term in normalized
+            for term in ("so sanh", "cac nam", "qua cac nam", "xu huong", "bien dong")
+        )
 
         has_score_signal = "diem" in normalized and (
             has_explicit_score_term
@@ -355,7 +378,9 @@ class AsyncRAGService:
             and not has_major_hint
         )
         needs_synonym_expansion = has_score_signal and (
-            has_generic_score_term or (token_count <= 5 and not has_explicit_score_term)
+            has_generic_score_term
+            or (token_count <= 5 and not has_explicit_score_term)
+            or (has_comparison_intent and not has_year)
         )
 
         return {
@@ -364,6 +389,7 @@ class AsyncRAGService:
             "has_generic_score_term": has_generic_score_term,
             "has_year": has_year,
             "has_major_hint": has_major_hint,
+            "has_comparison_intent": has_comparison_intent,
             "is_under_specified": is_under_specified,
             "needs_synonym_expansion": needs_synonym_expansion,
         }
@@ -415,6 +441,30 @@ class AsyncRAGService:
                 enriched_query,
                 current_cycle_enriched or primary_school_enriched or personnel_enriched,
             )
+
+        score_normalized = self._normalize_for_match(enriched_query or original_query)
+        score_enrichment_terms: List[str] = []
+        if "diem chuan" not in score_normalized:
+            score_enrichment_terms.append("diem chuan tuyen sinh")
+        if "diem xet" not in score_normalized:
+            score_enrichment_terms.append("diem xet tuyen")
+        if "diem trung tuyen" not in score_normalized:
+            score_enrichment_terms.append("diem trung tuyen")
+        if metadata["has_comparison_intent"] and not metadata["has_year"]:
+            score_enrichment_terms.extend(["cac nam", "xu huong"])
+        elif not metadata["has_year"]:
+            score_enrichment_terms.append("cac nam")
+        if "an ninh nhan dan" not in score_normalized:
+            score_enrichment_terms.append("Truong Dai hoc An ninh Nhan dan")
+
+        score_enriched_query = " ".join(
+            part for part in [enriched_query.strip(), *score_enrichment_terms] if part
+        ).strip()
+        if score_enriched_query != retrieval_query:
+            log.info(
+                f"[ASYNC] Enriched retrieval query: '{retrieval_query[:60]}' -> '{score_enriched_query[:120]}'"
+            )
+            return score_enriched_query, True
 
         normalized = self._normalize_for_match(enriched_query or original_query)
         enrichment_terms: List[str] = []
@@ -482,7 +532,7 @@ class AsyncRAGService:
                 )
 
             structured_answer = self.rag_service.try_build_structured_admission_answer(
-                effective_query, relevant_chunks, language=language
+                query, relevant_chunks, language=language
             )
             if structured_answer:
                 return normalize_answer_markdown(structured_answer), remaining
@@ -1290,10 +1340,13 @@ class AsyncRAGService:
                                 conv_context
                             )
                         )
-                        memory_loaded = True
-                        if performance is not None:
-                            performance["memory_loaded"] = True
-                        log.info("🧠 [ASYNC] Loaded memory context")
+                        if (
+                            memory_context
+                        ):  # only mark loaded when there is actual content
+                            memory_loaded = True
+                            if performance is not None:
+                                performance["memory_loaded"] = True
+                            log.info("🧠 [ASYNC] Loaded memory context")
                 except Exception as mem_error:
                     log.warning(f"Could not load memory context: {mem_error}")
                 finally:
@@ -1694,7 +1747,7 @@ class AsyncRAGService:
                 yield {
                     "type": "sources",
                     "sources": response["sources"],
-                    "source_references": [],
+                    "source_references": response["source_references"],
                     "confidence": response["confidence"],
                 }
                 yield {"type": "answer_chunk", "content": response["answer"]}
@@ -1829,10 +1882,13 @@ class AsyncRAGService:
                                 conv_context
                             )
                         )
-                        memory_loaded = True
-                        if performance is not None:
-                            performance["memory_loaded"] = True
-                        log.info("🧠 [ASYNC STREAM] Loaded memory context")
+                        if (
+                            memory_context
+                        ):  # only mark loaded when there is actual content
+                            memory_loaded = True
+                            if performance is not None:
+                                performance["memory_loaded"] = True
+                            log.info("🧠 [ASYNC STREAM] Loaded memory context")
                 except Exception as mem_error:
                     log.warning(f"Memory context error: {mem_error}")
                 finally:
@@ -2253,11 +2309,14 @@ Trả lời bằng tiếng Việt."""
             content = chunk.get("content", "")
             snippet = content[:200] + "..." if len(content) > 200 else content
 
+            # Use is-not-None checks so a legitimate score of 0.0 is not skipped.
+            _rs = chunk.get("rerank_score")
+            _cs = chunk.get("combined_score")
+            _ds = chunk.get("dense_score")
             relevance_score = (
-                chunk.get("rerank_score")
-                or chunk.get("combined_score")
-                or chunk.get("dense_score")
-                or 0.0
+                _rs
+                if _rs is not None
+                else _cs if _cs is not None else _ds if _ds is not None else 0.0
             )
             if relevance_score > 1.0:
                 relevance_score = min(1.0, (relevance_score + 10) / 20)

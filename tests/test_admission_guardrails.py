@@ -127,6 +127,30 @@ def test_build_structured_timeline_answer_from_retrieved_chunks():
     assert "30/8/2026" in answer
 
 
+def test_build_structured_timeline_answer_skips_outline_headings_without_real_time_values():
+    query = "moc thoi gian dang ky va xac nhan nhap hoc"
+    chunks = [
+        {
+            "source_file": "Thong bao tuyen sinh T04 2026.pdf",
+            "heading_text": "Moc thoi gian",
+            "content": (
+                "4. Trieu tap hoc vien trung tuyen va nhap hoc.\n"
+                "a) Giay bao nhap hoc.\n"
+                "Dang ky du tuyen: Tu ngay 15/3/2026 den 25/4/2026.\n"
+                "Xac nhan nhap hoc: Hoan thanh truoc 30/8/2026."
+            ),
+        }
+    ]
+
+    answer = build_structured_admission_answer(query, chunks, language="vi")
+
+    assert answer is not None
+    assert "Thoi gian: 4." not in _normalize_test_text(answer)
+    assert "Thoi gian: a)" not in _normalize_test_text(answer)
+    assert "15/3/2026 den 25/4/2026" in _normalize_test_text(answer)
+    assert "truoc 30/8/2026" in _normalize_test_text(answer)
+
+
 def test_validate_admission_answer_flags_timeline_markdown_table():
     query = "moc thoi gian dang ky va xac nhan nhap hoc"
     answer = (
