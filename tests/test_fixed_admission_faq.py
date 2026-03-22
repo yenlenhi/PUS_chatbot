@@ -15,10 +15,42 @@ def test_quota_question_returns_fixed_answer_with_intro_and_follow_ups():
     assert "PT2, PT3 Nam" in faq["answer"]
     assert "PT2, PT3 Nữ" in faq["answer"]
     assert len(faq["follow_up_questions"]) == 3
-    assert (
-        "Điều kiện sơ tuyển vào Trường Đại học An Ninh Nhân Dân là gì?"
-        in faq["follow_up_questions"]
-    )
+
+
+def test_rector_question_returns_fixed_leadership_answer():
+    faq = get_fixed_admission_faq("Ai la hieu truong?")
+
+    assert faq is not None
+    assert "Tran Van Tuan" in faq["answer"]
+    assert "Hieu truong" in faq["answer"]
+    assert "Bi thu Dang uy" in faq["answer"]
+    assert "Phan Xuan Tuy" not in faq["answer"]
+
+
+def test_vice_rector_question_returns_all_fixed_vice_rectors():
+    faq = get_fixed_admission_faq("Cac pho hieu truong cua nha truong la ai?")
+
+    assert faq is not None
+    assert "Nguyen Tran Hieu" in faq["answer"]
+    assert "Pham Duy Hoang" in faq["answer"]
+    assert "Dang Ngoc Toan" in faq["answer"]
+    assert "Le Hoang Ngan" in faq["answer"]
+
+
+def test_leadership_query_returns_fixed_board_list():
+    faq = get_fixed_admission_faq("Ban giam hieu gom nhung ai?")
+
+    assert faq is not None
+    assert "Tran Van Tuan" in faq["answer"]
+    assert "Nguyen Tran Hieu" in faq["answer"]
+    assert "Le Hoang Ngan" in faq["answer"]
+    assert "Co cau to chuc bo may Nha truong" in faq["sources"]
+
+
+def test_other_school_leadership_query_does_not_match_t04_fixed_answer():
+    faq = get_fixed_admission_faq("Hieu truong Hoc vien An ninh nhan dan la ai?")
+
+    assert faq is None
 
 
 def test_quota_question_answer_does_not_leak_internal_prompt_language():

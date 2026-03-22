@@ -51,10 +51,7 @@ _SYSTEM_WIDE_TERMS = (
 )
 
 
-def _is_primary_school_quota_query(normalized_query: str) -> bool:
-    if "chi tieu" not in normalized_query:
-        return False
-
+def _targets_primary_school_default(normalized_query: str) -> bool:
     if any(term in normalized_query for term in _SYSTEM_WIDE_TERMS):
         return False
 
@@ -64,13 +61,132 @@ def _is_primary_school_quota_query(normalized_query: str) -> bool:
     if any(term in normalized_query for term in _PRIMARY_SCHOOL_TERMS):
         return True
 
-    return any(
+    return True
+
+
+def _is_primary_school_quota_query(normalized_query: str) -> bool:
+    if "chi tieu" not in normalized_query:
+        return False
+
+    if any(term in normalized_query for term in _PRIMARY_SCHOOL_TERMS):
+        return True
+
+    return _targets_primary_school_default(normalized_query) and any(
         term in normalized_query for term in ("to hop", "xet tuyen", "tuyen sinh")
+    )
+
+
+def _is_primary_school_rector_query(normalized_query: str) -> bool:
+    if not _targets_primary_school_default(normalized_query):
+        return False
+
+    if any(
+        term in normalized_query
+        for term in ("pho hieu truong", "hieu pho", "ban giam hieu")
+    ):
+        return False
+
+    return any(
+        term in normalized_query
+        for term in (
+            "ai la hieu truong",
+            "hieu truong la ai",
+            "hieu truong hien nay",
+            "thong tin hieu truong",
+            "ve hieu truong",
+        )
+    )
+
+
+def _is_primary_school_vice_rector_query(normalized_query: str) -> bool:
+    return _targets_primary_school_default(normalized_query) and any(
+        term in normalized_query
+        for term in (
+            "pho hieu truong",
+            "cac pho hieu truong",
+            "hieu pho",
+            "hieu truong pho",
+        )
+    )
+
+
+def _is_primary_school_leadership_query(normalized_query: str) -> bool:
+    return _targets_primary_school_default(normalized_query) and any(
+        term in normalized_query
+        for term in (
+            "ban giam hieu",
+            "lanh dao nha truong",
+            "co cau to chuc bo may",
+            "co cau to chuc",
+            "bo may nha truong",
+        )
     )
 
 
 def _build_fixed_faq_catalog() -> list[Dict[str, Any]]:
     return [
+        {
+            "key": "rector_t04",
+            "question": "Ai la Hieu truong Truong Dai hoc An ninh Nhan dan?",
+            "match": _is_primary_school_rector_query,
+            "sources": [
+                "Co cau to chuc bo may Nha truong",
+            ],
+            "follow_up_questions": [
+                "Cac Pho Hieu truong cua Nha truong la ai?",
+                "Ban Giam hieu cua Nha truong gom nhung ai?",
+                "Toi muon biet ghi chu phu trach cua tung lanh dao.",
+            ],
+            "answer": """### Hieu truong Truong Dai hoc An ninh Nhan dan
+
+Theo thong tin co cau to chuc bo may Nha truong ma he thong dang dung lam can cu tra loi:
+
+- **Thieu tuong, TS. Tran Van Tuan** la **Hieu truong**.
+- Ghi chu: **Bi thu Dang uy; phu trach chung va cong tac can bo.**""",
+        },
+        {
+            "key": "vice_rectors_t04",
+            "question": "Cac Pho Hieu truong Truong Dai hoc An ninh Nhan dan la ai?",
+            "match": _is_primary_school_vice_rector_query,
+            "sources": [
+                "Co cau to chuc bo may Nha truong",
+            ],
+            "follow_up_questions": [
+                "Ai la Hieu truong cua Nha truong?",
+                "Ban Giam hieu cua Nha truong gom nhung ai?",
+                "Toi muon biet ghi chu phu trach cua tung Pho Hieu truong.",
+            ],
+            "answer": """### Cac Pho Hieu truong Truong Dai hoc An ninh Nhan dan
+
+Theo thong tin co cau to chuc bo may Nha truong ma he thong dang dung lam can cu tra loi, cac Pho Hieu truong gom:
+
+- **Dai ta, PGS. TS. Nguyen Tran Hieu** - Pho Hieu truong. Ghi chu: phu trach dao tao lien ket va hop tac quoc te.
+- **Dai ta, TS. Pham Duy Hoang** - Pho Hieu truong. Ghi chu: phu trach cac mang cong tac theo phan cong (nguyen Pho Hieu truong Truong Cao dang ANND II).
+- **Dai ta, PGS. TS. Dang Ngoc Toan** - Pho Hieu truong. Ghi chu: Uy vien Ban Thuong vu Dang uy; phu trach Khoa Luat va cac hoat dong dan van.
+- **Thuong ta, TS. Le Hoang Ngan** - Pho Hieu truong. Ghi chu: phu trach cong tac chinh tri, xay dung luc luong va quan ly hoc vien.""",
+        },
+        {
+            "key": "leadership_t04",
+            "question": "Ban Giam hieu hoac co cau lanh dao Truong Dai hoc An ninh Nhan dan gom nhung ai?",
+            "match": _is_primary_school_leadership_query,
+            "sources": [
+                "Co cau to chuc bo may Nha truong",
+            ],
+            "follow_up_questions": [
+                "Ai la Hieu truong cua Nha truong?",
+                "Cac Pho Hieu truong cua Nha truong la ai?",
+                "Toi muon biet ghi chu phu trach cua tung lanh dao.",
+            ],
+            "answer": """### Ban Giam hieu Truong Dai hoc An ninh Nhan dan
+
+Theo thong tin co cau to chuc bo may Nha truong ma he thong dang dung lam can cu tra loi, Ban Giam hieu gom:
+
+1. **Thieu tuong, TS. Tran Van Tuan** - Hieu truong. Ghi chu: Bi thu Dang uy; phu trach chung va cong tac can bo.
+2. **Dai ta, PGS. TS. Nguyen Tran Hieu** - Pho Hieu truong. Ghi chu: phu trach dao tao lien ket va hop tac quoc te.
+3. **Dai ta, TS. Pham Duy Hoang** - Pho Hieu truong. Ghi chu: phu trach cac mang cong tac theo phan cong (nguyen Pho Hieu truong Truong Cao dang ANND II).
+4. **Dai ta, PGS. TS. Dang Ngoc Toan** - Pho Hieu truong. Ghi chu: Uy vien Ban Thuong vu Dang uy; phu trach Khoa Luat va cac hoat dong dan van.
+5. **Thuong ta, TS. Le Hoang Ngan** - Pho Hieu truong. Ghi chu: phu trach cong tac chinh tri, xay dung luc luong va quan ly hoc vien.""",
+        },
         {
             "key": "quota_t04",
             "question": "Chỉ tiêu tuyển sinh vào Trường Đại học An Ninh Nhân Dân?",
