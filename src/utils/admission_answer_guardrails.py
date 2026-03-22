@@ -32,27 +32,6 @@ _YEAR_PATTERN = re.compile(r"\b(20\d{2})\b")
 _SCORE_VALUE_PATTERN = re.compile(r"\b\d{2}(?:[.,]\d{1,2})?\b")
 _INLINE_TABLE_PATTERN = re.compile(r"([^\n])(\|(?:[^|\n]+\|){2,}.*)")
 _TABLE_SEPARATOR_PATTERN = re.compile(r"^:?-{3,}:?$")
-_TIMELINE_ACTION_KEYWORDS = (
-    "dang ky",
-    "xet tuyen",
-    "nhap hoc",
-    "xac nhan nhap hoc",
-    "du tuyen",
-    "chieu sinh",
-    "trung tuyen",
-)
-_TIMELINE_RELATIVE_DATE_PATTERN = re.compile(
-    r"\b(?:truoc|sau|vao|tu|den|hoan thanh truoc|du kien vao)\s+\d{1,2}/\d{1,2}/\d{4}\b",
-    re.IGNORECASE,
-)
-_TIMELINE_DURATION_PATTERN = re.compile(
-    r"\b(?:trong vong|khong qua)\s+\d+\s+ngay(?:\s+lam viec)?\b",
-    re.IGNORECASE,
-)
-_TIMELINE_OUTLINE_PREFIX_PATTERN = re.compile(
-    r"^\s*(?:\d+[.)]|[a-z][.)]|[ivxlcdm]+[.)])\s*",
-    re.IGNORECASE,
-)
 
 
 def _normalize_text(value: Optional[str]) -> str:
@@ -520,74 +499,6 @@ def build_reference_year_bridge_answer(
     return normalize_answer_markdown(f"{prefix}{answer}")
 
 
-def _strip_timeline_outline_prefix(value: str) -> str:
-    return _TIMELINE_OUTLINE_PREFIX_PATTERN.sub("", value).strip(" .:-;")
-
-
-def _extract_timeline_text(line: str, normalized_line: str) -> Optional[str]:
-    match_range = _DATE_RANGE_PATTERN.search(line)
-    if match_range:
-        return f"{match_range.group(1)} den {match_range.group(2)}"
-
-    relative_match = _TIMELINE_RELATIVE_DATE_PATTERN.search(normalized_line)
-    if relative_match:
-        return relative_match.group(0).strip()
-
-    duration_match = _TIMELINE_DURATION_PATTERN.search(normalized_line)
-    if duration_match:
-        return duration_match.group(0).strip()
-
-    dates = _DATE_SINGLE_PATTERN.findall(line)
-    if len(dates) >= 2:
-        return ", ".join(dates[:2])
-
-    if len(dates) == 1 and any(
-        hint in normalized_line
-        for hint in (
-            "ngay",
-            "thang",
-            "nam",
-            "bat dau",
-            "ket thuc",
-            "hoan thanh",
-            "du kien",
-        )
-    ):
-        return dates[0]
-
-    return None
-
-
-def _extract_timeline_label_and_note(
-    line: str, timeline_text: str
-) -> tuple[Optional[str], str]:
-    if ":" in line:
-        raw_label, raw_note = line.split(":", 1)
-    else:
-        raw_label, raw_note = "", line
-
-    label = _strip_timeline_outline_prefix(raw_label)
-    note = raw_note.strip()
-
-    if not label:
-        note_without_time = note
-        range_match = _DATE_RANGE_PATTERN.search(note)
-        if range_match:
-            note_without_time = note_without_time.replace(range_match.group(0), " ")
-        for token in _DATE_SINGLE_PATTERN.findall(note):
-            note_without_time = note_without_time.replace(token, " ")
-
-        label = _strip_timeline_outline_prefix(note_without_time)
-
-    label = re.sub(r"\s+", " ", label).strip(" .:-;")
-    note = re.sub(r"\s+", " ", note).strip(" .:-;")
-
-    if not label or len(label) < 4:
-        return None, note
-
-    return label, note
-
-
 def _build_timeline_answer(query: str, chunks: List[Dict[str, Any]]) -> Optional[str]:
     rows: List[tuple[str, str, str]] = []
     seen: set[tuple[str, str]] = set()
@@ -624,20 +535,6 @@ def _build_timeline_answer(query: str, chunks: List[Dict[str, Any]]) -> Optional
                 if dates:
                     timeline_text = ", ".join(dates)
                     note = line
-
-            extracted_timeline_text = _extract_timeline_text(line, normalized_line)
-            if not extracted_timeline_text:
-                continue
-
-            extracted_label, extracted_note = _extract_timeline_label_and_note(
-                line, extracted_timeline_text
-            )
-            if not extracted_label:
-                continue
-
-            label = extracted_label
-            timeline_text = extracted_timeline_text
-            note = extracted_note
             key = (label, timeline_text)
             if timeline_text and key not in seen:
                 seen.add(key)

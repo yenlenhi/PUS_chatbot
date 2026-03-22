@@ -6,7 +6,6 @@ import uuid
 import re
 import time
 import hashlib
-import math
 import datetime as dt
 import unicodedata
 from typing import List, Dict, Any, Optional
@@ -23,7 +22,6 @@ from sentence_transformers import CrossEncoder
 from src.utils.logger import log
 from src.utils.admission_document_priority import (
     compute_priority_adjustment,
-    enrich_chunk_source_metadata,
     filter_chunks_by_metadata,
     enrich_query_for_primary_school,
     enrich_query_for_current_cycle,
@@ -174,9 +172,7 @@ class RAGService:
                 pairs = [[query, chunk["content"]] for chunk in chunks_to_rerank]
                 scores = self.reranker.predict(pairs, show_progress_bar=False)
                 for chunk, score in zip(chunks_to_rerank, scores):
-                    # Normalize raw cross-encoder logits to [0, 1] using sigmoid so
-                    # they are on the same scale as dense cosine-similarity scores.
-                    chunk["rerank_score"] = 1.0 / (1.0 + math.exp(-float(score)))
+                    chunk["rerank_score"] = float(score)
                 log.info(
                     f"Reranked {len(chunks_to_rerank)} chunks (skipped {len(chunks) - len(chunks_to_rerank) - len(high_score_chunks)})"
                 )
@@ -460,20 +456,8 @@ class RAGService:
         if not self._should_expand_score_source_context(chunks, query):
             return chunks
 
-        score_seed_chunks: List[Dict[str, Any]] = []
-        for chunk in chunks:
-            enrich_chunk_source_metadata(chunk)
-            if chunk.get("doc_type") == "scores":
-                score_seed_chunks.append(chunk)
-
-        if not score_seed_chunks:
-            log.info(
-                "Skip score source context expansion: no score-typed chunks survived ranking"
-            )
-            return chunks
-
         source_scores: Dict[str, float] = {}
-        for chunk in score_seed_chunks:
+        for chunk in chunks:
             source_file = chunk.get("source_file") or chunk.get("source")
             if not source_file:
                 continue
@@ -533,8 +517,8 @@ class RAGService:
             overlap = len(query_words.intersection(content_words))
             overlap_ratio = overlap / len(query_words) if query_words else 0
 
-            # At least 35% keyword overlap required to avoid adding noisy adjacent chunks
-            return overlap_ratio >= 0.35
+            # Consider relevant if there's at least 20% keyword overlap
+            return overlap_ratio >= 0.2
 
         except Exception as e:
             log.error(f"Error checking chunk relevance: {e}")
@@ -1266,12 +1250,9 @@ Hướng dẫn:
     def create_context(self, chunks: List[Dict[str, Any]]) -> str:
         """
         Create a simplified and clean context string from retrieved chunks.
-        Returns an empty string when no chunks are available so callers can
-        detect the empty-context state and avoid passing a misleading message
-        to the LLM (which can cause hallucinations).
         """
         if not chunks:
-            return ""
+            return "Không tìm thấy thông tin liên quan trong tài liệu."
 
         context_parts = []
         for chunk in chunks:
@@ -1279,9 +1260,7 @@ Hướng dẫn:
             page = chunk.get("page_number", "N/A")
             content = chunk.get("content", "").strip()
             document_year = chunk.get("document_year")
-            admission_years = chunk.get("admission_years") or chunk.get(
-                "document_years"
-            )
+            admission_years = chunk.get("admission_years") or chunk.get("document_years")
             source_url = chunk.get("source_url")
             school_code = chunk.get("school_code")
             school_symbol = chunk.get("school_symbol")
@@ -1625,7 +1604,6 @@ MANDATORY RULES FOR TIMELINE QUESTIONS:
 - Absolutely do NOT use Markdown tables.
 - Present the answer as short bullets or a numbered list in chronological order.
 - For each milestone, state the time first, then the action or note.
-- Never use section numbers or outline markers such as "4." or "a)" as the time value.
 """
 
         return """
@@ -1634,7 +1612,6 @@ HUONG DAN BAT BUOC CHO CAU HOI VE MOC THOI GIAN:
 - Tuyet doi khong dung bang Markdown.
 - Hay trinh bay bang gach dau dong hoac danh sach danh so theo thu tu thoi gian.
 - Moi moc can neu ro thoi gian truoc, sau do moi den noi dung hanh dong/ghi chu.
-- Tuyet doi khong lay so muc hoac ky hieu de muc nhu "4." hay "a)" de dien vao truong thoi gian.
 """
 
     def _create_grounded_flex_prompt_guidance(
@@ -2140,18 +2117,20 @@ Trả lời:"""
                         snippet = snippet[:last_space]
                     snippet += "..."
 
-                # Use the best available score (rerank > combined > dense).
-                # Explicit None checks avoid 0.0 being treated as falsy.
-                _rs = chunk.get("rerank_score")
-                _cs = chunk.get("combined_score")
-                _ds = chunk.get("dense_score")
+                # Use the best available score (rerank > combined > dense)
                 relevance_score = (
-                    _rs
-                    if _rs is not None
-                    else _cs if _cs is not None else _ds if _ds is not None else 0.0
+                    chunk.get("rerank_score")
+                    or chunk.get("combined_score")
+                    or chunk.get("dense_score")
+                    or 0.0
                 )
-                # rerank_score is now sigmoid-normalised [0, 1]; clamp as a safety net
-                relevance_score = min(1.0, max(0.0, relevance_score))
+                # Normalize rerank score if it's out of 0-1 range (cross-encoder scores can be -10 to 10)
+                if relevance_score > 1.0:
+                    relevance_score = min(
+                        1.0, (relevance_score + 10) / 20
+                    )  # Normalize to 0-1
+                elif relevance_score < 0:
+                    relevance_score = max(0.0, (relevance_score + 10) / 20)
 
                 source_ref = {
                     "chunk_id": str(chunk_id),
@@ -2166,6 +2145,9 @@ Trả lời:"""
                     "source_url": chunk.get("source_url"),
                 }
                 source_references.append(source_ref)
+
+            # Create formatted context from chunks
+            context = self.create_context(relevant_chunks)
 
             # Get attachments early to inject into context
             attachments = self._retrieve_attachments_for_context(query, relevant_chunks)
@@ -2234,13 +2216,11 @@ Trả lời:"""
                         or chunk.get("dense_score")
                         or 0.0
                     )
-                    # Normalize if needed: rerank_score is now sigmoid-normalized [0,1]
-                    # but source_references may still be built from raw scores before
-                    # the reranker runs; clamp to [0, 1] as a safety net.
+                    # Normalize if needed (cross-encoder scores can be -10 to 10)
                     if score > 1.0:
-                        score = 1.0
+                        score = min(1.0, (score + 10) / 20)
                     elif score < 0:
-                        score = 0.0
+                        score = max(0.0, (score + 10) / 20)
                     scores.append(score)
 
                 avg_score = sum(scores) / len(scores)
