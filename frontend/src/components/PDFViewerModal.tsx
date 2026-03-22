@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { X, Download, ExternalLink, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { X, Download, ExternalLink, ChevronLeft, ChevronRight, Loader2, RefreshCw } from 'lucide-react';
 import { getDocumentUrl } from '@/lib/supabase';
 
 interface PDFViewerModalProps {
@@ -25,6 +25,7 @@ const PDFViewerModal: React.FC<PDFViewerModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(initialPage);
   const [totalPages, setTotalPages] = useState<number | null>(null);
+  const [iframeKey, setIframeKey] = useState(0);
   const normalizedBackendUrl = backendUrl.replace(/\/$/, '');
   const documentApiUrl = `${normalizedBackendUrl}/api/documents/${encodeURIComponent(filename)}`;
   const documentInfoUrl = `${documentApiUrl}/info`;
@@ -34,6 +35,9 @@ const PDFViewerModal: React.FC<PDFViewerModalProps> = ({
     ? getDocumentUrl(filename)
     : documentApiUrl;
 
+  // Google Docs Viewer handles cross-origin PDF embedding reliably
+  const embedUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(pdfUrl)}&embedded=true`;
+
   const handlePrevPage = useCallback(() => {
     if (currentPage > 1) setCurrentPage(p => p - 1);
   }, [currentPage]);
@@ -42,11 +46,18 @@ const PDFViewerModal: React.FC<PDFViewerModalProps> = ({
     if (!totalPages || currentPage < totalPages) setCurrentPage(p => p + 1);
   }, [currentPage, totalPages]);
 
+  const handleRetry = () => {
+    setIsLoading(true);
+    setError(null);
+    setIframeKey(k => k + 1);
+  };
+
   useEffect(() => {
     if (isOpen) {
       setCurrentPage(initialPage);
       setIsLoading(true);
       setError(null);
+      setIframeKey(k => k + 1);
       
       // Fetch document info for page count
       fetch(documentInfoUrl)
@@ -172,26 +183,39 @@ const PDFViewerModal: React.FC<PDFViewerModalProps> = ({
             <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
               <div className="text-center p-6">
                 <p className="text-red-600 font-medium mb-2">Không thể tải tài liệu</p>
-                <p className="text-gray-500 text-sm">{error}</p>
-                <button
-                  onClick={handleOpenInNewTab}
-                  className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                >
-                  Mở trong tab mới
-                </button>
+                <p className="text-gray-500 text-sm mb-4">{error}</p>
+                <div className="flex flex-col sm:flex-row gap-2 justify-center">
+                  <button
+                    onClick={handleRetry}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                    Thử lại
+                  </button>
+                  <button
+                    onClick={handleOpenInNewTab}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    Mở trong tab mới
+                  </button>
+                </div>
               </div>
             </div>
           )}
 
+          {/* Use Google Docs Viewer to avoid cross-origin iframe blocking of PDFs */}
           <iframe
-            src={`${pdfUrl}#page=${currentPage}`}
+            key={iframeKey}
+            src={embedUrl}
             className="w-full h-full border-0"
             onLoad={() => setIsLoading(false)}
             onError={() => {
               setIsLoading(false);
-              setError('Không thể hiển thị PDF trong trình duyệt');
+              setError('Không thể hiển thị PDF. Vui lòng mở trong tab mới.');
             }}
             title={filename}
+            allow="autoplay"
           />
         </div>
 
