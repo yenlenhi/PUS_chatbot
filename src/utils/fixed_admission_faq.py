@@ -127,65 +127,65 @@ def _build_fixed_faq_catalog() -> list[Dict[str, Any]]:
     return [
         {
             "key": "rector_t04",
-            "question": "Ai la Hieu truong Truong Dai hoc An ninh Nhan dan?",
+            "question": "Ai là Hiệu trưởng Trường Đại học An ninh Nhân dân?",
             "match": _is_primary_school_rector_query,
             "sources": [
-                "Co cau to chuc bo may Nha truong",
+                "Cơ cấu tổ chức bộ máy Nhà trường",
             ],
             "follow_up_questions": [
-                "Cac Pho Hieu truong cua Nha truong la ai?",
-                "Ban Giam hieu cua Nha truong gom nhung ai?",
-                "Toi muon biet ghi chu phu trach cua tung lanh dao.",
+                "Các Phó Hiệu trưởng của Nhà trường là ai?",
+                "Ban Giám hiệu của Nhà trường gồm những ai?",
+                "Tôi muốn biết ghi chú phụ trách của từng lãnh đạo.",
             ],
-            "answer": """### Hieu truong Truong Dai hoc An ninh Nhan dan
+            "answer": """### Hiệu trưởng Trường Đại học An ninh Nhân dân
 
-Theo thong tin co cau to chuc bo may Nha truong ma he thong dang dung lam can cu tra loi:
+Theo thông tin cơ cấu tổ chức bộ máy Nhà trường mà hệ thống đang dùng làm căn cứ trả lời:
 
-- **Thieu tuong, TS. Tran Van Tuan** la **Hieu truong**.
-- Ghi chu: **Bi thu Dang uy; phu trach chung va cong tac can bo.**""",
+- **Thiếu tướng, TS. Trần Văn Tuấn** là **Hiệu trưởng**.
+- Ghi chú: **Bí thư Đảng ủy; phụ trách chung và công tác cán bộ.**""",
         },
         {
             "key": "vice_rectors_t04",
-            "question": "Cac Pho Hieu truong Truong Dai hoc An ninh Nhan dan la ai?",
+            "question": "Các Phó Hiệu trưởng Trường Đại học An ninh Nhân dân là ai?",
             "match": _is_primary_school_vice_rector_query,
             "sources": [
-                "Co cau to chuc bo may Nha truong",
+                "Cơ cấu tổ chức bộ máy Nhà trường",
             ],
             "follow_up_questions": [
-                "Ai la Hieu truong cua Nha truong?",
-                "Ban Giam hieu cua Nha truong gom nhung ai?",
-                "Toi muon biet ghi chu phu trach cua tung Pho Hieu truong.",
+                "Ai là Hiệu trưởng của Nhà trường?",
+                "Ban Giám hiệu của Nhà trường gồm những ai?",
+                "Tôi muốn biết ghi chú phụ trách của từng Phó Hiệu trưởng.",
             ],
-            "answer": """### Cac Pho Hieu truong Truong Dai hoc An ninh Nhan dan
+            "answer": """### Các Phó Hiệu trưởng Trường Đại học An ninh Nhân dân
 
-Theo thong tin co cau to chuc bo may Nha truong ma he thong dang dung lam can cu tra loi, cac Pho Hieu truong gom:
+Theo thông tin cơ cấu tổ chức bộ máy Nhà trường mà hệ thống đang dùng làm căn cứ trả lời, các Phó Hiệu trưởng gồm:
 
-- **Dai ta, PGS. TS. Nguyen Tran Hieu** - Pho Hieu truong. Ghi chu: phu trach dao tao lien ket va hop tac quoc te.
-- **Dai ta, TS. Pham Duy Hoang** - Pho Hieu truong. Ghi chu: phu trach cac mang cong tac theo phan cong (nguyen Pho Hieu truong Truong Cao dang ANND II).
-- **Dai ta, PGS. TS. Dang Ngoc Toan** - Pho Hieu truong. Ghi chu: Uy vien Ban Thuong vu Dang uy; phu trach Khoa Luat va cac hoat dong dan van.
-- **Thuong ta, TS. Le Hoang Ngan** - Pho Hieu truong. Ghi chu: phu trach cong tac chinh tri, xay dung luc luong va quan ly hoc vien.""",
+- **Đại tá, PGS. TS. Nguyễn Trần Hiếu** - Phó Hiệu trưởng. Ghi chú: phụ trách đào tạo liên kết và hợp tác quốc tế.
+- **Đại tá, TS. Phạm Duy Hoàng** - Phó Hiệu trưởng. Ghi chú: phụ trách các mảng công tác theo phân công (nguyên Phó Hiệu trưởng Trường Cao đẳng ANND II).
+- **Đại tá, PGS. TS. Đặng Ngọc Toàn** - Phó Hiệu trưởng. Ghi chú: Ủy viên Ban Thường vụ Đảng ủy; phụ trách Khoa Luật và các hoạt động dân vận.
+- **Thượng tá, TS. Lê Hoàng Ngân** - Phó Hiệu trưởng. Ghi chú: phụ trách công tác chính trị, xây dựng lực lượng và quản lý học viên.""",
         },
         {
             "key": "leadership_t04",
-            "question": "Ban Giam hieu hoac co cau lanh dao Truong Dai hoc An ninh Nhan dan gom nhung ai?",
+            "question": "Ban Giám hiệu hoặc cơ cấu lãnh đạo Trường Đại học An ninh Nhân dân gồm những ai?",
             "match": _is_primary_school_leadership_query,
             "sources": [
-                "Co cau to chuc bo may Nha truong",
+                "Cơ cấu tổ chức bộ máy Nhà trường",
             ],
             "follow_up_questions": [
-                "Ai la Hieu truong cua Nha truong?",
-                "Cac Pho Hieu truong cua Nha truong la ai?",
-                "Toi muon biet ghi chu phu trach cua tung lanh dao.",
+                "Ai là Hiệu trưởng của Nhà trường?",
+                "Các Phó Hiệu trưởng của Nhà trường là ai?",
+                "Tôi muốn biết ghi chú phụ trách của từng lãnh đạo.",
             ],
-            "answer": """### Ban Giam hieu Truong Dai hoc An ninh Nhan dan
+            "answer": """### Ban Giám hiệu Trường Đại học An ninh Nhân dân
 
-Theo thong tin co cau to chuc bo may Nha truong ma he thong dang dung lam can cu tra loi, Ban Giam hieu gom:
+Theo thông tin cơ cấu tổ chức bộ máy Nhà trường mà hệ thống đang dùng làm căn cứ trả lời, Ban Giám hiệu gồm:
 
-1. **Thieu tuong, TS. Tran Van Tuan** - Hieu truong. Ghi chu: Bi thu Dang uy; phu trach chung va cong tac can bo.
-2. **Dai ta, PGS. TS. Nguyen Tran Hieu** - Pho Hieu truong. Ghi chu: phu trach dao tao lien ket va hop tac quoc te.
-3. **Dai ta, TS. Pham Duy Hoang** - Pho Hieu truong. Ghi chu: phu trach cac mang cong tac theo phan cong (nguyen Pho Hieu truong Truong Cao dang ANND II).
-4. **Dai ta, PGS. TS. Dang Ngoc Toan** - Pho Hieu truong. Ghi chu: Uy vien Ban Thuong vu Dang uy; phu trach Khoa Luat va cac hoat dong dan van.
-5. **Thuong ta, TS. Le Hoang Ngan** - Pho Hieu truong. Ghi chu: phu trach cong tac chinh tri, xay dung luc luong va quan ly hoc vien.""",
+1. **Thiếu tướng, TS. Trần Văn Tuấn** - Hiệu trưởng. Ghi chú: Bí thư Đảng ủy; phụ trách chung và công tác cán bộ.
+2. **Đại tá, PGS. TS. Nguyễn Trần Hiếu** - Phó Hiệu trưởng. Ghi chú: phụ trách đào tạo liên kết và hợp tác quốc tế.
+3. **Đại tá, TS. Phạm Duy Hoàng** - Phó Hiệu trưởng. Ghi chú: phụ trách các mảng công tác theo phân công (nguyên Phó Hiệu trưởng Trường Cao đẳng ANND II).
+4. **Đại tá, PGS. TS. Đặng Ngọc Toàn** - Phó Hiệu trưởng. Ghi chú: Ủy viên Ban Thường vụ Đảng ủy; phụ trách Khoa Luật và các hoạt động dân vận.
+5. **Thượng tá, TS. Lê Hoàng Ngân** - Phó Hiệu trưởng. Ghi chú: phụ trách công tác chính trị, xây dựng lực lượng và quản lý học viên.""",
         },
         {
             "key": "quota_t04",
