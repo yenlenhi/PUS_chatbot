@@ -7,6 +7,7 @@ import io
 import json
 import re
 import time
+import codecs
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
@@ -182,6 +183,90 @@ class GeminiPDFService:
             return ""
         return str(text).replace("\r\n", "\n").strip()
 
+    def _decode_json_like_string(self, value: str) -> str:
+        if not value:
+            return ""
+
+        sanitized_value = value.replace("\r\n", "\n").replace("\r", "\n")
+        try:
+            return json.loads(f'"{sanitized_value}"')
+        except json.JSONDecodeError:
+            sanitized_value = re.sub(r"\\u([0-9a-fA-F]{0,3})$", "", sanitized_value)
+            sanitized_value = re.sub(r"\\x([0-9a-fA-F]?)$", "", sanitized_value)
+            sanitized_value = re.sub(r"\\$", "", sanitized_value)
+            try:
+                return codecs.decode(sanitized_value, "unicode_escape")
+            except Exception:
+                return sanitized_value
+
+    def _extract_text_fragments_from_json_like_payload(
+        self, payload: str
+    ) -> List[str]:
+        fragments: List[str] = []
+        search_start = 0
+
+        while True:
+            text_match = re.search(r'"text"\s*:\s*"', payload[search_start:])
+            if not text_match:
+                break
+
+            fragment_start = search_start + text_match.end()
+            cursor = fragment_start
+            escaped = False
+            fragment_chars: List[str] = []
+            closed = False
+
+            while cursor < len(payload):
+                char = payload[cursor]
+                if escaped:
+                    fragment_chars.append(char)
+                    escaped = False
+                    cursor += 1
+                    continue
+
+                if char == "\\":
+                    fragment_chars.append(char)
+                    escaped = True
+                    cursor += 1
+                    continue
+
+                if char == '"':
+                    closed = True
+                    cursor += 1
+                    break
+
+                fragment_chars.append(char)
+                cursor += 1
+
+            fragment_text = "".join(fragment_chars)
+            normalized_fragment = self._normalize_extracted_text(
+                self._decode_json_like_string(fragment_text)
+            )
+            if normalized_fragment:
+                fragments.append(normalized_fragment)
+
+            if not closed:
+                break
+            search_start = cursor
+
+        return fragments
+
+    def _salvage_text_payload(self, payload: str) -> Optional[str]:
+        normalized_payload = self._normalize_extracted_text(payload)
+        if not normalized_payload:
+            return None
+
+        if re.search(r'"has_text"\s*:\s*false', normalized_payload, flags=re.IGNORECASE):
+            return None
+
+        fragments = self._extract_text_fragments_from_json_like_payload(
+            normalized_payload
+        )
+        if fragments:
+            return "\n\n".join(fragment for fragment in fragments if fragment).strip()
+
+        return None
+
     def _parse_text_payload(self, raw_text: str) -> Optional[str]:
         normalized_payload = self._normalize_extracted_text(raw_text)
         if not normalized_payload:
@@ -199,13 +284,36 @@ class GeminiPDFService:
         except json.JSONDecodeError:
             if normalized_payload.upper() == "NO_TEXT_FOUND":
                 return None
+            if (
+                fenced_payload.startswith("{")
+                or fenced_payload.startswith("[")
+                or '"has_text"' in fenced_payload
+                or '"text"' in fenced_payload
+            ):
+                return self._salvage_text_payload(fenced_payload)
             return normalized_payload
 
-        extracted_text = self._normalize_extracted_text(parsed_payload.get("text", ""))
-        if parsed_payload.get("has_text") is False or not extracted_text:
+        if isinstance(parsed_payload, dict):
+            extracted_text = self._normalize_extracted_text(parsed_payload.get("text", ""))
+            if parsed_payload.get("has_text") is False or not extracted_text:
+                return None
+            return extracted_text
+
+        if isinstance(parsed_payload, list):
+            extracted_fragments = [
+                self._normalize_extracted_text(item.get("text", ""))
+                for item in parsed_payload
+                if isinstance(item, dict) and item.get("has_text") is not False
+            ]
+            extracted_fragments = [fragment for fragment in extracted_fragments if fragment]
+            if extracted_fragments:
+                return "\n\n".join(extracted_fragments)
             return None
 
-        return extracted_text
+        if isinstance(parsed_payload, str):
+            return self._normalize_extracted_text(parsed_payload)
+
+        return None
 
     def _extract_text_from_response(
         self, result: Dict[str, Any], page_num: int
@@ -214,7 +322,8 @@ class GeminiPDFService:
         for candidate in candidates:
             content = candidate.get("content", {})
             parts = content.get("parts") or []
-            raw_response = "\n".join(
+            finish_reason = candidate.get("finishReason")
+            raw_response = "".join(
                 part.get("text", "")
                 for part in parts
                 if isinstance(part, dict) and part.get("text")
@@ -222,9 +331,13 @@ class GeminiPDFService:
 
             extracted_text = self._parse_text_payload(raw_response)
             if extracted_text:
+                if finish_reason == "MAX_TOKENS":
+                    log.warning(
+                        f"Gemini OCR hit MAX_TOKENS on page {page_num}; extracted text may be truncated"
+                    )
                 return extracted_text
 
-            if candidate.get("finishReason") == "MAX_TOKENS":
+            if finish_reason == "MAX_TOKENS":
                 log.warning(
                     f"Gemini OCR hit MAX_TOKENS on page {page_num}; output may be truncated"
                 )

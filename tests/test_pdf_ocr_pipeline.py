@@ -162,6 +162,39 @@ def test_extract_text_from_image_retries_transient_errors(monkeypatch):
     assert call_count["value"] == 2
 
 
+def test_parse_text_payload_salvages_truncated_json_payload():
+    service = _build_gemini_service()
+
+    payload = (
+        '{"has_text":true,"text":"5\\n\\nNoi dung trang dang bi cat giua chung'
+    )
+
+    extracted_text = service._parse_text_payload(payload)
+
+    assert extracted_text == "5\n\nNoi dung trang dang bi cat giua chung"
+
+
+def test_extract_text_from_response_handles_split_json_parts_without_storing_raw_json():
+    service = _build_gemini_service()
+
+    result = {
+        "candidates": [
+            {
+                "content": {
+                    "parts": [
+                        {"text": '{"has_text": true, "text": "Dong 1\\n'},
+                        {"text": 'Dong 2"}'},
+                    ]
+                }
+            }
+        ]
+    }
+
+    extracted_text = service._extract_text_from_response(result, 1)
+
+    assert extracted_text == "Dong 1\nDong 2"
+
+
 def test_pdf_processor_flags_garbage_native_text_for_ocr():
     processor = PDFProcessor.__new__(PDFProcessor)
 
