@@ -182,6 +182,7 @@ _SOURCE_AUTHORITY_BONUS = (
     ("chinhphu.vn", 0.07, "government"),
     ("moet.gov.vn", 0.06, "moet"),
 )
+_METADATA_HARD_FILTER_MIN_MATCHES = 3
 
 
 def _normalize_text(value: Optional[str]) -> str:
@@ -684,17 +685,33 @@ def _chunk_covers_year(chunk: Dict[str, Any], target_year: int) -> bool:
     return chunk.get("admission_cycle") == target_year
 
 
+def _should_use_hard_metadata_filter(
+    *,
+    school_code: Optional[str],
+    admission_cycle: Optional[int],
+    doc_type: Optional[str],
+    best_stage: str,
+    matched_count: int,
+) -> bool:
+    has_strict_filter_triplet = bool(school_code and doc_type) and admission_cycle is not None
+    return (
+        has_strict_filter_triplet
+        and best_stage == "strict_school_cycle_doc_type"
+        and matched_count >= _METADATA_HARD_FILTER_MIN_MATCHES
+    )
+
+
 def filter_chunks_by_metadata(
     query: Optional[str], chunks: List[Dict[str, Any]]
 ) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
     if not chunks:
-        return chunks, {"applied": False, "stage": "empty"}
+        return chunks, {"applied": False, "mode": "none", "stage": "empty"}
 
     filters = build_query_metadata_filters(query)
     if not filters:
         for chunk in chunks:
             enrich_chunk_source_metadata(chunk)
-        return chunks, {"applied": False, "stage": "no_filters"}
+        return chunks, {"applied": False, "mode": "none", "stage": "no_filters"}
 
     for chunk in chunks:
         enrich_chunk_source_metadata(chunk)
@@ -740,7 +757,8 @@ def filter_chunks_by_metadata(
         exclude_scores_when_doc_type_differs=exclude_scores_when_doc_type_differs,
     )
 
-    # Hard filter: once a metadata stage matches, keep only those matched chunks.
+    # Adaptive filter: hard-filter only when the metadata match is strong enough,
+    # otherwise keep a broader candidate pool with matched chunks first.
     best_filtered: List[Dict[str, Any]] = []
     best_stage: str = ""
 
@@ -756,9 +774,23 @@ def filter_chunks_by_metadata(
         matched_ids = {id(c) for c in best_filtered}
         for chunk in chunks:
             chunk["metadata_matched"] = id(chunk) in matched_ids
-        # Keep only the matched chunks for downstream reranking.
-        return best_filtered, {
+        use_hard_filter = _should_use_hard_metadata_filter(
+            school_code=school_code,
+            admission_cycle=admission_cycle,
+            doc_type=doc_type,
+            best_stage=best_stage,
+            matched_count=len(best_filtered),
+        )
+        if use_hard_filter:
+            filtered_chunks = best_filtered
+            filter_mode = "hard"
+        else:
+            unmatched = [c for c in chunks if id(c) not in matched_ids]
+            filtered_chunks = best_filtered + unmatched
+            filter_mode = "soft"
+        return filtered_chunks, {
             "applied": True,
+            "mode": filter_mode,
             "stage": best_stage,
             "filters": filters,
             "matched": len(best_filtered),
@@ -770,6 +802,7 @@ def filter_chunks_by_metadata(
         chunk["metadata_matched"] = False
     return chunks, {
         "applied": False,
+        "mode": "none",
         "stage": "fallback_original",
         "filters": filters,
         "matched": len(chunks),

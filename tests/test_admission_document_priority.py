@@ -156,9 +156,10 @@ def test_filter_chunks_by_metadata_prefers_t04_personnel_document():
     filtered, info = filter_chunks_by_metadata(query, chunks)
 
     assert info["applied"] is True
+    assert info["mode"] == "soft"
     assert filtered
-    assert all(chunk.get("doc_type") == "personnel" for chunk in filtered)
-    assert all(chunk.get("school_code") == "T04" for chunk in filtered)
+    assert filtered[0].get("doc_type") == "personnel"
+    assert filtered[0].get("school_code") == "T04"
 
 
 def test_priority_adjustment_prefers_newer_personnel_document_over_older_one():
@@ -268,7 +269,8 @@ def test_filter_chunks_by_metadata_prefers_method_docs_over_score_docs():
     filtered, metadata = filter_chunks_by_metadata(query, chunks)
 
     assert metadata["applied"] is True
-    assert all(chunk.get("doc_type") == "methods" for chunk in filtered)
+    assert metadata["mode"] == "soft"
+    assert filtered[0].get("doc_type") == "methods"
 
 
 def test_eligibility_query_maps_to_eligibility_not_timeline():
@@ -307,7 +309,8 @@ def test_filter_chunks_by_metadata_prefers_eligibility_docs_over_timeline_docs()
     filtered, metadata = filter_chunks_by_metadata(query, chunks)
 
     assert metadata["applied"] is True
-    assert all(chunk.get("doc_type") == "eligibility" for chunk in filtered)
+    assert metadata["mode"] == "soft"
+    assert filtered[0].get("doc_type") == "eligibility"
 
 
 def test_filter_chunks_by_metadata_matches_multi_year_score_doc_for_requested_year():
@@ -335,10 +338,9 @@ def test_filter_chunks_by_metadata_matches_multi_year_score_doc_for_requested_ye
     filtered, metadata = filter_chunks_by_metadata(query, chunks)
 
     assert metadata["applied"] is True
+    assert metadata["mode"] == "soft"
     assert metadata["stage"] == "strict_school_cycle_doc_type"
-    assert [chunk["source_file"] for chunk in filtered] == [
-        "Tong_hop_diem_chuan_T04_2020_2025.pdf"
-    ]
+    assert filtered[0]["source_file"] == "Tong_hop_diem_chuan_T04_2020_2025.pdf"
 
 
 def test_filter_chunks_by_metadata_prefers_t04_general_doc_before_wrong_school_doc_type_match():
@@ -363,8 +365,56 @@ def test_filter_chunks_by_metadata_prefers_t04_general_doc_before_wrong_school_d
     filtered, metadata = filter_chunks_by_metadata(query, chunks)
 
     assert metadata["applied"] is True
+    assert metadata["mode"] == "soft"
     assert metadata["stage"] in {"school_only_non_score", "school_only"}
-    assert [chunk["source_file"] for chunk in filtered] == ["t04_general.pdf"]
+    assert filtered[0]["source_file"] == "t04_general.pdf"
+
+
+def test_filter_chunks_by_metadata_uses_hard_mode_for_strong_strict_match():
+    query = "thong tin ve chi tieu va to hop xet tuyen"
+    current_year = dt.datetime.now().year
+    chunks = [
+        {
+            "source_file": f"Thong_bao_chi_tieu_T04_{current_year}_1.pdf",
+            "school_code": "T04",
+            "admission_cycle": current_year,
+            "doc_type": "quota",
+            "scope": "school_specific",
+            "content": "Chi tieu tuyen sinh T04 dot 1.",
+        },
+        {
+            "source_file": f"Thong_bao_chi_tieu_T04_{current_year}_2.pdf",
+            "school_code": "T04",
+            "admission_cycle": current_year,
+            "doc_type": "quota",
+            "scope": "school_specific",
+            "content": "Chi tieu tuyen sinh T04 dot 2.",
+        },
+        {
+            "source_file": f"Thong_bao_chi_tieu_T04_{current_year}_3.pdf",
+            "school_code": "T04",
+            "admission_cycle": current_year,
+            "doc_type": "quota",
+            "scope": "school_specific",
+            "content": "Chi tieu tuyen sinh T04 dot 3.",
+        },
+        {
+            "source_file": "Huong_dan_tuyen_sinh_CAND.pdf",
+            "school_code": None,
+            "admission_cycle": current_year,
+            "doc_type": "quota",
+            "scope": "system_wide",
+            "content": "Tong chi tieu cac truong CAND.",
+        },
+    ]
+
+    filtered, metadata = filter_chunks_by_metadata(query, chunks)
+
+    assert metadata["applied"] is True
+    assert metadata["mode"] == "hard"
+    assert metadata["stage"] == "strict_school_cycle_doc_type"
+    assert len(filtered) == 3
+    assert all(chunk.get("school_code") == "T04" for chunk in filtered)
 
 
 def test_priority_adjustment_treats_multi_year_doc_as_exact_match_for_requested_year():

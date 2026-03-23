@@ -53,8 +53,9 @@ def test_filter_chunks_by_metadata_prefers_t04_current_cycle_before_rerank():
     filtered, info = filter_chunks_by_metadata(query, chunks)
 
     assert info["applied"] is True
+    assert info["mode"] == "soft"
     assert filtered
-    assert all(chunk.get("school_code") == "T04" for chunk in filtered)
+    assert filtered[0].get("school_code") == "T04"
 
 
 def test_validate_admission_answer_flags_wrong_t05_and_systemwide_quota():

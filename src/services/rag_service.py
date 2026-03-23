@@ -309,6 +309,7 @@ class RAGService:
             if filter_info.get("applied"):
                 log.info(
                     "Metadata filter applied before rerank: "
+                    f"mode={filter_info.get('mode')} "
                     f"stage={filter_info.get('stage')} "
                     f"matched={filter_info.get('matched')}/{filter_info.get('total')}"
                 )
