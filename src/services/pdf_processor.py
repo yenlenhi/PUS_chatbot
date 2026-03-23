@@ -68,7 +68,7 @@ class PDFProcessor:
 
     def process_pdf_with_headings(self, pdf_path: Path) -> List[DocumentChunk]:
         """
-        Process a PDF file using heading-based chunking, page by page.
+        Process a PDF file using heading-based chunking across the full document.
 
         Args:
             pdf_path: Path to PDF file
@@ -78,27 +78,51 @@ class PDFProcessor:
         """
         try:
             log.info(f"Processing PDF with headings: {pdf_path.name}")
-            all_chunks = []
-            next_chunk_index = 0
 
-            # Extract text page by page
             pages_text = self.extract_text_from_pdf(pdf_path)
-
             if not pages_text:
                 log.warning(f"No text extracted from {pdf_path.name}")
                 return []
 
-            # Process each page's text
+            combined_text_parts: List[str] = []
+            page_offsets: List[tuple[int, int]] = []
+            current_offset = 0
+
             for page_number, page_text in pages_text:
-                if page_text.strip():
-                    # Use heading chunker to create chunks for the current page
-                    chunks = self.heading_chunker.chunk_by_headings(
-                        page_text, pdf_path.name, page_number
-                    )
-                    for chunk in chunks:
-                        chunk.chunk_index = next_chunk_index
-                        next_chunk_index += 1
-                    all_chunks.extend(chunks)
+                normalized_text = self._normalize_page_text(page_text)
+                if not normalized_text:
+                    continue
+
+                if combined_text_parts:
+                    separator = "\n\n"
+                    combined_text_parts.append(separator)
+                    current_offset += len(separator)
+
+                page_offsets.append((page_number, current_offset))
+                combined_text_parts.append(normalized_text)
+                current_offset += len(normalized_text)
+
+            combined_text = "".join(combined_text_parts).strip()
+            if not combined_text:
+                log.warning(f"No normalized text available from {pdf_path.name}")
+                return []
+
+            all_chunks = self.heading_chunker.chunk_by_headings(
+                combined_text, pdf_path.name
+            )
+            search_start = 0
+            for chunk_index, chunk in enumerate(all_chunks):
+                chunk_start = combined_text.find(chunk.content, search_start)
+                if chunk_start == -1:
+                    chunk_start = combined_text.find(chunk.content)
+                if chunk_start == -1:
+                    chunk_start = search_start
+
+                chunk.page_number = self._resolve_chunk_page_number(
+                    page_offsets, chunk_start
+                )
+                chunk.chunk_index = chunk_index
+                search_start = max(search_start, chunk_start + len(chunk.content))
 
             log.info(
                 f"Created {len(all_chunks)} heading-based chunks from {pdf_path.name}"
@@ -108,6 +132,19 @@ class PDFProcessor:
         except Exception as e:
             log.error(f"Error processing PDF with headings: {e}")
             return []
+
+    def _resolve_chunk_page_number(
+        self, page_offsets: List[tuple[int, int]], chunk_start: int
+    ) -> Optional[int]:
+        if not page_offsets:
+            return None
+
+        resolved_page = page_offsets[0][0]
+        for page_number, page_offset in page_offsets:
+            if page_offset > chunk_start:
+                break
+            resolved_page = page_number
+        return resolved_page
 
     def _normalize_page_text(self, text: Optional[str]) -> str:
         if not text:

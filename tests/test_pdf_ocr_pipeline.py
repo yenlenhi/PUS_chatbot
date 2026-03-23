@@ -258,28 +258,22 @@ def test_process_pdf_with_headings_reindexes_chunks_across_pages():
     processor = PDFProcessor.__new__(PDFProcessor)
 
     class _FakeHeadingChunker:
-        def chunk_by_headings(self, text, source_file, page_number):
-            if page_number == 1:
-                return [
-                    DocumentChunk(
-                        content="Chunk page 1A",
-                        source_file=source_file,
-                        page_number=page_number,
-                        chunk_index=0,
-                    ),
-                    DocumentChunk(
-                        content="Chunk page 1B",
-                        source_file=source_file,
-                        page_number=page_number,
-                        chunk_index=1,
-                    ),
-                ]
+        def chunk_by_headings(self, text, source_file, page_number=None):
+            assert page_number is None
+            assert "Page 1 content" in text
+            assert "Page 2 content" in text
             return [
                 DocumentChunk(
-                    content="Chunk page 2A",
+                    content="Page 1 content",
                     source_file=source_file,
-                    page_number=page_number,
+                    page_number=None,
                     chunk_index=0,
+                ),
+                DocumentChunk(
+                    content="Page 2 content",
+                    source_file=source_file,
+                    page_number=None,
+                    chunk_index=1,
                 )
             ]
 
@@ -291,4 +285,5 @@ def test_process_pdf_with_headings_reindexes_chunks_across_pages():
 
     chunks = processor.process_pdf_with_headings(Path("test.pdf"))
 
-    assert [chunk.chunk_index for chunk in chunks] == [0, 1, 2]
+    assert [chunk.chunk_index for chunk in chunks] == [0, 1]
+    assert [chunk.page_number for chunk in chunks] == [1, 2]
