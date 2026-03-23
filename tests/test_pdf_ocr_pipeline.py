@@ -53,6 +53,7 @@ except ModuleNotFoundError:
 
 from src.services.gemini_pdf_service import GeminiPDFService
 from src.services.pdf_processor import PDFProcessor
+from src.models.schemas import DocumentChunk
 
 
 class _FakeResponse:
@@ -181,3 +182,62 @@ def test_pdf_processor_prefers_clean_ocr_result_over_garbage_native_text():
     )
 
     assert merged_pages[1] == "Thong bao tuyen sinh dai hoc he chinh quy nam 2026"
+
+
+def test_pdf_processor_normalize_page_text_reflows_broken_lines():
+    processor = PDFProcessor.__new__(PDFProcessor)
+
+    raw_text = (
+        "1.4. Lich trinh to chuc tuyen sinh\n"
+        "\n"
+        "Cong an cac don vi, dia phuong co tuyen CAND to chuc xet tuyen\n"
+        "dam bao thoi gian, ke hoach theo lich trinh chung cua Bo Cong an.\n"
+    )
+
+    normalized = processor._normalize_page_text(raw_text)
+
+    assert "1.4. Lich trinh to chuc tuyen sinh" in normalized
+    assert (
+        "Cong an cac don vi, dia phuong co tuyen CAND to chuc xet tuyen dam bao thoi gian, "
+        "ke hoach theo lich trinh chung cua Bo Cong an."
+    ) in normalized
+
+
+def test_process_pdf_with_headings_reindexes_chunks_across_pages():
+    processor = PDFProcessor.__new__(PDFProcessor)
+
+    class _FakeHeadingChunker:
+        def chunk_by_headings(self, text, source_file, page_number):
+            if page_number == 1:
+                return [
+                    DocumentChunk(
+                        content="Chunk page 1A",
+                        source_file=source_file,
+                        page_number=page_number,
+                        chunk_index=0,
+                    ),
+                    DocumentChunk(
+                        content="Chunk page 1B",
+                        source_file=source_file,
+                        page_number=page_number,
+                        chunk_index=1,
+                    ),
+                ]
+            return [
+                DocumentChunk(
+                    content="Chunk page 2A",
+                    source_file=source_file,
+                    page_number=page_number,
+                    chunk_index=0,
+                )
+            ]
+
+    processor.heading_chunker = _FakeHeadingChunker()
+    processor.extract_text_from_pdf = lambda pdf_path: [
+        (1, "Page 1 content"),
+        (2, "Page 2 content"),
+    ]
+
+    chunks = processor.process_pdf_with_headings(Path("test.pdf"))
+
+    assert [chunk.chunk_index for chunk in chunks] == [0, 1, 2]

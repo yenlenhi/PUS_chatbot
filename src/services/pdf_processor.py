@@ -17,6 +17,9 @@ from config.settings import (
     PDF_DIR,
     NEW_PDF_DIR,
     PROCESSED_DIR,
+    HEADING_CHUNK_MAX_SIZE,
+    HEADING_CHUNK_MIN_SIZE,
+    HEADING_CHUNK_TARGET_SIZE,
     PDF_OCR_DPI,
     PDF_OCR_LANGUAGES,
     PDF_OCR_MIN_TEXT_CHARS,
@@ -36,7 +39,11 @@ class PDFProcessor:
         self.pdf_dir = PDF_DIR
         self.new_pdf_dir = NEW_PDF_DIR
         self.processed_dir = PROCESSED_DIR
-        self.heading_chunker = HeadingChunker()
+        self.heading_chunker = HeadingChunker(
+            min_chunk_size=HEADING_CHUNK_MIN_SIZE,
+            max_chunk_size=HEADING_CHUNK_MAX_SIZE,
+            target_chunk_size=HEADING_CHUNK_TARGET_SIZE,
+        )
         self.use_gemini = use_gemini
 
         # Initialize Gemini service if enabled
@@ -64,6 +71,7 @@ class PDFProcessor:
         try:
             log.info(f"Processing PDF with headings: {pdf_path.name}")
             all_chunks = []
+            next_chunk_index = 0
 
             # Extract text page by page
             pages_text = self.extract_text_from_pdf(pdf_path)
@@ -79,6 +87,9 @@ class PDFProcessor:
                     chunks = self.heading_chunker.chunk_by_headings(
                         page_text, pdf_path.name, page_number
                     )
+                    for chunk in chunks:
+                        chunk.chunk_index = next_chunk_index
+                        next_chunk_index += 1
                     all_chunks.extend(chunks)
 
             log.info(
@@ -94,7 +105,62 @@ class PDFProcessor:
         if not text:
             return ""
 
-        return "\n".join(line.rstrip() for line in str(text).splitlines()).strip()
+        raw_lines = [line.rstrip() for line in str(text).splitlines()]
+        collapsed_lines = [re.sub(r"\s+", " ", line).strip() for line in raw_lines]
+
+        paragraphs: List[str] = []
+        current_paragraph = ""
+
+        for line in collapsed_lines:
+            if not line:
+                if current_paragraph:
+                    paragraphs.append(current_paragraph.strip())
+                    current_paragraph = ""
+                continue
+
+            if not current_paragraph:
+                current_paragraph = line
+                continue
+
+            if self._should_merge_lines(current_paragraph, line):
+                if current_paragraph.endswith("-"):
+                    current_paragraph = f"{current_paragraph[:-1].rstrip()}{line}"
+                else:
+                    current_paragraph = f"{current_paragraph} {line}"
+            else:
+                paragraphs.append(current_paragraph.strip())
+                current_paragraph = line
+
+        if current_paragraph:
+            paragraphs.append(current_paragraph.strip())
+
+        return "\n\n".join(paragraphs).strip()
+
+    def _looks_like_structural_line(self, line: str) -> bool:
+        stripped = line.strip()
+        if not stripped:
+            return False
+
+        return bool(
+            re.match(r"^(\d+(?:\.\d+)*\.?|[a-zA-Z]\)|[-*•])\s+", stripped)
+            or stripped.endswith(":")
+        )
+
+    def _should_merge_lines(self, current_line: str, next_line: str) -> bool:
+        current = current_line.strip()
+        upcoming = next_line.strip()
+        if not current or not upcoming:
+            return False
+
+        if self._looks_like_structural_line(current) or self._looks_like_structural_line(
+            upcoming
+        ):
+            return False
+
+        if current.endswith((".", ";", "?", "!", ":")):
+            return False
+
+        return True
 
     def _text_quality_score(self, text: Optional[str]) -> int:
         normalized = self._normalize_page_text(text)
