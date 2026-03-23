@@ -556,6 +556,12 @@ class RAGService:
                     0.05 if not chunk.get("context_expansion", False) else 0.0
                 )
 
+                # Score boost for chunks that matched the metadata filter
+                # (school_code / doc_type / admission_cycle). These chunks are
+                # structurally more relevant even if the reranker scored them
+                # lower on pure text similarity.
+                metadata_boost = 0.18 if chunk.get("metadata_matched") else 0.0
+
                 # Penalty for very short chunks (likely less informative)
                 content_length = len(chunk.get("content", ""))
                 length_penalty = -0.1 if content_length < 100 else 0.0
@@ -565,6 +571,7 @@ class RAGService:
                     + priority_adjustment
                     + heading_bonus
                     + original_bonus
+                    + metadata_boost
                     + length_penalty
                 )
 

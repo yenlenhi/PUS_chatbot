@@ -71,9 +71,14 @@ class EmbeddingService:
         """Load the sentence transformer model with offline support"""
         import os
 
-        # Set cache directories for offline model loading
-        cache_dir = os.environ.get("TRANSFORMERS_CACHE", "/root/.cache/huggingface")
-        os.environ["TRANSFORMERS_CACHE"] = cache_dir
+        # Use HF_HOME as the canonical cache location. Fall back to legacy
+        # variables only when older deployments still provide them.
+        cache_dir = (
+            os.environ.get("HF_HOME")
+            or os.environ.get("SENTENCE_TRANSFORMERS_HOME")
+            or os.environ.get("TRANSFORMERS_CACHE")
+            or "/root/.cache/huggingface"
+        )
         os.environ["HF_HOME"] = cache_dir
         os.environ["SENTENCE_TRANSFORMERS_HOME"] = cache_dir
 
@@ -103,7 +108,6 @@ class EmbeddingService:
                     model_name,
                     device=self.device,
                     cache_folder=cache_dir,
-                    use_auth_token=False,  # No authentication needed for public models
                 )
 
                 # Verify model loaded correctly

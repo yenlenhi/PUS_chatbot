@@ -325,9 +325,9 @@ def infer_document_metadata(
     doc_type = None
     if _contains_any_term(normalized_blob, _PERSONNEL_DOC_STRONG_TERMS):
         doc_type = "personnel"
-    elif _contains_any_term(normalized_blob, _PERSONNEL_DOC_TERMS) and not _contains_any_term(
-        normalized_blob, _ADMISSION_DOC_TERMS
-    ):
+    elif _contains_any_term(
+        normalized_blob, _PERSONNEL_DOC_TERMS
+    ) and not _contains_any_term(normalized_blob, _ADMISSION_DOC_TERMS):
         doc_type = "personnel"
     else:
         for candidate_doc_type, terms in _DOC_TYPE_HINTS:
@@ -365,7 +365,9 @@ def build_query_metadata_filters(query: Optional[str]) -> Dict[str, Any]:
     return filters
 
 
-def _build_current_cycle_query(raw_query: str, normalized_query: str) -> tuple[str, bool]:
+def _build_current_cycle_query(
+    raw_query: str, normalized_query: str
+) -> tuple[str, bool]:
     current_year = dt.datetime.now().year
     enrichment_terms = []
 
@@ -395,7 +397,6 @@ def enrich_query_for_current_cycle(query: Optional[str]) -> tuple[str, bool]:
 
     normalized_query = _normalize_text(raw_query)
     return _build_current_cycle_query(raw_query, normalized_query)
-
 
 
 def enrich_query_for_primary_school(query: Optional[str]) -> tuple[str, bool]:
@@ -556,7 +557,9 @@ def enrich_chunk_source_metadata(chunk: Dict[str, Any]) -> Dict[str, Any]:
         if not chunk.get(field) and inferred_chunk_metadata.get(field):
             chunk[field] = inferred_chunk_metadata[field]
 
-    if not chunk.get("admission_years") and inferred_chunk_metadata.get("admission_years"):
+    if not chunk.get("admission_years") and inferred_chunk_metadata.get(
+        "admission_years"
+    ):
         chunk["admission_years"] = inferred_chunk_metadata["admission_years"]
 
     admission_cycle = (
@@ -690,9 +693,7 @@ def filter_chunks_by_metadata(
     ) -> bool:
         if require_school and school_code:
             if chunk.get("school_code") != school_code:
-                if not (
-                    allow_system_scope and chunk.get("scope") == "system_wide"
-                ):
+                if not (allow_system_scope and chunk.get("scope") == "system_wide"):
                     return False
 
         if require_cycle and admission_cycle is not None:
@@ -716,17 +717,39 @@ def filter_chunks_by_metadata(
         exclude_scores_when_doc_type_differs=exclude_scores_when_doc_type_differs,
     )
 
+    # Soft filter: instead of hard-discarding unmatched chunks, put matched chunks
+    # first (highest priority) and append unmatched after. This ensures the reranker
+    # always has enough context while still surfacing the most relevant chunks first.
+    # Only skip entirely if no stage produces any match at all.
+    best_filtered: List[Dict[str, Any]] = []
+    best_stage: str = ""
+
     for stage_name, stage_kwargs in candidate_stages:
         filtered = [chunk for chunk in chunks if _match(chunk, **stage_kwargs)]
         if filtered:
-            return filtered, {
-                "applied": True,
-                "stage": stage_name,
-                "filters": filters,
-                "matched": len(filtered),
-                "total": len(chunks),
-            }
+            best_filtered = filtered
+            best_stage = stage_name
+            break
 
+    if best_filtered:
+        # Mark matched chunks so _final_ranking can apply a score boost (Phương án C).
+        matched_ids = {id(c) for c in best_filtered}
+        for chunk in chunks:
+            chunk["metadata_matched"] = id(chunk) in matched_ids
+        # Matched chunks first, unmatched after — reranker sees all of them.
+        unmatched = [c for c in chunks if id(c) not in matched_ids]
+        combined = best_filtered + unmatched
+        return combined, {
+            "applied": True,
+            "stage": best_stage,
+            "filters": filters,
+            "matched": len(best_filtered),
+            "total": len(chunks),
+        }
+
+    # No stage matched — clear any stale flag and return as-is.
+    for chunk in chunks:
+        chunk["metadata_matched"] = False
     return chunks, {
         "applied": False,
         "stage": "fallback_original",
@@ -739,10 +762,14 @@ def filter_chunks_by_metadata(
 def compute_priority_adjustment(query: Optional[str], chunk: Dict[str, Any]) -> float:
     source_name = chunk.get("source_file") or chunk.get("source") or ""
     normalized_source = _normalize_text(source_name)
-    normalized_heading = _normalize_text(chunk.get("heading_text") or chunk.get("heading"))
+    normalized_heading = _normalize_text(
+        chunk.get("heading_text") or chunk.get("heading")
+    )
     normalized_content = _normalize_text(str(chunk.get("content") or "")[:1600])
     normalized_chunk_text = " ".join(
-        part for part in (normalized_source, normalized_heading, normalized_content) if part
+        part
+        for part in (normalized_source, normalized_heading, normalized_content)
+        if part
     ).strip()
     metadata = enrich_chunk_source_metadata(chunk)
 
@@ -754,7 +781,11 @@ def compute_priority_adjustment(query: Optional[str], chunk: Dict[str, Any]) -> 
     primary_school_query = query_targets_primary_school(query)
 
     year_bonus = 0.0
-    if target_year is not None and isinstance(admission_years, list) and target_year in admission_years:
+    if (
+        target_year is not None
+        and isinstance(admission_years, list)
+        and target_year in admission_years
+    ):
         year_bonus = 0.22
     elif target_year is not None and document_year is not None:
         year_gap = document_year - target_year
@@ -767,7 +798,9 @@ def compute_priority_adjustment(query: Optional[str], chunk: Dict[str, Any]) -> 
         else:
             year_bonus = max(-0.18, year_gap * 0.05)
 
-    title_bonus = 0.04 if any(term in normalized_source for term in _ADMISSION_DOC_TERMS) else 0.0
+    title_bonus = (
+        0.04 if any(term in normalized_source for term in _ADMISSION_DOC_TERMS) else 0.0
+    )
     personnel_bonus = 0.0
     if personnel_query:
         if any(term in normalized_source for term in _PERSONNEL_DOC_STRONG_TERMS):
@@ -806,7 +839,9 @@ def compute_priority_adjustment(query: Optional[str], chunk: Dict[str, Any]) -> 
         ):
             school_bonus -= 0.10
 
-    draft_penalty = -0.08 if any(term in normalized_source for term in _DRAFT_TERMS) else 0.0
+    draft_penalty = (
+        -0.08 if any(term in normalized_source for term in _DRAFT_TERMS) else 0.0
+    )
 
     total_adjustment = (
         year_bonus
