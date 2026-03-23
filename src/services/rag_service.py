@@ -168,16 +168,25 @@ class RAGService:
 
             # Limit and rerank remaining chunks
             chunks_to_rerank = low_score_chunks[:max_rerank]
+            # Chunks beyond max_rerank are not cross-encoded but must NOT be
+            # discarded — keep them with their hybrid score so _final_ranking
+            # still has the full candidate pool to choose from.
+            chunks_not_reranked = low_score_chunks[max_rerank:]
+            for chunk in chunks_not_reranked:
+                chunk["rerank_score"] = chunk.get("hybrid_score", 0) or chunk.get(
+                    "score", 0
+                )
+
             if chunks_to_rerank:
                 pairs = [[query, chunk["content"]] for chunk in chunks_to_rerank]
                 scores = self.reranker.predict(pairs, show_progress_bar=False)
                 for chunk, score in zip(chunks_to_rerank, scores):
                     chunk["rerank_score"] = float(score)
                 log.info(
-                    f"Reranked {len(chunks_to_rerank)} chunks (skipped {len(chunks) - len(chunks_to_rerank) - len(high_score_chunks)})"
+                    f"Reranked {len(chunks_to_rerank)} chunks (kept {len(chunks_not_reranked)} with hybrid score)"
                 )
 
-            all_chunks = high_score_chunks + chunks_to_rerank
+            all_chunks = high_score_chunks + chunks_to_rerank + chunks_not_reranked
             all_chunks.sort(key=lambda x: x.get("rerank_score", 0.0), reverse=True)
 
             # Cache

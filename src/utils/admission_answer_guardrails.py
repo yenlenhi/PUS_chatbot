@@ -32,6 +32,7 @@ _YEAR_PATTERN = re.compile(r"\b(20\d{2})\b")
 _SCORE_VALUE_PATTERN = re.compile(r"\b\d{2}(?:[.,]\d{1,2})?\b")
 _INLINE_TABLE_PATTERN = re.compile(r"([^\n])(\|(?:[^|\n]+\|){2,}.*)")
 _TABLE_SEPARATOR_PATTERN = re.compile(r"^:?-{3,}:?$")
+_STRUCTURED_TIMELINE_QUERY_TERMS = ("moc thoi gian", "lich trinh", "timeline")
 
 
 def _normalize_text(value: Optional[str]) -> str:
@@ -499,6 +500,28 @@ def build_reference_year_bridge_answer(
     return normalize_answer_markdown(f"{prefix}{answer}")
 
 
+def _query_requests_timeline_overview(query: str) -> bool:
+    normalized_query = _normalize_text(query)
+    if not normalized_query:
+        return False
+
+    return any(term in normalized_query for term in _STRUCTURED_TIMELINE_QUERY_TERMS)
+
+
+def _extract_timeline_value(line: str) -> Optional[tuple[str, str]]:
+    match_range = _DATE_RANGE_PATTERN.search(line)
+    if match_range:
+        timeline_text = f"{match_range.group(1)} den {match_range.group(2)}"
+        note = line.replace(match_range.group(0), "").replace(":", " ").strip()
+        return timeline_text, note
+
+    dates = _DATE_SINGLE_PATTERN.findall(line)
+    if dates:
+        return ", ".join(dates), line
+
+    return None
+
+
 def _build_timeline_answer(query: str, chunks: List[Dict[str, Any]]) -> Optional[str]:
     rows: List[tuple[str, str, str]] = []
     seen: set[tuple[str, str]] = set()
@@ -524,17 +547,11 @@ def _build_timeline_answer(query: str, chunks: List[Dict[str, Any]]) -> Optional
                 continue
 
             label = line.split(":", 1)[0].strip()
-            note = ""
-            timeline_text = line
-            match_range = _DATE_RANGE_PATTERN.search(line)
-            if match_range:
-                timeline_text = f"{match_range.group(1)} đến {match_range.group(2)}"
-                note = line.replace(match_range.group(0), "").replace(":", " ").strip()
-            else:
-                dates = _DATE_SINGLE_PATTERN.findall(line)
-                if dates:
-                    timeline_text = ", ".join(dates)
-                    note = line
+            extracted_timeline = _extract_timeline_value(line)
+            if not extracted_timeline:
+                continue
+
+            timeline_text, note = extracted_timeline
             key = (label, timeline_text)
             if timeline_text and key not in seen:
                 seen.add(key)
@@ -1715,8 +1732,11 @@ def build_structured_admission_answer(
 
 
 def should_use_structured_pipeline(query: str) -> bool:
+    if get_fixed_admission_faq(query):
+        return True
+
     doc_type = infer_query_doc_type(query)
-    return doc_type in {"quota", "methods", "timeline", "exam"}
+    return doc_type == "timeline" and _query_requests_timeline_overview(query)
 
 
 def get_structured_answer_metadata(query: str) -> Dict[str, Any]:

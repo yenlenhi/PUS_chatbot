@@ -4,6 +4,7 @@ from src.utils.admission_answer_guardrails import (
     build_reference_year_bridge_answer,
     build_structured_admission_answer,
     normalize_answer_markdown,
+    should_use_structured_pipeline,
     validate_admission_answer,
 )
 from src.utils.admission_document_priority import (
@@ -151,6 +152,24 @@ def test_build_structured_timeline_answer_skips_outline_headings_without_real_ti
     assert "truoc 30/8/2026" in _normalize_test_text(answer)
 
 
+def test_build_structured_timeline_answer_requires_real_time_values():
+    query = "moc thoi gian dang ky va xac nhan nhap hoc"
+    chunks = [
+        {
+            "source_file": "Thong bao tuyen sinh T04 2026.pdf",
+            "heading_text": "Moc thoi gian",
+            "content": (
+                "Dang ky du tuyen: Thi sinh chon 01 trong 04 ma bai thi de dang ky du thi.\n"
+                "Xac nhan nhap hoc: Doi voi thi sinh khu vuc phia Nam dang ky du tuyen cac truong CAND phia Bac, dia diem thi tai phia Nam."
+            ),
+        }
+    ]
+
+    answer = build_structured_admission_answer(query, chunks, language="vi")
+
+    assert answer is None
+
+
 def test_validate_admission_answer_flags_timeline_markdown_table():
     query = "moc thoi gian dang ky va xac nhan nhap hoc"
     answer = (
@@ -180,6 +199,13 @@ def test_eligibility_query_does_not_use_structured_timeline_pipeline():
 
     assert infer_query_doc_type(query) == "eligibility"
     assert build_structured_admission_answer(query, chunks, language="vi") is None
+
+
+def test_exam_schedule_query_does_not_force_structured_pipeline():
+    query = "ngay thi va thoi gian lam bai cu the ra sao"
+
+    assert infer_query_doc_type(query) == "exam"
+    assert should_use_structured_pipeline(query) is False
 
 
 def test_normalize_answer_markdown_inserts_blank_lines_around_tables():

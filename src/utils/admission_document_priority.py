@@ -78,6 +78,13 @@ _CURRENT_CYCLE_HINTS = (
     "ky nay",
 )
 _DRAFT_TERMS = ("du thao", "draft")
+_TRAINING_REGULATION_TERMS = (
+    "quy che dao tao",
+    "dao tao dai hoc",
+    "dang ky hoc phan",
+    "hoc phan",
+    "quy trinh dao tao",
+)
 _PRIMARY_SCHOOL_TERMS = (
     "truong dai hoc an ninh nhan dan",
     "an ninh nhan dan",
@@ -132,13 +139,20 @@ _ELIGIBILITY_QUERY_TERMS = (
 )
 _TIMELINE_QUERY_TERMS = (
     "moc thoi gian",
-    "thoi gian",
+    "lich trinh",
     "dang ky",
     "xac nhan nhap hoc",
     "nhap hoc",
 )
 _SCORE_QUERY_TERMS = ("diem chuan", "diem xet", "diem trung tuyen", "diem")
 _EXAM_QUERY_TERMS = (
+    "ngay thi",
+    "lich thi",
+    "thoi gian lam bai",
+    "thoi luong bai thi",
+    "bao nhieu phut",
+    "thi trong bao lau",
+    "hinh thuc thi",
     "ma bai thi",
     "bai thi danh gia",
     "cau truc de thi",
@@ -148,9 +162,9 @@ _DOC_TYPE_HINTS = (
     ("quota", _QUOTA_QUERY_TERMS),
     ("methods", _METHOD_QUERY_TERMS),
     ("eligibility", _ELIGIBILITY_QUERY_TERMS),
+    ("exam", _EXAM_QUERY_TERMS),
     ("timeline", _TIMELINE_QUERY_TERMS),
     ("scores", _SCORE_QUERY_TERMS),
-    ("exam", _EXAM_QUERY_TERMS),
 )
 _SCHOOL_CODE_HINTS = (
     ("T04", "ANS", ("truong dai hoc an ninh nhan dan", "t04", "ans")),
@@ -323,6 +337,9 @@ def infer_document_metadata(
     admission_cycle = admission_years[-1] if admission_years else None
 
     doc_type = None
+    is_training_regulation_doc = _contains_any_term(
+        normalized_blob, _TRAINING_REGULATION_TERMS
+    )
     if _contains_any_term(normalized_blob, _PERSONNEL_DOC_STRONG_TERMS):
         doc_type = "personnel"
     elif _contains_any_term(
@@ -331,6 +348,12 @@ def infer_document_metadata(
         doc_type = "personnel"
     else:
         for candidate_doc_type, terms in _DOC_TYPE_HINTS:
+            if (
+                candidate_doc_type == "timeline"
+                and is_training_regulation_doc
+                and not _contains_any_term(normalized_blob, _ADMISSION_DOC_TERMS)
+            ):
+                continue
             if _contains_any_term(normalized_blob, terms):
                 doc_type = candidate_doc_type
                 break
@@ -717,10 +740,7 @@ def filter_chunks_by_metadata(
         exclude_scores_when_doc_type_differs=exclude_scores_when_doc_type_differs,
     )
 
-    # Soft filter: instead of hard-discarding unmatched chunks, put matched chunks
-    # first (highest priority) and append unmatched after. This ensures the reranker
-    # always has enough context while still surfacing the most relevant chunks first.
-    # Only skip entirely if no stage produces any match at all.
+    # Hard filter: once a metadata stage matches, keep only those matched chunks.
     best_filtered: List[Dict[str, Any]] = []
     best_stage: str = ""
 
@@ -736,10 +756,8 @@ def filter_chunks_by_metadata(
         matched_ids = {id(c) for c in best_filtered}
         for chunk in chunks:
             chunk["metadata_matched"] = id(chunk) in matched_ids
-        # Matched chunks first, unmatched after — reranker sees all of them.
-        unmatched = [c for c in chunks if id(c) not in matched_ids]
-        combined = best_filtered + unmatched
-        return combined, {
+        # Keep only the matched chunks for downstream reranking.
+        return best_filtered, {
             "applied": True,
             "stage": best_stage,
             "filters": filters,

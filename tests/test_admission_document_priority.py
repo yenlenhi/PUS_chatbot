@@ -277,6 +277,12 @@ def test_eligibility_query_maps_to_eligibility_not_timeline():
     assert infer_query_doc_type(query) == "eligibility"
 
 
+def test_exam_schedule_query_maps_to_exam_before_timeline():
+    query = "ngay thi va thoi gian lam bai cu the ra sao"
+
+    assert infer_query_doc_type(query) == "exam"
+
+
 def test_filter_chunks_by_metadata_prefers_eligibility_docs_over_timeline_docs():
     query = "tieu chuan suc khoe, chinh tri hoac do tuoi"
     chunks = [
