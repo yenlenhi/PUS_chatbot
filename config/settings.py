@@ -177,22 +177,22 @@ LOG_FILE = os.getenv("LOG_FILE", "logs/chatbot.log")
 # RAG Configuration
 CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", "500"))
 CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", "50"))
-TOP_K_RESULTS = int(os.getenv("TOP_K_RESULTS", "10"))
+TOP_K_RESULTS = int(os.getenv("TOP_K_RESULTS", "12"))
 # Set a stricter threshold to filter out irrelevant results
-SIMILARITY_THRESHOLD = float(os.getenv("SIMILARITY_THRESHOLD", "0.35"))
+SIMILARITY_THRESHOLD = float(os.getenv("SIMILARITY_THRESHOLD", "0.30"))
 
 # ============================================
 # Hybrid Retrieval Configuration (NEW)
 # ============================================
 # Weight for dense retrieval (0-1), sparse gets (1 - DENSE_WEIGHT)
 DENSE_WEIGHT = float(os.getenv("DENSE_WEIGHT", "0.7"))
-# Minimum similarity score for dense retrieval (aligned with SIMILARITY_THRESHOLD for better recall)
-DENSE_SIMILARITY_THRESHOLD = float(os.getenv("DENSE_SIMILARITY_THRESHOLD", "0.35"))
-# Minimum BM25 score for sparse retrieval (increased for accuracy)
-SPARSE_SIMILARITY_THRESHOLD = float(os.getenv("SPARSE_SIMILARITY_THRESHOLD", "0.2"))
-RETRIEVAL_INITIAL_K_MULTIPLIER = int(os.getenv("RETRIEVAL_INITIAL_K_MULTIPLIER", "2"))
-RETRIEVAL_INITIAL_K_CAP = int(os.getenv("RETRIEVAL_INITIAL_K_CAP", "30"))
-RERANK_MAX_CANDIDATES = int(os.getenv("RERANK_MAX_CANDIDATES", "6"))
+# Minimum similarity score for dense retrieval (lower = more recall, fewer relevant docs filtered out)
+DENSE_SIMILARITY_THRESHOLD = float(os.getenv("DENSE_SIMILARITY_THRESHOLD", "0.28"))
+# Minimum BM25 score for sparse retrieval
+SPARSE_SIMILARITY_THRESHOLD = float(os.getenv("SPARSE_SIMILARITY_THRESHOLD", "0.15"))
+RETRIEVAL_INITIAL_K_MULTIPLIER = int(os.getenv("RETRIEVAL_INITIAL_K_MULTIPLIER", "3"))
+RETRIEVAL_INITIAL_K_CAP = int(os.getenv("RETRIEVAL_INITIAL_K_CAP", "50"))
+RERANK_MAX_CANDIDATES = int(os.getenv("RERANK_MAX_CANDIDATES", "15"))
 ENABLE_CONTEXT_EXPANSION = (
     os.getenv("ENABLE_CONTEXT_EXPANSION", "true").lower() == "true"
 )
