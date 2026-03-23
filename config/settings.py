@@ -26,6 +26,11 @@ NEW_PDF_DIR = DATA_DIR / "new_pdf"  # PDF scan directory
 PROCESSED_DIR = DATA_DIR / "processed"
 EMBEDDINGS_DIR = DATA_DIR / "embeddings"
 
+# OCR configuration for uploaded/scanned PDFs
+PDF_OCR_LANGUAGES = os.getenv("PDF_OCR_LANGUAGES", "vie+eng")
+PDF_OCR_DPI = int(os.getenv("PDF_OCR_DPI", "200"))
+PDF_OCR_MIN_TEXT_CHARS = int(os.getenv("PDF_OCR_MIN_TEXT_CHARS", "20"))
+
 # Ensure directories exist
 PDF_DIR.mkdir(parents=True, exist_ok=True)
 NEW_PDF_DIR.mkdir(parents=True, exist_ok=True)

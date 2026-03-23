@@ -1138,7 +1138,12 @@ async def process_pdf_background(
         log.info(
             f"🔄 Background processing started for task {task_id}: {safe_filename}"
         )
-        task_manager.update_task(task_id, status=TaskStatus.PROCESSING, progress=0)
+        task_manager.update_task(
+            task_id,
+            status=TaskStatus.PROCESSING,
+            progress=0,
+            message="Đang khởi tạo xử lý PDF...",
+        )
 
         # Initialize PDF processor
         from src.services.pdf_processor import PDFProcessor
@@ -1147,13 +1152,21 @@ async def process_pdf_background(
 
         # Extract text and create chunks (10-40%)
         log.info(f"📖 Extracting text from {safe_filename}...")
-        task_manager.update_task(task_id, progress=10)
+        task_manager.update_task(
+            task_id,
+            progress=10,
+            message="Đang trích xuất văn bản từ PDF...",
+        )
 
         chunks = await asyncio.to_thread(
             pdf_processor.process_pdf_with_headings, file_path
         )
 
-        task_manager.update_task(task_id, progress=40)
+        task_manager.update_task(
+            task_id,
+            progress=40,
+            message="Đã trích xuất xong văn bản, đang chuẩn bị chunks...",
+        )
 
         if not chunks:
             log.warning(f"⚠️ No chunks extracted from {safe_filename}")
@@ -1161,12 +1174,7 @@ async def process_pdf_background(
                 task_id,
                 status=TaskStatus.COMPLETED,
                 progress=100,
-                result={
-                    "success": True,
-                    "chunks_created": 0,
-                    "status": "warning",
-                    "message": "No content extracted from PDF",
-                },
+                message="Không trích xuất được nội dung từ PDF.",
             )
             return
 
@@ -1175,7 +1183,11 @@ async def process_pdf_background(
         # Insert chunks into database (40-50%)
         log.info(f"💾 Inserting {len(chunks)} chunks into database...")
         chunk_ids = rag.db_service.insert_chunks(chunks)
-        task_manager.update_task(task_id, progress=50)
+        task_manager.update_task(
+            task_id,
+            progress=50,
+            message="Đang lưu chunks vào cơ sở dữ liệu...",
+        )
 
         # Generate embeddings (50-70%)
         log.info(f"🧠 Generating embeddings for {len(chunks)} chunks...")
@@ -1185,18 +1197,30 @@ async def process_pdf_background(
             16,  # batch_size
             False,  # show_progress
         )
-        task_manager.update_task(task_id, progress=70)
+        task_manager.update_task(
+            task_id,
+            progress=70,
+            message="Đang tạo embeddings cho nội dung tài liệu...",
+        )
 
         # Insert embeddings (70-80%)
         log.info("💾 Inserting embeddings into database...")
         rag.db_service.insert_embeddings(chunk_ids, embeddings)
-        task_manager.update_task(task_id, progress=80)
+        task_manager.update_task(
+            task_id,
+            progress=80,
+            message="Đang lưu embeddings vào cơ sở dữ liệu...",
+        )
 
         # Rebuild BM25 index (80-100%)
         if hasattr(rag, "retrieval_service") and rag.retrieval_service:
             try:
                 log.info("🔨 Rebuilding BM25 index...")
-                task_manager.update_task(task_id, progress=90)
+                task_manager.update_task(
+                    task_id,
+                    progress=90,
+                    message="Đang cập nhật chỉ mục tìm kiếm...",
+                )
                 await asyncio.to_thread(rag.retrieval_service.rebuild_bm25_index)
                 log.info("✅ BM25 index rebuilt successfully")
             except Exception as e:
@@ -1210,6 +1234,7 @@ async def process_pdf_background(
             task_id,
             status=TaskStatus.COMPLETED,
             progress=100,
+            message="Xử lý PDF hoàn tất.",
             chunks_created=len(chunks),
             embeddings_created=len(embeddings),
         )
@@ -1220,6 +1245,7 @@ async def process_pdf_background(
             task_id,
             status=TaskStatus.FAILED,
             progress=0,
+            message="Xử lý PDF thất bại.",
             error=str(e),
         )
 

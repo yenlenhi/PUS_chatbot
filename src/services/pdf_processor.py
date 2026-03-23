@@ -3,15 +3,29 @@ Service for processing PDF files
 """
 
 import json
+import os
+import re
 import PyPDF2
 import pdfplumber
 from pathlib import Path
-from typing import List
+from typing import Dict, List, Optional
 from src.models.schemas import DocumentChunk
 from src.utils.logger import log
 from src.utils.heading_chunker import HeadingChunker
 from src.services.gemini_pdf_service import GeminiPDFService
-from config.settings import PDF_DIR, NEW_PDF_DIR, PROCESSED_DIR
+from config.settings import (
+    PDF_DIR,
+    NEW_PDF_DIR,
+    PROCESSED_DIR,
+    PDF_OCR_DPI,
+    PDF_OCR_LANGUAGES,
+    PDF_OCR_MIN_TEXT_CHARS,
+)
+
+try:
+    import fitz  # PyMuPDF
+except Exception:  # pragma: no cover - optional import safety
+    fitz = None
 
 
 class PDFProcessor:
@@ -76,12 +90,208 @@ class PDFProcessor:
             log.error(f"Error processing PDF with headings: {e}")
             return []
 
+    def _normalize_page_text(self, text: Optional[str]) -> str:
+        if not text:
+            return ""
+
+        return "\n".join(line.rstrip() for line in str(text).splitlines()).strip()
+
+    def _text_quality_score(self, text: Optional[str]) -> int:
+        normalized = self._normalize_page_text(text)
+        if not normalized:
+            return 0
+
+        alnum_count = sum(1 for char in normalized if char.isalnum())
+        word_count = len(re.findall(r"\w+", normalized, flags=re.UNICODE))
+        score = alnum_count + (word_count * 5)
+        if self._looks_like_extraction_garbage(normalized):
+            return max(1, score // 10)
+        return score
+
+    def _looks_like_extraction_garbage(self, text: Optional[str]) -> bool:
+        normalized = self._normalize_page_text(text)
+        if not normalized:
+            return True
+
+        lowered = normalized.lower()
+        if "\ufffd" in normalized or "cid:" in lowered or "(cid:" in lowered:
+            return True
+
+        words = re.findall(r"\w+", normalized, flags=re.UNICODE)
+        if not words:
+            return True
+
+        if len(words) >= 6:
+            single_char_ratio = sum(1 for word in words if len(word) == 1) / len(words)
+            if single_char_ratio >= 0.65:
+                return True
+
+        if len(words) >= 4:
+            long_token_ratio = sum(1 for word in words if len(word) >= 25) / len(words)
+            if long_token_ratio >= 0.5:
+                return True
+
+        return False
+
+    def _has_meaningful_text(self, text: Optional[str]) -> bool:
+        normalized = self._normalize_page_text(text)
+        if not normalized:
+            return False
+
+        if self._looks_like_extraction_garbage(normalized):
+            return False
+
+        return (
+            self._text_quality_score(normalized) >= PDF_OCR_MIN_TEXT_CHARS
+            and len(re.findall(r"\w+", normalized, flags=re.UNICODE)) >= 3
+        )
+
+    def _merge_page_results(
+        self, base_pages: Dict[int, str], candidate_pages: Dict[int, str]
+    ) -> Dict[int, str]:
+        merged_pages = dict(base_pages)
+
+        for page_number, candidate_text in candidate_pages.items():
+            if self._text_quality_score(candidate_text) > self._text_quality_score(
+                merged_pages.get(page_number, "")
+            ):
+                merged_pages[page_number] = self._normalize_page_text(candidate_text)
+
+        return merged_pages
+
+    def _get_page_count(self, pdf_path: Path) -> int:
+        if fitz is not None:
+            try:
+                with fitz.open(str(pdf_path)) as document:
+                    return document.page_count
+            except Exception as exc:
+                log.debug(f"PyMuPDF could not determine page count: {exc}")
+
+        try:
+            with open(pdf_path, "rb") as file:
+                return len(PyPDF2.PdfReader(file).pages)
+        except Exception as exc:
+            log.debug(f"PyPDF2 could not determine page count: {exc}")
+            return 0
+
+    def _extract_with_pdfplumber(self, pdf_path: Path) -> Dict[int, str]:
+        extracted_pages: Dict[int, str] = {}
+        with pdfplumber.open(pdf_path) as pdf:
+            for page_number, page in enumerate(pdf.pages, start=1):
+                page_text = page.extract_text(x_tolerance=2, y_tolerance=2)
+                if page_text:
+                    extracted_pages[page_number] = self._normalize_page_text(page_text)
+        return extracted_pages
+
+    def _extract_with_pymupdf_native(
+        self, pdf_path: Path, page_numbers: Optional[List[int]] = None
+    ) -> Dict[int, str]:
+        if fitz is None:
+            return {}
+
+        extracted_pages: Dict[int, str] = {}
+        selected_pages = set(page_numbers or [])
+
+        with fitz.open(str(pdf_path)) as document:
+            for page_index in range(document.page_count):
+                page_number = page_index + 1
+                if selected_pages and page_number not in selected_pages:
+                    continue
+
+                page_text = document.load_page(page_index).get_text("text", sort=True)
+                if page_text:
+                    extracted_pages[page_number] = self._normalize_page_text(page_text)
+
+        return extracted_pages
+
+    def _extract_with_pypdf2(
+        self, pdf_path: Path, page_numbers: Optional[List[int]] = None
+    ) -> Dict[int, str]:
+        extracted_pages: Dict[int, str] = {}
+        selected_pages = set(page_numbers or [])
+
+        with open(pdf_path, "rb") as file:
+            reader = PyPDF2.PdfReader(file)
+            for page_index, page in enumerate(reader.pages):
+                page_number = page_index + 1
+                if selected_pages and page_number not in selected_pages:
+                    continue
+
+                page_text = page.extract_text()
+                if page_text:
+                    extracted_pages[page_number] = self._normalize_page_text(page_text)
+
+        return extracted_pages
+
+    def _resolve_tessdata_path(self) -> Optional[str]:
+        configured_path = os.getenv("TESSDATA_PREFIX")
+        if configured_path and Path(configured_path).exists():
+            return configured_path
+
+        common_paths = (
+            "/usr/share/tesseract-ocr/5/tessdata",
+            "/usr/share/tesseract-ocr/4.00/tessdata",
+            "/usr/share/tessdata",
+        )
+        for tessdata_path in common_paths:
+            if Path(tessdata_path).exists():
+                return tessdata_path
+
+        return None
+
+    def _extract_with_pymupdf_ocr(
+        self, pdf_path: Path, page_numbers: List[int]
+    ) -> Dict[int, str]:
+        if fitz is None or not page_numbers:
+            return {}
+
+        extracted_pages: Dict[int, str] = {}
+        tessdata_path = self._resolve_tessdata_path()
+
+        try:
+            with fitz.open(str(pdf_path)) as document:
+                for page_number in page_numbers:
+                    page = document.load_page(page_number - 1)
+                    ocr_kwargs = {
+                        "language": PDF_OCR_LANGUAGES,
+                        "dpi": PDF_OCR_DPI,
+                        "full": True,
+                    }
+                    if tessdata_path:
+                        ocr_kwargs["tessdata"] = tessdata_path
+
+                    textpage = page.get_textpage_ocr(**ocr_kwargs)
+                    page_text = page.get_text("text", textpage=textpage)
+                    if page_text:
+                        extracted_pages[page_number] = self._normalize_page_text(
+                            page_text
+                        )
+        except Exception as exc:
+            log.warning(f"PyMuPDF OCR unavailable for {pdf_path.name}: {exc}")
+            return {}
+
+        return extracted_pages
+
+    def _pages_needing_ocr(
+        self, page_texts: Dict[int, str], total_pages: int
+    ) -> List[int]:
+        if total_pages > 0:
+            candidate_pages = range(1, total_pages + 1)
+        else:
+            candidate_pages = sorted(page_texts.keys())
+
+        return [
+            page_number
+            for page_number in candidate_pages
+            if not self._has_meaningful_text(page_texts.get(page_number, ""))
+        ]
+
     def extract_text_from_pdf(
         self, pdf_path: Path, use_gemini: bool = None
     ) -> List[tuple[int, str]]:
         """
         Extract text from each page of a PDF file.
-        Uses Gemini Vision API for better OCR, falls back to traditional methods.
+        Uses a hybrid strategy: native extraction first, OCR only for low-text pages.
 
         Args:
             pdf_path: Path to PDF file
@@ -90,51 +300,72 @@ class PDFProcessor:
         Returns:
             A list of tuples, where each tuple contains (page_number, page_text).
         """
-        # Determine whether to use Gemini
-        should_use_gemini = use_gemini if use_gemini is not None else self.use_gemini
-
-        # Try Gemini first if available and enabled
-        if should_use_gemini and self.gemini_service:
-            try:
-                log.info(
-                    f"Attempting to extract text using Gemini Vision API: {pdf_path.name}"
-                )
-                pages = self.gemini_service.extract_text_from_pdf(pdf_path)
-                if pages:
-                    log.info(
-                        f"Successfully extracted text using Gemini from {len(pages)} pages"
-                    )
-                    return pages
-                else:
-                    log.warning(
-                        "Gemini extraction returned no results, falling back to traditional methods"
-                    )
-            except Exception as e:
-                log.warning(
-                    f"Gemini extraction failed: {e}, falling back to traditional methods"
-                )
-
-        # Fallback to traditional PDF text extraction
-        pages = []
         try:
-            # Try with pdfplumber first (better for formatted text)
+            should_use_gemini = (
+                use_gemini if use_gemini is not None else self.use_gemini
+            )
+            total_pages = self._get_page_count(pdf_path)
+            extracted_pages: Dict[int, str] = {}
+
             try:
-                with pdfplumber.open(pdf_path) as pdf:
-                    for i, page in enumerate(pdf.pages):
-                        page_text = page.extract_text(x_tolerance=3)
-                        if page_text:
-                            pages.append((i + 1, page_text))
-            except Exception as e:
-                log.warning(
-                    f"Error extracting text with pdfplumber: {e}, falling back to PyPDF2"
+                extracted_pages = self._merge_page_results(
+                    extracted_pages, self._extract_with_pdfplumber(pdf_path)
                 )
-                # Fallback to PyPDF2
-                with open(pdf_path, "rb") as file:
-                    reader = PyPDF2.PdfReader(file)
-                    for i, page in enumerate(reader.pages):
-                        page_text = page.extract_text()
-                        if page_text:
-                            pages.append((i + 1, page_text))
+            except Exception as exc:
+                log.warning(
+                    f"Error extracting text with pdfplumber: {exc}, falling back to other extractors"
+                )
+
+            weak_pages = self._pages_needing_ocr(extracted_pages, total_pages)
+            if weak_pages:
+                try:
+                    extracted_pages = self._merge_page_results(
+                        extracted_pages,
+                        self._extract_with_pymupdf_native(pdf_path, weak_pages),
+                    )
+                except Exception as exc:
+                    log.warning(f"PyMuPDF native extraction failed: {exc}")
+
+            weak_pages = self._pages_needing_ocr(extracted_pages, total_pages)
+            if weak_pages:
+                try:
+                    extracted_pages = self._merge_page_results(
+                        extracted_pages, self._extract_with_pypdf2(pdf_path, weak_pages)
+                    )
+                except Exception as exc:
+                    log.warning(f"PyPDF2 extraction failed: {exc}")
+
+            weak_pages = self._pages_needing_ocr(extracted_pages, total_pages)
+            if weak_pages:
+                log.info(
+                    f"Attempting OCR for {len(weak_pages)} low-text page(s) via PyMuPDF: {pdf_path.name}"
+                )
+                extracted_pages = self._merge_page_results(
+                    extracted_pages, self._extract_with_pymupdf_ocr(pdf_path, weak_pages)
+                )
+
+            weak_pages = self._pages_needing_ocr(extracted_pages, total_pages)
+            if weak_pages and should_use_gemini and self.gemini_service:
+                try:
+                    log.info(
+                        f"Attempting Gemini OCR for {len(weak_pages)} remaining low-text page(s): {pdf_path.name}"
+                    )
+                    extracted_pages = self._merge_page_results(
+                        extracted_pages,
+                        dict(
+                            self.gemini_service.extract_text_from_pdf(
+                                pdf_path, page_numbers=weak_pages
+                            )
+                        ),
+                    )
+                except Exception as exc:
+                    log.warning(f"Gemini OCR fallback failed: {exc}")
+
+            pages = [
+                (page_number, page_text)
+                for page_number, page_text in sorted(extracted_pages.items())
+                if self._normalize_page_text(page_text)
+            ]
             return pages
 
         except Exception as e:
