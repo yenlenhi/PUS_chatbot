@@ -20,6 +20,7 @@ from config.settings import (
     HEADING_CHUNK_MAX_SIZE,
     HEADING_CHUNK_MIN_SIZE,
     HEADING_CHUNK_TARGET_SIZE,
+    PDF_TEXT_EXTRACTION_MODE,
     PDF_OCR_DPI,
     PDF_OCR_LANGUAGES,
     PDF_OCR_MIN_TEXT_CHARS,
@@ -39,12 +40,18 @@ class PDFProcessor:
         self.pdf_dir = PDF_DIR
         self.new_pdf_dir = NEW_PDF_DIR
         self.processed_dir = PROCESSED_DIR
+        self.extraction_mode = PDF_TEXT_EXTRACTION_MODE or "gemini_only"
         self.heading_chunker = HeadingChunker(
             min_chunk_size=HEADING_CHUNK_MIN_SIZE,
             max_chunk_size=HEADING_CHUNK_MAX_SIZE,
             target_chunk_size=HEADING_CHUNK_TARGET_SIZE,
         )
-        self.use_gemini = use_gemini
+        self.use_gemini = use_gemini or self.extraction_mode == "gemini_only"
+
+        if self.extraction_mode == "gemini_only" and not use_gemini:
+            log.info(
+                "Gemini-only PDF extraction is enabled; ignoring use_gemini=False."
+            )
 
         # Initialize Gemini service if enabled
         if self.use_gemini:
@@ -54,7 +61,8 @@ class PDFProcessor:
             except Exception as e:
                 log.warning(f"Failed to initialize Gemini service: {e}")
                 self.gemini_service = None
-                self.use_gemini = False
+                if self.extraction_mode != "gemini_only":
+                    self.use_gemini = False
         else:
             self.gemini_service = None
 
@@ -110,13 +118,28 @@ class PDFProcessor:
 
         paragraphs: List[str] = []
         current_paragraph = ""
+        current_table_lines: List[str] = []
 
         for line in collapsed_lines:
             if not line:
+                if current_table_lines:
+                    paragraphs.append("\n".join(current_table_lines).strip())
+                    current_table_lines = []
                 if current_paragraph:
                     paragraphs.append(current_paragraph.strip())
                     current_paragraph = ""
                 continue
+
+            if self._looks_like_table_line(line):
+                if current_paragraph:
+                    paragraphs.append(current_paragraph.strip())
+                    current_paragraph = ""
+                current_table_lines.append(line)
+                continue
+
+            if current_table_lines:
+                paragraphs.append("\n".join(current_table_lines).strip())
+                current_table_lines = []
 
             if not current_paragraph:
                 current_paragraph = line
@@ -133,8 +156,25 @@ class PDFProcessor:
 
         if current_paragraph:
             paragraphs.append(current_paragraph.strip())
+        if current_table_lines:
+            paragraphs.append("\n".join(current_table_lines).strip())
 
         return "\n\n".join(paragraphs).strip()
+
+    def _looks_like_table_line(self, line: str) -> bool:
+        stripped = line.strip()
+        if not stripped:
+            return False
+
+        if stripped.count("|") >= 2:
+            return True
+
+        if "\t" in stripped:
+            non_empty_cells = [cell for cell in stripped.split("\t") if cell.strip()]
+            if len(non_empty_cells) >= 2:
+                return True
+
+        return False
 
     def _looks_like_structural_line(self, line: str) -> bool:
         stripped = line.strip()
@@ -150,6 +190,9 @@ class PDFProcessor:
         current = current_line.strip()
         upcoming = next_line.strip()
         if not current or not upcoming:
+            return False
+
+        if self._looks_like_table_line(current) or self._looks_like_table_line(upcoming):
             return False
 
         if self._looks_like_structural_line(current) or self._looks_like_structural_line(
@@ -357,81 +400,52 @@ class PDFProcessor:
     ) -> List[tuple[int, str]]:
         """
         Extract text from each page of a PDF file.
-        Uses a hybrid strategy: native extraction first, OCR only for low-text pages.
+        Uses Gemini OCR for every page to maximize recall for scanned text and tables.
 
         Args:
             pdf_path: Path to PDF file
-            use_gemini: Override to force Gemini usage (None uses instance setting)
+            use_gemini: Retained for backward compatibility; ignored in gemini_only mode
 
         Returns:
             A list of tuples, where each tuple contains (page_number, page_text).
         """
         try:
             should_use_gemini = (
-                use_gemini if use_gemini is not None else self.use_gemini
+                self.use_gemini
+                if self.extraction_mode == "gemini_only"
+                else use_gemini if use_gemini is not None else self.use_gemini
             )
+            if not should_use_gemini or not self.gemini_service:
+                log.error(
+                    f"Gemini-only PDF extraction is unavailable for {pdf_path.name}."
+                )
+                return []
+
             total_pages = self._get_page_count(pdf_path)
-            extracted_pages: Dict[int, str] = {}
+            log.info(f"Running Gemini OCR for all pages in {pdf_path.name}")
+            extracted_pages = dict(self.gemini_service.extract_text_from_pdf(pdf_path))
 
-            try:
-                extracted_pages = self._merge_page_results(
-                    extracted_pages, self._extract_with_pdfplumber(pdf_path)
-                )
-            except Exception as exc:
-                log.warning(
-                    f"Error extracting text with pdfplumber: {exc}, falling back to other extractors"
-                )
-
-            weak_pages = self._pages_needing_ocr(extracted_pages, total_pages)
-            if weak_pages:
-                try:
-                    extracted_pages = self._merge_page_results(
-                        extracted_pages,
-                        self._extract_with_pymupdf_native(pdf_path, weak_pages),
-                    )
-                except Exception as exc:
-                    log.warning(f"PyMuPDF native extraction failed: {exc}")
-
-            weak_pages = self._pages_needing_ocr(extracted_pages, total_pages)
-            if weak_pages:
-                try:
-                    extracted_pages = self._merge_page_results(
-                        extracted_pages, self._extract_with_pypdf2(pdf_path, weak_pages)
-                    )
-                except Exception as exc:
-                    log.warning(f"PyPDF2 extraction failed: {exc}")
-
-            weak_pages = self._pages_needing_ocr(extracted_pages, total_pages)
-            if weak_pages:
-                log.info(
-                    f"Attempting OCR for {len(weak_pages)} low-text page(s) via PyMuPDF: {pdf_path.name}"
-                )
-                extracted_pages = self._merge_page_results(
-                    extracted_pages, self._extract_with_pymupdf_ocr(pdf_path, weak_pages)
-                )
-
-            weak_pages = self._pages_needing_ocr(extracted_pages, total_pages)
-            if weak_pages and should_use_gemini and self.gemini_service:
-                try:
-                    log.info(
-                        f"Attempting Gemini OCR for {len(weak_pages)} remaining low-text page(s): {pdf_path.name}"
-                    )
-                    extracted_pages = self._merge_page_results(
-                        extracted_pages,
-                        dict(
-                            self.gemini_service.extract_text_from_pdf(
-                                pdf_path, page_numbers=weak_pages
-                            )
-                        ),
-                    )
-                except Exception as exc:
-                    log.warning(f"Gemini OCR fallback failed: {exc}")
-
-            pages = [
-                (page_number, page_text)
-                for page_number, page_text in sorted(extracted_pages.items())
-                if self._normalize_page_text(page_text)
+            missing_pages = [
+                page_number
+                for page_number in range(1, total_pages + 1)
+                if not self._normalize_page_text(extracted_pages.get(page_number, ""))
             ]
+            if missing_pages:
+                log.warning(
+                    f"Retrying Gemini OCR for {len(missing_pages)} missing/empty page(s): {pdf_path.name}"
+                )
+                retry_pages = dict(
+                    self.gemini_service.extract_text_from_pdf(
+                        pdf_path, page_numbers=missing_pages
+                    )
+                )
+                extracted_pages = self._merge_page_results(extracted_pages, retry_pages)
+
+            pages = []
+            for page_number, page_text in sorted(extracted_pages.items()):
+                normalized_text = self._normalize_page_text(page_text)
+                if normalized_text:
+                    pages.append((page_number, normalized_text))
             return pages
 
         except Exception as e:
@@ -465,24 +479,22 @@ class PDFProcessor:
             return []
 
     def process_all_pdfs(self) -> List[DocumentChunk]:
-        """Process all PDFs from both regular and scan directories"""
+        """Process all PDFs using Gemini OCR for every page."""
         all_chunks = []
 
-        # Process regular PDFs (can be copied)
         regular_pdf_files = list(self.pdf_dir.glob("*.pdf"))
-        log.info(f"Found {len(regular_pdf_files)} regular PDF files in {self.pdf_dir}")
+        log.info(f"Found {len(regular_pdf_files)} PDF files in {self.pdf_dir}")
 
         for pdf_path in regular_pdf_files:
-            log.info(f"Processing regular PDF: {pdf_path.name}")
+            log.info(f"Processing PDF with Gemini OCR: {pdf_path.name}")
             chunks = self.process_pdf_with_headings(pdf_path)
             all_chunks.extend(chunks)
 
-        # Process scanned PDFs (use Gemini for better OCR)
         scan_pdf_files = list(self.new_pdf_dir.glob("*.pdf"))
-        log.info(f"Found {len(scan_pdf_files)} scanned PDF files in {self.new_pdf_dir}")
+        log.info(f"Found {len(scan_pdf_files)} PDF files in {self.new_pdf_dir}")
 
         for pdf_path in scan_pdf_files:
-            log.info(f"Processing scanned PDF with Gemini: {pdf_path.name}")
+            log.info(f"Processing PDF with Gemini OCR: {pdf_path.name}")
             chunks = self.process_pdf_with_headings(pdf_path)
             all_chunks.extend(chunks)
 
@@ -498,33 +510,9 @@ class PDFProcessor:
 
     def process_pdfs_with_gemini_priority(self) -> List[DocumentChunk]:
         """
-        Process PDFs with Gemini priority for scanned documents
-        Regular PDFs use traditional extraction, scanned PDFs use Gemini
+        Backward-compatible wrapper for the Gemini-only PDF extraction pipeline.
         """
-        all_chunks = []
-
-        # Process regular PDFs with traditional methods (faster)
-        regular_pdf_files = list(self.pdf_dir.glob("*.pdf"))
-        if regular_pdf_files:
-            log.info(
-                f"Processing {len(regular_pdf_files)} regular PDFs with traditional extraction"
-            )
-            for pdf_path in regular_pdf_files:
-                chunks = self.process_pdf_with_headings(pdf_path)
-                all_chunks.extend(chunks)
-
-        # Process scanned PDFs with Gemini (better OCR)
-        scan_pdf_files = list(self.new_pdf_dir.glob("*.pdf"))
-        if scan_pdf_files:
-            log.info(
-                f"Processing {len(scan_pdf_files)} scanned PDFs with Gemini Vision API"
-            )
-            for pdf_path in scan_pdf_files:
-                # Force Gemini usage for scanned PDFs
-                chunks = self.process_pdf_with_headings(pdf_path)
-                all_chunks.extend(chunks)
-
-        return all_chunks
+        return self.process_all_pdfs()
 
     def save_chunks_to_file(self, chunks: List[DocumentChunk]):
         """Save chunks to a JSON file"""

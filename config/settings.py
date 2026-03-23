@@ -30,6 +30,8 @@ EMBEDDINGS_DIR = DATA_DIR / "embeddings"
 PDF_OCR_LANGUAGES = os.getenv("PDF_OCR_LANGUAGES", "vie+eng")
 PDF_OCR_DPI = int(os.getenv("PDF_OCR_DPI", "200"))
 PDF_OCR_MIN_TEXT_CHARS = int(os.getenv("PDF_OCR_MIN_TEXT_CHARS", "20"))
+PDF_TEXT_EXTRACTION_MODE = os.getenv("PDF_TEXT_EXTRACTION_MODE", "gemini_only").lower()
+PDF_GEMINI_RENDER_SCALE = float(os.getenv("PDF_GEMINI_RENDER_SCALE", "3.0"))
 
 # Ensure directories exist
 PDF_DIR.mkdir(parents=True, exist_ok=True)

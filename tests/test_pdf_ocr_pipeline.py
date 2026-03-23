@@ -75,6 +75,7 @@ def _build_gemini_service() -> GeminiPDFService:
     service.page_delay = 0
     service.request_timeout = 1
     service.max_output_tokens = 8192
+    service.render_scale = 3.0
     return service
 
 
@@ -111,11 +112,13 @@ def test_extract_text_from_image_uses_image_first_json_mode(monkeypatch):
     assert extracted_text == "Trang 1\nNoi dung OCR"
     assert captured_request["headers"] == {"Content-Type": "application/json"}
     assert captured_request["timeout"] == 1
+    assert service.render_scale >= 1.0
 
     parts = captured_request["json"]["contents"][0]["parts"]
     assert "inline_data" in parts[0]
     assert parts[0]["inline_data"]["data"] == "ZmFrZV9pbWFnZQ=="
-    assert parts[1]["text"].startswith("Extract all visible text")
+    assert parts[1]["text"].startswith("Extract every visible character")
+    assert "GitHub-flavored Markdown table format" in parts[1]["text"]
     assert (
         captured_request["json"]["generationConfig"]["responseMimeType"]
         == "application/json"
@@ -201,6 +204,54 @@ def test_pdf_processor_normalize_page_text_reflows_broken_lines():
         "Cong an cac don vi, dia phuong co tuyen CAND to chuc xet tuyen dam bao thoi gian, "
         "ke hoach theo lich trinh chung cua Bo Cong an."
     ) in normalized
+
+
+def test_pdf_processor_normalize_page_text_preserves_markdown_tables():
+    processor = PDFProcessor.__new__(PDFProcessor)
+
+    raw_text = (
+        "Bang diem tham khao\n"
+        "| Ma to hop | Diem |\n"
+        "| --- | --- |\n"
+        "| CA1 | 18.25 |\n"
+        "| CA2 | 19.00 |\n"
+        "Ghi chu bo sung\n"
+    )
+
+    normalized = processor._normalize_page_text(raw_text)
+
+    assert "| Ma to hop | Diem |" in normalized
+    assert "| --- | --- |" in normalized
+    assert "| CA1 | 18.25 |" in normalized
+    assert "| CA2 | 19.00 |" in normalized
+    assert "Bang diem tham khao" in normalized
+    assert "Ghi chu bo sung" in normalized
+    assert "| CA1 | 18.25 | | CA2 | 19.00 |" not in normalized
+
+
+def test_pdf_processor_extract_text_from_pdf_uses_gemini_for_all_pages():
+    processor = PDFProcessor.__new__(PDFProcessor)
+    processor.extraction_mode = "gemini_only"
+    processor.use_gemini = True
+    processor._get_page_count = lambda pdf_path: 3
+
+    class _FakeGeminiService:
+        def __init__(self):
+            self.calls = []
+
+        def extract_text_from_pdf(self, pdf_path, page_numbers=None):
+            self.calls.append(page_numbers)
+            if page_numbers is None:
+                return [(1, "Trang 1"), (3, "Trang 3")]
+            return [(2, "Trang 2 bang du lieu")]
+
+    fake_service = _FakeGeminiService()
+    processor.gemini_service = fake_service
+
+    pages = processor.extract_text_from_pdf(Path("test.pdf"))
+
+    assert pages == [(1, "Trang 1"), (2, "Trang 2 bang du lieu"), (3, "Trang 3")]
+    assert fake_service.calls == [None, [2]]
 
 
 def test_process_pdf_with_headings_reindexes_chunks_across_pages():

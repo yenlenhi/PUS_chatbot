@@ -991,7 +991,7 @@ async def admin_upload_document(
     Args:
         file: PDF file to upload
         category: Document category (Đào tạo, Tuyển sinh, etc.)
-        use_gemini: Whether to use Gemini Vision API for OCR
+        use_gemini: Deprecated compatibility flag. PDF extraction now runs through Gemini OCR.
 
     Returns:
         202 Accepted with task_id for checking progress

@@ -14,16 +14,23 @@ import pymupdf as fitz  # PyMuPDF for PDF to image conversion
 import requests
 from PIL import Image, ImageFilter, ImageOps
 
-from config.settings import GEMINI_API_KEY, GEMINI_API_URL, GEMINI_MAX_OUTPUT_TOKENS
+from config.settings import (
+    GEMINI_API_KEY,
+    GEMINI_API_URL,
+    GEMINI_MAX_OUTPUT_TOKENS,
+    PDF_GEMINI_RENDER_SCALE,
+)
 from src.utils.logger import log
 
 OCR_PROMPT = (
-    "Extract all visible text from this PDF page image.\n\n"
+    "Extract every visible character from this PDF page image.\n\n"
     "Requirements:\n"
-    "1. Preserve Vietnamese diacritics, numbers, symbols, headings, bullets, and line breaks.\n"
-    "2. Keep table content in reading order line by line. Do not summarize, translate, or infer missing text.\n"
-    "3. Return only the extracted text. Do not add commentary or Markdown fences.\n"
-    "4. If no readable text is visible, return has_text=false and an empty text field."
+    "1. Preserve Vietnamese diacritics, numbers, symbols, headings, bullets, and meaningful line breaks exactly as shown.\n"
+    "2. Reproduce every table in GitHub-flavored Markdown table format whenever the columns are readable. Keep each row on one line, keep the original column order, and preserve captions, notes, and footnotes outside the table.\n"
+    "3. If a table cell spans multiple visual lines, join the cell text with <br> instead of dropping content.\n"
+    "4. Keep non-table text in natural reading order. Do not summarize, translate, normalize, or infer missing text.\n"
+    "5. Return only the extracted page text in the JSON schema. Do not add commentary or Markdown fences.\n"
+    "6. If no readable text is visible, return has_text=false and an empty text field."
 )
 
 OCR_RESPONSE_SCHEMA: Dict[str, Any] = {
@@ -52,7 +59,8 @@ class GeminiPDFService:
         self.retry_delay = 2
         self.page_delay = 0.25
         self.request_timeout = 90
-        self.max_output_tokens = max(4096, min(GEMINI_MAX_OUTPUT_TOKENS, 8192))
+        self.max_output_tokens = max(8192, GEMINI_MAX_OUTPUT_TOKENS)
+        self.render_scale = max(1.0, PDF_GEMINI_RENDER_SCALE)
 
     def extract_text_from_pdf(
         self, pdf_path: Path, page_numbers: Optional[Iterable[int]] = None
@@ -114,7 +122,7 @@ class GeminiPDFService:
                         continue
 
                     page = pdf_document[page_index]
-                    matrix = fitz.Matrix(2.5, 2.5)
+                    matrix = fitz.Matrix(self.render_scale, self.render_scale)
                     pixmap = page.get_pixmap(matrix=matrix, alpha=False)
 
                     image = Image.open(io.BytesIO(pixmap.tobytes("png")))
