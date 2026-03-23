@@ -24,14 +24,16 @@ from config.settings import (
 from src.utils.logger import log
 
 OCR_PROMPT = (
-    "Extract every visible character from this PDF page image.\n\n"
+    "Extract every visible character from this Vietnamese administrative/legal PDF page image.\n\n"
     "Requirements:\n"
-    "1. Preserve Vietnamese diacritics, numbers, symbols, headings, bullets, and meaningful line breaks exactly as shown.\n"
-    "2. Reproduce every table in GitHub-flavored Markdown table format whenever the columns are readable. Keep each row on one line, keep the original column order, and preserve captions, notes, and footnotes outside the table.\n"
-    "3. If a table cell spans multiple visual lines, join the cell text with <br> instead of dropping content.\n"
-    "4. Keep non-table text in natural reading order. Do not summarize, translate, normalize, or infer missing text.\n"
-    "5. Return only the extracted page text in the JSON schema. Do not add commentary or Markdown fences.\n"
-    "6. If no readable text is visible, return has_text=false and an empty text field."
+    "1. Preserve Vietnamese diacritics, numbers, symbols, punctuation, quotation marks, headings, bullets, page numbers, and meaningful line breaks exactly as shown.\n"
+    "2. Treat the page as an official legal/administrative document. Preserve the full hierarchy and wording of titles, appendices, articles (Dieu), clauses (Khoan), points (Diem), sub-points, references, dates, and document numbers exactly. Do not skip or compress repeated legal phrasing.\n"
+    "3. Never summarize, translate, paraphrase, normalize, modernize, infer missing text, or rewrite citations. Keep quoted passages intact and do not break legal references across unrelated lines.\n"
+    "4. Reproduce every table in GitHub-flavored Markdown table format whenever the columns are readable. Keep the original column order, keep each row on one line, preserve blank cells when visible, and preserve captions, notes, and footnotes outside the table.\n"
+    "5. If a table cell spans multiple visual lines, join the cell text with <br> instead of dropping content. Do not merge two different rows or two different cells together.\n"
+    "6. Keep non-table text in natural reading order and preserve section boundaries so long documents with many numbered items remain complete and traceable.\n"
+    "7. Return only the extracted page text in the JSON schema. Do not add commentary, confidence notes, or Markdown fences.\n"
+    "8. If no readable text is visible, return has_text=false and an empty text field."
 )
 
 OCR_RESPONSE_SCHEMA: Dict[str, Any] = {

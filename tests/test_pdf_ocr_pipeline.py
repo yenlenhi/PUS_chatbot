@@ -117,8 +117,12 @@ def test_extract_text_from_image_uses_image_first_json_mode(monkeypatch):
     parts = captured_request["json"]["contents"][0]["parts"]
     assert "inline_data" in parts[0]
     assert parts[0]["inline_data"]["data"] == "ZmFrZV9pbWFnZQ=="
-    assert parts[1]["text"].startswith("Extract every visible character")
+    assert parts[1]["text"].startswith(
+        "Extract every visible character from this Vietnamese administrative/legal PDF page image."
+    )
     assert "GitHub-flavored Markdown table format" in parts[1]["text"]
+    assert "articles (Dieu), clauses (Khoan), points (Diem)" in parts[1]["text"]
+    assert "Keep quoted passages intact" in parts[1]["text"]
     assert (
         captured_request["json"]["generationConfig"]["responseMimeType"]
         == "application/json"
