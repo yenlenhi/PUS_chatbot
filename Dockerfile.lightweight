@@ -17,6 +17,7 @@ RUN apt-get update && apt-get install -y \
 
 # Set environment variables for model cache
 # Railway will persist /root/.cache via volume
+ENV TRANSFORMERS_CACHE=/root/.cache/huggingface
 ENV HF_HOME=/root/.cache/huggingface
 ENV SENTENCE_TRANSFORMERS_HOME=/root/.cache/huggingface
 
@@ -50,6 +51,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=90s --retries=3 \
     CMD curl -f http://localhost:${PORT:-8080}/health || exit 1
 
 # Run the application
-# Use shell form to properly expand environment variables.
-# Default to a single worker on Railway because each worker loads the full RAG stack.
-CMD python -m uvicorn main:app --host 0.0.0.0 --port ${PORT:-8080} --workers ${UVICORN_WORKERS:-1} --log-level info
+# Use shell form to properly expand $PORT environment variable
+CMD python -m uvicorn main:app --host 0.0.0.0 --port ${PORT:-8080} --workers 1 --timeout-keep-alive 75 --log-level info

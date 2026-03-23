@@ -78,13 +78,8 @@ REQUIRE_SOURCE_CITATION = os.getenv("REQUIRE_SOURCE_CITATION", "true").lower() =
 ENABLE_STAGE_TIMINGS = os.getenv("ENABLE_STAGE_TIMINGS", "true").lower() == "true"
 
 # Prewarm retrieval + reranker models on startup so the first demo question
-# does not pay the full lazy-loading cost. On Railway, disable this by
-# default to keep deploy/startup time predictable unless explicitly enabled.
-DEFAULT_PREWARM_RAG_ON_STARTUP = "false" if RUNNING_ON_RAILWAY else "true"
-PREWARM_RAG_ON_STARTUP = (
-    os.getenv("PREWARM_RAG_ON_STARTUP", DEFAULT_PREWARM_RAG_ON_STARTUP).lower()
-    == "true"
-)
+# does not pay the full lazy-loading cost.
+PREWARM_RAG_ON_STARTUP = os.getenv("PREWARM_RAG_ON_STARTUP", "true").lower() == "true"
 
 # Ollama Configuration
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
