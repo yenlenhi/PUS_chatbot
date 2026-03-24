@@ -39,6 +39,7 @@ class _FakeResult:
 class _FakeConnection:
     def __init__(self):
         self.executed_queries = []
+        self.commit_called = False
 
     def execute(self, statement, params=None):
         query = str(statement)
@@ -65,7 +66,13 @@ class _FakeConnection:
                 ]
             )
 
+        if "INSERT INTO chunk_attachments" in query:
+            return _FakeResult([])
+
         raise AssertionError(f"Unexpected query: {query}")
+
+    def commit(self):
+        self.commit_called = True
 
     def __enter__(self):
         return self
@@ -97,3 +104,27 @@ def test_get_attachments_by_chunk_ids_supports_legacy_attachment_fk_column():
         for query in connection.executed_queries
         if "FROM document_attachments a" in query
     )
+
+
+def test_link_attachment_to_chunks_supports_legacy_attachment_fk_column():
+    connection = _FakeConnection()
+    service = AttachmentService.__new__(AttachmentService)
+    service.db = types.SimpleNamespace(
+        engine=types.SimpleNamespace(connect=lambda: connection)
+    )
+    service.supabase = types.SimpleNamespace(
+        get_public_url=lambda path: f"https://files.example/{path}"
+    )
+    service._chunk_attachment_fk_column = None
+    service._chunk_attachment_fk_column_checked = False
+
+    service.link_attachment_to_chunks(attachment_id=7, chunk_ids=[101, 102])
+
+    assert connection.commit_called is True
+    insert_queries = [
+        query
+        for query in connection.executed_queries
+        if "INSERT INTO chunk_attachments" in query
+    ]
+    assert len(insert_queries) == 2
+    assert all("document_attachment_id" in query for query in insert_queries)

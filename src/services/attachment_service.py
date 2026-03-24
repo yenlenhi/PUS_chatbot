@@ -20,6 +20,43 @@ class AttachmentService:
         self.supabase = get_supabase_storage_service()
         self.forms_dir = Path("data/forms")
         self.forms_dir.mkdir(parents=True, exist_ok=True)
+        self._chunk_attachment_fk_column: Optional[str] = None
+        self._chunk_attachment_fk_column_checked = False
+
+    def _get_chunk_attachment_fk_column(self, conn) -> str:
+        """Resolve the attachment FK column for chunk_attachments across schemas."""
+        if getattr(self, "_chunk_attachment_fk_column_checked", False):
+            return getattr(self, "_chunk_attachment_fk_column", None) or "attachment_id"
+
+        fk_column = "attachment_id"
+        try:
+            result = conn.execute(
+                text(
+                    """
+                    SELECT column_name
+                    FROM information_schema.columns
+                    WHERE table_name = 'chunk_attachments'
+                      AND table_schema = ANY(current_schemas(FALSE))
+                      AND column_name IN ('attachment_id', 'document_attachment_id')
+                    """
+                )
+            )
+            available_columns = {row[0] for row in result.fetchall()}
+            if "attachment_id" in available_columns:
+                fk_column = "attachment_id"
+            elif "document_attachment_id" in available_columns:
+                fk_column = "document_attachment_id"
+                log.warning(
+                    "Using legacy chunk_attachments.document_attachment_id column"
+                )
+        except Exception as e:
+            log.warning(
+                f"Could not inspect chunk_attachments schema, defaulting to attachment_id: {e}"
+            )
+
+        self._chunk_attachment_fk_column = fk_column
+        self._chunk_attachment_fk_column_checked = True
+        return fk_column
 
     def create_attachment(
         self,
@@ -88,13 +125,14 @@ class AttachmentService:
         """
         try:
             with self.db.engine.connect() as conn:
+                fk_column = self._get_chunk_attachment_fk_column(conn)
                 for chunk_id in chunk_ids:
                     conn.execute(
                         text(
-                            """
-                            INSERT INTO chunk_attachments (chunk_id, attachment_id, relevance_score)
+                            f"""
+                            INSERT INTO chunk_attachments (chunk_id, {fk_column}, relevance_score)
                             VALUES (:chunk_id, :attachment_id, :relevance_score)
-                            ON CONFLICT (chunk_id, attachment_id) DO UPDATE
+                            ON CONFLICT (chunk_id, {fk_column}) DO UPDATE
                             SET relevance_score = :relevance_score
                         """
                         ),
@@ -129,11 +167,12 @@ class AttachmentService:
 
         try:
             with self.db.engine.connect() as conn:
-                query = """
+                fk_column = self._get_chunk_attachment_fk_column(conn)
+                query = f"""
                     SELECT DISTINCT a.id, a.filename, a.mime_type, a.file_path, 
                            a.file_size, a.description, a.keywords, a.category
                     FROM document_attachments a
-                    JOIN chunk_attachments ca ON a.id = ca.attachment_id
+                    JOIN chunk_attachments ca ON a.id = ca.{fk_column}
                     WHERE ca.chunk_id = ANY(:chunk_ids) AND a.is_active = TRUE
                     ORDER BY a.id
                 """

@@ -6,6 +6,7 @@ import base64
 import io
 import json
 import re
+import threading
 import time
 import codecs
 from pathlib import Path
@@ -18,8 +19,14 @@ from PIL import Image, ImageFilter, ImageOps
 from config.settings import (
     GEMINI_API_KEY,
     GEMINI_API_URL,
+    PDF_GEMINI_MAX_BACKOFF_SECONDS,
+    PDF_GEMINI_MAX_RETRIES,
+    PDF_GEMINI_PAGE_DELAY_SECONDS,
     GEMINI_MAX_OUTPUT_TOKENS,
     PDF_GEMINI_RENDER_SCALE,
+    PDF_GEMINI_REQUEST_INTERVAL_SECONDS,
+    PDF_GEMINI_RETRY_DELAY_SECONDS,
+    PDF_GEMINI_RATE_LIMIT_COOLDOWN_SECONDS,
 )
 from src.utils.logger import log
 
@@ -51,6 +58,10 @@ TRANSIENT_STATUS_CODES = {408, 429, 500, 502, 503, 504}
 class GeminiPDFService:
     """Service for extracting text from PDFs using Gemini Vision API."""
 
+    _request_gate_lock = threading.Lock()
+    _global_next_request_at = 0.0
+    _global_cooldown_until = 0.0
+
     def __init__(self):
         """Initialize Gemini PDF service."""
         if not GEMINI_API_KEY:
@@ -58,12 +69,83 @@ class GeminiPDFService:
 
         self.api_key = GEMINI_API_KEY
         self.api_url = GEMINI_API_URL
-        self.max_retries = 3
-        self.retry_delay = 2
-        self.page_delay = 0.25
+        self.max_retries = max(1, PDF_GEMINI_MAX_RETRIES)
+        self.retry_delay = max(0.0, PDF_GEMINI_RETRY_DELAY_SECONDS)
+        self.page_delay = max(0.0, PDF_GEMINI_PAGE_DELAY_SECONDS)
+        self.min_request_interval = max(0.0, PDF_GEMINI_REQUEST_INTERVAL_SECONDS)
+        self.rate_limit_cooldown = max(0.0, PDF_GEMINI_RATE_LIMIT_COOLDOWN_SECONDS)
+        self.max_backoff_seconds = max(0.0, PDF_GEMINI_MAX_BACKOFF_SECONDS)
         self.request_timeout = 90
         self.max_output_tokens = max(8192, GEMINI_MAX_OUTPUT_TOKENS)
         self.render_scale = max(1.0, PDF_GEMINI_RENDER_SCALE)
+        self.had_rate_limit_errors = False
+        self.rate_limited_pages: set[int] = set()
+
+    def _reset_run_state(self) -> None:
+        self.had_rate_limit_errors = False
+        self.rate_limited_pages = set()
+
+    def _reserve_request_slot(self) -> float:
+        """Coordinate OCR requests across concurrent service instances."""
+        with self.__class__._request_gate_lock:
+            now = time.monotonic()
+            available_at = max(
+                now,
+                self.__class__._global_next_request_at,
+                self.__class__._global_cooldown_until,
+            )
+            self.__class__._global_next_request_at = (
+                available_at + self.min_request_interval
+            )
+        return max(0.0, available_at - now)
+
+    def _wait_for_request_slot(self, page_num: int, attempt_number: int) -> None:
+        wait_time = self._reserve_request_slot()
+        if wait_time <= 0:
+            return
+        if wait_time >= 1:
+            log.info(
+                f"Gemini OCR throttle active on page {page_num}; "
+                f"waiting {wait_time:.1f}s before attempt {attempt_number}"
+            )
+        time.sleep(wait_time)
+
+    def _apply_global_cooldown(self, wait_seconds: float) -> None:
+        if wait_seconds <= 0:
+            return
+        cooldown_until = time.monotonic() + wait_seconds
+        with self.__class__._request_gate_lock:
+            self.__class__._global_cooldown_until = max(
+                self.__class__._global_cooldown_until,
+                cooldown_until,
+            )
+
+    def _parse_retry_after_seconds(self, response: requests.Response) -> Optional[float]:
+        retry_after = getattr(response, "headers", {}).get("Retry-After")
+        if not retry_after:
+            return None
+        try:
+            return max(0.0, float(retry_after))
+        except (TypeError, ValueError):
+            return None
+
+    def _get_transient_wait_seconds(
+        self,
+        attempt: int,
+        status_code: Optional[int] = None,
+        response: Optional[requests.Response] = None,
+    ) -> float:
+        wait_time = self.retry_delay * (2**attempt)
+        retry_after_seconds = (
+            self._parse_retry_after_seconds(response) if response is not None else None
+        )
+        if retry_after_seconds is not None:
+            wait_time = max(wait_time, retry_after_seconds)
+        if status_code == 429:
+            wait_time = max(wait_time, self.rate_limit_cooldown)
+        if self.max_backoff_seconds > 0:
+            wait_time = min(wait_time, self.max_backoff_seconds)
+        return max(0.0, wait_time)
 
     def extract_text_from_pdf(
         self, pdf_path: Path, page_numbers: Optional[Iterable[int]] = None
@@ -80,6 +162,7 @@ class GeminiPDFService:
         """
         try:
             log.info(f"Extracting text from PDF using Gemini: {pdf_path.name}")
+            self._reset_run_state()
 
             images = self._pdf_to_images(pdf_path, page_numbers=page_numbers)
             if not images:
@@ -93,6 +176,15 @@ class GeminiPDFService:
                 if text:
                     extracted_pages.append((page_num, text))
                 time.sleep(self.page_delay)
+
+            if self.rate_limited_pages:
+                affected_pages = sorted(self.rate_limited_pages)
+                preview_pages = ", ".join(str(page) for page in affected_pages[:10])
+                suffix = "..." if len(affected_pages) > 10 else ""
+                log.warning(
+                    f"Gemini OCR hit rate limits while processing {pdf_path.name}; "
+                    f"affected pages: {preview_pages}{suffix}"
+                )
 
             log.info(f"Successfully extracted text from {len(extracted_pages)} pages")
             return extracted_pages
@@ -363,6 +455,8 @@ class GeminiPDFService:
         payload = self._build_ocr_request(image_base64)
 
         for attempt in range(self.max_retries):
+            attempt_number = attempt + 1
+            self._wait_for_request_slot(page_num, attempt_number)
             try:
                 response = requests.post(
                     f"{self.api_url}?key={self.api_key}",
@@ -389,13 +483,26 @@ class GeminiPDFService:
                     return None
 
                 if response.status_code in TRANSIENT_STATUS_CODES:
-                    wait_time = self.retry_delay * (2**attempt)
-                    log.warning(
-                        f"Gemini OCR transient error on page {page_num}: "
-                        f"{response.status_code}. Waiting {wait_time}s before retry {attempt + 1}"
+                    wait_time = self._get_transient_wait_seconds(
+                        attempt,
+                        status_code=response.status_code,
+                        response=response,
                     )
-                    time.sleep(wait_time)
-                    continue
+                    if response.status_code == 429:
+                        self.had_rate_limit_errors = True
+                        self.rate_limited_pages.add(page_num)
+                    if attempt < self.max_retries - 1:
+                        self._apply_global_cooldown(wait_time)
+                        log.warning(
+                            f"Gemini OCR transient error on page {page_num}: "
+                            f"{response.status_code}. Waiting {wait_time:.1f}s before retry {attempt_number}"
+                        )
+                        continue
+                    log.error(
+                        f"Gemini OCR transient error on page {page_num}: "
+                        f"{response.status_code}. Exhausted {self.max_retries} attempts"
+                    )
+                    return None
 
                 log.error(
                     f"Gemini API error for page {page_num}: {response.status_code} - {response.text}"
@@ -403,12 +510,17 @@ class GeminiPDFService:
                 return None
 
             except requests.exceptions.RequestException as exc:
-                log.error(
-                    f"Request error for page {page_num}, attempt {attempt + 1}: {exc}"
-                )
+                wait_time = self._get_transient_wait_seconds(attempt)
                 if attempt < self.max_retries - 1:
-                    time.sleep(self.retry_delay * (2**attempt))
+                    self._apply_global_cooldown(wait_time)
+                    log.warning(
+                        f"Request error for page {page_num}, attempt {attempt_number}: "
+                        f"{exc}. Waiting {wait_time:.1f}s before retry {attempt_number}"
+                    )
                     continue
+                log.error(
+                    f"Request error for page {page_num}, attempt {attempt_number}: {exc}"
+                )
                 return None
             except Exception as exc:
                 log.error(f"Unexpected error for page {page_num}: {exc}")

@@ -5,6 +5,7 @@ Helper functions for uploading and managing chat images in Supabase Storage
 import base64
 import os
 import uuid
+from contextlib import contextmanager
 from typing import List, Optional
 import httpx
 
@@ -23,6 +24,27 @@ for var in [
 from supabase import create_client, Client
 from src.utils.logger import log
 from config.settings import SUPABASE_URL, SUPABASE_SERVICE_KEY
+
+_PROXY_VARS = [
+    "HTTP_PROXY",
+    "HTTPS_PROXY",
+    "http_proxy",
+    "https_proxy",
+    "ALL_PROXY",
+    "all_proxy",
+]
+
+
+@contextmanager
+def _disable_proxy():
+    """Context manager that temporarily removes proxy env vars during Supabase calls."""
+    saved = {var: os.environ.pop(var, None) for var in _PROXY_VARS}
+    try:
+        yield
+    finally:
+        for var, val in saved.items():
+            if val is not None:
+                os.environ[var] = val
 
 
 def get_supabase_client() -> Client:

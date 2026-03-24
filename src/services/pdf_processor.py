@@ -468,15 +468,24 @@ class PDFProcessor:
                 if not self._normalize_page_text(extracted_pages.get(page_number, ""))
             ]
             if missing_pages:
-                log.warning(
-                    f"Retrying Gemini OCR for {len(missing_pages)} missing/empty page(s): {pdf_path.name}"
-                )
-                retry_pages = dict(
-                    self.gemini_service.extract_text_from_pdf(
-                        pdf_path, page_numbers=missing_pages
+                if getattr(self.gemini_service, "had_rate_limit_errors", False):
+                    log.warning(
+                        f"Skipping immediate Gemini OCR retry for {len(missing_pages)} "
+                        f"missing/empty page(s) in {pdf_path.name} because the initial pass "
+                        f"hit Gemini rate limits"
                     )
-                )
-                extracted_pages = self._merge_page_results(extracted_pages, retry_pages)
+                else:
+                    log.warning(
+                        f"Retrying Gemini OCR for {len(missing_pages)} missing/empty page(s): {pdf_path.name}"
+                    )
+                    retry_pages = dict(
+                        self.gemini_service.extract_text_from_pdf(
+                            pdf_path, page_numbers=missing_pages
+                        )
+                    )
+                    extracted_pages = self._merge_page_results(
+                        extracted_pages, retry_pages
+                    )
 
             pages = []
             for page_number, page_text in sorted(extracted_pages.items()):

@@ -57,10 +57,11 @@ from src.models.schemas import DocumentChunk
 
 
 class _FakeResponse:
-    def __init__(self, status_code, payload=None, text=""):
+    def __init__(self, status_code, payload=None, text="", headers=None):
         self.status_code = status_code
         self._payload = payload or {}
         self.text = text
+        self.headers = headers or {}
 
     def json(self):
         return self._payload
@@ -68,14 +69,21 @@ class _FakeResponse:
 
 def _build_gemini_service() -> GeminiPDFService:
     service = GeminiPDFService.__new__(GeminiPDFService)
+    GeminiPDFService._global_next_request_at = 0.0
+    GeminiPDFService._global_cooldown_until = 0.0
     service.api_key = "test-key"
     service.api_url = "https://example.com/generateContent"
     service.max_retries = 2
     service.retry_delay = 0
     service.page_delay = 0
+    service.min_request_interval = 0
+    service.rate_limit_cooldown = 0
+    service.max_backoff_seconds = 60
     service.request_timeout = 1
     service.max_output_tokens = 8192
     service.render_scale = 3.0
+    service.had_rate_limit_errors = False
+    service.rate_limited_pages = set()
     return service
 
 
@@ -164,6 +172,33 @@ def test_extract_text_from_image_retries_transient_errors(monkeypatch):
 
     assert extracted_text == "Du lieu OCR sau retry"
     assert call_count["value"] == 2
+
+
+def test_extract_text_from_image_429_respects_cooldown_without_extra_final_sleep(
+    monkeypatch,
+):
+    service = _build_gemini_service()
+    service.max_retries = 2
+    service.rate_limit_cooldown = 7
+    responses = iter([_FakeResponse(429), _FakeResponse(429)])
+    sleep_calls = []
+
+    def fake_post(url, headers=None, json=None, timeout=None):
+        return next(responses)
+
+    monkeypatch.setattr("src.services.gemini_pdf_service.requests.post", fake_post)
+    monkeypatch.setattr(
+        "src.services.gemini_pdf_service.time.sleep",
+        lambda seconds: sleep_calls.append(seconds),
+    )
+
+    extracted_text = service._extract_text_from_image("ZmFrZQ==", 9)
+
+    assert extracted_text is None
+    assert service.had_rate_limit_errors is True
+    assert service.rate_limited_pages == {9}
+    assert len(sleep_calls) == 1
+    assert 6.9 <= sleep_calls[0] <= 7
 
 
 def test_parse_text_payload_salvages_truncated_json_payload():
@@ -289,6 +324,30 @@ def test_pdf_processor_extract_text_from_pdf_uses_gemini_for_all_pages():
 
     assert pages == [(1, "Trang 1"), (2, "Trang 2 bang du lieu"), (3, "Trang 3")]
     assert fake_service.calls == [None, [2]]
+
+
+def test_pdf_processor_skips_missing_page_retry_when_initial_pass_hits_rate_limit():
+    processor = PDFProcessor.__new__(PDFProcessor)
+    processor.extraction_mode = "gemini_only"
+    processor.use_gemini = True
+    processor._get_page_count = lambda pdf_path: 3
+
+    class _FakeGeminiService:
+        def __init__(self):
+            self.calls = []
+            self.had_rate_limit_errors = True
+
+        def extract_text_from_pdf(self, pdf_path, page_numbers=None):
+            self.calls.append(page_numbers)
+            return [(1, "Trang 1")]
+
+    fake_service = _FakeGeminiService()
+    processor.gemini_service = fake_service
+
+    pages = processor.extract_text_from_pdf(Path("test.pdf"))
+
+    assert pages == [(1, "Trang 1")]
+    assert fake_service.calls == [None]
 
 
 def test_process_pdf_with_headings_reindexes_chunks_across_pages():
