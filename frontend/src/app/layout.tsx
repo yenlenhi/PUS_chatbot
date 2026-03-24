@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Playfair_Display } from "next/font/google"; // Premium fonts import
 import 'github-markdown-css/github-markdown-light.css';
+import 'katex/dist/katex.min.css';
 import "./globals.css";
 
 const inter = Inter({

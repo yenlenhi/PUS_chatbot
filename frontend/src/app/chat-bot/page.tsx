@@ -6,6 +6,8 @@ import { Send, User, FolderOpen, Book, Copy, Check, RefreshCw, Volume2, VolumeX,
 import type { Message, SourceReference, ChartData, ImageData, FileAttachment, PerformanceMetrics } from '@/types';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/cjs/styles/prism';
 import Image from 'next/image';
@@ -659,7 +661,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
           {/* Render markdown content when available */}
           {renderedMainContent && (
             <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
+              remarkPlugins={[remarkGfm, remarkMath]}
+              rehypePlugins={[rehypeKatex]}
               components={{
                 code({ className, children, ...props }) {
                   const match = /language-(\w+)/.exec(className || '');

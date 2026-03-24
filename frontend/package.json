@@ -14,6 +14,7 @@
     "axios": "^1.6.0",
     "cheerio": "^1.1.2",
     "github-markdown-css": "^5.8.1",
+    "katex": "^0.16.40",
     "lucide-react": "^0.400.0",
     "next": "^15.5.9",
     "react": "^19.0.0",
@@ -21,7 +22,9 @@
     "react-markdown": "^10.1.0",
     "react-syntax-highlighter": "^16.1.0",
     "recharts": "^3.5.1",
-    "remark-gfm": "^4.0.1"
+    "rehype-katex": "^7.0.1",
+    "remark-gfm": "^4.0.1",
+    "remark-math": "^6.0.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

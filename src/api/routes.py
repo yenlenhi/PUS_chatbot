@@ -1052,16 +1052,19 @@ async def admin_upload_document(
         pdf_dir.mkdir(parents=True, exist_ok=True)
         file_path = pdf_dir / safe_filename
 
-        # If file exists, add timestamp to filename
+        # supabase_filename is the canonical name used in Supabase Storage and the DB.
+        # If a local file already exists, only the LOCAL copy gets a timestamp suffix
+        # to avoid overwriting it — the Supabase name stays unchanged (upsert).
+        supabase_filename = safe_filename
         if file_path.exists():
             timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
             name_without_ext = file_path.stem
-            safe_filename = f"{name_without_ext}_{timestamp}.pdf"
-            file_path = pdf_dir / safe_filename
+            local_filename = f"{name_without_ext}_{timestamp}.pdf"
+            file_path = pdf_dir / local_filename
 
         # Save file to disk
         log.info(
-            f"📤 Saving uploaded file locally: {safe_filename} ({file_size / 1024:.1f} KB)"
+            f"📤 Saving uploaded file locally: {file_path.name} ({file_size / 1024:.1f} KB)"
         )
         with open(file_path, "wb") as buffer:
             buffer.write(file_content)
@@ -1071,7 +1074,7 @@ async def admin_upload_document(
         # Create task for tracking
         task_manager = get_task_manager()
         task_id = task_manager.create_task(
-            filename=safe_filename,
+            filename=supabase_filename,
             original_filename=original_filename,
             category=category,
             use_gemini=use_gemini,
@@ -1084,7 +1087,7 @@ async def admin_upload_document(
             process_pdf_background,
             task_id=task_id,
             file_path=file_path,
-            safe_filename=safe_filename,
+            safe_filename=supabase_filename,  # Always the Supabase name (no timestamp)
             use_gemini=use_gemini,
             rag=rag,
         )
@@ -1098,7 +1101,7 @@ async def admin_upload_document(
                 "success": True,
                 "message": f"File '{original_filename}' đã được tải lên và đang được xử lý. Sử dụng task_id để kiểm tra tiến trình.",
                 "task_id": task_id,
-                "filename": safe_filename,
+                "filename": supabase_filename,
                 "original_filename": original_filename,
                 "file_size": file_size,
                 "category": category,
@@ -1161,6 +1164,11 @@ async def process_pdf_background(
         chunks = await asyncio.to_thread(
             pdf_processor.process_pdf_with_headings, file_path
         )
+
+        # Ensure every chunk references the Supabase filename, not the local
+        # (potentially timestamped) filename used to read the file from disk.
+        for chunk in chunks:
+            chunk.source_file = safe_filename
 
         task_manager.update_task(
             task_id,

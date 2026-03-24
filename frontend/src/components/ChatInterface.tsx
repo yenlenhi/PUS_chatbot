@@ -6,6 +6,8 @@ import type { Message } from '@/types/chat';
 import type { FileAttachment, Source, SourceReference } from '@/types';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
 import SourceSection from './SourceSection';
 import FeedbackButtons from './FeedbackButtons';
 import AttachmentList from './chat/AttachmentList';
@@ -290,7 +292,8 @@ ${source.content ? `📝 Nội dung liên quan:\n${source.content.substring(0, 3
                   <div className="text-sm markdown-body leading-relaxed">
                     {renderedContent ? (
                       <ReactMarkdown
-                        remarkPlugins={[remarkGfm]}
+                        remarkPlugins={[remarkGfm, remarkMath]}
+                        rehypePlugins={[rehypeKatex]}
                         components={{
                           table({ children }) {
                             return (
