@@ -978,6 +978,7 @@ const ChatBotPage = () => {
   const [previewImage, setPreviewImage] = useState<string | null>(null); // For image preview modal
   const [showDisclaimer, setShowDisclaimer] = useState(false); // Toggle for disclaimer
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     const uniqueId =
@@ -1116,7 +1117,12 @@ const ChatBotPage = () => {
     };
 
     setMessages(prev => [...prev, userMessage]);
-    if (!messageToSend) setInputMessage('');
+    if (!messageToSend) {
+      setInputMessage('');
+      if (textareaRef.current) {
+        textareaRef.current.style.height = 'auto';
+      }
+    }
     setUploadedImages([]); // Clear uploaded images after sending
     setIsTyping(true);
 
@@ -1757,11 +1763,21 @@ const ChatBotPage = () => {
                     />
                   </div>
                 )}
-                <input
-                  type="text"
+                <textarea
+                  ref={textareaRef}
+                  rows={1}
                   value={inputMessage}
-                  onChange={(e) => setInputMessage(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
+                  onChange={(e) => {
+                    setInputMessage(e.target.value);
+                    e.target.style.height = 'auto';
+                    e.target.style.height = `${Math.min(e.target.scrollHeight, 160)}px`;
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSendMessage();
+                    }
+                  }}
                   onPaste={async (e) => {
                     const items = e.clipboardData?.items;
                     if (!items) return;
@@ -1807,7 +1823,7 @@ const ChatBotPage = () => {
                         ? (language === 'vi' ? "💭 Mô tả hoặc hỏi về ảnh..." : "💭 Describe or ask about the image...")
                         : (language === 'vi' ? "💬 Nhập câu hỏi hoặc dán ảnh (Ctrl+V)..." : "💬 Type a question or paste an image (Ctrl+V)...")
                   }
-                  className="flex-1 min-w-0 min-h-[44px] sm:min-h-[48px] px-4 sm:px-5 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500 text-sm sm:text-base font-medium bg-white/90 backdrop-blur-sm shadow-sm hover:shadow-md transition-all duration-300 placeholder:text-gray-400 input-focus-glow"
+                  className="flex-1 min-w-0 min-h-[44px] sm:min-h-[48px] max-h-[160px] px-4 sm:px-5 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500 text-sm sm:text-base font-medium bg-white/90 backdrop-blur-sm shadow-sm hover:shadow-md transition-all duration-300 placeholder:text-gray-400 input-focus-glow resize-none overflow-y-auto leading-relaxed"
                   disabled={isTyping || isListening}
                 />
                 <button
