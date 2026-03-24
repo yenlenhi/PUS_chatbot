@@ -5,9 +5,9 @@ const getBackendUrl = () =>
 
 export async function GET(
   _request: Request,
-  { params }: { params: { filename: string } }
+  { params }: { params: Promise<{ filename: string }> }
 ) {
-  const filename = params.filename;
+  const { filename } = await params;
   const backendUrl = getBackendUrl();
 
   try {
