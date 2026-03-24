@@ -20,10 +20,15 @@ from src.utils.admission_document_priority import (
 from src.utils.fixed_admission_faq import get_fixed_admission_faq
 
 _DATE_RANGE_PATTERN = re.compile(
-    r"(\d{1,2}/\d{1,2}(?:/\d{4})?)\s*(?:den|-|to)\s*(\d{1,2}/\d{1,2}(?:/\d{4})?)",
+    r"(\d{1,2}/\d{1,2}(?:/\d{4})?)\s*(?:den|đến|-|to)\s*(?:truoc\s+ngay\s+|ngay\s+)?(\d{1,2}/\d{1,2}(?:/\d{4})?)",
     re.IGNORECASE,
 )
 _DATE_SINGLE_PATTERN = re.compile(r"\b\d{1,2}/\d{1,2}/\d{4}\b")
+_DATE_DEADLINE_PATTERN = re.compile(
+    r"\b(?:truoc\s+ngay|hoan\s+thanh\s+truoc|truoc)\s+(\d{1,2}/\d{1,2}/\d{4})\b",
+    re.IGNORECASE,
+)
+_MONTH_TIMELINE_PATTERN = re.compile(r"\bthang\s+\d{1,2}/\d{4}\b", re.IGNORECASE)
 _SCORE_ROW_PATTERN = re.compile(
     r"\b(20\d{2})\b.*?\b(\d{2}(?:[.,]\d{1,2})?)\b",
     re.IGNORECASE,
@@ -33,6 +38,36 @@ _SCORE_VALUE_PATTERN = re.compile(r"\b\d{2}(?:[.,]\d{1,2})?\b")
 _INLINE_TABLE_PATTERN = re.compile(r"([^\n])(\|(?:[^|\n]+\|){2,}.*)")
 _TABLE_SEPARATOR_PATTERN = re.compile(r"^:?-{3,}:?$")
 _STRUCTURED_TIMELINE_QUERY_TERMS = ("moc thoi gian", "lich trinh", "timeline")
+_TIMELINE_ACTION_TERMS = (
+    "dang ky",
+    "ho so",
+    "du tuyen",
+    "thi thpt",
+    "thi tot nghiep",
+    "du thi",
+    "xet tuyen",
+    "nhap hoc",
+    "xac nhan nhap hoc",
+    "chieu sinh",
+    "tap huan",
+    "cong bo",
+)
+_TIMELINE_ITEM_BOUNDARY_PATTERN = re.compile(
+    r"\s+(?=(?:[IVX]+\.\s*|\d+(?:\.\d+)*\.?\s*|[a-z]\)\s*)(?:truoc\s+ngay|tu\s+ngay|thang\s+\d{1,2}/\d{4}|hoan\s+thanh\s+truoc|dang\s+ky|xet\s+tuyen|nhap\s+hoc|xac\s+nhan\s+nhap\s+hoc|cong\s+bo|tap\s+huan))",
+    re.IGNORECASE,
+)
+_TIMELINE_NUMBERING_PREFIX_PATTERN = re.compile(
+    r"^(?:[IVX]+\.\s*|\d+(?:\.\d+)*\.?\s*|[a-z]\)\s*)",
+    re.IGNORECASE,
+)
+_TIMELINE_NORMALIZED_NUMBERING_PREFIX_PATTERN = re.compile(
+    r"^(?:\d+(?:\s+\d+)*|[ivx]+|[a-z])\s+",
+    re.IGNORECASE,
+)
+_TIMELINE_LEADING_DATE_PHRASE_PATTERN = re.compile(
+    r"^(?:truoc\s+ngay|hoan\s+thanh\s+truoc|tu\s+ngay|thang)\s+\d{1,2}/\d{1,2}(?:/\d{4})?(?:\s*(?:den|đến|-|to)\s*(?:truoc\s+ngay\s+|ngay\s+)?\d{1,2}/\d{1,2}(?:/\d{4})?)?\s*:?\s*",
+    re.IGNORECASE,
+)
 
 
 def _normalize_text(value: Optional[str]) -> str:
@@ -508,14 +543,70 @@ def _query_requests_timeline_overview(query: str) -> bool:
     return any(term in normalized_query for term in _STRUCTURED_TIMELINE_QUERY_TERMS)
 
 
+def _iter_timeline_candidate_lines(content: str) -> List[str]:
+    candidates: List[str] = []
+    for raw_line in str(content or "").replace("\r", "\n").split("\n"):
+        compact_line = re.sub(r"\s+", " ", raw_line).strip()
+        if not compact_line:
+            continue
+        split_line = _TIMELINE_ITEM_BOUNDARY_PATTERN.sub("\n", compact_line)
+        for part in split_line.splitlines():
+            cleaned_part = re.sub(r"\s+", " ", part).strip(" -•\t")
+            if cleaned_part:
+                candidates.append(cleaned_part)
+    return candidates
+
+
+def _trim_timeline_note(note: str) -> str:
+    cleaned_note = re.sub(r"\s+", " ", note).strip(" -.;:")
+    cleaned_note = _TIMELINE_NUMBERING_PREFIX_PATTERN.sub("", cleaned_note).strip()
+    cleaned_note = _TIMELINE_NORMALIZED_NUMBERING_PREFIX_PATTERN.sub(
+        "", cleaned_note
+    ).strip()
+    cleaned_note = _TIMELINE_LEADING_DATE_PHRASE_PATTERN.sub("", cleaned_note).strip()
+    if len(cleaned_note) <= 220:
+        return cleaned_note
+    return cleaned_note[:217].rsplit(" ", 1)[0].rstrip(" ,;:") + "..."
+
+
+def _derive_timeline_label(line: str, note: str) -> str:
+    label = line.split(":", 1)[0].strip()
+    label = _TIMELINE_NUMBERING_PREFIX_PATTERN.sub("", label).strip(" -.;:")
+    normalized_label = _normalize_text(label)
+    if (
+        not label
+        or _DATE_SINGLE_PATTERN.search(label)
+        or normalized_label.startswith(
+            ("truoc ngay", "tu ngay", "hoan thanh truoc", "thang ")
+        )
+    ):
+        fallback_label = note.split(".", 1)[0].strip(" -.;:")
+        if fallback_label:
+            label = fallback_label
+
+    if len(label) > 90:
+        label = label[:87].rsplit(" ", 1)[0].rstrip(" ,;:") + "..."
+    return label or "Moc thoi gian"
+
+
 def _extract_timeline_value(line: str) -> Optional[tuple[str, str]]:
     match_range = _DATE_RANGE_PATTERN.search(line)
     if match_range:
         timeline_text = f"{match_range.group(1)} den {match_range.group(2)}"
-        note = line.replace(match_range.group(0), "").replace(":", " ").strip()
+        note = line.replace(match_range.group(0), " ").replace(":", " ").strip()
         return timeline_text, note
 
+    normalized_line = _normalize_text(line)
     dates = _DATE_SINGLE_PATTERN.findall(line)
+    if dates and any(
+        marker in normalized_line for marker in ("truoc ngay", "hoan thanh truoc")
+    ):
+        return f"truoc {dates[0]}", line
+
+    month_date_match = re.search(r"\b\d{1,2}/\d{4}\b", line)
+    if month_date_match and "thang" in normalized_line:
+        return f"thang {month_date_match.group(0)}", line
+
     if dates:
         return ", ".join(dates), line
 
@@ -572,6 +663,58 @@ def _build_timeline_answer(query: str, chunks: List[Dict[str, Any]]) -> Optional
         lines.append(f"- Thời gian: {timeline_text}")
         if safe_note and safe_note != label:
             lines.append(f"- Ghi chú: {safe_note}")
+        lines.append("")
+
+    return "\n".join(line for line in lines).strip()
+
+
+def _build_timeline_answer_v2(
+    query: str, chunks: List[Dict[str, Any]]
+) -> Optional[str]:
+    rows: List[tuple[str, str, str]] = []
+    seen: set[tuple[str, str]] = set()
+
+    for chunk in chunks[:5]:
+        content = str(chunk.get("content") or "")
+        for line in _iter_timeline_candidate_lines(content):
+            if len(line) < 12:
+                continue
+
+            normalized_line = _normalize_text(line)
+            if not any(
+                keyword in normalized_line for keyword in _TIMELINE_ACTION_TERMS
+            ):
+                continue
+
+            extracted_timeline = _extract_timeline_value(line)
+            if not extracted_timeline:
+                continue
+
+            timeline_text, note = extracted_timeline
+            note = _trim_timeline_note(
+                _TIMELINE_NUMBERING_PREFIX_PATTERN.sub("", note).strip()
+            )
+            label = _derive_timeline_label(line, note)
+            key = (label, timeline_text)
+            if timeline_text and key not in seen:
+                seen.add(key)
+                rows.append((label, timeline_text, note))
+
+    if len(rows) < 2:
+        return None
+
+    lines = [
+        "### Má»‘c thá»i gian tuyá»ƒn sinh",
+        "",
+        "DÆ°á»›i Ä‘Ã¢y lÃ  cÃ¡c má»‘c thá»i gian ná»•i báº­t tÃ´i trÃ­ch Ä‘Æ°á»£c tá»« tÃ i liá»‡u tuyá»ƒn sinh liÃªn quan:",
+        "",
+    ]
+    for index, (label, timeline_text, note) in enumerate(rows[:8], start=1):
+        safe_note = note.replace("|", "/").strip()
+        lines.append(f"{index}. **{label}**")
+        lines.append(f"- Thá»i gian: {timeline_text}")
+        if safe_note and safe_note != label:
+            lines.append(f"- Ghi chÃº: {safe_note}")
         lines.append("")
 
     return "\n".join(line for line in lines).strip()
@@ -1726,7 +1869,7 @@ def build_structured_admission_answer(
 
     doc_type = infer_query_doc_type(query)
     if doc_type == "timeline":
-        return _build_timeline_answer(query, chunks)
+        return _build_timeline_answer_v2(query, chunks)
 
     return None
 

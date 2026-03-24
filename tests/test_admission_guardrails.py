@@ -171,6 +171,30 @@ def test_build_structured_timeline_answer_requires_real_time_values():
     assert answer is None
 
 
+def test_build_structured_timeline_answer_splits_long_ocr_paragraph_into_items():
+    query = "cac moc thoi gian quan trong trong ky thi THPT vao CA nam 2026"
+    chunks = [
+        {
+            "source_file": "Lich cong tac tuyen sinh CAND 2026.pdf",
+            "heading_text": "Lich cong tac tuyen sinh",
+            "content": (
+                "Lich cong tac tuyen sinh Cong an nhan dan nam 2026. "
+                "1.1. Truoc ngay 01/5/2026: Cac truong CAND xay dung De an, quy che tuyen sinh, thong bao tuyen sinh den cac don vi. "
+                "1.2. Tu ngay 01/5 den ngay 30/6/2026: Cong an cac don vi, dia phuong huong dan thi sinh hoan thien ho so du tuyen. "
+                "1.3. Truoc ngay 30/8/2026: Thi sinh xac nhan nhap hoc theo huong dan."
+            ),
+        }
+    ]
+
+    answer = build_structured_admission_answer(query, chunks, language="vi")
+
+    assert answer is not None
+    assert "30/6/2026" in answer
+    assert "truoc 30/8/2026" in _normalize_test_text(answer)
+    assert "Lich cong tac tuyen sinh Cong an nhan dan nam 2026" not in answer
+    assert "1.2." not in answer
+
+
 def test_validate_admission_answer_flags_timeline_markdown_table():
     query = "moc thoi gian dang ky va xac nhan nhap hoc"
     answer = (
