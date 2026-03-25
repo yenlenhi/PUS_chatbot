@@ -617,8 +617,14 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
           </div>
 
           {/* User Avatar - separate */}
-          <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-md sm:shadow-lg shadow-blue-500/30">
-            <User className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+          <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-full shadow-md sm:shadow-lg overflow-hidden">
+            <Image
+              src="/uploads/user-images/avatar_user.png"
+              alt="User"
+              width={40}
+              height={40}
+              className="w-full h-full rounded-full object-cover"
+            />
           </div>
         </div>
 
@@ -640,7 +646,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
       <div className="flex-shrink-0 relative">
         <div className={`rounded-full ${isLatest && !contentToShow ? 'animate-gold-ring' : ''}`}>
           <Image
-            src="/assests/chatbot_avatar.png"
+            src="/uploads/user-images/avatart_nu.jpg"
             alt="PSU ChatBot"
             width={32}
             height={32}
@@ -1520,7 +1526,7 @@ const ChatBotPage = () => {
                     <div className="flex items-center space-x-3">
                       <div className="relative">
                         <Image
-                          src="/assests/chatbot_avatar.png"
+                          src="/uploads/user-images/avatart_nu.jpg"
                           alt="PSU ChatBot"
                           width={32}
                           height={32}
