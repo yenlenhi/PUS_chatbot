@@ -1,7 +1,13 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Calendar, ArrowRight, RefreshCw, ExternalLink, Loader2 } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import {
+  ArrowRight,
+  Calendar,
+  ExternalLink,
+  Loader2,
+  RefreshCw,
+} from 'lucide-react';
 
 interface NewsItem {
   id: number;
@@ -20,6 +26,8 @@ interface NewsData {
   lastUpdated: string;
 }
 
+const TUYEN_SINH_SOURCE_URL = 'https://dhannd.bocongan.gov.vn/tuyensinh';
+
 const NewsSectionLive = () => {
   const [newsData, setNewsData] = useState<NewsData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -36,8 +44,9 @@ const NewsSectionLive = () => {
       if (result.success) {
         setNewsData(result.data);
         setError(null);
+        setSidebarPage(1);
       } else {
-        setError(result.error || 'Không thể tải tin tức');
+        setError(result.error || 'Không thể tải tin tuyển sinh');
       }
     } catch (err) {
       setError('Lỗi kết nối đến máy chủ');
@@ -53,28 +62,24 @@ const NewsSectionLive = () => {
   }, []);
 
   const getCategoryColor = (category: string) => {
-    const colors: { [key: string]: string } = {
-      'TIN TỨC': 'bg-red-600',
+    const colors: Record<string, string> = {
+      'TUYỂN SINH': 'bg-emerald-600',
       'THÔNG BÁO': 'bg-blue-600',
-      'TUYỂN SINH': 'bg-green-600',
-      'SỰ KIỆN': 'bg-purple-600',
-      'NGHIÊN CỨU': 'bg-orange-600',
-      'ĐÀO TẠO': 'bg-cyan-600',
-      'HOẠT ĐỘNG': 'bg-pink-600',
-      'HỘI NGHỊ': 'bg-indigo-600',
-      'HỌC BỔNG': 'bg-yellow-600',
-      'KHOA HỌC': 'bg-teal-600',
+      'ĐẠI HỌC': 'bg-red-600',
+      'SAU ĐẠI HỌC': 'bg-indigo-600',
+      'KẾT QUẢ': 'bg-amber-600',
     };
-    return colors[category] || 'bg-gray-600';
+
+    return colors[category] || 'bg-slate-700';
   };
 
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-center min-h-[400px]">
+        <div className="flex min-h-[400px] items-center justify-center">
           <div className="text-center">
-            <Loader2 className="w-12 h-12 animate-spin text-red-700 mx-auto mb-4" />
-            <p className="text-gray-600">Đang tải tin tức...</p>
+            <Loader2 className="mx-auto mb-4 h-12 w-12 animate-spin text-red-700" />
+            <p className="text-gray-600">Đang tải tin tuyển sinh...</p>
           </div>
         </div>
       </div>
@@ -84,11 +89,11 @@ const NewsSectionLive = () => {
   if (error) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-          <p className="text-red-700 mb-4">{error}</p>
+        <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-center">
+          <p className="mb-4 text-red-700">{error}</p>
           <button
             onClick={fetchNews}
-            className="bg-red-700 hover:bg-red-800 text-white px-4 py-2 rounded transition-colors"
+            className="rounded bg-red-700 px-4 py-2 text-white transition-colors hover:bg-red-800"
           >
             Thử lại
           </button>
@@ -97,47 +102,48 @@ const NewsSectionLive = () => {
     );
   }
 
-  // CHỈ HIỂN THỊ TIN CÓ THUMBNAIL
-  const mainNews = (newsData?.mainNews || []).filter(item => item.image && item.image.trim() !== '');
-  const sidebarNews = (newsData?.sidebarNews || []).filter(item => item.image && item.image.trim() !== '');
+  const mainNews = (newsData?.mainNews || []).filter(
+    (item) => item.image && item.image.trim() !== ''
+  );
+  const sidebarNews = (newsData?.sidebarNews || []).filter(
+    (item) => item.image && item.image.trim() !== ''
+  );
+  const pagedSidebarNews = sidebarNews.slice((sidebarPage - 1) * 5, sidebarPage * 5);
+  const totalSidebarPages = Math.max(1, Math.ceil(sidebarNews.length / 5));
 
   return (
-    <section className="py-16 bg-gradient-to-b from-gray-50 via-slate-50 to-slate-100 border-t border-slate-200">
+    <section className="border-t border-slate-200 bg-gradient-to-b from-gray-50 via-slate-50 to-slate-100 py-16">
       <div className="container mx-auto px-4">
-        {/* Premium Section Header */}
-        <div className="text-center mb-10">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-red-100 text-red-700 rounded-full text-sm font-semibold mb-4">
-            <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
-            Cập nhật từ DHANND
+        <div className="mb-10 text-center">
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-emerald-100 px-4 py-2 text-sm font-semibold text-emerald-700">
+            <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" />
+            Cập nhật từ Kênh tuyển sinh DHANND
           </div>
-          <h2 className="text-3xl md:text-4xl font-black text-gray-900 mb-3">
-            Tin Tức & Sự Kiện
+          <h2 className="mb-3 text-3xl font-black text-gray-900 md:text-4xl">
+            Tin Tuyển Sinh
           </h2>
-          <p className="text-gray-600 max-w-xl mx-auto">
-            Thông tin mới nhất từ Trường Đại học An ninh Nhân dân
+          <p className="mx-auto max-w-2xl text-gray-600">
+            Chỉ hiển thị các bài viết lấy từ trang tuyển sinh chính thức của Trường Đại học An ninh nhân dân.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content Area */}
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
           <div className="lg:col-span-2">
             <div className="mb-6 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-red-600 to-red-700 rounded-xl flex items-center justify-center shadow-lg">
-                  <span className="text-white text-lg">📰</span>
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-600 to-green-700 shadow-lg">
+                  <span className="text-lg text-white">📘</span>
                 </div>
-                <h3 className="text-xl font-bold text-gray-800">
-                  TIN TỨC MỚI NHẤT
-                </h3>
+                <h3 className="text-xl font-bold text-gray-800">BÀI VIẾT TUYỂN SINH MỚI</h3>
               </div>
               <button
                 onClick={fetchNews}
                 disabled={refreshing}
-                className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-gray-600 hover:text-red-700 hover:border-red-300 transition-all duration-200 disabled:opacity-50 shadow-sm"
-                title="Làm mới tin tức"
+                className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-gray-600 shadow-sm transition-all duration-200 hover:border-emerald-300 hover:text-emerald-700 disabled:opacity-50"
+                title="Làm mới tin tuyển sinh"
               >
-                <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-                <span className="text-sm font-medium hidden sm:inline">Làm mới</span>
+                <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+                <span className="hidden text-sm font-medium sm:inline">Làm mới</span>
               </button>
             </div>
 
@@ -145,66 +151,81 @@ const NewsSectionLive = () => {
               {mainNews.map((news) => (
                 <article
                   key={news.id}
-                  className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200"
+                  className="overflow-hidden rounded-lg bg-white shadow-md transition-shadow duration-200 hover:shadow-lg"
                 >
                   <div className="md:flex">
                     <div className="md:w-1/3">
-                      <div className="h-48 md:h-full bg-gray-100 flex items-center justify-center relative overflow-hidden group">
+                      <div className="group relative flex h-48 items-center justify-center overflow-hidden bg-gray-100 md:h-full">
                         {news.image ? (
                           <img
                             src={news.image}
                             alt={news.title}
-                            className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                            className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                             onError={(e) => {
                               e.currentTarget.style.display = 'none';
-                              // Show fallback if image fails
                               const sibling = e.currentTarget.nextElementSibling;
                               if (sibling) sibling.classList.remove('opacity-0');
                             }}
                           />
                         ) : null}
 
-                        <div className={`text-red-800 text-center p-4 transition-opacity duration-300 ${news.image ? 'opacity-0 absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-red-100 to-red-200' : 'bg-gradient-to-br from-red-100 to-red-200 w-full h-full flex flex-col items-center justify-center'}`}>
-                          <div className="text-5xl mb-2">📰</div>
-                          <div className="text-xs opacity-75">DHANND News</div>
+                        <div
+                          className={`flex flex-col items-center justify-center bg-gradient-to-br from-emerald-100 to-emerald-200 p-4 text-center text-emerald-800 transition-opacity duration-300 ${
+                            news.image
+                              ? 'absolute inset-0 opacity-0'
+                              : 'h-full w-full'
+                          }`}
+                        >
+                          <div className="mb-2 text-5xl">📘</div>
+                          <div className="text-xs opacity-75">Kênh tuyển sinh</div>
                         </div>
-                        {/* Badge nguồn */}
-                        <div className="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
+
+                        <div className="absolute right-2 top-2 rounded bg-black/50 px-2 py-1 text-xs text-white">
                           {news.source}
                         </div>
                       </div>
                     </div>
-                    <div className="md:w-2/3 p-6">
-                      <div className="flex items-center flex-wrap gap-2 mb-2">
-                        <span className={`${getCategoryColor(news.category)} text-white text-xs font-bold px-2 py-1 rounded`}>
+
+                    <div className="p-6 md:w-2/3">
+                      <div className="mb-2 flex flex-wrap items-center gap-2">
+                        <span
+                          className={`${getCategoryColor(news.category)} rounded px-2 py-1 text-xs font-bold text-white`}
+                        >
                           {news.category}
                         </span>
-                        <div className="flex items-center text-gray-500 text-sm">
-                          <Calendar className="w-4 h-4 mr-1" />
+                        <div className="flex items-center text-sm text-gray-500">
+                          <Calendar className="mr-1 h-4 w-4" />
                           {news.date}
                         </div>
                       </div>
-                      <h3 className="text-xl font-bold text-gray-900 mb-3 hover:text-red-700 cursor-pointer line-clamp-2">
+
+                      <h3 className="mb-3 line-clamp-2 cursor-pointer text-xl font-bold text-gray-900 hover:text-emerald-700">
                         {news.title}
                       </h3>
+
                       {news.excerpt && (
-                        <p className="text-gray-600 mb-4 line-clamp-3">
-                          {news.excerpt}
-                        </p>
+                        <p className="mb-4 line-clamp-3 text-gray-600">{news.excerpt}</p>
                       )}
+
                       <div className="flex items-center justify-between">
-                        <button className="flex items-center text-red-700 hover:text-red-800 font-medium">
+                        <a
+                          href={news.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center font-medium text-emerald-700 hover:text-emerald-800"
+                        >
                           Đọc tiếp
-                          <ArrowRight className="w-4 h-4 ml-1" />
-                        </button>
+                          <ArrowRight className="ml-1 h-4 w-4" />
+                        </a>
+
                         {news.url && (
                           <a
                             href={news.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center text-gray-500 hover:text-red-700 text-sm"
+                            className="flex items-center text-sm text-gray-500 hover:text-emerald-700"
                           >
-                            <ExternalLink className="w-4 h-4 mr-1" />
+                            <ExternalLink className="mr-1 h-4 w-4" />
                             Nguồn gốc
                           </a>
                         )}
@@ -215,62 +236,80 @@ const NewsSectionLive = () => {
               ))}
             </div>
 
-            {/* Source Attribution */}
-            <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <div className="mt-6 rounded-lg border border-gray-200 bg-gray-50 p-4">
               <div className="flex items-center justify-between text-sm text-gray-600">
                 <span>
-                  📍 Nguồn: <a href="https://dhannd.bocongan.gov.vn" target="_blank" rel="noopener noreferrer" className="text-red-700 hover:underline">dhannd.bocongan.gov.vn</a>
+                  📍 Nguồn:{' '}
+                  <a
+                    href={TUYEN_SINH_SOURCE_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-emerald-700 hover:underline"
+                  >
+                    dhannd.bocongan.gov.vn/tuyensinh
+                  </a>
                 </span>
                 {newsData?.lastUpdated && (
-                  <span>
-                    Cập nhật: {new Date(newsData.lastUpdated).toLocaleString('vi-VN')}
-                  </span>
+                  <span>Cập nhật: {new Date(newsData.lastUpdated).toLocaleString('vi-VN')}</span>
                 )}
               </div>
             </div>
           </div>
 
-          {/* Sidebar */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-2xl shadow-lg p-6 sticky top-4 border border-gray-100">
-              <div className="flex items-center gap-3 mb-4 pb-4 border-b border-gray-100">
-                <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center shadow-lg">
-                  <span className="text-white text-lg">⭐</span>
+            <div className="sticky top-4 rounded-2xl border border-gray-100 bg-white p-6 shadow-lg">
+              <div className="mb-4 flex items-center gap-3 border-b border-gray-100 pb-4">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 shadow-lg">
+                  <span className="text-lg text-white">⭐</span>
                 </div>
-                <h3 className="text-lg font-bold text-gray-800">
-                  TIN BÀI NỔI BẬT
-                </h3>
+                <h3 className="text-lg font-bold text-gray-800">TIÊU ĐIỂM TUYỂN SINH</h3>
               </div>
+
               <div className="space-y-4">
-                {sidebarNews.slice((sidebarPage - 1) * 5, sidebarPage * 5).map((news, index) => (
-                  <article key={news.id} className="border-b border-gray-200 pb-4 last:border-b-0 hover:bg-gray-50 rounded transition-colors -mx-2 px-2">
+                {pagedSidebarNews.map((news, index) => (
+                  <article
+                    key={news.id}
+                    className="-mx-2 rounded border-b border-gray-200 px-2 pb-4 transition-colors hover:bg-gray-50 last:border-b-0"
+                  >
                     <div className="flex items-start space-x-3">
-                      <div className="flex-shrink-0 w-20 h-14 relative overflow-hidden rounded bg-gray-100 border border-gray-200">
+                      <div className="relative h-14 w-20 flex-shrink-0 overflow-hidden rounded border border-gray-200 bg-gray-100">
                         {news.image ? (
                           <img
                             src={news.image}
                             alt={news.title}
-                            className="absolute inset-0 w-full h-full object-cover"
+                            className="absolute inset-0 h-full w-full object-cover"
                             onError={(e) => {
                               e.currentTarget.style.display = 'none';
                               e.currentTarget.nextElementSibling?.classList.remove('hidden');
                             }}
                           />
                         ) : null}
-                        <div className={`w-full h-full flex items-center justify-center bg-red-700 text-white font-bold text-sm ${news.image ? 'hidden' : ''}`}>
+                        <div
+                          className={`flex h-full w-full items-center justify-center bg-emerald-700 text-sm font-bold text-white ${
+                            news.image ? 'hidden' : ''
+                          }`}
+                        >
                           {(sidebarPage - 1) * 5 + index + 1}
                         </div>
                       </div>
+
                       <div className="flex-1">
-                        <h4 className="text-sm font-medium text-gray-900 hover:text-red-700 cursor-pointer line-clamp-2 mb-2">
+                        <a
+                          href={news.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mb-2 line-clamp-2 text-sm font-medium text-gray-900 hover:text-emerald-700"
+                        >
                           {news.title}
-                        </h4>
+                        </a>
                         <div className="flex items-center justify-between">
                           <div className="flex items-center text-xs text-gray-500">
-                            <Calendar className="w-3 h-3 mr-1" />
+                            <Calendar className="mr-1 h-3 w-3" />
                             {news.date}
                           </div>
-                          <span className={`${getCategoryColor(news.category)} text-white text-[10px] px-1.5 py-0.5 rounded`}>
+                          <span
+                            className={`${getCategoryColor(news.category)} rounded px-1.5 py-0.5 text-[10px] text-white`}
+                          >
                             {news.category}
                           </span>
                         </div>
@@ -280,45 +319,47 @@ const NewsSectionLive = () => {
                 ))}
               </div>
 
-              {/* Pagination Controls */}
               {sidebarNews.length > 5 && (
-                <div className="flex items-center justify-between mt-4 border-t border-gray-100 pt-4">
+                <div className="mt-4 flex items-center justify-between border-t border-gray-100 pt-4">
                   <button
-                    onClick={() => setSidebarPage(p => Math.max(1, p - 1))}
+                    onClick={() => setSidebarPage((p) => Math.max(1, p - 1))}
                     disabled={sidebarPage === 1}
-                    className="p-1 rounded hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent text-gray-600 transition-colors"
+                    className="rounded p-1 text-gray-600 transition-colors hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent"
                   >
-                    <ArrowRight className="w-5 h-5 rotate-180" />
+                    <ArrowRight className="h-5 w-5 rotate-180" />
                   </button>
                   <span className="text-sm font-medium text-gray-600">
-                    {sidebarPage} / {Math.ceil(sidebarNews.length / 5)}
+                    {sidebarPage} / {totalSidebarPages}
                   </span>
                   <button
-                    onClick={() => setSidebarPage(p => Math.min(Math.ceil(sidebarNews.length / 5), p + 1))}
-                    disabled={sidebarPage === Math.ceil(sidebarNews.length / 5)}
-                    className="p-1 rounded hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent text-gray-600 transition-colors"
+                    onClick={() =>
+                      setSidebarPage((p) => Math.min(totalSidebarPages, p + 1))
+                    }
+                    disabled={sidebarPage === totalSidebarPages}
+                    className="rounded p-1 text-gray-600 transition-colors hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent"
                   >
-                    <ArrowRight className="w-5 h-5" />
+                    <ArrowRight className="h-5 w-5" />
                   </button>
                 </div>
               )}
+
               <div className="mt-6 space-y-3">
                 <a
-                  href="https://dhannd.bocongan.gov.vn/tin-tuc"
+                  href={TUYEN_SINH_SOURCE_URL}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full bg-red-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded transition-colors duration-200 flex items-center justify-center gap-2"
+                  className="flex w-full items-center justify-center gap-2 rounded bg-emerald-700 px-4 py-2 font-bold text-white transition-colors duration-200 hover:bg-emerald-800"
                 >
-                  Xem tất cả tin tức
-                  <ExternalLink className="w-4 h-4" />
+                  Xem kênh tuyển sinh
+                  <ExternalLink className="h-4 w-4" />
                 </a>
                 <button
                   onClick={fetchNews}
                   disabled={refreshing}
-                  className="w-full border border-red-700 text-red-700 hover:bg-red-50 font-medium py-2 px-4 rounded transition-colors duration-200 flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="flex w-full items-center justify-center gap-2 rounded border border-emerald-700 px-4 py-2 font-medium text-emerald-700 transition-colors duration-200 hover:bg-emerald-50 disabled:opacity-50"
                 >
-                  <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-                  Cập nhật tin tức
+                  <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+                  Cập nhật tin tuyển sinh
                 </button>
               </div>
             </div>

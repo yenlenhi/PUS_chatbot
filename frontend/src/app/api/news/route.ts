@@ -1,156 +1,157 @@
 import { NextResponse } from 'next/server';
 import * as cheerio from 'cheerio';
 
-// Fallback Mock Data (in case scraping fails)
+const TUYEN_SINH_URL = 'https://dhannd.bocongan.gov.vn/tuyensinh';
+const TUYEN_SINH_PATH_MARKER = '/thong-tin-tuyen-sinh-74/';
+
+type NewsItem = {
+  id: number;
+  title: string;
+  excerpt?: string;
+  date: string;
+  image?: string;
+  category: string;
+  source: string;
+  url: string;
+};
+
 const FALLBACK_DATA = {
   mainNews: [
     {
       id: 1,
-      title: "Hội nghị thông báo quyết định của Ban Thường vụ Đảng ủy Công an Trung ương về công tác cán bộ",
-      excerpt: "Ngày 12/12/2024, Trường Đại học An ninh nhân dân tổ chức Hội nghị thông báo quyết định của Ban Thường vụ Đảng ủy Công an Trung ương...",
-      date: "12/12/2024",
-      image: "https://dhannd.bocongan.gov.vn/image/cache/catalog/Congdoan/260113_z7-505x337.jpg", // Example real image link if possible or keep placeholder
-      category: "TIN TỨC",
-      source: "dhannd.bocongan.gov.vn",
-      url: "https://dhannd.bocongan.gov.vn/"
-    }
+      title: 'Thông báo tuyển sinh đào tạo trình độ đại học chính quy tuyển mới năm 2025',
+      excerpt: 'Thông tin tuyển sinh được đồng bộ từ Kênh tuyển sinh của Trường Đại học An ninh nhân dân.',
+      date: new Date().toLocaleDateString('vi-VN'),
+      image: 'https://i.ytimg.com/vi/vYhVOvHbbBE/hqdefault.jpg',
+      category: 'TUYỂN SINH',
+      source: 'dhannd.bocongan.gov.vn/tuyensinh',
+      url: TUYEN_SINH_URL,
+    },
   ],
-  sidebarNews: [],
-  lastUpdated: new Date().toISOString()
+  sidebarNews: [] as NewsItem[],
+  lastUpdated: new Date().toISOString(),
+};
+
+const browserHeaders = {
+  'User-Agent':
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+  Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+};
+
+const normalizeUrl = (value: string | undefined): string => {
+  if (!value) return '';
+  if (value.startsWith('http')) return value;
+  if (value.startsWith('/')) return `https://dhannd.bocongan.gov.vn${value}`;
+  return `https://dhannd.bocongan.gov.vn/${value}`;
+};
+
+const isTuyenSinhUrl = (value: string): boolean => {
+  return value.includes(TUYEN_SINH_PATH_MARKER) || value === TUYEN_SINH_URL;
+};
+
+const extractDate = (text: string): string => {
+  const match = text.match(/\b\d{1,2}[/-]\d{1,2}[/-]\d{2,4}\b/);
+  if (match) {
+    return match[0].replace(/-/g, '/');
+  }
+  return new Date().toLocaleDateString('vi-VN');
+};
+
+const buildNewsItem = (
+  $: cheerio.CheerioAPI,
+  element: Parameters<cheerio.CheerioAPI>[0],
+  id: number,
+  category: string,
+  excerptFromCaption = false
+): NewsItem | null => {
+  const node = $(element);
+  const link = normalizeUrl(node.find('a').first().attr('href'));
+
+  if (!link || !isTuyenSinhUrl(link)) {
+    return null;
+  }
+
+  const imageNode = node.find('img').first();
+  const titleNode = node.find('.caption h4, .caption a, h4 a').first();
+  const captionText = node.find('.caption').text().trim().replace(/\s+/g, ' ');
+  const title =
+    titleNode.text().trim() ||
+    imageNode.attr('alt')?.trim() ||
+    imageNode.attr('title')?.trim() ||
+    '';
+
+  if (!title) {
+    return null;
+  }
+
+  return {
+    id,
+    title,
+    excerpt: excerptFromCaption ? captionText.replace(title, '').trim() : '',
+    date: extractDate(captionText),
+    image: normalizeUrl(imageNode.attr('src')),
+    category,
+    source: 'dhannd.bocongan.gov.vn/tuyensinh',
+    url: link,
+  };
 };
 
 export async function GET() {
   try {
-    const url = 'https://dhannd.bocongan.gov.vn/';
-
-    // 1. Fetch HTML
-    // Use headers to mimic a browser
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-      },
-      next: { revalidate: 300 } // Cache for 5 minutes
+    const response = await fetch(TUYEN_SINH_URL, {
+      headers: browserHeaders,
+      next: { revalidate: 300 },
     });
 
     if (!response.ok) {
-      throw new Error(`Failed to fetch website: ${response.status}`);
+      throw new Error(`Failed to fetch tuyen sinh page: ${response.status}`);
     }
 
     const html = await response.text();
     const $ = cheerio.load(html);
 
-    const mainNews: any[] = [];
-    const sidebarNews: any[] = [];
+    const primaryBlock = $('.tuyensinh-news-list-main-home').first();
+    const mainNews: NewsItem[] = [];
+    const sidebarNews: NewsItem[] = [];
 
-    // Helper to fix relative URLs
-    const fixUrl = (link: string | undefined): string => {
-      if (!link) return '';
-      if (link.startsWith('http')) return link;
-      if (link.startsWith('/')) return `https://dhannd.bocongan.gov.vn${link}`;
-      return `https://dhannd.bocongan.gov.vn/${link}`;
-    };
+    if (primaryBlock.length > 0) {
+      const featuredItem = buildNewsItem(
+        $,
+        primaryBlock.find('.main-news').first().get(0),
+        Date.now(),
+        'TUYỂN SINH',
+        true
+      );
 
-    // Helper to extract date from link or text if possible, otherwise use current date
-    const getDate = () => {
-      const today = new Date();
-      return `${today.getDate()}/${today.getMonth() + 1}/${today.getFullYear()}`;
-    };
-
-    // 2. Extract Main News (Block: .news-list-main-home first instance - usually "Tin tức")
-    const mainBlock = $('.news-list-main-home').first();
-
-    if (mainBlock.length > 0) {
-      // Big Item
-      const bigItem = mainBlock.find('.main-news');
-      if (bigItem.length > 0) {
-        const linkTag = bigItem.find('a').first();
-        const imgTag = bigItem.find('img').first();
-        const titleTag = bigItem.find('.caption h4');
-        const excerptTag = bigItem.find('.caption p');
-
-        mainNews.push({
-          id: Date.now(), // Random ID
-          title: titleTag.text().trim() || imgTag.attr('title') || imgTag.attr('alt') || 'Tin tức nổi bật',
-          excerpt: excerptTag.text().trim(),
-          date: getDate(),
-          image: fixUrl(imgTag.attr('src')),
-          category: 'NỔI BẬT',
-          source: 'dhannd.bocongan.gov.vn',
-          url: fixUrl(linkTag.attr('href'))
-        });
+      if (featuredItem) {
+        mainNews.push(featuredItem);
       }
 
-      // Sub Items (Right sidebar of main block)
-      mainBlock.find('.news-list-other-div .news-brief').each((i, el) => {
-        const item = $(el);
-        const linkTag = item.find('a').first();
-        const imgTag = item.find('img').first();
+      primaryBlock.find('.news-brief').each((index, element) => {
+        const item = buildNewsItem(
+          $,
+          element,
+          Date.now() + index + 1,
+          'TUYỂN SINH'
+        );
 
-        // Use alt as title if available
-        const title = imgTag.attr('alt') || linkTag.text().trim() || 'Tin tức';
+        if (!item) {
+          return;
+        }
 
-        mainNews.push({
-          id: Date.now() + i + 1,
-          title: title,
-          excerpt: '',
-          date: getDate(),
-          image: fixUrl(imgTag.attr('src')),
-          category: 'TIN TỨC',
-          source: 'dhannd.bocongan.gov.vn',
-          url: fixUrl(linkTag.attr('href'))
-        });
+        if (mainNews.length < 3) {
+          mainNews.push(item);
+        } else {
+          sidebarNews.push(item);
+        }
       });
     }
 
-    // 3. Extract Sidebar News from other blocks (e.g., "Tuyển sinh", "Đào tạo")
-    // We look for other .news-list-main-home blocks
-    $('.news-list-main-home').slice(1).each((idx, block) => {
-      const $block = $(block);
-      const categoryTitle = $block.find('.groupnews-title h5 a').text().trim() || 'TIN KHÁC';
-
-      // Take the main item from this block as a sidebar item
-      const bigItem = $block.find('.main-news');
-      if (bigItem.length > 0) {
-        const linkTag = bigItem.find('a').first();
-        const imgTag = bigItem.find('img').first();
-        const titleTag = bigItem.find('.caption h4');
-
-        sidebarNews.push({
-          id: Date.now() + 100 + idx,
-          title: titleTag.text().trim() || imgTag.attr('alt') || categoryTitle,
-          date: getDate(), // Fallback date
-          category: categoryTitle.toUpperCase(),
-          source: 'dhannd.bocongan.gov.vn',
-          image: fixUrl(imgTag.attr('src')),
-          url: fixUrl(linkTag.attr('href'))
-        });
-      }
-
-      // Take some sub-items too
-      $block.find('.news-list-other-div .news-brief').slice(0, 2).each((i, el) => {
-        const item = $(el);
-        const linkTag = item.find('a').first();
-        const imgTag = item.find('img').first();
-
-        sidebarNews.push({
-          id: Date.now() + 200 + idx + i,
-          title: imgTag.attr('alt') || linkTag.text().trim(),
-          date: getDate(),
-          category: categoryTitle.toUpperCase(),
-          source: 'dhannd.bocongan.gov.vn',
-          url: fixUrl(linkTag.attr('href'))
-        });
-      });
-    });
-
-    // If no news found (parsing error), use fallback
     if (mainNews.length === 0 && sidebarNews.length === 0) {
-      console.warn('Scraper found no items, using fallback data');
       return NextResponse.json({
         success: true,
         data: FALLBACK_DATA,
-        message: "Dữ liệu mẫu (không lấy được tin thực tế)"
+        message: 'Dữ liệu mẫu tuyển sinh',
       });
     }
 
@@ -159,18 +160,17 @@ export async function GET() {
       data: {
         mainNews,
         sidebarNews,
-        lastUpdated: new Date().toISOString()
+        lastUpdated: new Date().toISOString(),
       },
-      message: "Tin tức cập nhật từ dhannd.bocongan.gov.vn"
+      message: 'Tin tuyển sinh cập nhật từ dhannd.bocongan.gov.vn/tuyensinh',
     });
-
   } catch (error) {
-    console.error('Error scraping news:', error);
-    // Return fallback data on error
+    console.error('Error scraping tuyen sinh news:', error);
+
     return NextResponse.json({
       success: true,
       data: FALLBACK_DATA,
-      message: "Dữ liệu mẫu (Lỗi kết nối đến website trường)"
+      message: 'Dữ liệu mẫu tuyển sinh do không thể kết nối tới trang nguồn',
     });
   }
 }
