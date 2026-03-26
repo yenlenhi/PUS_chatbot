@@ -1,105 +1,133 @@
 'use client';
 
 import React from 'react';
-import { ExternalLink, PlayCircle, Sparkles } from 'lucide-react';
+import { ExternalLink, PlayCircle, Quote, Sparkles } from 'lucide-react';
 
 const VIDEO_ID = 'vYhVOvHbbBE';
 const VIDEO_URL = `https://www.youtube.com/watch?v=${VIDEO_ID}`;
 const EMBED_URL = `https://www.youtube-nocookie.com/embed/${VIDEO_ID}?rel=0`;
 
-const SLOGAN_LINES = [
-  'Kênh thông tin tuyển sinh của Trường Đại học An ninh nhân dân ra đời nhằm tiếp nhận và hỗ trợ tra cứu thông tin chính thức.',
-  'Hệ thống hướng dẫn, giải đáp thủ tục đăng ký, lịch thi, thông tin ngành học, chương trình đào tạo và thời gian nhập học.',
-  'Đồng thời phục vụ học sinh THPT, cán bộ, chiến sĩ và các cá nhân có nhu cầu, mong muốn học tập tại Trường.',
+const SUPPORT_POINTS = [
+  'Tiếp nhận, hỗ trợ tra cứu và trả lời các thông tin tuyển sinh chính thức.',
+  'Hướng dẫn thủ tục đăng ký, lịch thi, ngành học, chương trình đào tạo và thời gian nhập học.',
+  'Phục vụ học sinh THPT, cán bộ, chiến sĩ và các cá nhân có nhu cầu học tập tại Trường.',
 ];
 
 const FeaturedVideoSection = () => {
   return (
-    <section className="relative overflow-hidden border-t border-slate-200 bg-[linear-gradient(135deg,_#0f172a_0%,_#12233f_44%,_#7f1d1d_100%)] py-16 text-white">
+    <section className="relative overflow-hidden border-t border-slate-200 bg-[radial-gradient(circle_at_top,_rgba(248,113,113,0.18),_transparent_26%),linear-gradient(135deg,_#0b1220_0%,_#132645_48%,_#761d28_100%)] py-16 text-white md:py-20">
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -left-24 top-12 h-64 w-64 rounded-full bg-red-500/20 blur-3xl" />
-        <div className="absolute right-0 top-0 h-80 w-80 rounded-full bg-sky-400/10 blur-3xl" />
-        <div className="absolute bottom-0 left-1/3 h-56 w-56 rounded-full bg-amber-300/10 blur-3xl" />
+        <div className="absolute left-[-4rem] top-16 h-48 w-48 rounded-full bg-red-400/20 blur-3xl md:h-72 md:w-72" />
+        <div className="absolute right-[-3rem] top-10 h-44 w-44 rounded-full bg-amber-300/15 blur-3xl md:h-64 md:w-64" />
+        <div className="absolute bottom-0 left-1/2 h-56 w-56 -translate-x-1/2 rounded-full bg-sky-400/10 blur-3xl md:h-72 md:w-72" />
       </div>
 
       <div className="container relative z-10 mx-auto px-4">
-        <div className="grid items-start gap-8 lg:grid-cols-[0.92fr_1.08fr] lg:gap-12">
-          <div className="max-w-2xl">
+        <div className="mx-auto max-w-6xl">
+          <div className="mx-auto max-w-4xl text-center">
             <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/8 px-4 py-2 text-xs font-semibold uppercase tracking-[0.28em] text-red-100 backdrop-blur-sm">
               <PlayCircle className="h-4 w-4 text-amber-300" />
               Video giới thiệu
             </div>
 
-            <h2 className="mt-6 text-3xl font-black leading-tight text-white md:text-4xl">
-              Trường Đại học An ninh nhân dân
-              <span className="mt-2 block bg-gradient-to-r from-amber-300 via-yellow-200 to-white bg-clip-text text-transparent">
-                Nơi ươm mầm sĩ quan an ninh tương lai
+            <h2 className="mt-6 text-4xl font-black leading-tight text-white md:text-5xl">
+              Khám phá môi trường đào tạo
+              <span className="mt-3 block bg-gradient-to-r from-amber-300 via-yellow-200 to-white bg-clip-text text-transparent">
+                của Trường Đại học An ninh nhân dân
               </span>
             </h2>
 
-            <div className="mt-6 overflow-hidden rounded-[30px] border border-white/10 bg-white/8 p-5 shadow-[0_18px_60px_rgba(15,23,42,0.24)] backdrop-blur-sm">
-              <div className="mb-4 flex items-center gap-3">
-                <div className="rounded-2xl bg-amber-300/15 p-2 text-amber-300">
-                  <Sparkles className="h-5 w-5" />
+            <p className="mx-auto mt-5 max-w-3xl text-base leading-8 text-slate-200 md:text-lg">
+              Video được đặt làm điểm nhấn trung tâm để người xem tiếp cận nhanh hình ảnh, khí chất và định hướng
+              tuyển sinh của nhà trường ngay tại trang chủ.
+            </p>
+          </div>
+
+          <div className="mt-10 overflow-hidden rounded-[32px] border border-white/12 bg-slate-950/55 p-4 shadow-[0_28px_90px_rgba(2,6,23,0.45)] backdrop-blur-sm md:mt-12 md:p-5">
+            <div className="mb-4 flex flex-col gap-3 rounded-[24px] border border-white/10 bg-white/5 px-4 py-4 text-sm text-slate-300 md:flex-row md:items-center md:justify-between md:px-5">
+              <div className="flex items-center gap-3">
+                <div className="rounded-full bg-red-500/15 p-2 text-amber-300">
+                  <PlayCircle className="h-4 w-4" />
                 </div>
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-300">
-                    Thông điệp nổi bật
-                  </p>
-                  <p className="mt-1 text-sm text-slate-200">
-                    Kênh tuyển sinh được thiết kế để hướng dẫn nhanh, rõ và đúng nguồn.
-                  </p>
+                  <p className="font-medium text-white">Phim giới thiệu chính thức</p>
+                  <p className="text-xs uppercase tracking-[0.24em] text-slate-400">People&apos;s Security University</p>
                 </div>
               </div>
 
-              <div className="space-y-3">
-                {SLOGAN_LINES.map((line, index) => (
-                  <div
-                    key={line}
-                    className="slogan-line flex items-start gap-3 rounded-2xl border border-white/8 bg-slate-950/25 px-4 py-3"
-                    style={{ animationDelay: `${index * 220}ms` }}
-                  >
-                    <span className="mt-2 h-2.5 w-2.5 flex-none rounded-full bg-gradient-to-br from-amber-300 to-red-400 shadow-[0_0_14px_rgba(252,211,77,0.65)]" />
-                    <p className="leading-7 text-slate-100">{line}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="mt-8">
               <a
                 href={VIDEO_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 font-semibold text-slate-900 transition-all duration-300 hover:-translate-y-0.5 hover:bg-amber-300"
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-white px-5 py-3 font-semibold text-slate-900 transition-all duration-300 hover:-translate-y-0.5 hover:bg-amber-300"
               >
                 Xem trên YouTube
                 <ExternalLink className="h-4 w-4" />
               </a>
             </div>
+
+            <div className="overflow-hidden rounded-[28px] border border-white/10 bg-black shadow-inner">
+              <div className="aspect-[16/9] w-full">
+                <iframe
+                  src={EMBED_URL}
+                  title="Trường Đại học An ninh nhân dân - Nơi ươm mầm sĩ quan an ninh tương lai"
+                  className="h-full w-full"
+                  loading="lazy"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  referrerPolicy="strict-origin-when-cross-origin"
+                  allowFullScreen
+                />
+              </div>
+            </div>
           </div>
 
-          <div className="relative lg:pt-3">
-            <div className="absolute -inset-3 rounded-[32px] bg-gradient-to-r from-amber-300/20 via-red-400/15 to-sky-300/15 blur-2xl" />
-            <div className="relative overflow-hidden rounded-[32px] border border-white/15 bg-slate-950/70 p-3 shadow-[0_24px_80px_rgba(2,6,23,0.45)] backdrop-blur-sm">
-              <div className="mb-3 flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-300">
-                <span className="font-medium">Phim giới thiệu chính thức</span>
-                <span className="rounded-full bg-red-500/15 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-red-100">
-                  PSU
-                </span>
-              </div>
+          <div className="relative z-20 mx-auto mt-6 max-w-5xl md:-mt-14">
+            <div className="overflow-hidden rounded-[30px] border border-white/14 bg-[linear-gradient(140deg,_rgba(255,255,255,0.14),_rgba(255,255,255,0.05))] shadow-[0_24px_80px_rgba(15,23,42,0.35)] backdrop-blur-xl">
+              <div className="grid gap-0 lg:grid-cols-[minmax(0,1.45fr)_minmax(18rem,0.9fr)]">
+                <div className="relative p-6 md:p-8 lg:p-10">
+                  <div className="absolute left-0 top-0 h-full w-1 bg-gradient-to-b from-amber-300 via-orange-400 to-red-500" />
 
-              <div className="overflow-hidden rounded-[24px] border border-white/10 bg-black shadow-inner">
-                <div className="aspect-video">
-                  <iframe
-                    src={EMBED_URL}
-                    title="Trường Đại học An ninh nhân dân - Nơi ươm mầm sĩ quan an ninh tương lai"
-                    className="h-full w-full"
-                    loading="lazy"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                    referrerPolicy="strict-origin-when-cross-origin"
-                    allowFullScreen
-                  />
+                  <div className="flex items-center gap-3 text-amber-200">
+                    <Quote className="h-5 w-5" />
+                    <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-200">Thông điệp nổi bật</p>
+                  </div>
+
+                  <div className="mt-5 space-y-3">
+                    <p className="slogan-line text-2xl font-black leading-tight text-white md:text-3xl">
+                      Kênh thông tin tuyển sinh của Trường Đại học An ninh nhân dân
+                    </p>
+                    <p className="slogan-line slogan-delay-1 text-lg leading-8 text-slate-100 md:text-xl">
+                      ra đời nhằm tiếp nhận, hỗ trợ tra cứu, hướng dẫn và giải đáp các thông tin quan trọng cho thí sinh
+                      và người học.
+                    </p>
+                  </div>
+
+                  <p className="mt-5 max-w-3xl text-sm leading-7 text-slate-200 md:text-base">
+                    Đây là vùng thông tin được đưa sát ngay dưới video để người xem vừa nắm được tinh thần tuyển sinh,
+                    vừa có thể chuyển ngay sang tra cứu chi tiết mà không bị ngắt mạch theo dõi.
+                  </p>
+                </div>
+
+                <div className="relative border-t border-white/10 bg-slate-950/30 p-6 md:p-8 lg:border-l lg:border-t-0">
+                  <div className="inline-flex items-center gap-2 rounded-full bg-amber-300/12 px-3 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-amber-200">
+                    <Sparkles className="h-4 w-4" />
+                    Vai trò kênh
+                  </div>
+
+                  <div className="mt-5 space-y-4">
+                    {SUPPORT_POINTS.map((item, index) => (
+                      <div
+                        key={item}
+                        className="support-item rounded-2xl border border-white/10 bg-white/6 px-4 py-4 text-sm leading-7 text-slate-100"
+                        style={{ animationDelay: `${index * 140}ms` }}
+                      >
+                        <span className="mr-3 inline-flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-amber-300 to-red-400 text-xs font-bold text-slate-950">
+                          {index + 1}
+                        </span>
+                        {item}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
@@ -108,40 +136,21 @@ const FeaturedVideoSection = () => {
       </div>
 
       <style jsx>{`
-        .slogan-line {
+        .slogan-line,
+        .support-item {
           opacity: 0;
-          transform: translateY(14px);
-          animation: sloganReveal 0.75s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          transform: translateY(18px);
+          animation: riseIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
 
-        .slogan-line::after {
-          content: '';
-          position: absolute;
-          inset: 0;
-          border-radius: 1rem;
-          background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
-          transform: translateX(-120%);
-          animation: sloganSheen 3.4s ease-in-out infinite;
-          animation-delay: 1s;
-          pointer-events: none;
+        .slogan-delay-1 {
+          animation-delay: 0.14s;
         }
 
-        @keyframes sloganReveal {
+        @keyframes riseIn {
           to {
             opacity: 1;
             transform: translateY(0);
-          }
-        }
-
-        @keyframes sloganSheen {
-          0%,
-          75%,
-          100% {
-            transform: translateX(-120%);
-          }
-
-          35% {
-            transform: translateX(120%);
           }
         }
       `}</style>
