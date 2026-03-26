@@ -8,9 +8,9 @@ const VIDEO_URL = `https://www.youtube.com/watch?v=${VIDEO_ID}`;
 const EMBED_URL = `https://www.youtube-nocookie.com/embed/${VIDEO_ID}?rel=0`;
 
 const SUPPORT_POINTS = [
-  'Tiếp nhận, hỗ trợ tra cứu và trả lời các thông tin tuyển sinh chính thức.',
-  'Hướng dẫn thủ tục đăng ký, lịch thi, ngành học, chương trình đào tạo và thời gian nhập học.',
-  'Phục vụ học sinh THPT, cán bộ, chiến sĩ và các cá nhân có nhu cầu học tập tại Trường.',
+  'Tra cứu thông tin tuyển sinh chính thức và thống nhất.',
+  'Hướng dẫn nhanh về thủ tục, lịch thi và chương trình đào tạo.',
+  'Đồng hành cùng học sinh, cán bộ, chiến sĩ và người học có nhu cầu.',
 ];
 
 const FeaturedVideoSection = () => {
@@ -81,52 +81,53 @@ const FeaturedVideoSection = () => {
             </div>
           </div>
 
-          <div className="relative z-20 mx-auto mt-6 max-w-5xl md:-mt-14">
+          <div className="relative z-20 mx-auto mt-6 max-w-5xl md:-mt-8">
             <div className="overflow-hidden rounded-[30px] border border-white/14 bg-[linear-gradient(140deg,_rgba(255,255,255,0.14),_rgba(255,255,255,0.05))] shadow-[0_24px_80px_rgba(15,23,42,0.35)] backdrop-blur-xl">
-              <div className="grid gap-0 lg:grid-cols-[minmax(0,1.45fr)_minmax(18rem,0.9fr)]">
-                <div className="relative p-6 md:p-8 lg:p-10">
-                  <div className="absolute left-0 top-0 h-full w-1 bg-gradient-to-b from-amber-300 via-orange-400 to-red-500" />
+              <div className="relative p-6 md:p-8 lg:p-10">
+                <div className="absolute left-0 top-0 h-full w-1 bg-gradient-to-b from-amber-300 via-orange-400 to-red-500" />
 
-                  <div className="flex items-center gap-3 text-amber-200">
+                <div className="grid gap-8 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] xl:items-start">
+                  <div>
+                    <div className="flex items-center gap-3 text-amber-200">
                     <Quote className="h-5 w-5" />
                     <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-200">Thông điệp nổi bật</p>
+                    </div>
+
+                    <div className="mt-5 space-y-3">
+                      <p className="slogan-line text-2xl font-black leading-tight text-white md:text-3xl">
+                        Kênh tuyển sinh chính thức giúp người học tiếp cận thông tin nhanh, rõ và đúng nguồn.
+                      </p>
+                      <p className="slogan-line slogan-delay-1 max-w-2xl text-base leading-8 text-slate-100 md:text-lg">
+                        Tập trung giải đáp thủ tục đăng ký, lịch thi, ngành học, chương trình đào tạo và các mốc
+                        thời gian quan trọng ngay trên một điểm chạm duy nhất.
+                      </p>
+                    </div>
+
+                    <div className="mt-6 inline-flex items-center rounded-full border border-white/12 bg-white/8 px-4 py-2 text-sm text-slate-100">
+                      Trọng tâm là hỗ trợ tra cứu tuyển sinh cho thí sinh và người quan tâm đến trường.
+                    </div>
                   </div>
 
-                  <div className="mt-5 space-y-3">
-                    <p className="slogan-line text-2xl font-black leading-tight text-white md:text-3xl">
-                      Kênh thông tin tuyển sinh của Trường Đại học An ninh nhân dân
-                    </p>
-                    <p className="slogan-line slogan-delay-1 text-lg leading-8 text-slate-100 md:text-xl">
-                      ra đời nhằm tiếp nhận, hỗ trợ tra cứu, hướng dẫn và giải đáp các thông tin quan trọng cho thí sinh
-                      và người học.
-                    </p>
-                  </div>
+                  <div>
+                    <div className="inline-flex items-center gap-2 rounded-full bg-amber-300/12 px-3 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-amber-200">
+                      <Sparkles className="h-4 w-4" />
+                      Vai trò kênh
+                    </div>
 
-                  <p className="mt-5 max-w-3xl text-sm leading-7 text-slate-200 md:text-base">
-                    Đây là vùng thông tin được đưa sát ngay dưới video để người xem vừa nắm được tinh thần tuyển sinh,
-                    vừa có thể chuyển ngay sang tra cứu chi tiết mà không bị ngắt mạch theo dõi.
-                  </p>
-                </div>
-
-                <div className="relative border-t border-white/10 bg-slate-950/30 p-6 md:p-8 lg:border-l lg:border-t-0">
-                  <div className="inline-flex items-center gap-2 rounded-full bg-amber-300/12 px-3 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-amber-200">
-                    <Sparkles className="h-4 w-4" />
-                    Vai trò kênh
-                  </div>
-
-                  <div className="mt-5 space-y-4">
-                    {SUPPORT_POINTS.map((item, index) => (
-                      <div
-                        key={item}
-                        className="support-item rounded-2xl border border-white/10 bg-white/6 px-4 py-4 text-sm leading-7 text-slate-100"
-                        style={{ animationDelay: `${index * 140}ms` }}
-                      >
-                        <span className="mr-3 inline-flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-amber-300 to-red-400 text-xs font-bold text-slate-950">
-                          {index + 1}
-                        </span>
-                        {item}
-                      </div>
-                    ))}
+                    <div className="mt-5 grid gap-4 sm:grid-cols-3 xl:grid-cols-1">
+                      {SUPPORT_POINTS.map((item, index) => (
+                        <article
+                          key={item}
+                          className="support-item rounded-2xl border border-white/10 bg-white/6 px-4 py-4 text-sm leading-7 text-slate-100"
+                          style={{ animationDelay: `${index * 140}ms` }}
+                        >
+                          <span className="mb-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-amber-300 to-red-400 text-xs font-bold text-slate-950">
+                            {index + 1}
+                          </span>
+                          <p>{item}</p>
+                        </article>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
