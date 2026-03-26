@@ -329,3 +329,14 @@ class DashboardOverview(BaseModel):
     today_conversations: int = Field(0)
     today_messages: int = Field(0)
     today_new_users: int = Field(0)
+
+
+class PublicTrafficSummary(BaseModel):
+    """Public traffic summary for homepage widgets"""
+
+    online_now: int = Field(0)
+    today_views: int = Field(0)
+    month_views: int = Field(0)
+    total_views: int = Field(0)
+    last_updated_at: str = Field(...)
+    data_source: str = Field("system")

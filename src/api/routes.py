@@ -50,6 +50,7 @@ from src.models.analytics import (
     DocumentInsights,
     BusinessInsights,
     DashboardOverview,
+    PublicTrafficSummary,
 )
 from src.services.rag_service import RAGService
 from src.services.async_rag_service import get_async_rag_service, AsyncRAGService
@@ -1764,6 +1765,23 @@ async def get_training_data(
 # ============================================================================
 # ANALYTICS ENDPOINTS - Dashboard Insights
 # ============================================================================
+
+
+@router.get(
+    "/analytics/traffic-summary",
+    response_model=PublicTrafficSummary,
+)
+async def get_public_traffic_summary(
+    analytics_svc: AnalyticsService = Depends(get_analytics_service),
+):
+    """Get public traffic metrics for homepage widgets."""
+    try:
+        return analytics_svc.get_public_traffic_summary()
+    except Exception as e:
+        log.error(f"❌ Error getting public traffic summary: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Error getting public traffic summary: {str(e)}"
+        )
 
 
 @router.get(

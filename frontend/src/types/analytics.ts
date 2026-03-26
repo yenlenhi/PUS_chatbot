@@ -211,6 +211,15 @@ export interface DashboardOverview {
   today_new_users: number;
 }
 
+export interface PublicTrafficSummary {
+  online_now: number;
+  today_views: number;
+  month_views: number;
+  total_views: number;
+  last_updated_at: string;
+  data_source: string;
+}
+
 // ==================== FILTER OPTIONS ====================
 
 export interface AnalyticsFilter {

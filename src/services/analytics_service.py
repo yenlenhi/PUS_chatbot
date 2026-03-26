@@ -30,7 +30,7 @@ from src.models.analytics import (
     QualityScore,
     BusinessInsights,
     DashboardOverview,
-    DashboardOverview,
+    PublicTrafficSummary,
 )
 from src.utils.logger import log
 import io
@@ -1581,6 +1581,112 @@ class AnalyticsService:
                 today_messages=128,
                 today_new_users=12,
             )
+
+    def get_public_traffic_summary(self) -> PublicTrafficSummary:
+        """Get a compact public traffic summary for homepage display."""
+        session = None
+        try:
+            session = self.db_service.SessionLocal()
+
+            access_total = (
+                session.execute(text("SELECT COUNT(*) FROM access_logs")).scalar() or 0
+            )
+            conversations_total = (
+                session.execute(text("SELECT COUNT(*) FROM conversations")).scalar() or 0
+            )
+
+            today_access = (
+                session.execute(
+                    text(
+                        "SELECT COUNT(*) FROM access_logs WHERE DATE(created_at) = CURRENT_DATE"
+                    )
+                ).scalar()
+                or 0
+            )
+            today_conversations = (
+                session.execute(
+                    text(
+                        "SELECT COUNT(*) FROM conversations WHERE DATE(created_at) = CURRENT_DATE"
+                    )
+                ).scalar()
+                or 0
+            )
+
+            month_access = (
+                session.execute(
+                    text(
+                        """
+                        SELECT COUNT(*)
+                        FROM access_logs
+                        WHERE DATE_TRUNC('month', created_at) = DATE_TRUNC('month', CURRENT_DATE)
+                        """
+                    )
+                ).scalar()
+                or 0
+            )
+            month_conversations = (
+                session.execute(
+                    text(
+                        """
+                        SELECT COUNT(*)
+                        FROM conversations
+                        WHERE DATE_TRUNC('month', created_at) = DATE_TRUNC('month', CURRENT_DATE)
+                        """
+                    )
+                ).scalar()
+                or 0
+            )
+
+            online_sessions = (
+                session.execute(
+                    text(
+                        """
+                        SELECT COUNT(*)
+                        FROM user_sessions
+                        WHERE last_visit >= NOW() - INTERVAL '5 minutes'
+                        """
+                    )
+                ).scalar()
+                or 0
+            )
+
+            if online_sessions == 0:
+                online_sessions = (
+                    session.execute(
+                        text(
+                            """
+                            SELECT COUNT(DISTINCT conversation_id)
+                            FROM conversations
+                            WHERE created_at >= NOW() - INTERVAL '5 minutes'
+                            """
+                        )
+                    ).scalar()
+                    or 0
+                )
+
+            use_access_logs = access_total > 0 or today_access > 0 or month_access > 0
+
+            return PublicTrafficSummary(
+                online_now=online_sessions,
+                today_views=today_access if use_access_logs else today_conversations,
+                month_views=month_access if use_access_logs else month_conversations,
+                total_views=access_total if use_access_logs else conversations_total,
+                last_updated_at=datetime.now().isoformat(),
+                data_source="access_logs" if use_access_logs else "conversations",
+            )
+        except Exception as e:
+            log.error(f"❌ Error getting public traffic summary: {e}")
+            return PublicTrafficSummary(
+                online_now=0,
+                today_views=0,
+                month_views=0,
+                total_views=0,
+                last_updated_at=datetime.now().isoformat(),
+                data_source="fallback",
+            )
+        finally:
+            if session:
+                session.close()
 
     # ==================== LOGGING METHODS ====================
 
