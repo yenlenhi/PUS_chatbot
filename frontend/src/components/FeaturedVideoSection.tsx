@@ -23,7 +23,7 @@ const FeaturedVideoSection = () => {
       </div>
 
       <div className="container relative z-10 mx-auto px-4">
-        <div className="grid items-center gap-8 lg:grid-cols-[0.92fr_1.08fr] lg:gap-12">
+        <div className="grid items-start gap-8 lg:grid-cols-[0.92fr_1.08fr] lg:gap-12">
           <div className="max-w-2xl">
             <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/8 px-4 py-2 text-xs font-semibold uppercase tracking-[0.28em] text-red-100 backdrop-blur-sm">
               <PlayCircle className="h-4 w-4 text-amber-300" />
@@ -79,7 +79,7 @@ const FeaturedVideoSection = () => {
             </div>
           </div>
 
-          <div className="relative">
+          <div className="relative lg:pt-3">
             <div className="absolute -inset-3 rounded-[32px] bg-gradient-to-r from-amber-300/20 via-red-400/15 to-sky-300/15 blur-2xl" />
             <div className="relative overflow-hidden rounded-[32px] border border-white/15 bg-slate-950/70 p-3 shadow-[0_24px_80px_rgba(2,6,23,0.45)] backdrop-blur-sm">
               <div className="mb-3 flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-300">
