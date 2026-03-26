@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { ExternalLink, PlayCircle, ShieldCheck, Sparkles } from 'lucide-react';
+import { ExternalLink, PlayCircle, Sparkles } from 'lucide-react';
 
 const VIDEO_ID = 'vYhVOvHbbBE';
 const VIDEO_URL = `https://www.youtube.com/watch?v=${VIDEO_ID}`;
@@ -63,18 +63,6 @@ const FeaturedVideoSection = () => {
                     <p className="leading-7 text-slate-100">{line}</p>
                   </div>
                 ))}
-              </div>
-            </div>
-
-            <div className="mt-6 flex items-start gap-3 rounded-3xl border border-white/10 bg-white/8 p-4 backdrop-blur-sm">
-              <div className="mt-1 rounded-2xl bg-emerald-400/15 p-2 text-emerald-300">
-                <ShieldCheck className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="font-semibold text-white">Vị trí hiển thị đã chọn</p>
-                <p className="mt-1 text-sm leading-7 text-slate-300">
-                  Trang chủ `psuchatbot.com`, nằm giữa khối số liệu tổng quan và khối nội dung định hướng phát triển.
-                </p>
               </div>
             </div>
 
