@@ -90,6 +90,7 @@ const TrafficStatsCard = () => {
       ? new Date(summary.last_updated_at).toLocaleTimeString('vi-VN', {
           hour: '2-digit',
           minute: '2-digit',
+          timeZone: 'Asia/Ho_Chi_Minh',
         })
       : '--:--';
 

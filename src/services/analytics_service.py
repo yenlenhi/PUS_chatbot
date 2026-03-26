@@ -3,6 +3,7 @@ Analytics Service for dashboard insights and metrics
 """
 
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 from typing import List
 from sqlalchemy import text
 from src.services.postgres_database_service import PostgresDatabaseService
@@ -41,6 +42,8 @@ from openpyxl.styles import Font, PatternFill, Alignment
 
 class AnalyticsService:
     """Service for analytics and dashboard insights"""
+
+    APP_TIMEZONE = ZoneInfo("Asia/Ho_Chi_Minh")
 
     def __init__(self, db_service: PostgresDatabaseService = None):
         """
@@ -1671,7 +1674,7 @@ class AnalyticsService:
                 today_views=today_access if use_access_logs else today_conversations,
                 month_views=month_access if use_access_logs else month_conversations,
                 total_views=access_total if use_access_logs else conversations_total,
-                last_updated_at=datetime.now().isoformat(),
+                last_updated_at=datetime.now(self.APP_TIMEZONE).isoformat(),
                 data_source="access_logs" if use_access_logs else "conversations",
             )
         except Exception as e:
@@ -1681,7 +1684,7 @@ class AnalyticsService:
                 today_views=0,
                 month_views=0,
                 total_views=0,
-                last_updated_at=datetime.now().isoformat(),
+                last_updated_at=datetime.now(self.APP_TIMEZONE).isoformat(),
                 data_source="fallback",
             )
         finally:
