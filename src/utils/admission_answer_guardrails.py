@@ -69,6 +69,53 @@ _TIMELINE_LEADING_DATE_PHRASE_PATTERN = re.compile(
     re.IGNORECASE,
 )
 
+_CP1252_REVERSE_MAP = {
+    chr(0x20AC): 0x80,
+    chr(0x201A): 0x82,
+    chr(0x0192): 0x83,
+    chr(0x201E): 0x84,
+    chr(0x2026): 0x85,
+    chr(0x2020): 0x86,
+    chr(0x2021): 0x87,
+    chr(0x02C6): 0x88,
+    chr(0x2030): 0x89,
+    chr(0x0160): 0x8A,
+    chr(0x2039): 0x8B,
+    chr(0x0152): 0x8C,
+    chr(0x017D): 0x8E,
+    chr(0x2018): 0x91,
+    chr(0x2019): 0x92,
+    chr(0x201C): 0x93,
+    chr(0x201D): 0x94,
+    chr(0x2022): 0x95,
+    chr(0x2013): 0x96,
+    chr(0x2014): 0x97,
+    chr(0x02DC): 0x98,
+    chr(0x2122): 0x99,
+    chr(0x0161): 0x9A,
+    chr(0x203A): 0x9B,
+    chr(0x0153): 0x9C,
+    chr(0x017E): 0x9E,
+    chr(0x0178): 0x9F,
+}
+_MOJIBAKE_MARKERS = (
+    "Ã",
+    "Â",
+    "Ä",
+    "Å",
+    "Æ",
+    "Ð",
+    "Ñ",
+    "á",
+    "â",
+    chr(0x0192),
+    chr(0x2018),
+    chr(0x2019),
+    chr(0x201C),
+    chr(0x201D),
+    chr(0x2026),
+)
+
 
 def _normalize_text(value: Optional[str]) -> str:
     if not value:
@@ -81,6 +128,44 @@ def _normalize_text(value: Optional[str]) -> str:
     ).lower()
     normalized = re.sub(r"[^a-z0-9]+", " ", normalized)
     return re.sub(r"\s+", " ", normalized).strip()
+
+
+def _mojibake_score(value: str) -> int:
+    return sum(value.count(marker) for marker in _MOJIBAKE_MARKERS)
+
+
+def _encode_cp1252ish(value: str) -> bytes:
+    raw_bytes = bytearray()
+    for index, char in enumerate(value):
+        code_point = ord(char)
+        if code_point <= 255:
+            raw_bytes.append(code_point)
+            continue
+        mapped_byte = _CP1252_REVERSE_MAP.get(char)
+        if mapped_byte is None:
+            raise UnicodeEncodeError(
+                "cp1252ish", value, index, index + 1, "character not mappable"
+            )
+        raw_bytes.append(mapped_byte)
+    return bytes(raw_bytes)
+
+
+def repair_mojibake_text(value: Optional[str]) -> str:
+    text = str(value or "")
+    if not text or _mojibake_score(text) == 0:
+        return text
+
+    repaired = text
+    for _ in range(3):
+        try:
+            candidate = _encode_cp1252ish(repaired).decode("utf-8")
+        except (UnicodeEncodeError, UnicodeDecodeError):
+            break
+        if _mojibake_score(candidate) >= _mojibake_score(repaired):
+            break
+        repaired = candidate
+
+    return repaired
 
 
 def _answer_mentions_system_wide_context(answer: str) -> bool:
@@ -142,7 +227,8 @@ def normalize_answer_markdown(answer: str) -> str:
     if not answer:
         return answer
 
-    normalized_answer = answer.replace("\r\n", "\n").replace("\r", "\n")
+    normalized_answer = repair_mojibake_text(answer)
+    normalized_answer = normalized_answer.replace("\r\n", "\n").replace("\r", "\n")
     normalized_answer = _INLINE_TABLE_PATTERN.sub(r"\1\n\n\2", normalized_answer)
 
     lines = _repair_fragmented_table_blocks(normalized_answer.split("\n"))
@@ -586,7 +672,7 @@ def _derive_timeline_label(line: str, note: str) -> str:
 
     if len(label) > 90:
         label = label[:87].rsplit(" ", 1)[0].rstrip(" ,;:") + "..."
-    return label or "Moc thoi gian"
+    return label or "M\u1ed1c th\u1eddi gian"
 
 
 def _extract_timeline_value(line: str) -> Optional[tuple[str, str]]:
@@ -704,17 +790,17 @@ def _build_timeline_answer_v2(
         return None
 
     lines = [
-        "### Má»‘c thá»i gian tuyá»ƒn sinh",
+        "### M\u1ed1c th\u1eddi gian tuy\u1ec3n sinh",
         "",
-        "DÆ°á»›i Ä‘Ã¢y lÃ  cÃ¡c má»‘c thá»i gian ná»•i báº­t tÃ´i trÃ­ch Ä‘Æ°á»£c tá»« tÃ i liá»‡u tuyá»ƒn sinh liÃªn quan:",
+        "D\u01b0\u1edbi \u0111\u00e2y l\u00e0 c\u00e1c m\u1ed1c th\u1eddi gian n\u1ed5i b\u1eadt t\u00f4i tr\u00edch \u0111\u01b0\u1ee3c t\u1eeb t\u00e0i li\u1ec7u tuy\u1ec3n sinh li\u00ean quan:",
         "",
     ]
     for index, (label, timeline_text, note) in enumerate(rows[:8], start=1):
         safe_note = note.replace("|", "/").strip()
         lines.append(f"{index}. **{label}**")
-        lines.append(f"- Thá»i gian: {timeline_text}")
+        lines.append(f"- Th\u1eddi gian: {timeline_text}")
         if safe_note and safe_note != label:
-            lines.append(f"- Ghi chÃº: {safe_note}")
+            lines.append(f"- Ghi ch\u00fa: {safe_note}")
         lines.append("")
 
     return "\n".join(line for line in lines).strip()
@@ -1807,7 +1893,7 @@ def _build_comprehensive_score_answer(
     if has_gender_scores:
         lines.extend(
             [
-                "| NÄƒm | Háº¡ng má»¥c | Nam | Ná»¯ | Äiá»ƒm khÃ¡c | Ghi chÃº |",
+                "| N\u0103m | H\u1ea1ng m\u1ee5c | Nam | N\u1eef | \u0110i\u1ec3m kh\u00e1c | Ghi ch\u00fa |",
                 "| --- | --- | ---: | ---: | ---: | --- |",
             ]
         )
@@ -1818,7 +1904,7 @@ def _build_comprehensive_score_answer(
     else:
         lines.extend(
             [
-                "| NÄƒm | Háº¡ng má»¥c | Äiá»ƒm | Ghi chÃº |",
+                "| N\u0103m | H\u1ea1ng m\u1ee5c | \u0110i\u1ec3m | Ghi ch\u00fa |",
                 "| --- | --- | ---: | --- |",
             ]
         )
