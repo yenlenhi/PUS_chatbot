@@ -1,5 +1,5 @@
 # Web Framework
-fastapi==0.104.1
+fastapi==0.115.12
 uvicorn[standard]==0.24.0
 email-validator==2.1.0
 
