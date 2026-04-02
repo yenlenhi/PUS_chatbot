@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { AlertTriangle, CheckCircle2, Loader2, MessageSquare, ThumbsDown, ThumbsUp } from 'lucide-react';
+import { CheckCircle2, Loader2, MessageSquare, Sparkles, ThumbsDown, ThumbsUp } from 'lucide-react';
 import { submitFeedback } from '@/services/feedback';
 import type { FeedbackRating } from '@/types/feedback';
 
@@ -57,6 +57,7 @@ const ForcedFeedbackModal: React.FC<ForcedFeedbackModalProps> = ({
   const [rating, setRating] = useState<FeedbackRating | null>(null);
   const [comment, setComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -65,6 +66,7 @@ const ForcedFeedbackModal: React.FC<ForcedFeedbackModalProps> = ({
       setComment('');
       setError(null);
       setIsSubmitting(false);
+      setIsSuccess(false);
       return;
     }
 
@@ -96,7 +98,10 @@ const ForcedFeedbackModal: React.FC<ForcedFeedbackModalProps> = ({
         session_id: conversationId,
       });
 
-      onSubmitted();
+      setIsSuccess(true);
+      window.setTimeout(() => {
+        onSubmitted();
+      }, 1400);
     } catch (submitError) {
       console.error('Forced feedback submission failed:', submitError);
       setError('Không thể gửi đánh giá lúc này. Vui lòng thử lại.');
@@ -119,23 +124,42 @@ const ForcedFeedbackModal: React.FC<ForcedFeedbackModalProps> = ({
         aria-labelledby="forced-feedback-title"
         className="flex max-h-[calc(100vh-1.5rem)] w-full max-w-lg flex-col overflow-hidden rounded-t-3xl bg-white shadow-2xl sm:max-h-[90vh] sm:rounded-3xl"
       >
-        <div className="border-b border-slate-200 bg-gradient-to-r from-red-600 to-red-700 px-4 py-4 text-white sm:px-6">
+        <div className="border-b border-slate-200 bg-gradient-to-r from-red-500 to-rose-500 px-4 py-4 text-white sm:px-6">
           <div className="flex items-start gap-3">
-            <div className="mt-0.5 rounded-2xl bg-white/15 p-2">
-              <AlertTriangle className="h-5 w-5" />
+            <div className="mt-0.5 rounded-2xl bg-white/20 p-2">
+              {isSuccess ? <CheckCircle2 className="h-5 w-5" /> : <Sparkles className="h-5 w-5" />}
             </div>
             <div className="min-w-0">
               <h2 id="forced-feedback-title" className="text-base font-semibold sm:text-lg">
-                Đánh giá trải nghiệm chat
+                {isSuccess ? 'Cảm ơn bạn đã đánh giá' : 'Đánh giá trải nghiệm chat'}
               </h2>
               <p className="mt-1 text-sm text-red-50">
-                Sau 3 tin nhắn đầu, bạn cần gửi đánh giá một lần để giúp nhà trường cải thiện chatbot.
+                {isSuccess
+                  ? 'Phản hồi của bạn đã được ghi nhận để cải thiện trải nghiệm tư vấn.'
+                  : 'Sau 3 tin nhắn đầu, bạn cần gửi đánh giá một lần để giúp nhà trường cải thiện chatbot.'}
               </p>
             </div>
           </div>
         </div>
 
         <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
+          {isSuccess ? (
+            <div className="flex min-h-[280px] flex-col items-center justify-center text-center">
+              <div className="relative">
+                <div className="absolute inset-0 rounded-full bg-emerald-200/70 blur-2xl animate-pulse" />
+                <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100 ring-8 ring-emerald-50">
+                  <CheckCircle2 className="h-10 w-10 animate-[pulse_1.4s_ease-in-out_infinite] text-emerald-600" />
+                </div>
+              </div>
+              <p className="mt-6 text-lg font-semibold text-slate-900">
+                Cảm ơn bạn đã dành thời gian góp ý.
+              </p>
+              <p className="mt-2 max-w-sm text-sm leading-6 text-slate-600">
+                PSU ChatBot sẽ dùng phản hồi này để cải thiện chất lượng trả lời cho các lượt tư vấn tiếp theo.
+              </p>
+            </div>
+          ) : (
+            <>
           <div>
             <p className="text-sm font-semibold text-slate-900">
               Mức đánh giá
@@ -188,24 +212,32 @@ const ForcedFeedbackModal: React.FC<ForcedFeedbackModalProps> = ({
               {error}
             </div>
           )}
+            </>
+          )}
         </div>
 
         <div className="shrink-0 border-t border-slate-200 bg-slate-50 px-4 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:px-6">
-          <button
-            type="button"
-            onClick={handleSubmit}
-            disabled={!canSubmit}
-            className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-red-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-slate-300"
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Đang gửi đánh giá...
-              </>
-            ) : (
-              'Gửi đánh giá và tiếp tục'
-            )}
-          </button>
+          {isSuccess ? (
+            <div className="text-center text-sm font-medium text-emerald-700">
+              Đang quay lại cuộc trò chuyện...
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={!canSubmit}
+              className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-red-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Đang gửi đánh giá...
+                </>
+              ) : (
+                'Gửi đánh giá và tiếp tục'
+              )}
+            </button>
+          )}
         </div>
       </div>
     </div>
