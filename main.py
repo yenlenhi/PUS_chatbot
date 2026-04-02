@@ -19,7 +19,6 @@ import uvicorn
 from src.api.routes import router
 from src.api.auth_routes import auth_router
 from src.api.user_routes import user_router
-from src.api.thammuu_routes import router as thammuu_router
 from src.middleware.https_middleware import (
     HTTPSRedirectMiddleware,
     SecurityHeadersMiddleware,
@@ -218,7 +217,6 @@ async def general_exception_handler(request: Request, exc: Exception):
 app.include_router(auth_router, prefix="/api/v1")
 app.include_router(user_router)  # Already has /api/users prefix
 app.include_router(router, prefix="/api/v1")
-app.include_router(thammuu_router, prefix="/api/v1")
 
 
 # Root endpoint
@@ -255,4 +253,11 @@ if __name__ == "__main__":
         workers = 1
 
     log.info(f"Starting uvicorn with {workers} worker(s)")
-    uvicorn.run("main:app", host=host, port=port, reload=API_RELOAD, workers=workers, log_level="info")
+    uvicorn.run(
+        "main:app",
+        host=host,
+        port=port,
+        reload=API_RELOAD,
+        workers=workers,
+        log_level="info",
+    )

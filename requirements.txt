@@ -58,6 +58,7 @@ Pillow>=10.0.0
 # HTTP Requests
 requests==2.31.0
 httpx>=0.26.0,<0.29.0  # Updated for supabase 2.11.0 compatibility
+google-genai>=1.33.0,<2.0.0
 
 # Environment Variables
 python-dotenv==1.0.0
