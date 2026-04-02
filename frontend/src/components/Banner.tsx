@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, ChevronRight, MessageCircle, ArrowRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, MessageCircle } from 'lucide-react';
 import { BANNER_SLIDES } from '@/data/constants';
 
 const Banner = () => {
@@ -72,17 +72,6 @@ const Banner = () => {
               </p>
 
               <div className="flex flex-wrap gap-4 pt-4 animate-fade-in-up delay-300">
-                <Link
-                  href="/admin/dashboard"
-                  className="group relative bg-red-700 hover:bg-red-800 text-white font-bold py-3 px-8 rounded-full transition-all duration-300 hover:shadow-[0_0_20px_rgba(220,38,38,0.5)] hover:-translate-y-1 overflow-hidden"
-                >
-                  <span className="relative z-10 flex items-center gap-2">
-                    Quản Trị Viên
-                    <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-                  </span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-red-600 to-red-800 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                </Link>
-
                 <Link
                   href="/chat-bot"
                   className="group flex items-center gap-2 bg-white/10 backdrop-blur-md border border-white/30 hover:bg-white/20 text-white font-bold py-3 px-8 rounded-full transition-all duration-300 hover:shadow-[0_0_20px_rgba(255,255,255,0.2)] hover:-translate-y-1"

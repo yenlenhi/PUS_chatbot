@@ -29,10 +29,7 @@ export const HISTORY_MILESTONES = [
 
 export const MENU_ITEMS = [
   { title: 'GIỚI THIỆU', href: '/gioi-thieu' },
-  { title: 'ĐÀO TẠO', href: '/dao-tao' },
   { title: 'TIN TỨC', href: '/tin-tuc' },
-  { title: 'NGHIÊN CỨU KHOA HỌC', href: '/nghien-cuu' },
-  { title: 'KÊNH TUYỂN SINH', href: '/tuyen-sinh' },
   { title: 'HỎI ĐÁP AI', href: '/chat-bot', highlight: true },
   { title: 'LIÊN HỆ', href: '/lien-he' },
 ];

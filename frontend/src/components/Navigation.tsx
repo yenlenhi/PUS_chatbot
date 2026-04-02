@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Search, Menu, X, MessageCircle, Settings } from 'lucide-react';
+import { Search, Menu, X, MessageCircle } from 'lucide-react';
 import { MENU_ITEMS } from '@/data/constants';
 
 interface MenuItem {
@@ -34,14 +34,7 @@ const Navigation = () => {
                 {item.title}
               </Link>
             ))}
-            {/* Admin Link - ẩn trên desktop, chỉ hiện icon */}
-            <Link
-              href="/admin"
-              className="px-2 py-2 text-white/70 hover:text-white hover:bg-white/10 transition-colors duration-200 rounded ml-2"
-              title="Quản trị viên"
-            >
-              <Settings className="w-4 h-4" />
-            </Link>
+
           </div>
 
           {/* Search Box */}
@@ -87,15 +80,7 @@ const Navigation = () => {
                   {item.title}
                 </Link>
               ))}
-              {/* Admin Link for mobile */}
-              <Link
-                href="/admin"
-                className="flex items-center gap-2 px-3 py-2 text-white/70 text-sm font-medium hover:bg-white/10 transition-colors duration-200 rounded border-t border-white/10 mt-2 pt-3"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                <Settings className="w-4 h-4" />
-                Quản trị viên
-              </Link>
+
             </div>
           </div>
         )}

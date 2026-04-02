@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import Link from 'next/link';
-import { Send, User, FolderOpen, Book, Copy, Check, RefreshCw, Volume2, VolumeX, Pause, Play, X, ImagePlus, Home, ArrowLeft, ZoomIn, ZoomOut, RotateCw, Download, Maximize2, ChevronUp, ChevronDown, Sparkles } from 'lucide-react';
+import { Send, FolderOpen, Book, Copy, Check, RefreshCw, Volume2, VolumeX, Pause, Play, X, ImagePlus, Home, ArrowLeft, ZoomIn, ZoomOut, RotateCw, Download, Maximize2, ChevronUp, ChevronDown, Sparkles } from 'lucide-react';
 import type { Message, SourceReference, ChartData, ImageData, FileAttachment, PerformanceMetrics } from '@/types';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -15,6 +14,7 @@ import PDFViewerModal from '@/components/PDFViewerModal';
 import DocumentSidebar from '@/components/DocumentSidebar';
 import DocumentRepository from '@/components/DocumentRepository';
 import FeedbackButtons from '@/components/FeedbackButtons';
+import ForcedFeedbackModal from '@/components/ForcedFeedbackModal';
 import VoiceInputButton from '@/components/VoiceInputButton';
 import ChartRenderer from '@/components/ChartRenderer';
 import ImageRenderer from '@/components/ImageRenderer';
@@ -25,6 +25,8 @@ import { hasPotentialMarkdownTable, normalizeMarkdownTables } from '@/lib/markdo
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 const SOURCE_REFERENCE_DISPLAY_THRESHOLD = 0.65;
+const FORCED_FEEDBACK_STORAGE_KEY = 'psu-forced-feedback-submitted-v1';
+const FORCED_FEEDBACK_TRIGGER_COUNT = 3;
 
 const sortSourceReferences = (sourceReferences: SourceReference[] = []) =>
   [...sourceReferences].sort((a, b) => (b.relevance_score || 0) - (a.relevance_score || 0));
@@ -962,6 +964,13 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
 };
 
 const ChatBotPage = () => {
+  const [hasSubmittedForcedFeedback, setHasSubmittedForcedFeedback] = useState(false);
+  const [forcedFeedbackTarget, setForcedFeedbackTarget] = useState<{
+    messageId: string;
+    query: string;
+    answer: string;
+    chunkIds: number[];
+  } | null>(null);
   const [conversationId, setConversationId] = useState('web-chat');
   const [language, setLanguage] = useState<'vi' | 'en'>('vi'); // Language toggle state
   const [messages, setMessages] = useState<Message[]>(() => [
@@ -992,6 +1001,16 @@ const ChatBotPage = () => {
         ? crypto.randomUUID()
         : `${Date.now()}`;
     setConversationId(`web-chat-${uniqueId}`);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    setHasSubmittedForcedFeedback(
+      window.localStorage.getItem(FORCED_FEEDBACK_STORAGE_KEY) === 'true'
+    );
   }, []);
 
   // Document sidebar state
@@ -1107,11 +1126,21 @@ const ChatBotPage = () => {
   }, []);
 
   const handleSendMessage = async (messageToSend?: string) => {
+    if (forcedFeedbackTarget) {
+      return;
+    }
+
     const textToSend = messageToSend || inputMessage;
     if (!textToSend.trim() && uploadedImages.length === 0) return;
 
     const currentQuery = textToSend; // Store before clearing
     const currentImages = [...uploadedImages]; // Store before clearing
+    const userMessageCountAfterSend =
+      messages.filter((message) => message.role === 'user').length + 1;
+    const shouldTriggerForcedFeedback =
+      !hasSubmittedForcedFeedback &&
+      !forcedFeedbackTarget &&
+      userMessageCountAfterSend >= FORCED_FEEDBACK_TRIGGER_COUNT;
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -1181,6 +1210,8 @@ const ChatBotPage = () => {
           const data = await response.json();
           const allSourceReferences: SourceReference[] = data.source_references || [];
           const sourceReferences = rankVisibleSourceReferences(allSourceReferences);
+          const finalAnswer =
+            data.response || data.answer || 'Xin lỗi, tôi không thể trả lời câu hỏi này lúc này.';
 
           const chunkIds: number[] = sourceReferences
             .map((ref: SourceReference) => parseInt(ref.chunk_id, 10))
@@ -1195,7 +1226,7 @@ const ChatBotPage = () => {
             msg.id === newMessageId
               ? {
                 ...msg,
-                content: data.response || data.answer || 'Xin lỗi, tôi không thể trả lời câu hỏi này lúc này.',
+                content: finalAnswer,
                 followUpQuestions: data.follow_up_questions || [],
                 sourceReferences: sourceReferences,
                 attachments: data.attachments || [],
@@ -1207,6 +1238,15 @@ const ChatBotPage = () => {
               }
               : msg
           ));
+
+          if (shouldTriggerForcedFeedback) {
+            setForcedFeedbackTarget({
+              messageId: newMessageId,
+              query: currentQuery,
+              answer: finalAnswer,
+              chunkIds,
+            });
+          }
         } else {
           const errorPayload = await response.json().catch(() => null);
           throw new Error(errorPayload?.detail || errorPayload?.error || 'API call failed');
@@ -1362,6 +1402,15 @@ const ChatBotPage = () => {
           : msg
       ));
 
+      if (shouldTriggerForcedFeedback) {
+        setForcedFeedbackTarget({
+          messageId: newMessageId,
+          query: currentQuery,
+          answer: streamedContent || 'Xin lỗi, tôi không thể trả lời câu hỏi này lúc này.',
+          chunkIds,
+        });
+      }
+
     } catch (error) {
       console.error('Error sending message:', error);
       setMessages(prev => prev.map(msg =>
@@ -1371,6 +1420,17 @@ const ChatBotPage = () => {
       ));
     }
   };
+
+  const handleForcedFeedbackSubmitted = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(FORCED_FEEDBACK_STORAGE_KEY, 'true');
+    }
+
+    setHasSubmittedForcedFeedback(true);
+    setForcedFeedbackTarget(null);
+  }, []);
+
+  const isFeedbackGateOpen = Boolean(forcedFeedbackTarget);
 
   const suggestedQuestions = [...FIXED_SUGGESTED_QUESTIONS];
   const loadingSuggestions = false;
@@ -1388,14 +1448,14 @@ const ChatBotPage = () => {
           <div className="flex items-center justify-between h-14 sm:h-16 md:h-20">
             <div className="flex items-center space-x-2 sm:space-x-3 md:space-x-4 min-w-0 flex-1">
               {/* Back to Home button */}
-              <Link
-                href="/"
+              <a
+                href="https://dhannd.bocongan.gov.vn/tuyensinh"
                 className="group flex items-center gap-1 px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-gray-50 to-gray-100 hover:from-gray-100 hover:to-gray-200 text-gray-700 rounded-xl transition-all duration-300 text-xs sm:text-sm font-medium flex-shrink-0 shadow-sm hover:shadow-md hover:scale-105"
                 title="Về trang chủ"
               >
                 <ArrowLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover:-translate-x-0.5 transition-transform" />
                 <Home className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover:scale-110 transition-transform" />
-              </Link>
+              </a>
 
               <Image
                 src="/assests/logo-main.png"
@@ -1721,7 +1781,7 @@ const ChatBotPage = () => {
                       accept="image/*"
                       multiple
                       className="hidden"
-                      disabled={isTyping}
+                      disabled={isTyping || isFeedbackGateOpen}
                       onChange={async (e) => {
                         const files = e.target.files;
                         if (!files) return;
@@ -1765,7 +1825,7 @@ const ChatBotPage = () => {
                       isSupported={speechRecognitionSupported}
                       onStart={startListening}
                       onStop={stopListening}
-                      disabled={isTyping}
+                      disabled={isTyping || isFeedbackGateOpen}
                     />
                   </div>
                 )}
@@ -1830,11 +1890,11 @@ const ChatBotPage = () => {
                         : (language === 'vi' ? "💬 Nhập câu hỏi hoặc dán ảnh (Ctrl+V)..." : "💬 Type a question or paste an image (Ctrl+V)...")
                   }
                   className="flex-1 min-w-0 min-h-[44px] sm:min-h-[48px] max-h-[160px] px-4 sm:px-5 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500 text-sm sm:text-base font-medium bg-white/90 backdrop-blur-sm shadow-sm hover:shadow-md transition-all duration-300 placeholder:text-gray-400 input-focus-glow resize-none overflow-y-auto leading-relaxed"
-                  disabled={isTyping || isListening}
+                  disabled={isTyping || isListening || isFeedbackGateOpen}
                 />
                 <button
                   onClick={() => handleSendMessage()}
-                  disabled={(!inputMessage.trim() && uploadedImages.length === 0) || isTyping}
+                  disabled={(!inputMessage.trim() && uploadedImages.length === 0) || isTyping || isFeedbackGateOpen}
                   className="group flex-shrink-0 w-11 h-11 sm:w-12 sm:h-12 bg-gradient-to-r from-red-500 via-red-600 to-red-700 text-white rounded-2xl hover:from-red-600 hover:via-red-700 hover:to-red-800 disabled:bg-gray-300 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed transition-all duration-300 flex items-center justify-center shadow-lg shadow-red-500/30 hover:shadow-xl hover:shadow-red-500/40 hover:scale-105 btn-send-ripple"
                   aria-label="Gửi tin nhắn"
                 >
@@ -1880,6 +1940,18 @@ const ChatBotPage = () => {
           onClose={handleCloseDocument}
           filename={selectedDocument.filename}
           initialPage={selectedDocument.page}
+        />
+      )}
+
+      {forcedFeedbackTarget && (
+        <ForcedFeedbackModal
+          isOpen={Boolean(forcedFeedbackTarget)}
+          conversationId={conversationId}
+          messageId={forcedFeedbackTarget.messageId}
+          query={forcedFeedbackTarget.query}
+          answer={forcedFeedbackTarget.answer}
+          chunkIds={forcedFeedbackTarget.chunkIds}
+          onSubmitted={handleForcedFeedbackSubmitted}
         />
       )}
 
