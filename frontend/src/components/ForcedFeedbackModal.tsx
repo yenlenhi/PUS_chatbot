@@ -117,7 +117,7 @@ const ForcedFeedbackModal: React.FC<ForcedFeedbackModalProps> = ({
         role="dialog"
         aria-modal="true"
         aria-labelledby="forced-feedback-title"
-        className="w-full max-w-lg overflow-hidden rounded-t-3xl bg-white shadow-2xl sm:max-h-[90vh] sm:rounded-3xl"
+        className="flex max-h-[calc(100vh-1.5rem)] w-full max-w-lg flex-col overflow-hidden rounded-t-3xl bg-white shadow-2xl sm:max-h-[90vh] sm:rounded-3xl"
       >
         <div className="border-b border-slate-200 bg-gradient-to-r from-red-600 to-red-700 px-4 py-4 text-white sm:px-6">
           <div className="flex items-start gap-3">
@@ -135,17 +135,8 @@ const ForcedFeedbackModal: React.FC<ForcedFeedbackModalProps> = ({
           </div>
         </div>
 
-        <div className="max-h-[calc(100vh-8rem)] overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-              Câu hỏi gần nhất
-            </p>
-            <p className="mt-2 text-sm leading-6 text-slate-700">
-              {query}
-            </p>
-          </div>
-
-          <div className="mt-4">
+        <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
+          <div>
             <p className="text-sm font-semibold text-slate-900">
               Mức đánh giá
             </p>
@@ -190,9 +181,6 @@ const ForcedFeedbackModal: React.FC<ForcedFeedbackModalProps> = ({
               className="mt-3 min-h-[132px] w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm leading-6 text-slate-800 outline-none transition focus:border-red-500 focus:ring-2 focus:ring-red-200"
               disabled={isSubmitting}
             />
-            <p className="mt-2 text-xs leading-5 text-slate-500">
-              Trường này là bắt buộc. Đánh giá sẽ được lưu vào trang quản trị feedback.
-            </p>
           </div>
 
           {error && (
@@ -202,7 +190,7 @@ const ForcedFeedbackModal: React.FC<ForcedFeedbackModalProps> = ({
           )}
         </div>
 
-        <div className="border-t border-slate-200 bg-slate-50 px-4 py-4 sm:px-6">
+        <div className="shrink-0 border-t border-slate-200 bg-slate-50 px-4 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:px-6">
           <button
             type="button"
             onClick={handleSubmit}
