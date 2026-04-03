@@ -1,41 +1,32 @@
 """
-Gemini/Vertex-backed PDF OCR service.
+Gemini PDF Service for extracting text from both regular PDFs and scanned PDFs.
 """
 
 import base64
-import codecs
 import io
 import json
 import re
 import threading
 import time
+import codecs
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
-import pymupdf as fitz
+import pymupdf as fitz  # PyMuPDF for PDF to image conversion
+import requests
 from PIL import Image, ImageFilter, ImageOps
 
 from config.settings import (
-    GEMINI_MAX_OUTPUT_TOKENS,
+    GEMINI_API_KEY,
+    GEMINI_API_URL,
     PDF_GEMINI_MAX_BACKOFF_SECONDS,
     PDF_GEMINI_MAX_RETRIES,
     PDF_GEMINI_PAGE_DELAY_SECONDS,
-    PDF_GEMINI_RATE_LIMIT_COOLDOWN_SECONDS,
+    GEMINI_MAX_OUTPUT_TOKENS,
     PDF_GEMINI_RENDER_SCALE,
     PDF_GEMINI_REQUEST_INTERVAL_SECONDS,
     PDF_GEMINI_RETRY_DELAY_SECONDS,
-)
-from src.services.google_genai_client import (
-    build_multimodal_contents,
-    build_text_config,
-    default_vision_model,
-    extract_finish_reason,
-    extract_text_from_response,
-    generate_content_once,
-    get_candidate_auth_configs,
-    log_auth_attempt,
-    mark_auth_failure,
-    mark_auth_success,
+    PDF_GEMINI_RATE_LIMIT_COOLDOWN_SECONDS,
 )
 from src.utils.logger import log
 
@@ -61,20 +52,23 @@ OCR_RESPONSE_SCHEMA: Dict[str, Any] = {
     "required": ["has_text", "text"],
 }
 
-TRANSIENT_ERROR_MARKERS = ("429", "RESOURCE_EXHAUSTED", "503", "UNAVAILABLE", "500")
+TRANSIENT_STATUS_CODES = {408, 429, 500, 502, 503, 504}
 
 
 class GeminiPDFService:
+    """Service for extracting text from PDFs using Gemini Vision API."""
+
     _request_gate_lock = threading.Lock()
     _global_next_request_at = 0.0
     _global_cooldown_until = 0.0
 
     def __init__(self):
-        auth_configs = get_candidate_auth_configs()
-        if not auth_configs:
-            raise ValueError("No Gemini or Vertex AI credentials are set in environment variables")
+        """Initialize Gemini PDF service."""
+        if not GEMINI_API_KEY:
+            raise ValueError("GEMINI_API_KEY is not set in environment variables")
 
-        self.auth_configs = auth_configs
+        self.api_key = GEMINI_API_KEY
+        self.api_url = GEMINI_API_URL
         self.max_retries = max(1, PDF_GEMINI_MAX_RETRIES)
         self.retry_delay = max(0.0, PDF_GEMINI_RETRY_DELAY_SECONDS)
         self.page_delay = max(0.0, PDF_GEMINI_PAGE_DELAY_SECONDS)
@@ -92,6 +86,7 @@ class GeminiPDFService:
         self.rate_limited_pages = set()
 
     def _reserve_request_slot(self) -> float:
+        """Coordinate OCR requests across concurrent service instances."""
         with self.__class__._request_gate_lock:
             now = time.monotonic()
             available_at = max(
@@ -125,9 +120,28 @@ class GeminiPDFService:
                 cooldown_until,
             )
 
-    def _get_transient_wait_seconds(self, attempt: int, error_text: str = "") -> float:
+    def _parse_retry_after_seconds(self, response: requests.Response) -> Optional[float]:
+        retry_after = getattr(response, "headers", {}).get("Retry-After")
+        if not retry_after:
+            return None
+        try:
+            return max(0.0, float(retry_after))
+        except (TypeError, ValueError):
+            return None
+
+    def _get_transient_wait_seconds(
+        self,
+        attempt: int,
+        status_code: Optional[int] = None,
+        response: Optional[requests.Response] = None,
+    ) -> float:
         wait_time = self.retry_delay * (2**attempt)
-        if any(marker in error_text.upper() for marker in ("429", "RESOURCE_EXHAUSTED")):
+        retry_after_seconds = (
+            self._parse_retry_after_seconds(response) if response is not None else None
+        )
+        if retry_after_seconds is not None:
+            wait_time = max(wait_time, retry_after_seconds)
+        if status_code == 429:
             wait_time = max(wait_time, self.rate_limit_cooldown)
         if self.max_backoff_seconds > 0:
             wait_time = min(wait_time, self.max_backoff_seconds)
@@ -136,8 +150,18 @@ class GeminiPDFService:
     def extract_text_from_pdf(
         self, pdf_path: Path, page_numbers: Optional[Iterable[int]] = None
     ) -> List[Tuple[int, str]]:
+        """
+        Extract text from PDF using Gemini Vision API.
+
+        Args:
+            pdf_path: Path to PDF file
+            page_numbers: Optional 1-based page numbers to OCR
+
+        Returns:
+            List of tuples (page_number, extracted_text)
+        """
         try:
-            log.info(f"Extracting text from PDF using GenAI OCR: {pdf_path.name}")
+            log.info(f"Extracting text from PDF using Gemini: {pdf_path.name}")
             self._reset_run_state()
 
             images = self._pdf_to_images(pdf_path, page_numbers=page_numbers)
@@ -158,12 +182,13 @@ class GeminiPDFService:
                 preview_pages = ", ".join(str(page) for page in affected_pages[:10])
                 suffix = "..." if len(affected_pages) > 10 else ""
                 log.warning(
-                    f"GenAI OCR hit rate limits while processing {pdf_path.name}; "
+                    f"Gemini OCR hit rate limits while processing {pdf_path.name}; "
                     f"affected pages: {preview_pages}{suffix}"
                 )
 
             log.info(f"Successfully extracted text from {len(extracted_pages)} pages")
             return extracted_pages
+
         except Exception as exc:
             log.error(f"Error extracting text from PDF {pdf_path.name}: {exc}")
             return []
@@ -171,6 +196,16 @@ class GeminiPDFService:
     def _pdf_to_images(
         self, pdf_path: Path, page_numbers: Optional[Iterable[int]] = None
     ) -> List[Tuple[int, str]]:
+        """
+        Convert PDF pages to base64 encoded images.
+
+        Args:
+            pdf_path: Path to PDF file
+            page_numbers: Optional 1-based page numbers to convert
+
+        Returns:
+            List of tuples (page_number, base64_image_data)
+        """
         try:
             images: List[Tuple[int, str]] = []
             selected_pages = set(page_numbers or [])
@@ -200,11 +235,13 @@ class GeminiPDFService:
 
             log.info(f"Converted {len(images)} pages to images")
             return images
+
         except Exception as exc:
             log.error(f"Error converting PDF to images: {exc}")
             return []
 
     def _prepare_page_image(self, image: Image.Image) -> Image.Image:
+        """Improve scan readability before sending the page image to Gemini."""
         prepared_image = ImageOps.exif_transpose(image)
         grayscale_image = ImageOps.grayscale(prepared_image)
         grayscale_image = ImageOps.autocontrast(grayscale_image)
@@ -212,6 +249,7 @@ class GeminiPDFService:
         return grayscale_image.convert("RGB")
 
     def _build_ocr_request(self, image_base64: str) -> Dict[str, Any]:
+        """Build the OCR request payload with image-first ordering."""
         return {
             "contents": [
                 {
@@ -233,21 +271,6 @@ class GeminiPDFService:
                 "responseJsonSchema": OCR_RESPONSE_SCHEMA,
             },
         }
-
-    def _build_ocr_contents(self, image_base64: str) -> list[Any]:
-        return build_multimodal_contents(
-            OCR_PROMPT,
-            [{"mime_type": "image/png", "data": image_base64}],
-            prompt_last=True,
-        )
-
-    def _build_ocr_config(self):
-        return build_text_config(
-            temperature=0.0,
-            max_output_tokens=self.max_output_tokens,
-            response_mime_type="application/json",
-            response_schema=OCR_RESPONSE_SCHEMA,
-        )
 
     def _normalize_extracted_text(self, text: Optional[str]) -> str:
         if not text:
@@ -386,7 +409,9 @@ class GeminiPDFService:
 
         return None
 
-    def _extract_text_from_response(self, result: Dict[str, Any], page_num: int) -> Optional[str]:
+    def _extract_text_from_response(
+        self, result: Dict[str, Any], page_num: int
+    ) -> Optional[str]:
         candidates = result.get("candidates") or []
         for candidate in candidates:
             content = candidate.get("content", {})
@@ -402,88 +427,103 @@ class GeminiPDFService:
             if extracted_text:
                 if finish_reason == "MAX_TOKENS":
                     log.warning(
-                        f"GenAI OCR hit MAX_TOKENS on page {page_num}; extracted text may be truncated"
+                        f"Gemini OCR hit MAX_TOKENS on page {page_num}; extracted text may be truncated"
                     )
                 return extracted_text
 
             if finish_reason == "MAX_TOKENS":
                 log.warning(
-                    f"GenAI OCR hit MAX_TOKENS on page {page_num}; output may be truncated"
+                    f"Gemini OCR hit MAX_TOKENS on page {page_num}; output may be truncated"
                 )
 
         return None
 
-    def _response_to_legacy_dict(self, response: Any) -> Dict[str, Any]:
-        text = extract_text_from_response(response)
-        finish_reason = extract_finish_reason(response)
-        return {
-            "candidates": [
-                {
-                    "content": {"parts": [{"text": text}] if text else []},
-                    "finishReason": finish_reason,
-                }
-            ]
-        }
-
-    def _invoke_ocr_model(self, image_base64: str, page_num: int) -> Dict[str, Any]:
-        contents = self._build_ocr_contents(image_base64)
-        config = self._build_ocr_config()
-        last_error: Exception | None = None
-
-        for index, auth in enumerate(self.auth_configs, start=1):
-            try:
-                log_auth_attempt(auth, index, len(self.auth_configs), f"OCR page {page_num}")
-                response = generate_content_once(
-                    auth=auth,
-                    model=default_vision_model(),
-                    contents=contents,
-                    config=config,
-                )
-                mark_auth_success(auth)
-                return self._response_to_legacy_dict(response)
-            except Exception as exc:
-                last_error = exc
-                error_text = str(exc)
-                if any(marker in error_text.upper() for marker in TRANSIENT_ERROR_MARKERS):
-                    mark_auth_failure(auth, exc)
-                log.warning(f"OCR failed on {auth.display_name}: {exc}")
-                continue
-
-        raise RuntimeError(str(last_error or "all GenAI credentials failed"))
-
     def _extract_text_from_image(
         self, image_base64: str, page_num: int
     ) -> Optional[str]:
+        """
+        Extract text from image using Gemini Vision API.
+
+        Args:
+            image_base64: Base64 encoded image data
+            page_num: Page number for logging
+
+        Returns:
+            Extracted text or None if failed
+        """
+        headers = {"Content-Type": "application/json"}
+        payload = self._build_ocr_request(image_base64)
+
         for attempt in range(self.max_retries):
             attempt_number = attempt + 1
             self._wait_for_request_slot(page_num, attempt_number)
-
             try:
-                result = self._invoke_ocr_model(image_base64, page_num)
-                extracted_text = self._extract_text_from_response(result, page_num)
-                if extracted_text:
-                    log.info(f"Successfully extracted text from page {page_num}")
-                    return extracted_text
+                response = requests.post(
+                    f"{self.api_url}?key={self.api_key}",
+                    headers=headers,
+                    json=payload,
+                    timeout=self.request_timeout,
+                )
 
-                log.warning(f"No text found on page {page_num}")
+                if response.status_code == 200:
+                    try:
+                        result = response.json()
+                    except ValueError:
+                        log.warning(
+                            f"Gemini OCR returned non-JSON response on page {page_num}"
+                        )
+                        return None
+
+                    extracted_text = self._extract_text_from_response(result, page_num)
+                    if extracted_text:
+                        log.info(f"Successfully extracted text from page {page_num}")
+                        return extracted_text
+
+                    log.warning(f"No text found on page {page_num}")
+                    return None
+
+                if response.status_code in TRANSIENT_STATUS_CODES:
+                    wait_time = self._get_transient_wait_seconds(
+                        attempt,
+                        status_code=response.status_code,
+                        response=response,
+                    )
+                    if response.status_code == 429:
+                        self.had_rate_limit_errors = True
+                        self.rate_limited_pages.add(page_num)
+                    if attempt < self.max_retries - 1:
+                        self._apply_global_cooldown(wait_time)
+                        log.warning(
+                            f"Gemini OCR transient error on page {page_num}: "
+                            f"{response.status_code}. Waiting {wait_time:.1f}s before retry {attempt_number}"
+                        )
+                        continue
+                    log.error(
+                        f"Gemini OCR transient error on page {page_num}: "
+                        f"{response.status_code}. Exhausted {self.max_retries} attempts"
+                    )
+                    return None
+
+                log.error(
+                    f"Gemini API error for page {page_num}: {response.status_code} - {response.text}"
+                )
                 return None
-            except Exception as exc:
-                error_text = str(exc)
-                if any(marker in error_text.upper() for marker in ("429", "RESOURCE_EXHAUSTED")):
-                    self.had_rate_limit_errors = True
-                    self.rate_limited_pages.add(page_num)
 
-                wait_time = self._get_transient_wait_seconds(attempt, error_text)
-                is_retryable = any(marker in error_text.upper() for marker in TRANSIENT_ERROR_MARKERS)
-                if is_retryable and attempt < self.max_retries - 1:
+            except requests.exceptions.RequestException as exc:
+                wait_time = self._get_transient_wait_seconds(attempt)
+                if attempt < self.max_retries - 1:
                     self._apply_global_cooldown(wait_time)
                     log.warning(
-                        f"Transient OCR error on page {page_num}: {exc}. "
-                        f"Waiting {wait_time:.1f}s before retry {attempt_number + 1}"
+                        f"Request error for page {page_num}, attempt {attempt_number}: "
+                        f"{exc}. Waiting {wait_time:.1f}s before retry {attempt_number}"
                     )
                     continue
-
-                log.error(f"Unexpected OCR error on page {page_num}: {exc}")
+                log.error(
+                    f"Request error for page {page_num}, attempt {attempt_number}: {exc}"
+                )
+                return None
+            except Exception as exc:
+                log.error(f"Unexpected error for page {page_num}: {exc}")
                 return None
 
         log.error(
@@ -494,6 +534,15 @@ class GeminiPDFService:
     def batch_extract_from_directory(
         self, pdf_dir: Path
     ) -> Dict[str, List[Tuple[int, str]]]:
+        """
+        Extract text from all PDFs in a directory.
+
+        Args:
+            pdf_dir: Directory containing PDF files
+
+        Returns:
+            Dictionary mapping filename to extracted pages
+        """
         results: Dict[str, List[Tuple[int, str]]] = {}
         pdf_files = list(pdf_dir.glob("*.pdf"))
 

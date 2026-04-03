@@ -3,7 +3,6 @@ Configuration settings for the University Chatbot
 """
 
 import os
-import re
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -60,56 +59,14 @@ EMBEDDINGS_DIR.mkdir(parents=True, exist_ok=True)
 # LLM Provider Configuration
 LLM_PROVIDER = os.getenv("LLM_PROVIDER", "")  # "ollama" or "gemini"
 
-
-def _parse_csv_secrets(env_name: str) -> list[str]:
-    return [
-        key.strip().strip("|")
-        for key in os.getenv(env_name, "").split(",")
-        if key.strip().strip("|")
-    ]
-
-
-def _extract_model_name_from_url(api_url: str) -> str:
-    match = re.search(r"/models/([^:/?]+)", api_url or "")
-    return match.group(1) if match else ""
-
 # Gemini Configuration
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-GEMINI_API_KEYS = _parse_csv_secrets("GEMINI_API_KEYS")
-if not GEMINI_API_KEYS and GEMINI_API_KEY:
-    GEMINI_API_KEYS = [GEMINI_API_KEY]
 GEMINI_API_URL = os.getenv(
     "GEMINI_API_URL",
     "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent",
 )
-GENAI_MODEL = os.getenv(
-    "GENAI_MODEL",
-    _extract_model_name_from_url(GEMINI_API_URL) or "gemini-3-flash-preview",
-)
-GENAI_VISION_MODEL = os.getenv("GENAI_VISION_MODEL", "gemini-2.0-flash")
-GEMINI_DEVELOPER_API_VERSION = os.getenv("GEMINI_DEVELOPER_API_VERSION", "v1beta")
 GEMINI_MAX_OUTPUT_TOKENS = int(os.getenv("GEMINI_MAX_OUTPUT_TOKENS", "8192"))
 GEMINI_TEMPERATURE = float(os.getenv("GEMINI_TEMPERATURE", "0.7"))
-GEMINI_KEY_COOLDOWN_SECONDS = int(os.getenv("GEMINI_KEY_COOLDOWN_SECONDS", "300"))
-
-# Vertex AI express mode / native configuration
-VERTEX_AI_API_KEY = os.getenv("VERTEX_AI_API_KEY")
-VERTEX_AI_API_KEYS = _parse_csv_secrets("VERTEX_AI_API_KEYS")
-if not VERTEX_AI_API_KEYS and VERTEX_AI_API_KEY:
-    VERTEX_AI_API_KEYS = [VERTEX_AI_API_KEY]
-VERTEX_AI_PROJECT = os.getenv("VERTEX_AI_PROJECT") or os.getenv(
-    "GOOGLE_CLOUD_PROJECT", ""
-)
-VERTEX_AI_LOCATION = os.getenv("VERTEX_AI_LOCATION") or os.getenv(
-    "GOOGLE_CLOUD_LOCATION", "global"
-)
-VERTEX_AI_USE_ADC = os.getenv("VERTEX_AI_USE_ADC", "false").lower() == "true"
-VERTEX_AI_API_VERSION = os.getenv("VERTEX_AI_API_VERSION", "v1")
-GENAI_PROVIDER_PRIORITY = [
-    provider.strip().lower()
-    for provider in os.getenv("GENAI_PROVIDER_PRIORITY", "vertex,gemini").split(",")
-    if provider.strip()
-]
 # Enable/disable Gemini question normalization (disabled: saves 2-3s, always hits MAX_TOKENS)
 ENABLE_GEMINI_NORMALIZATION = (
     os.getenv("ENABLE_GEMINI_NORMALIZATION", "false").lower() == "true"

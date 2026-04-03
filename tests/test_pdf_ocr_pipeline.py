@@ -56,11 +56,23 @@ from src.services.pdf_processor import PDFProcessor
 from src.models.schemas import DocumentChunk
 
 
+class _FakeResponse:
+    def __init__(self, status_code, payload=None, text="", headers=None):
+        self.status_code = status_code
+        self._payload = payload or {}
+        self.text = text
+        self.headers = headers or {}
+
+    def json(self):
+        return self._payload
+
+
 def _build_gemini_service() -> GeminiPDFService:
     service = GeminiPDFService.__new__(GeminiPDFService)
     GeminiPDFService._global_next_request_at = 0.0
     GeminiPDFService._global_cooldown_until = 0.0
-    service.auth_configs = []
+    service.api_key = "test-key"
+    service.api_url = "https://example.com/generateContent"
     service.max_retries = 2
     service.retry_delay = 0
     service.page_delay = 0
@@ -77,36 +89,40 @@ def _build_gemini_service() -> GeminiPDFService:
 
 def test_extract_text_from_image_uses_image_first_json_mode(monkeypatch):
     service = _build_gemini_service()
-    captured = {}
+    captured_request = {}
 
-    def fake_invoke(image_base64, page_num):
-        captured["image_base64"] = image_base64
-        captured["page_num"] = page_num
-        return {
-            "candidates": [
-                {
-                    "content": {
-                        "parts": [
-                            {
-                                "text": '{"has_text": true, "text": "Trang 1\\nNoi dung OCR"}'
-                            }
-                        ]
+    def fake_post(url, headers=None, json=None, timeout=None):
+        captured_request["url"] = url
+        captured_request["headers"] = headers
+        captured_request["json"] = json
+        captured_request["timeout"] = timeout
+        return _FakeResponse(
+            200,
+            {
+                "candidates": [
+                    {
+                        "content": {
+                            "parts": [
+                                {
+                                    "text": '{"has_text": true, "text": "Trang 1\\nNoi dung OCR"}'
+                                }
+                            ]
+                        }
                     }
-                }
-            ]
-        }
+                ]
+            },
+        )
 
-    monkeypatch.setattr(service, "_invoke_ocr_model", fake_invoke)
+    monkeypatch.setattr("src.services.gemini_pdf_service.requests.post", fake_post)
 
     extracted_text = service._extract_text_from_image("ZmFrZV9pbWFnZQ==", 1)
 
     assert extracted_text == "Trang 1\nNoi dung OCR"
-    assert captured["image_base64"] == "ZmFrZV9pbWFnZQ=="
-    assert captured["page_num"] == 1
+    assert captured_request["headers"] == {"Content-Type": "application/json"}
+    assert captured_request["timeout"] == 1
     assert service.render_scale >= 1.0
 
-    payload = service._build_ocr_request("ZmFrZV9pbWFnZQ==")
-    parts = payload["contents"][0]["parts"]
+    parts = captured_request["json"]["contents"][0]["parts"]
     assert "inline_data" in parts[0]
     assert parts[0]["inline_data"]["data"] == "ZmFrZV9pbWFnZQ=="
     assert parts[1]["text"].startswith(
@@ -115,39 +131,42 @@ def test_extract_text_from_image_uses_image_first_json_mode(monkeypatch):
     assert "GitHub-flavored Markdown table format" in parts[1]["text"]
     assert "articles (Dieu), clauses (Khoan), points (Diem)" in parts[1]["text"]
     assert "Keep quoted passages intact" in parts[1]["text"]
-    assert payload["generationConfig"]["responseMimeType"] == "application/json"
+    assert (
+        captured_request["json"]["generationConfig"]["responseMimeType"]
+        == "application/json"
+    )
 
 
 def test_extract_text_from_image_retries_transient_errors(monkeypatch):
     service = _build_gemini_service()
     responses = iter(
         [
-            RuntimeError("503 temporarily unavailable"),
-            {
-                "candidates": [
-                    {
-                        "content": {
-                            "parts": [
-                                {
-                                    "text": '{"has_text": true, "text": "Du lieu OCR sau retry"}'
-                                }
-                            ]
+            _FakeResponse(503, text="temporarily unavailable"),
+            _FakeResponse(
+                200,
+                {
+                    "candidates": [
+                        {
+                            "content": {
+                                "parts": [
+                                    {
+                                        "text": '{"has_text": true, "text": "Du lieu OCR sau retry"}'
+                                    }
+                                ]
+                            }
                         }
-                    }
-                ]
-            },
+                    ]
+                },
+            ),
         ]
     )
     call_count = {"value": 0}
 
-    def fake_invoke(image_base64, page_num):
+    def fake_post(url, headers=None, json=None, timeout=None):
         call_count["value"] += 1
-        result = next(responses)
-        if isinstance(result, Exception):
-            raise result
-        return result
+        return next(responses)
 
-    monkeypatch.setattr(service, "_invoke_ocr_model", fake_invoke)
+    monkeypatch.setattr("src.services.gemini_pdf_service.requests.post", fake_post)
 
     extracted_text = service._extract_text_from_image("ZmFrZQ==", 2)
 
@@ -161,13 +180,13 @@ def test_extract_text_from_image_429_respects_cooldown_without_extra_final_sleep
     service = _build_gemini_service()
     service.max_retries = 2
     service.rate_limit_cooldown = 7
-    responses = iter([RuntimeError("429 rate limit"), RuntimeError("429 rate limit")])
+    responses = iter([_FakeResponse(429), _FakeResponse(429)])
     sleep_calls = []
 
-    def fake_invoke(image_base64, page_num):
-        raise next(responses)
+    def fake_post(url, headers=None, json=None, timeout=None):
+        return next(responses)
 
-    monkeypatch.setattr(service, "_invoke_ocr_model", fake_invoke)
+    monkeypatch.setattr("src.services.gemini_pdf_service.requests.post", fake_post)
     monkeypatch.setattr(
         "src.services.gemini_pdf_service.time.sleep",
         lambda seconds: sleep_calls.append(seconds),
