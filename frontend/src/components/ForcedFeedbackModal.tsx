@@ -79,7 +79,10 @@ const ForcedFeedbackModal: React.FC<ForcedFeedbackModalProps> = ({
   }, [isOpen]);
 
   const handleSubmit = async () => {
-    if (!rating || !comment.trim() || isSubmitting) {
+    const trimmedComment = comment.trim();
+    const isCommentRequired = rating === 'negative';
+
+    if (!rating || (isCommentRequired && !trimmedComment) || isSubmitting) {
       return;
     }
 
@@ -93,7 +96,7 @@ const ForcedFeedbackModal: React.FC<ForcedFeedbackModalProps> = ({
         query,
         answer,
         rating,
-        comment: comment.trim(),
+        comment: trimmedComment || undefined,
         chunk_ids: chunkIds,
         session_id: conversationId,
       });
@@ -114,7 +117,9 @@ const ForcedFeedbackModal: React.FC<ForcedFeedbackModalProps> = ({
     return null;
   }
 
-  const canSubmit = Boolean(rating && comment.trim()) && !isSubmitting;
+  const isCommentRequired = rating === 'negative';
+  const canSubmit =
+    Boolean(rating) && (!isCommentRequired || Boolean(comment.trim())) && !isSubmitting;
 
   return (
     <div className="fixed inset-0 z-[120] flex items-end justify-center bg-slate-950/70 p-3 backdrop-blur-sm sm:items-center sm:p-6">
@@ -136,7 +141,7 @@ const ForcedFeedbackModal: React.FC<ForcedFeedbackModalProps> = ({
               <p className="mt-1 text-sm text-red-50">
                 {isSuccess
                   ? 'Phản hồi của bạn đã được ghi nhận để cải thiện trải nghiệm tư vấn.'
-                  : 'Sau 3 tin nhắn đầu, bạn cần gửi đánh giá một lần để giúp nhà trường cải thiện chatbot.'}
+                  : 'Sự đánh giá của bạn giúp nhà trường cải thiện chatbot mỗi ngày 😁'}
               </p>
             </div>
           </div>
@@ -197,6 +202,9 @@ const ForcedFeedbackModal: React.FC<ForcedFeedbackModalProps> = ({
               <MessageSquare className="h-4 w-4 text-red-600" />
               Nội dung đánh giá
             </label>
+            <p className="mt-2 text-xs text-slate-500">
+              {isCommentRequired ? 'Bắt buộc khi chọn Chưa tốt.' : 'Không bắt buộc.'}
+            </p>
             <textarea
               id="forced-feedback-comment"
               value={comment}
