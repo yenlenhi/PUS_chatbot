@@ -1,62 +1,46 @@
 """
-Async Gemini Service - High-performance async LLM client using httpx.
-
-This module provides async versions of Gemini API calls to avoid blocking
-the event loop and improve concurrency in FastAPI.
+Async GenAI service backed by the official google-genai SDK.
 """
 
-import httpx
-import json
-from typing import Optional, List, Dict, AsyncGenerator
+from typing import AsyncGenerator, Dict, List, Optional
+
 from config.settings import (
-    GEMINI_API_KEY,
-    GEMINI_API_URL,
     ENABLE_GEMINI_NORMALIZATION,
     GEMINI_MAX_OUTPUT_TOKENS,
     GEMINI_TEMPERATURE,
 )
+from src.services.google_genai_client import (
+    build_multimodal_contents,
+    build_text_config,
+    default_text_model,
+    default_vision_model,
+    extract_finish_reason,
+    extract_text_from_response,
+    generate_content_once_async,
+    generate_content_stream_once_async,
+    get_candidate_auth_configs,
+    is_max_tokens_finish_reason,
+    log_auth_attempt,
+    mark_auth_failure,
+    mark_auth_success,
+)
 from src.utils.logger import log
 
 
-# Shared async client with connection pooling (singleton pattern)
-_async_client: Optional[httpx.AsyncClient] = None
-
-
-async def get_async_client() -> httpx.AsyncClient:
-    """Get or create a shared async HTTP client with connection pooling."""
-    global _async_client
-    if _async_client is None or _async_client.is_closed:
-        _async_client = httpx.AsyncClient(
-            timeout=httpx.Timeout(180.0, connect=10.0),
-            limits=httpx.Limits(max_keepalive_connections=10, max_connections=50),
-        )
-    return _async_client
-
-
 async def close_async_client():
-    """Close the shared async client (call on shutdown)."""
-    global _async_client
-    if _async_client is not None and not _async_client.is_closed:
-        await _async_client.aclose()
-        _async_client = None
+    """
+    Backward-compatible no-op. The SDK clients are short-lived and closed per request.
+    """
 
 
 async def normalize_question_async(question: str) -> str:
-    """
-    Async version: Normalizes and standardizes a user question using Gemini AI.
-
-    Args:
-        question (str): The raw user question
-
-    Returns:
-        str: The normalized/standardized question, or original question if normalization fails
-    """
     if not ENABLE_GEMINI_NORMALIZATION:
         log.debug("Gemini normalization is disabled, returning original question")
         return question
 
-    if not GEMINI_API_KEY:
-        log.warning("GEMINI_API_KEY not set, returning original question")
+    auth_configs = get_candidate_auth_configs()
+    if not auth_configs:
+        log.warning("No GenAI credentials configured, returning original question")
         return question
 
     normalization_prompt = f"""
@@ -68,269 +52,146 @@ Câu hỏi gốc: "{question}"
 
 Hãy:
 1. Sửa lỗi chính tả và ngữ pháp
-2. Chuẩn hóa thuật ngữ giáo dục (VD: "học phí" thay vì "tiền học")
-3. Mở rộng từ viết tắt (VD: "ĐH" thành "đại học")
+2. Chuẩn hóa thuật ngữ giáo dục
+3. Mở rộng từ viết tắt nếu cần
 4. Làm rõ nghĩa nếu câu hỏi mơ hồ
 5. Giữ nguyên ý nghĩa và ngữ cảnh tuyển sinh
 
-Chỉ trả về câu hỏi đã chuẩn hóa, không giải thích:
-"""
+Chỉ trả về câu hỏi đã chuẩn hóa, không giải thích.
+""".strip()
 
-    try:
-        client = await get_async_client()
-        data = {
-            "contents": [{"parts": [{"text": normalization_prompt}]}],
-            "generationConfig": {
-                "temperature": 0.3,
-                "maxOutputTokens": 256,  # Normalization doesn't need much output
-            },
-        }
+    config = build_text_config(temperature=0.3, max_output_tokens=256)
 
-        log.info(f"[ASYNC] Normalizing question: {question[:50]}...")
+    for index, auth in enumerate(auth_configs, start=1):
+        try:
+            log_auth_attempt(auth, index, len(auth_configs), "Async question normalization")
+            response = await generate_content_once_async(
+                auth=auth,
+                model=default_text_model(),
+                contents=normalization_prompt,
+                config=config,
+            )
+            mark_auth_success(auth)
+        except Exception as exc:
+            mark_auth_failure(auth, exc)
+            log.warning(f"[ASYNC] Normalization failed on {auth.display_name}: {exc}")
+            continue
 
-        response = await client.post(
-            f"{GEMINI_API_URL}?key={GEMINI_API_KEY}",
-            headers={"Content-Type": "application/json"},
-            content=json.dumps(data),
-        )
+        finish_reason = extract_finish_reason(response)
+        if is_max_tokens_finish_reason(finish_reason):
+            return question
 
-        if response.status_code == 200:
-            result = response.json()
-            if "candidates" in result and result["candidates"]:
-                candidate = result["candidates"][0]
-                content = candidate.get("content", {})
-                finish_reason = candidate.get("finishReason", "")
+        normalized_question = extract_text_from_response(response)
+        if normalized_question:
+            return normalized_question
 
-                if finish_reason == "MAX_TOKENS":
-                    log.warning("Normalization hit MAX_TOKENS, using original question")
-                    return question
-
-                if "parts" in content and content["parts"]:
-                    normalized = content["parts"][0].get("text", "").strip()
-                    if normalized:
-                        log.info(
-                            f"[ASYNC] Normalized: '{question[:30]}...' -> '{normalized[:30]}...'"
-                        )
-                        return normalized
-
-        log.warning(f"Normalization failed (status={response.status_code})")
-        return question
-
-    except Exception as e:
-        log.error(f"[ASYNC] Error normalizing question: {e}")
-        return question
+    return question
 
 
 async def generate_response_async(
     prompt: str,
     conversation_history: list = None,
     temperature: float = None,
-    enable_grounding: bool = None,  # NEW: Override for Google Search Grounding
+    enable_grounding: bool = None,
 ) -> Optional[str]:
-    """
-    Async version: Generates a response from the Gemini API (non-streaming).
-
-    Args:
-        prompt (str): The user's prompt.
-        conversation_history (list, optional): The history of the conversation.
-        temperature (float): Temperature for generation.
-        enable_grounding (bool, optional): Force enable/disable Google Search Grounding.
-            If None, auto-detect based on query content.
-
-    Returns:
-        str | None: The generated text from Gemini, or None if an error occurs.
-    """
-    if not GEMINI_API_KEY:
-        log.error("GEMINI_API_KEY is not set in the environment variables.")
+    del conversation_history
+    auth_configs = get_candidate_auth_configs()
+    if not auth_configs:
+        log.error("No GenAI credentials are configured.")
         return None
 
-    data = {
-        "contents": [{"parts": [{"text": prompt}]}],
-        "generationConfig": {
-            "temperature": (
-                temperature if temperature is not None else GEMINI_TEMPERATURE
-            ),
-            "maxOutputTokens": GEMINI_MAX_OUTPUT_TOKENS,
-            "topP": 0.95,
-            "topK": 40,
-        },
-    }
+    config = build_text_config(
+        temperature=temperature if temperature is not None else GEMINI_TEMPERATURE,
+        max_output_tokens=GEMINI_MAX_OUTPUT_TOKENS,
+        enable_google_search=bool(enable_grounding),
+    )
 
-    if enable_grounding:
-        data["tools"] = [{"google_search": {}}]
-        log.info("[ASYNC] Google Search Grounding ENABLED (real-time query)")
-    else:
-        log.info("[ASYNC] Google Search Grounding DISABLED (using internal documents)")
-
-    try:
-        client = await get_async_client()
-        log.debug("[ASYNC] Sending request to Gemini API...")
-
-        response = await client.post(
-            f"{GEMINI_API_URL}?key={GEMINI_API_KEY}",
-            headers={"Content-Type": "application/json"},
-            content=json.dumps(data),
-        )
-
-        if response.status_code == 200:
-            result = response.json()
-            if "candidates" in result and result["candidates"]:
-                candidate = result["candidates"][0]
-                content = candidate.get("content", {})
-                finish_reason = candidate.get("finishReason", "")
-
-                if finish_reason == "MAX_TOKENS":
-                    log.warning("Gemini hit MAX_TOKENS limit.")
-                    if "parts" in content and content["parts"]:
-                        partial_text = content["parts"][0].get("text", "").strip()
-                        if partial_text:
-                            return (
-                                partial_text
-                                + "\n\n[Câu trả lời đã bị cắt ngắn do giới hạn độ dài.]"
-                            )
-
-                if "parts" in content and content["parts"]:
-                    generated_text = content["parts"][0].get("text", "").strip()
-                    if generated_text:
-                        log.info("[ASYNC] Successfully received response from Gemini.")
-                        return generated_text
-
-            log.warning(f"Gemini response format unexpected: {result}")
-            return None
-        else:
-            log.error(
-                f"Gemini API error: {response.status_code} - {response.text[:200]}"
+    last_error: Exception | None = None
+    for index, auth in enumerate(auth_configs, start=1):
+        try:
+            log_auth_attempt(auth, index, len(auth_configs), "Async generate response")
+            response = await generate_content_once_async(
+                auth=auth,
+                model=default_text_model(),
+                contents=prompt,
+                config=config,
             )
+            mark_auth_success(auth)
+        except Exception as exc:
+            last_error = exc
+            mark_auth_failure(auth, exc)
+            log.warning(f"[ASYNC] Response generation failed on {auth.display_name}: {exc}")
+            continue
+
+        generated_text = extract_text_from_response(response)
+        if not generated_text:
+            finish_reason = extract_finish_reason(response)
+            if is_max_tokens_finish_reason(finish_reason):
+                return "[Câu trả lời đã bị cắt ngắn do giới hạn độ dài.]"
             return None
 
-    except Exception as e:
-        log.error(f"[ASYNC] Error calling Gemini API: {e}")
-        return None
+        finish_reason = extract_finish_reason(response)
+        if is_max_tokens_finish_reason(finish_reason):
+            return generated_text + "\n\n[Câu trả lời đã bị cắt ngắn do giới hạn độ dài.]"
+        return generated_text
+
+    log.error(f"[ASYNC] All GenAI credentials failed: {last_error}")
+    return None
 
 
 async def generate_response_stream_async(
     prompt: str,
     conversation_history: list = None,
     temperature: float = None,
-    enable_grounding: bool = None,  # NEW: Override for Google Search Grounding
+    enable_grounding: bool = None,
 ) -> AsyncGenerator[str, None]:
-    """
-    Async version: Generates a streaming response from the Gemini API.
-    Yields text chunks as they arrive from the API.
-
-    Args:
-        prompt (str): The user's prompt.
-        conversation_history (list, optional): The history of the conversation.
-        temperature (float): Temperature for response generation.
-        enable_grounding (bool, optional): Force enable/disable Google Search Grounding.
-            If None, auto-detect based on query content.
-
-    Yields:
-        str: Text chunks from Gemini as they arrive
-    """
-    if not GEMINI_API_KEY:
-        log.error("GEMINI_API_KEY is not set.")
+    del conversation_history
+    auth_configs = get_candidate_auth_configs()
+    if not auth_configs:
+        log.error("No GenAI credentials are configured.")
         yield "Error: API key not configured"
         return
 
-    data = {
-        "contents": [{"parts": [{"text": prompt}]}],
-        "generationConfig": {
-            "temperature": (
-                temperature if temperature is not None else GEMINI_TEMPERATURE
-            ),
-            "maxOutputTokens": GEMINI_MAX_OUTPUT_TOKENS,
-            "topP": 0.95,
-            "topK": 40,
-        },
-    }
+    config = build_text_config(
+        temperature=temperature if temperature is not None else GEMINI_TEMPERATURE,
+        max_output_tokens=GEMINI_MAX_OUTPUT_TOKENS,
+        enable_google_search=bool(enable_grounding),
+    )
 
-    if enable_grounding:
-        data["tools"] = [{"google_search": {}}]
-        log.info(
-            "[ASYNC] Google Search Grounding ENABLED for streaming (real-time query)"
-        )
-    else:
-        log.info(
-            "[ASYNC] Google Search Grounding DISABLED for streaming (using internal documents)"
-        )
+    last_error: Exception | None = None
+    for index, auth in enumerate(auth_configs, start=1):
+        yielded_any = False
+        try:
+            log_auth_attempt(auth, index, len(auth_configs), "Async stream response")
+            async for chunk in generate_content_stream_once_async(
+                auth=auth,
+                model=default_text_model(),
+                contents=prompt,
+                config=config,
+            ):
+                chunk_text = extract_text_from_response(chunk)
+                if chunk_text:
+                    yielded_any = True
+                    yield chunk_text
 
-    try:
-        # Use streaming endpoint with alt=sse
-        stream_url = GEMINI_API_URL.replace(
-            ":generateContent", ":streamGenerateContent"
-        )
+                finish_reason = extract_finish_reason(chunk)
+                if is_max_tokens_finish_reason(finish_reason):
+                    yield "\n\n[Câu trả lời đã bị cắt ngắn do giới hạn độ dài.]"
+                    mark_auth_success(auth)
+                    return
 
-        log.info("[ASYNC] Sending streaming request to Gemini API...")
+            mark_auth_success(auth)
+            return
+        except Exception as exc:
+            last_error = exc
+            if yielded_any:
+                yield f"\n\n[Streaming interrupted: {exc}]"
+                return
+            mark_auth_failure(auth, exc)
+            log.warning(f"[ASYNC] Streaming failed on {auth.display_name}: {exc}")
+            continue
 
-        async with httpx.AsyncClient(
-            timeout=httpx.Timeout(180.0, connect=10.0)
-        ) as client:
-            async with client.stream(
-                "POST",
-                f"{stream_url}?key={GEMINI_API_KEY}&alt=sse",
-                headers={"Content-Type": "application/json"},
-                content=json.dumps(data),
-            ) as response:
-                log.info(f"[ASYNC] Gemini streaming API status: {response.status_code}")
-
-                if response.status_code == 200:
-                    log.info("[ASYNC] Successfully connected to Gemini streaming API")
-                    buffer = ""
-
-                    async for chunk in response.aiter_text():
-                        buffer += chunk
-
-                        # Process complete SSE events (lines ending with \n\n)
-                        while "\n" in buffer:
-                            line, buffer = buffer.split("\n", 1)
-                            line = line.strip()
-
-                            if not line:
-                                continue
-
-                            # Handle SSE format "data: {...}"
-                            json_str = line
-                            if line.startswith("data: "):
-                                json_str = line[6:]
-                            elif not (line.startswith("[") or line.startswith("{")):
-                                continue
-
-                            try:
-                                chunk_data = json.loads(json_str)
-
-                                if (
-                                    "candidates" in chunk_data
-                                    and chunk_data["candidates"]
-                                ):
-                                    candidate = chunk_data["candidates"][0]
-                                    content = candidate.get("content", {})
-
-                                    if "parts" in content and content["parts"]:
-                                        text_chunk = content["parts"][0].get("text", "")
-                                        if text_chunk:
-                                            yield text_chunk
-
-                                    finish_reason = candidate.get("finishReason", "")
-                                    if finish_reason:
-                                        log.info(
-                                            f"[ASYNC] Stream finished: {finish_reason}"
-                                        )
-                                        if finish_reason == "MAX_TOKENS":
-                                            yield "\n\n[Câu trả lời đã bị cắt ngắn do giới hạn độ dài.]"
-                                        return
-
-                            except json.JSONDecodeError:
-                                continue
-
-                    log.info("[ASYNC] Streaming completed successfully")
-                else:
-                    log.error(f"Gemini API error: {response.status_code}")
-                    yield f"Error: API returned status {response.status_code}"
-
-    except Exception as e:
-        log.error(f"[ASYNC] Error in Gemini streaming: {e}")
-        yield f"Error: {str(e)}"
+    yield f"Error: {last_error or 'all GenAI credentials failed'}"
 
 
 async def generate_vision_response_async(
@@ -338,90 +199,47 @@ async def generate_vision_response_async(
     images: List[Dict[str, str]],
     temperature: float = 0.7,
 ) -> Optional[str]:
-    """
-    Async version: Generates a response from the Gemini Vision API with image analysis.
-
-    Args:
-        prompt (str): The user's prompt/question about the image(s).
-        images (list): List of dictionaries with 'mime_type' and 'data' (base64) keys.
-        temperature (float): Creativity level for the response.
-
-    Returns:
-        str | None: The generated text from Gemini Vision, or None if an error occurs.
-    """
-    if not GEMINI_API_KEY:
-        log.error("GEMINI_API_KEY is not set in the environment variables.")
+    auth_configs = get_candidate_auth_configs()
+    if not auth_configs:
+        log.error("No GenAI credentials are configured.")
         return None
 
     if not images:
         log.error("No images provided for vision analysis.")
         return None
 
-    # Use gemini-2.0-flash model which supports vision
-    vision_api_url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
+    contents = build_multimodal_contents(prompt, images, prompt_last=True)
+    config = build_text_config(
+        temperature=temperature,
+        max_output_tokens=2048,
+    )
 
-    # Build parts with images and text
-    parts = []
-    for img in images:
-        parts.append(
-            {
-                "inline_data": {
-                    "mime_type": img.get("mime_type", "image/jpeg"),
-                    "data": img.get("data", ""),
-                }
-            }
-        )
-    parts.append({"text": prompt})
-
-    data = {
-        "contents": [{"parts": parts}],
-        "generationConfig": {
-            "temperature": temperature,
-            "maxOutputTokens": 2048,
-        },
-    }
-
-    try:
-        client = await get_async_client()
-        log.info(
-            f"[ASYNC] Sending request to Gemini Vision API with {len(images)} images..."
-        )
-
-        response = await client.post(
-            f"{vision_api_url}?key={GEMINI_API_KEY}",
-            headers={"Content-Type": "application/json"},
-            content=json.dumps(data),
-        )
-
-        if response.status_code == 200:
-            result = response.json()
-            if "candidates" in result and result["candidates"]:
-                content = result["candidates"][0].get("content", {})
-                if "parts" in content and content["parts"]:
-                    generated_text = content["parts"][0].get("text", "").strip()
-                    if generated_text:
-                        log.info(
-                            "[ASYNC] Successfully received response from Gemini Vision."
-                        )
-                        return generated_text
-
-            log.warning(f"Gemini Vision response format unexpected: {result}")
-            return None
-        else:
-            log.error(
-                f"Gemini Vision API error: {response.status_code} - {response.text[:200]}"
+    last_error: Exception | None = None
+    for index, auth in enumerate(auth_configs, start=1):
+        try:
+            log_auth_attempt(auth, index, len(auth_configs), "Async vision response")
+            response = await generate_content_once_async(
+                auth=auth,
+                model=default_vision_model(),
+                contents=contents,
+                config=config,
             )
-            return None
+            mark_auth_success(auth)
+        except Exception as exc:
+            last_error = exc
+            mark_auth_failure(auth, exc)
+            log.warning(f"[ASYNC] Vision generation failed on {auth.display_name}: {exc}")
+            continue
 
-    except Exception as e:
-        log.error(f"[ASYNC] Error calling Gemini Vision API: {e}")
-        return None
+        generated_text = extract_text_from_response(response)
+        if generated_text:
+            return generated_text
+
+    log.error(f"[ASYNC] All GenAI credentials failed for vision request: {last_error}")
+    return None
 
 
-# Convenience class for consistent import pattern
 class AsyncGeminiService:
-    """Async wrapper for Gemini API functions (use with await)."""
-
     @staticmethod
     async def generate_response(
         prompt: str, conversation_history: list = None, temperature: float = None
