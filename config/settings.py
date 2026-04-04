@@ -10,6 +10,13 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
+
+def _optional_env(name: str, default=None):
+    """Return default when an env var is unset or blank."""
+    value = os.getenv(name)
+    return default if value in (None, "") else value
+
+
 # Base paths - Support Railway Volume mount
 BASE_DIR = Path(__file__).parent.parent
 
@@ -146,19 +153,25 @@ if REDIS_URL:
     parsed = urllib.parse.urlparse(REDIS_URL)
     REDIS_HOST = parsed.hostname or "localhost"
     REDIS_PORT = parsed.port or 6379
-    REDIS_PASSWORD = parsed.password
+    REDIS_USERNAME = urllib.parse.unquote(parsed.username) if parsed.username else None
+    REDIS_PASSWORD = urllib.parse.unquote(parsed.password) if parsed.password else None
     REDIS_DB = int(parsed.path[1:]) if parsed.path and len(parsed.path) > 1 else 0
 else:
     # Local fallback - read from individual env vars
     REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
     REDIS_PORT = int(os.getenv("REDIS_PORT", "6379"))
     REDIS_DB = int(os.getenv("REDIS_DB", "0"))
+    REDIS_USERNAME = _optional_env("REDIS_USERNAME")
+    REDIS_PASSWORD = _optional_env("REDIS_PASSWORD")
 
 # ============================================
 # Rate Limiting Configuration
 # ============================================
 RATE_LIMIT_ENABLED = os.getenv("RATE_LIMIT_ENABLED", "true").lower() == "true"
-REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", None)  # None if no password
+
+# Allow explicit env vars to override parsed URL credentials when needed.
+REDIS_USERNAME = _optional_env("REDIS_USERNAME", REDIS_USERNAME)
+REDIS_PASSWORD = _optional_env("REDIS_PASSWORD", REDIS_PASSWORD)
 
 REDIS_DECODE_RESPONSES = os.getenv("REDIS_DECODE_RESPONSES", "false").lower() == "true"
 

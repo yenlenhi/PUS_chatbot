@@ -21,6 +21,7 @@ class CacheService:
         db: int = 0,
         password: Optional[str] = None,
         ttl: int = 3600,
+        username: Optional[str] = None,
     ):
         """
         Initialize Redis cache service
@@ -31,12 +32,14 @@ class CacheService:
             db: Redis database number
             password: Redis password (optional)
             ttl: Time-to-live for cache entries in seconds (default: 1 hour)
+            username: Redis ACL username (optional)
         """
         self.host = host
         self.port = port
         self.db = db
         self.password = password
         self.ttl = ttl
+        self.username = username
         self.client = None
         self._connect()
 
@@ -47,6 +50,7 @@ class CacheService:
                 host=self.host,
                 port=self.port,
                 db=self.db,
+                username=self.username,
                 password=self.password,
                 decode_responses=True,
                 socket_connect_timeout=5,

@@ -13,6 +13,7 @@ from config.settings import (
     REDIS_HOST,
     REDIS_PORT,
     REDIS_DB,
+    REDIS_USERNAME,
     REDIS_PASSWORD,
     REDIS_CACHE_TTL,
     ENABLE_REDIS_CACHE,
@@ -55,6 +56,7 @@ class EmbeddingService:
                     db=REDIS_DB,
                     password=REDIS_PASSWORD,
                     ttl=self.cache_ttl,
+                    username=REDIS_USERNAME,
                 )
                 if self.cache.is_connected():
                     log.info("✅ Embedding cache service connected")
