@@ -128,6 +128,38 @@ class AsyncRAGService:
         self._retrieval_cache[cache_key] = (_time.monotonic(), chunks)
         return chunks, False
 
+    def invalidate_retrieval_cache(self) -> int:
+        """Clear in-memory retrieval cache and return number of removed entries."""
+        cleared = len(self._retrieval_cache)
+        self._retrieval_cache.clear()
+        if cleared > 0:
+            log.info(f"🧹 Cleared AsyncRAG retrieval cache ({cleared} entries)")
+        return cleared
+
+    def refresh_after_corpus_update(self, rebuild_bm25: bool = True) -> None:
+        """
+        Synchronize async retrieval state after documents are added/removed.
+
+        This ensures chat requests do not keep serving stale chunks after an
+        upload/delete/toggle operation updates the knowledge base.
+        """
+        self.invalidate_retrieval_cache()
+
+        # If chat service hasn't created its internal RAG instance yet, there is
+        # nothing else to refresh right now.
+        if self._rag_service is None:
+            return
+
+        if rebuild_bm25 and hasattr(self._rag_service, "retrieval_service"):
+            retrieval_service = getattr(self._rag_service, "retrieval_service", None)
+            if retrieval_service:
+                retrieval_service.rebuild_bm25_index()
+
+        rerank_cache = getattr(self._rag_service, "_rerank_cache", None)
+        if isinstance(rerank_cache, dict) and rerank_cache:
+            rerank_cache.clear()
+            log.info("🧹 Cleared RAG rerank cache after corpus update")
+
     def _new_performance_metrics(self) -> Dict[str, Any]:
         return {
             "stages": {},
@@ -482,7 +514,7 @@ class AsyncRAGService:
                 )
 
             structured_answer = self.rag_service.try_build_structured_admission_answer(
-                effective_query, relevant_chunks, language=language
+                query, relevant_chunks, language=language
             )
             if structured_answer:
                 return normalize_answer_markdown(structured_answer), remaining
@@ -2408,4 +2440,9 @@ def get_async_rag_service() -> AsyncRAGService:
     global _async_rag_service
     if _async_rag_service is None:
         _async_rag_service = AsyncRAGService()
+    return _async_rag_service
+
+
+def peek_async_rag_service() -> Optional[AsyncRAGService]:
+    """Return current async RAG singleton if initialized, without creating it."""
     return _async_rag_service

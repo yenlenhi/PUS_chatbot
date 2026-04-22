@@ -53,7 +53,11 @@ from src.models.analytics import (
     PublicTrafficSummary,
 )
 from src.services.rag_service import RAGService
-from src.services.async_rag_service import get_async_rag_service, AsyncRAGService
+from src.services.async_rag_service import (
+    get_async_rag_service,
+    peek_async_rag_service,
+    AsyncRAGService,
+)
 from src.services.feedback_service import FeedbackService
 from src.services.analytics_service import AnalyticsService
 from src.services.attachment_service import AttachmentService
@@ -120,6 +124,20 @@ def get_attachment_service() -> AttachmentService:
         db_service = PostgresDatabaseService()
         attachment_service = AttachmentService(db_service)
     return attachment_service
+
+
+async def _refresh_async_retrieval_state(reason: str) -> None:
+    """Refresh async chat retrieval state after corpus mutations."""
+    async_rag = peek_async_rag_service()
+    if async_rag is None:
+        # Async chat service has not been initialized yet.
+        return
+
+    try:
+        await asyncio.to_thread(async_rag.refresh_after_corpus_update, True)
+        log.info(f"✅ Async retrieval state refreshed ({reason})")
+    except Exception as e:
+        log.warning(f"⚠️ Could not refresh async retrieval state ({reason}): {e}")
 
 
 @router.post("/chat", response_model=ChatResponse)
@@ -843,6 +861,9 @@ async def admin_delete_document(
                 except Exception as e:
                     log.warning(f"Could not rebuild BM25 index: {e}")
 
+            # Keep async chat retriever in sync with latest corpus state.
+            await _refresh_async_retrieval_state("document deletion")
+
             return {
                 "success": True,
                 "message": f"Document '{safe_filename}' deleted successfully",
@@ -919,6 +940,9 @@ async def admin_toggle_document_active(
                 )
             except Exception as e:
                 log.warning(f"Could not rebuild BM25 index: {e}")
+
+        # Keep async chat retriever in sync with latest corpus state.
+        await _refresh_async_retrieval_state("document active toggle")
 
         status_text = "activated" if new_status else "deactivated"
         log.info(f"Document {decoded_filename} {status_text} ({chunk_count} chunks)")
@@ -1234,6 +1258,15 @@ async def process_pdf_background(
                 log.info("✅ BM25 index rebuilt successfully")
             except Exception as e:
                 log.warning(f"⚠️ Could not rebuild BM25 index: {e}")
+
+        # Refresh async chat retrieval state so newly uploaded docs are
+        # retrievable immediately without process restart/redeploy.
+        task_manager.update_task(
+            task_id,
+            progress=95,
+            message="Đang đồng bộ cache truy xuất cho chatbot...",
+        )
+        await _refresh_async_retrieval_state("document upload")
 
         # Mark as completed
         log.info(
