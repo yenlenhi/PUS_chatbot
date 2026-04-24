@@ -1,0 +1,158 @@
+{
+  "metadata": {
+    "report_date": "2026-04-07",
+    "generated_at": "2026-04-07T18:15:09.624309+07:00",
+    "window_days": 30,
+    "backend_url": "https://puschatbot-production.up.railway.app"
+  },
+  "db_metrics": {
+    "window_start": "2026-03-08T18:15:09+07:00",
+    "window_end": "2026-04-07T18:15:09+07:00",
+    "public": {
+      "page_views_total": 284,
+      "access_sessions_total": 202,
+      "online_now": 0
+    },
+    "window_30d": {
+      "active_session_users": 1412,
+      "unique_conversations": 1410,
+      "messages": 3502
+    },
+    "all_time": {
+      "session_users": 1839,
+      "returning_sessions": 968,
+      "conversation_users": 1897,
+      "messages": 4222,
+      "cumulative_visits": 4192,
+      "cumulative_questions": 4192
+    },
+    "feedback": {
+      "window": {
+        "total": 115,
+        "positive": 68,
+        "negative": 6,
+        "neutral": 41,
+        "positive_rate": 59.13,
+        "negative_rate": 5.22
+      },
+      "all_time": {
+        "total": 130,
+        "positive": 82,
+        "negative": 7,
+        "neutral": 41,
+        "positive_rate": 63.08,
+        "negative_rate": 5.38
+      }
+    },
+    "daily": {
+      "users": [],
+      "messages": [],
+      "avg_users": 52.3,
+      "avg_messages": 125.07
+    },
+    "popular_questions": [
+      {
+        "question": "Chỉ tiêu tuyển sinh vào Trường Đại học An Ninh Nhân Dân?",
+        "count": 400,
+        "last_asked": "2026-04-07 10:47:57.150081"
+      },
+      {
+        "question": "Các phương thức tuyển sinh?",
+        "count": 171,
+        "last_asked": "2026-04-07 09:19:09.151050"
+      },
+      {
+        "question": "Hồ sơ sơ tuyển cần chuẩn bị những gì?",
+        "count": 98,
+        "last_asked": "2026-04-07 02:11:21.997697"
+      },
+      {
+        "question": "Điều kiện sơ tuyển vào Trường Đại học An Ninh Nhân Dân là gì?",
+        "count": 79,
+        "last_asked": "2026-04-06 05:38:04.702533"
+      },
+      {
+        "question": "Tôi muốn biết mốc thời gian đăng ký và xác nhận nhập học",
+        "count": 64,
+        "last_asked": "2026-04-07 02:47:13.800861"
+      }
+    ],
+    "feedback_examples": {
+      "positive": [
+        {
+          "created_at": "2026-04-03T12:08:37.875135",
+          "query": "Tôi muốn biết mốc thời gian đăng ký và xác nhận nhập học",
+          "comment": "Chatbot nhanh, trả lời ổn, 9 điểm"
+        },
+        {
+          "created_at": "2026-04-03T11:53:09.379469",
+          "query": "Tỷ lệ kiến thức lớp 10, 11, 12 được phân bố ra sao?",
+          "comment": "nice"
+        },
+        {
+          "created_at": "2026-04-03T11:48:29.498326",
+          "query": "Năm ngoái",
+          "comment": "Ok"
+        }
+      ],
+      "negative": [
+        {
+          "created_at": "2026-04-06T14:52:05.133481",
+          "query": "tôi ko đạo . Ba,bà nội hai em có đạo ông nội ko đạo mẹ ko đạo nhà ngoại ko đạo ông ngoại cựu chiến binh lý lịch được k?",
+          "comment": "lan man"
+        },
+        {
+          "created_at": "2026-04-03T11:57:48.970519",
+          "query": "Tôi muốn biết hồ sơ cần chuẩn bị cho phương thức này",
+          "comment": "Chưa tốt"
+        },
+        {
+          "created_at": "2026-04-03T09:07:28.820620",
+          "query": "Các yêu cầu của phương thức 1",
+          "comment": "Chưa giải quyết được trọng tâm yêu cầu của câu hỏi"
+        },
+        {
+          "created_at": "2026-04-02T13:27:56.926268",
+          "query": "tiền thân đại học an ninh nhân dân",
+          "comment": "Dữ liệu còn hạn chế, nhiều câu hỏi liên quan trực tiếp tới trường vẫn chưa được trả lời đủ cụ thể"
+        }
+      ]
+    }
+  },
+  "endpoint_checks": {
+    "traffic_summary": {
+      "online_now": 0,
+      "today_views": 0,
+      "month_views": 6,
+      "total_views": 284,
+      "last_updated_at": "2026-04-07T18:15:09.624309+07:00",
+      "data_source": "access_logs"
+    },
+    "chat_history_overview": {
+      "total_conversations": 1897,
+      "total_messages": 4222,
+      "today_conversations": 27,
+      "active_conversations": 4,
+      "avg_confidence": 0.84,
+      "avg_processing_time": 0.0
+    },
+    "feedback_30d": {
+      "total_feedback": 115,
+      "positive_count": 68,
+      "negative_count": 6,
+      "neutral_count": 41,
+      "positive_rate": 59.13,
+      "negative_rate": 5.22,
+      "avg_response_quality": 0.77
+    },
+    "feedback_all_time": {
+      "total_feedback": 130,
+      "positive_count": 82,
+      "negative_count": 7,
+      "neutral_count": 41,
+      "positive_rate": 63.08,
+      "negative_rate": 5.38,
+      "avg_response_quality": 0.79
+    }
+  }
+}

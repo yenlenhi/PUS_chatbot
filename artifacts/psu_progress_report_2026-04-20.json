@@ -1,0 +1,472 @@
+{
+  "metadata": {
+    "report_date": "2026-04-20",
+    "generated_at": "2026-04-20T08:36:53.918501",
+    "period_days": 30,
+    "period_start": "2026-03-22T00:00:00",
+    "period_end": "2026-04-20T23:59:59",
+    "base_url": "https://puschatbot-production.up.railway.app"
+  },
+  "endpoints": {
+    "feedback_stats_30d": {
+      "total_feedback": 246,
+      "positive_count": 145,
+      "negative_count": 12,
+      "neutral_count": 89,
+      "positive_rate": 58.94,
+      "negative_rate": 4.88,
+      "avg_response_quality": 0.77
+    },
+    "feedback_stats_all_time": {
+      "total_feedback": 261,
+      "positive_count": 159,
+      "negative_count": 13,
+      "neutral_count": 89,
+      "positive_rate": 60.92,
+      "negative_rate": 4.98,
+      "avg_response_quality": 0.78
+    },
+    "feedback_recent_negative": {
+      "total": 5,
+      "records": [
+        {
+          "id": 258,
+          "conversation_id": "web-chat-470e95de-127f-4c02-a67b-f90275b7bd1a",
+          "message_id": "1776579914695",
+          "query": "Tôi muốn biết điều kiện áp dụng của từng phương thức xét tuyển",
+          "answer": "Chào bạn, dưới đây là thông tin về điều kiện dự tuyển đối với 03 phương thức tuyển sinh đại học chính quy tại Trường Đại học An ninh nhân dân năm 2026:\n\n### **Điều kiện dự tuyển chung**\nTrước khi xét đến điều kiện riêng của từng phương thức, thí sinh phải đảm bảo các tiêu chuẩn chung:\n*   **Chính trị, đạo đức:** Đảm bảo tiêu chuẩn chính trị, phẩm chất đạo đức theo quy định hiện hành của Bộ Công an.\n*   **Học lực:** Tùy đối tượng (chiến sĩ nghĩa vụ, học sinh trường T11, công dân thường trú tại địa phương), kết quả học tập THPT phải đạt từ mức khá trở lên và các môn thuộc tổ hợp xét tuyển phải đạt từ 6,5 - 7,0 điểm trở lên (tùy đối tượng).\n*   **Sức khỏe:** Đạt tiêu chuẩn sức khỏe tuyển sinh vào CAND theo quy định của Bộ Công an.\n*   **Độ tuổi:** Không quá 22 tuổi (người dân tộc thiểu số không quá 25 tuổi).\n*   **Đăng ký:** Phải đăng ký nguyện vọng xét tuyển chính thức vào Trường Đại học An ninh nhân dân là **Nguyện vọng 1** trên Cổng thông tin tuyển sinh của Bộ GD&ĐT.\n\n### **Điều kiện riêng theo từng phương thức**\n\n*   **Phương thức 1: Tuyển thẳng**\n    *   **Đối tượng:** Thí sinh được triệu tập tham dự kỳ thi chọn đội tuyển quốc gia dự thi Olympic quốc tế, khu vực; thí sinh đoạt giải nhất, nhì, ba trong kỳ thi chọn học sinh giỏi quốc gia, quốc tế bậc THPT các môn Toán, Vật lí, Hóa học, Ngữ văn, Lịch sử, Tiếng Anh.\n    *   **Yêu cầu:** Đã tốt nghiệp THPT tính đến thời điểm xác nhận nhập học. Thời gian đoạt giải không quá 03 năm tính đến thời điểm xét tuyển.\n\n*   **Phương thức 2: Xét tuyển kết hợp chứng chỉ ngoại ngữ quốc tế**\n    *   **Yêu cầu:** Thí sinh đã tham gia Bài thi đánh giá của Bộ Công an năm 2026.\n    *   **Chứng chỉ:** Có chứng chỉ ngoại ngữ quốc tế (IELTS Academic, TOEFL iBT, HSK...) còn thời hạn đến ngày 01/8/2026.\n    *   **Điều kiện:** Đảm bảo ngưỡng đầu vào theo quy định của Bộ GD&ĐT và Bộ Công an.\n\n*   **Phương thức 3: Xét tuyển kết hợp kết quả thi tốt nghiệp THPT với kết quả bài thi đánh giá của Bộ Công an**\n    *   **Yêu cầu:** Thí sinh đã tham gia Bài thi đánh giá của Bộ Công an năm 2026.\n    *   **Kết quả:** Có kết quả thi tốt nghiệp THPT các môn thuộc tổ hợp xét tuyển (A00, A01, C03, D01, X02, X03, X04).\n    *   **Điều kiện:** Đảm bảo ngưỡng đầu vào theo quy định của Bộ GD&ĐT và quy định của Bộ Công an về tổ hợp đăng ký và phân vùng tuyển sinh.\n\n**Lưu ý:** Thí sinh dự tuyển nhiều phương thức sẽ được xét tuyển theo nguyên tắc: Thí sinh trúng tuyển Phương thức 1 thì không xét tuyển theo Phương thức 2, Phương thức 3. Nếu không trúng tuyển Phương thức 1, thí sinh sẽ được xét tuyển theo Phương thức 2 hoặc Phương thức 3 (lấy điểm cao nhất để xét).\n\n📄 **Tài liệu tham khảo:** vui lòng xem các tài liệu chính thức hệ thống hiển thị bên dưới.",
+          "rating": "negative",
+          "comment": "Không xem được file pdf trong phần tài liệu tham khảo",
+          "chunk_ids": [
+            6428,
+            6592,
+            6434,
+            6559,
+            6624
+          ],
+          "user_id": null,
+          "session_id": "web-chat-470e95de-127f-4c02-a67b-f90275b7bd1a",
+          "created_at": "2026-04-19T06:25:54.325399"
+        },
+        {
+          "id": 239,
+          "conversation_id": "web-chat-d10d4c79-1761-481a-b5cc-aec35edc26e8",
+          "message_id": "1776344499830",
+          "query": "Phương thức 2 cần những chứng chỉ ngoại ngữ nào?",
+          "answer": "Đối với Phương thức 2 (xét tuyển kết hợp chứng chỉ ngoại ngữ quốc tế với kết quả bài thi đánh giá của Bộ Công an) năm 2026, thí sinh cần có một trong các chứng chỉ ngoại ngữ quốc tế sau (thời hạn không quá 02 năm kể từ ngày được cấp chứng chỉ đến ngày 01/5/2026):\n\n*   **Tiếng Anh:** IELTS (Academic) từ 5.5 trở lên, TOEFL iBT từ 46 trở lên, TOEIC (LR&SW) từ 600 và 242 trở lên, SAT từ 1100 trở lên.\n*   **Tiếng Trung Quốc:** HSK 4 trở lên.\n*   **Tiếng Tây Ban Nha:** DELE B2 trở lên.\n*   **Tiếng Pháp:** DALF/DELF B2 trở lên.\n*   **Tiếng Nga:** TRKI (TORFL) B2 trở lên.\n*   **Tiếng Đức:** Goethe-Zertifikat/TEL B2 trở lên.\n*   **Tiếng Nhật:** JLPT N3 trở lên.\n*   **Tiếng Hàn Quốc:** TOPIK 4 trở lên.\n*   **Tiếng Ý:** CELI 3 trở lên.\n\n**Lưu ý quan trọng:**\n- Chứng chỉ phải do tổ chức được Bộ Giáo dục và Đào tạo cho phép cấp.\n- Không sử dụng chứng chỉ ngoại ngữ phiên bản Home Edition.\n- Đối với thí sinh dự định thi chứng chỉ trong thời gian sơ tuyển, ngày thi chính thức phải trước ngày 20/5/2026 và phải hoàn thành, nộp kết quả về Trường Đại học An ninh nhân dân trước ngày 20/5/2026.\n\n📄 **Tài liệu tham khảo:** vui lòng xem các tài liệu chính thức hệ thống hiển thị bên dưới.",
+          "rating": "negative",
+          "comment": "không xem được file",
+          "chunk_ids": [
+            6783,
+            6480,
+            6428,
+            6544,
+            6645
+          ],
+          "user_id": null,
+          "session_id": "web-chat-d10d4c79-1761-481a-b5cc-aec35edc26e8",
+          "created_at": "2026-04-16T13:02:59.664816"
+        },
+        {
+          "id": 204,
+          "conversation_id": "web-chat-31a98966-45e7-474d-b473-8588ab676754",
+          "message_id": "1776152356560",
+          "query": "Tôi học ngành thú y, có được nộp hồ sơ tuyển sinh văn bằng 2 vào T02 không?",
+          "answer": "Chào bạn, cảm ơn bạn đã quan tâm đến công tác tuyển sinh tại Trường Đại học An ninh nhân dân.\n\nVề thắc mắc của bạn, tôi xin giải đáp như sau:\n\nTheo quy định tuyển sinh Văn bằng 2 CAND (VB2CA) năm 2026, các đối tượng dự tuyển cần đáp ứng điều kiện về ngành, chuyên ngành tốt nghiệp phù hợp với từng trường và nhóm ngành đăng ký.\n\nCụ thể đối với Học viện Cảnh sát nhân dân (T02):\n- Theo thông tin từ tài liệu tuyển sinh năm 2026, nhóm ngành **Nghiệp vụ Cảnh sát** tại T02 dành cho thí sinh đăng ký dự tuyển phía Bắc.\n- Tài liệu quy định về điều kiện ngành đào tạo của thí sinh dự tuyển vào T02 (nhóm ngành nghiệp vụ Cảnh sát) như sau: *\"Thí sinh đăng ký dự tuyển nhóm ngành nghiệp vụ An ninh, nghiệp vụ Cảnh sát tại T01, T02, T04, T05, không quy định về lĩnh vực đào tạo, ngành đào tạo của thí sinh.\"*\n\n**Như vậy:** Bạn hoàn toàn có thể đăng ký dự tuyển Văn bằng 2 vào nhóm ngành nghiệp vụ Cảnh sát tại T02 dù tốt nghiệp ngành Thú y, miễn là bạn đáp ứng đầy đủ các điều kiện chung khác về:\n- Độ tuổi (không quá 30 tuổi tính đến ngày dự thi).\n- Xếp hạng bằng tốt nghiệp đại học (từ loại khá trở lên, hoặc loại trung bình đối với chiến sĩ nghĩa vụ Công an có thời gian công tác từ 15 tháng trở lên).\n- Tiêu chuẩn chính trị và sức khỏe theo quy định của Bộ Công an.\n\n**Lưu ý quan trọng:**\n- Bạn cần liên hệ trực tiếp với Công an cấp xã/đơn vị nơi bạn cư trú hoặc công tác để được hướng dẫn chi tiết về hồ sơ, thủ tục và kiểm tra các điều kiện cụ thể (sức khỏe, chính trị) trước khi nộp hồ sơ.\n- Mọi thông tin về chỉ tiêu và quy trình xét tuyển sẽ thực hiện theo hướng dẫn chính thức của Bộ Công an năm 2026.\n\n📄 **Tài liệu tham khảo:** vui lòng xem các tài liệu chính thức hệ thống hiển thị bên dưới.",
+          "rating": "negative",
+          "comment": "abc",
+          "chunk_ids": [
+            6650,
+            6463,
+            6544,
+            6429,
+            6441
+          ],
+          "user_id": null,
+          "session_id": "web-chat-31a98966-45e7-474d-b473-8588ab676754",
+          "created_at": "2026-04-14T07:39:44.418774"
+        },
+        {
+          "id": 200,
+          "conversation_id": "web-chat-6d880bc4-6e65-4102-a2fc-b5db0860c6f5",
+          "message_id": "1776141599655",
+          "query": "Điều kiện thi văn bằng 2",
+          "answer": "Chào bạn, cảm ơn bạn đã quan tâm đến chương trình đào tạo văn bằng 2 tại Trường Đại học An ninh nhân dân. Dưới đây là các thông tin chi tiết về điều kiện dự tuyển văn bằng 2 (VB2CA) năm 2026:\n\n### **Điều kiện dự tuyển chung**\nNgười đăng ký dự tuyển cần đáp ứng các điều kiện theo quy định của pháp luật, Bộ Giáo dục và Đào tạo, và Bộ Công an, cụ thể như sau:\n\n* **Trình độ đào tạo:**\n    * Tốt nghiệp đại học hình thức chính quy, do cơ sở giáo dục đại học của Việt Nam hoặc nước ngoài cấp bằng (văn bằng nước ngoài phải được Cục Quản lý chất lượng - Bộ GD&ĐT công nhận).\n    * Xếp hạng bằng tốt nghiệp từ loại khá trở lên.\n    * **Lưu ý:** Nếu bằng tốt nghiệp không ghi xếp loại, sẽ xác định dựa trên điểm trung bình tích lũy các năm học đại học theo Thông tư 08/2021/TT-BGDĐT:\n        * Thang điểm 4: từ 2,5 trở lên là loại khá.\n        * Thang điểm 10: từ 7,0 trở lên là loại khá.\n    * Đối với thí sinh tốt nghiệp khối ngành kỹ thuật, khoa học tự nhiên, công nghệ thông tin (theo Phụ lục 04): Yêu cầu xếp hạng bằng từ trung bình trở lên, trong đó điểm trung bình các môn thi tốt nghiệp hoặc điểm trung bình học phần chuyên môn, hoặc khóa luận tốt nghiệp đạt mức khá trở lên.\n    * Chiến sĩ nghĩa vụ Công an tại ngũ có thời gian công tác từ 15 tháng trở lên: Yêu cầu bằng tốt nghiệp đại học chính quy từ loại trung bình trở lên.\n* **Độ tuổi:** Không quá 30 tuổi tính đến ngày dự thi.\n* **Tiêu chuẩn chính trị và sức khỏe:** Áp dụng theo quy định đối với tuyển sinh (tuyển mới) học sinh phổ thông vào các trường CAND.\n* **Yêu cầu về ngành đào tạo:**\n    * Thí sinh dự tuyển nhóm ngành nghiệp vụ An ninh tại T04 không quy định về lĩnh vực hay ngành đào tạo của bằng đại học thứ nhất.\n\n### **Điều kiện cụ thể theo phương thức xét tuyển**\nNăm 2026, trường áp dụng các phương thức tuyển sinh cho hệ VB2CA. Thí sinh cần tham khảo kỹ các yêu cầu về chứng chỉ ngoại ngữ và kết quả bài thi đánh giá của Bộ Công an nếu đăng ký dự tuyển theo Phương thức 2.\n\n**Lưu ý quan trọng:**\n* Thời hạn chứng chỉ ngoại ngữ quốc tế không quá 02 năm tính đến ngày 01/8/2026.\n* Ngưỡng bảo đảm chất lượng đầu vào (điểm thi đánh giá của Bộ Công an) đối với hệ VB2 năm 2026 là từ 50 điểm trở lên (theo thang điểm 100) và không có phần thi nào bị điểm liệt.\n\n📄 **Tài liệu tham khảo:** vui lòng xem các tài liệu chính thức hệ thống hiển thị bên dưới.",
+          "rating": "negative",
+          "comment": ".",
+          "chunk_ids": [
+            6434,
+            6471,
+            6486,
+            6547,
+            6521
+          ],
+          "user_id": null,
+          "session_id": "web-chat-6d880bc4-6e65-4102-a2fc-b5db0860c6f5",
+          "created_at": "2026-04-14T04:40:12.688155"
+        },
+        {
+          "id": 187,
+          "conversation_id": "web-chat-2cbdb562-6ea5-4340-b9c0-fea86bb49673",
+          "message_id": "1776132671151",
+          "query": "Điều kiện sơ tuyển vào Trường Đại học An Ninh Nhân Dân là gì?",
+          "answer": "Lưu ý theo chu kỳ tuyển sinh hiện tại: chatbot này mặc định ưu tiên năm 2026. Hiện câu trả lời dưới đây đang dựa trên tài liệu tham khảo gần nhất của năm 2025, vì vậy bạn nên hiểu đây là căn cứ tham khảo tạm thời cho đến khi có hướng dẫn chính thức mới nhất.\n\nĐiều kiện sơ tuyển vào Trường Đại học An ninh nhân dân (mã trường: ANS) năm 2026 được quy định cụ thể tại các văn bản của Bộ Công an và Hướng dẫn số 06/HD-BCA-X02 ngày 19/3/2026. Dưới đây là các thông tin chi tiết:\n\n### 1. Đối tượng và điều kiện dự tuyển chung\n* **Đối tượng:** Chiến sĩ nghĩa vụ Công an; công dân hoàn thành nghĩa vụ tham gia CAND (xuất ngũ trong vòng 12 tháng tính đến tháng dự tuyển); học sinh trường Văn hóa (T11); công dân tốt nghiệp THPT hoặc tương đương.\n* **Tiêu chuẩn chính trị, đạo đức:** Đảm bảo tiêu chuẩn về chính trị, phẩm chất đạo đức theo quy định hiện hành của Bộ Công an.\n* **Tiêu chuẩn sức khỏe:** Phải đáp ứng tiêu chuẩn sức khỏe tuyển vào CAND theo quy định tại Thông tư số 62/2023/TT-BCA và Thông tư số 131/2025/TT-BCA sửa đổi, bổ sung.\n* **Học lực, hạnh kiểm:** Đối với thí sinh tốt nghiệp THPT năm 2026, không tiếp nhận hồ sơ nếu chưa có kết quả học lực, hạnh kiểm cả năm lớp 12.\n\n### 2. Phương thức và chỉ tiêu tuyển sinh (Trình độ đại học chính quy)\nTrường Đại học An ninh nhân dân (khu vực phía Nam từ Đà Nẵng đến Cà Mau) có tổng chỉ tiêu là 220, phân bổ theo các phương thức như sau:\n\n| Địa bàn tuyển sinh | Tổng chỉ tiêu | Phương thức 1 | Phương thức 2, 3 |\n| :--- | :--- | :--- | :--- |\n| Phía Nam (Nam) | 198 | 10 | 188 |\n| Phía Nam (Nữ) | 22 | 1 | 21 |\n\n*Ghi chú: Phương thức 1 là tuyển thẳng; Phương thức 2 là xét tuyển kết hợp chứng chỉ ngoại ngữ quốc tế; Phương thức 3 là xét tuyển kết hợp kết quả thi THPT với bài thi đánh giá của Bộ Công an.*\n\n### 3. Quy trình đăng ký và nộp hồ sơ\n* **Đăng ký nguyện vọng:** Thí sinh phải đăng ký nguyện vọng xét tuyển vào trường CAND trên Cổng thông tin tuyển sinh của Bộ Giáo dục và Đào tạo ở **thứ tự Nguyện vọng số 1**.\n* **Đăng ký tổ hợp:** Thí sinh phải đăng ký tổ hợp xét tuyển trên dữ liệu tuyển sinh của Bộ Công an (các tổ hợp: A00, A01, C03, D01, X02, X03, X04). Nếu không đăng ký, trường sẽ không sử dụng tổ hợp đó để xét tuyển.\n* **Nộp hồ sơ:** Thí sinh khai đầy đủ thông tin vào Tờ khai đăng ký dự tuyển đại học CAND tại Công an các đơn vị, địa phương. Công an các đơn vị, địa phương sẽ trực tiếp nộp hồ sơ và lệ phí về Trường Đại học An ninh nhân dân trước **17h00 ngày 20/5/2026**.\n\n### 4. Mốc thời gian quan trọng\n* **Tháng 3/2026:** Tập huấn công tác tuyển sinh và sử dụng phần mềm cho cán bộ các đơn vị, địa phương.\n* **Trước 17h00 ngày 20/5/2026:** Hạn cuối Công an các đơn vị, địa phương bàn giao hồ sơ về Trường Đại học An ninh nhân dân.\n* **Ngày 20 - 21/6/2026:** Thí sinh dự thi bài thi đánh giá của Bộ Công an tại các điểm thi của Trường.\n\n**Lưu ý:** Các nội dung trên được cập nhật dựa trên thông báo tuyển sinh năm 2026. Công tác sơ tuyển do Công an đơn vị, địa phương nơi thí sinh cư trú thực hiện và chịu trách nhiệm về tính chính xác của dữ liệu. Thí sinh cần liên hệ trực tiếp với cơ quan Công an nơi đăng ký để được hướng dẫn chi tiết về các loại giấy tờ minh chứng.",
+          "rating": "negative",
+          "comment": "Cần cải thiện",
+          "chunk_ids": [
+            6641,
+            6526,
+            6457,
+            6495,
+            6463
+          ],
+          "user_id": null,
+          "session_id": "web-chat-2cbdb562-6ea5-4340-b9c0-fea86bb49673",
+          "created_at": "2026-04-14T02:12:09.421247"
+        }
+      ]
+    },
+    "feedback_daily": {
+      "daily_stats": [
+        {
+          "date": "2026-04-19",
+          "total": 6,
+          "positive": 5,
+          "negative": 1,
+          "neutral": 0
+        },
+        {
+          "date": "2026-04-18",
+          "total": 9,
+          "positive": 7,
+          "negative": 0,
+          "neutral": 2
+        },
+        {
+          "date": "2026-04-17",
+          "total": 6,
+          "positive": 6,
+          "negative": 0,
+          "neutral": 0
+        },
+        {
+          "date": "2026-04-16",
+          "total": 8,
+          "positive": 5,
+          "negative": 1,
+          "neutral": 2
+        },
+        {
+          "date": "2026-04-15",
+          "total": 11,
+          "positive": 7,
+          "negative": 0,
+          "neutral": 4
+        },
+        {
+          "date": "2026-04-14",
+          "total": 36,
+          "positive": 19,
+          "negative": 3,
+          "neutral": 14
+        },
+        {
+          "date": "2026-04-13",
+          "total": 10,
+          "positive": 5,
+          "negative": 0,
+          "neutral": 5
+        },
+        {
+          "date": "2026-04-12",
+          "total": 4,
+          "positive": 1,
+          "negative": 0,
+          "neutral": 3
+        },
+        {
+          "date": "2026-04-11",
+          "total": 8,
+          "positive": 4,
+          "negative": 1,
+          "neutral": 3
+        },
+        {
+          "date": "2026-04-10",
+          "total": 11,
+          "positive": 4,
+          "negative": 0,
+          "neutral": 7
+        },
+        {
+          "date": "2026-04-09",
+          "total": 9,
+          "positive": 5,
+          "negative": 0,
+          "neutral": 4
+        },
+        {
+          "date": "2026-04-08",
+          "total": 12,
+          "positive": 8,
+          "negative": 0,
+          "neutral": 4
+        },
+        {
+          "date": "2026-04-07",
+          "total": 8,
+          "positive": 4,
+          "negative": 0,
+          "neutral": 4
+        },
+        {
+          "date": "2026-04-06",
+          "total": 12,
+          "positive": 8,
+          "negative": 1,
+          "neutral": 3
+        },
+        {
+          "date": "2026-04-05",
+          "total": 10,
+          "positive": 7,
+          "negative": 0,
+          "neutral": 3
+        },
+        {
+          "date": "2026-04-04",
+          "total": 14,
+          "positive": 8,
+          "negative": 0,
+          "neutral": 6
+        },
+        {
+          "date": "2026-04-03",
+          "total": 38,
+          "positive": 23,
+          "negative": 2,
+          "neutral": 13
+        },
+        {
+          "date": "2026-04-02",
+          "total": 30,
+          "positive": 15,
+          "negative": 3,
+          "neutral": 12
+        },
+        {
+          "date": "2026-04-01",
+          "total": 2,
+          "positive": 2,
+          "negative": 0,
+          "neutral": 0
+        },
+        {
+          "date": "2026-03-31",
+          "total": 1,
+          "positive": 1,
+          "negative": 0,
+          "neutral": 0
+        },
+        {
+          "date": "2026-03-25",
+          "total": 1,
+          "positive": 1,
+          "negative": 0,
+          "neutral": 0
+        }
+      ]
+    },
+    "feedback_export": {
+      "report_date": "2026-04-20T01:36:52.689192",
+      "period_days": 30,
+      "summary": {
+        "total_feedback": 246,
+        "positive_rate": 58.94,
+        "negative_rate": 4.88,
+        "avg_response_quality": 0.77,
+        "feedback_rate": 0.0
+      },
+      "daily_breakdown": [
+        {
+          "date": "2026-04-19",
+          "total": 6,
+          "positive": 5,
+          "negative": 1,
+          "neutral": 0
+        },
+        {
+          "date": "2026-04-18",
+          "total": 9,
+          "positive": 7,
+          "negative": 0,
+          "neutral": 2
+        },
+        {
+          "date": "2026-04-17",
+          "total": 6,
+          "positive": 6,
+          "negative": 0,
+          "neutral": 0
+        },
+        {
+          "date": "2026-04-16",
+          "total": 8,
+          "positive": 5,
+          "negative": 1,
+          "neutral": 2
+        },
+        {
+          "date": "2026-04-15",
+          "total": 11,
+          "positive": 7,
+          "negative": 0,
+          "neutral": 4
+        },
+        {
+          "date": "2026-04-14",
+          "total": 36,
+          "positive": 19,
+          "negative": 3,
+          "neutral": 14
+        },
+        {
+          "date": "2026-04-13",
+          "total": 10,
+          "positive": 5,
+          "negative": 0,
+          "neutral": 5
+        }
+      ],
+      "top_performing_chunks": [
+        {
+          "chunk_id": 6562,
+          "source_file": "So_tay_BCL_2025_-_T04_20260324_022910.pdf",
+          "times_used": 3,
+          "positive_feedback": 3,
+          "negative_feedback": 0,
+          "effectiveness_score": 1.0
+        },
+        {
+          "chunk_id": 6565,
+          "source_file": "So_tay_BCL_2025_-_T04_20260324_022910.pdf",
+          "times_used": 3,
+          "positive_feedback": 3,
+          "negative_feedback": 0,
+          "effectiveness_score": 1.0
+        },
+        {
+          "chunk_id": 6651,
+          "source_file": "THONG_TU_SCAN_-_KEM_CONG_VAN_1_.pdf",
+          "times_used": 4,
+          "positive_feedback": 4,
+          "negative_feedback": 0,
+          "effectiveness_score": 1.0
+        },
+        {
+          "chunk_id": 6581,
+          "source_file": "So_tay_BCL_2025_-_T04_20260324_022910.pdf",
+          "times_used": 3,
+          "positive_feedback": 3,
+          "negative_feedback": 0,
+          "effectiveness_score": 1.0
+        },
+        {
+          "chunk_id": 6628,
+          "source_file": "Thong_tu_06-2026_Quy_che_tuyen_sinh_H_C_nganh_GDMN_nam_2026.pdf",
+          "times_used": 3,
+          "positive_feedback": 3,
+          "negative_feedback": 0,
+          "effectiveness_score": 1.0
+        }
+      ],
+      "worst_performing_chunks": [
+        {
+          "chunk_id": 6586,
+          "source_file": "14._CDR_Ths_QLNN.pdf",
+          "times_used": 4,
+          "positive_feedback": 1,
+          "negative_feedback": 1,
+          "effectiveness_score": 0.5
+        },
+        {
+          "chunk_id": 6567,
+          "source_file": "So_tay_BCL_2025_-_T04_20260324_022910.pdf",
+          "times_used": 3,
+          "positive_feedback": 0,
+          "negative_feedback": 0,
+          "effectiveness_score": 0.5
+        },
+        {
+          "chunk_id": 6594,
+          "source_file": "13._CDR_Ths_DTHS.pdf",
+          "times_used": 3,
+          "positive_feedback": 1,
+          "negative_feedback": 1,
+          "effectiveness_score": 0.5
+        },
+        {
+          "chunk_id": 6641,
+          "source_file": "thong_bao_tuyen_sinh_chinh_quy_t04.pdf",
+          "times_used": 15,
+          "positive_feedback": 4,
+          "negative_feedback": 3,
+          "effectiveness_score": 0.53
+        },
+        {
+          "chunk_id": 6488,
+          "source_file": "TUYEN_SINH_2026_20260324_020844.pdf",
+          "times_used": 8,
+          "positive_feedback": 2,
+          "negative_feedback": 1,
+          "effectiveness_score": 0.56
+        }
+      ],
+      "retrieval_weights_updated": 201,
+      "training_samples_available": 172,
+      "recommendations": [
+        "💡 Low feedback rate. Consider adding more prominent feedback prompts.",
+        "📝 Consider reviewing/improving chunks: [6586, 6567, 6594]",
+        "🎯 Sufficient data for fine-tuning. Consider training custom embeddings."
+      ]
+    },
+    "chat_overview": {
+      "total_conversations": 2448,
+      "total_messages": 5590,
+      "today_conversations": 3,
+      "active_conversations": 1,
+      "avg_confidence": 0.85,
+      "avg_processing_time": 0.0,
+      "popular_topics": [
+        {
+          "topic": "Khác",
+          "count": 3984
+        },
+        {
+          "topic": "Tuyển sinh",
+          "count": 1446
+        },
+        {
+          "topic": "Đào tạo",
+          "count": 135
+        },
+        {
+          "topic": "Học phí",
+          "count": 16
+        },
+        {
+          "topic": "Việc làm",
+          "count": 6
+        }
+      ]
+    },
+    "traffic_summary": {
+      "online_now": 1,
+      "today_views": 0,
+      "month_views": 10,
+      "total_views": 288,
+      "last_updated_at": "2026-04-20T08:36:53.580302+07:00",
+      "data_source": "access_logs"
+    }
+  }
+}

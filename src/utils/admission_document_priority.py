@@ -13,6 +13,11 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import urlparse
+from src.utils.admission_shared import (
+    build_school_metadata,
+    find_matching_schools,
+    match_school,
+)
 
 log = logging.getLogger(__name__)
 _DATA_DIR = Path(__file__).resolve().parents[2] / "data"
@@ -137,13 +142,6 @@ _ELIGIBILITY_QUERY_TERMS = (
     "do tuoi",
     "ly lich",
 )
-_TIMELINE_QUERY_TERMS = (
-    "moc thoi gian",
-    "lich trinh",
-    "dang ky",
-    "xac nhan nhap hoc",
-    "nhap hoc",
-)
 _SCORE_QUERY_TERMS = ("diem chuan", "diem xet", "diem trung tuyen", "diem")
 _EXAM_QUERY_TERMS = (
     "ngay thi",
@@ -163,7 +161,6 @@ _DOC_TYPE_HINTS = (
     ("methods", _METHOD_QUERY_TERMS),
     ("eligibility", _ELIGIBILITY_QUERY_TERMS),
     ("exam", _EXAM_QUERY_TERMS),
-    ("timeline", _TIMELINE_QUERY_TERMS),
     ("scores", _SCORE_QUERY_TERMS),
 )
 _SCHOOL_CODE_HINTS = (
@@ -250,6 +247,23 @@ def has_explicit_year(query: Optional[str]) -> bool:
     return _extract_year_from_text(normalized_query) is not None
 
 
+def infer_query_school_metadata(query: Optional[str]) -> Dict[str, Optional[str]]:
+    normalized_query = _normalize_text(query)
+    if not normalized_query:
+        return {"school_code": None, "school_symbol": None}
+
+    if _contains_any_term(normalized_query, _SYSTEM_WIDE_QUERY_TERMS):
+        return {"school_code": None, "school_symbol": None}
+
+    return build_school_metadata(
+        match_school(normalized_query, alias_field="query_aliases")
+    )
+
+
+def query_targets_specific_school(query: Optional[str]) -> bool:
+    return bool(infer_query_school_metadata(query).get("school_code"))
+
+
 def query_targets_primary_school(query: Optional[str]) -> bool:
     normalized_query = _normalize_text(query)
     if not normalized_query:
@@ -258,13 +272,25 @@ def query_targets_primary_school(query: Optional[str]) -> bool:
     if _contains_any_term(normalized_query, _SYSTEM_WIDE_QUERY_TERMS):
         return False
 
-    if _contains_any_term(normalized_query, _OTHER_SCHOOL_TERMS):
+    school_code = infer_query_school_metadata(query).get("school_code")
+    if school_code and school_code != "T04":
         return False
 
-    if _contains_any_term(normalized_query, _PRIMARY_SCHOOL_TERMS):
+    if school_code == "T04" or _contains_any_term(normalized_query, _PRIMARY_SCHOOL_TERMS):
         return True
 
     return is_admission_query(query) or is_personnel_query(query)
+
+
+def query_prefers_system_wide_scope(query: Optional[str]) -> bool:
+    normalized_query = _normalize_text(query)
+    if not normalized_query or not is_admission_query(query):
+        return False
+
+    if query_targets_specific_school(query):
+        return False
+
+    return _contains_any_term(normalized_query, _SYSTEM_WIDE_QUERY_TERMS)
 
 
 def infer_target_year(query: Optional[str]) -> Optional[int]:
@@ -311,21 +337,22 @@ def infer_document_metadata(
         if part
     ).strip()
 
-    school_code = None
-    school_symbol = None
-    for candidate_code, candidate_symbol, terms in _SCHOOL_CODE_HINTS:
-        if _contains_any_term(normalized_blob, terms):
-            school_code = candidate_code
-            school_symbol = candidate_symbol
-            break
+    matched_schools = find_matching_schools(
+        normalized_blob, alias_field="content_aliases"
+    )
+    is_multi_school_document = len({school["code"] for school in matched_schools}) > 1
+    has_system_wide_markers = _contains_any_term(normalized_blob, _SYSTEM_WIDE_DOC_TERMS)
+    primary_school = None if is_multi_school_document or has_system_wide_markers else (
+        matched_schools[0] if matched_schools else None
+    )
+    school_metadata = build_school_metadata(primary_school)
+    school_code = school_metadata["school_code"]
+    school_symbol = school_metadata["school_symbol"]
 
-    if school_code == "T04" and not school_symbol:
-        school_symbol = "ANS"
-
-    if school_code:
-        scope = "school_specific"
-    elif _contains_any_term(normalized_blob, _SYSTEM_WIDE_DOC_TERMS):
+    if has_system_wide_markers or is_multi_school_document:
         scope = "system_wide"
+    elif school_code:
+        scope = "school_specific"
     else:
         scope = "general"
 
@@ -349,12 +376,6 @@ def infer_document_metadata(
         doc_type = "personnel"
     else:
         for candidate_doc_type, terms in _DOC_TYPE_HINTS:
-            if (
-                candidate_doc_type == "timeline"
-                and is_training_regulation_doc
-                and not _contains_any_term(normalized_blob, _ADMISSION_DOC_TERMS)
-            ):
-                continue
             if _contains_any_term(normalized_blob, terms):
                 doc_type = candidate_doc_type
                 break
@@ -374,8 +395,15 @@ def build_query_metadata_filters(query: Optional[str]) -> Dict[str, Any]:
     if not query:
         return filters
 
-    if query_targets_primary_school(query):
+    school_metadata = infer_query_school_metadata(query)
+    if school_metadata.get("school_code"):
+        filters["school_code"] = school_metadata["school_code"]
+    elif query_targets_primary_school(query):
         filters["school_code"] = "T04"
+
+    if school_metadata.get("school_symbol"):
+        filters["school_symbol"] = school_metadata["school_symbol"]
+    elif query_targets_primary_school(query):
         filters["school_symbol"] = "ANS"
 
     target_year = infer_target_year(query)
@@ -440,6 +468,27 @@ def enrich_query_for_primary_school(query: Optional[str]) -> tuple[str, bool]:
         enrichment_terms.append("Trường Đại Học An Ninh Nhân Dân")
     elif t04_missing:
         enrichment_terms.append("T04")
+
+    enriched_query = " ".join(
+        part for part in [raw_query, *enrichment_terms] if part
+    ).strip()
+    return enriched_query, enriched_query != raw_query
+
+
+def enrich_query_for_system_scope(query: Optional[str]) -> tuple[str, bool]:
+    raw_query = str(query or "").strip()
+    if not raw_query or not query_prefers_system_wide_scope(raw_query):
+        return raw_query, False
+
+    normalized_query = _normalize_text(raw_query)
+    enrichment_terms = []
+
+    if "cand" not in normalized_query:
+        enrichment_terms.append("CAND")
+    if "bo cong an" not in normalized_query:
+        enrichment_terms.append("Bo Cong An")
+    if "cac truong cand" not in normalized_query:
+        enrichment_terms.append("cac truong CAND")
 
     enriched_query = " ".join(
         part for part in [raw_query, *enrichment_terms] if part
@@ -719,7 +768,7 @@ def filter_chunks_by_metadata(
     school_code = filters.get("school_code")
     admission_cycle = filters.get("admission_cycle")
     doc_type = filters.get("doc_type")
-    allow_system_wide = doc_type in {"methods", "timeline", "exam"}
+    allow_system_wide = doc_type in {"methods", "exam"}
     exclude_scores_when_doc_type_differs = bool(doc_type and doc_type != "scores")
 
     def _match(
@@ -829,7 +878,10 @@ def compute_priority_adjustment(query: Optional[str], chunk: Dict[str, Any]) -> 
     admission_years = chunk.get("admission_years") or chunk.get("document_years") or []
     authority_bonus = float(metadata.get("authority_bonus") or 0.0)
     personnel_query = is_personnel_query(query)
+    query_school_metadata = infer_query_school_metadata(query)
+    query_school_code = query_school_metadata.get("school_code")
     primary_school_query = query_targets_primary_school(query)
+    system_wide_query = query_prefers_system_wide_scope(query)
 
     year_bonus = 0.0
     if (
@@ -874,21 +926,38 @@ def compute_priority_adjustment(query: Optional[str], chunk: Dict[str, Any]) -> 
                 personnel_bonus += max(-0.22, (document_year - current_year) * 0.06)
 
     school_bonus = 0.0
-    if primary_school_query:
-        if any(
+    chunk_school_code = chunk.get("school_code")
+    if query_school_code:
+        if chunk_school_code == query_school_code:
+            school_bonus += 0.22
+        elif chunk_school_code and chunk_school_code != query_school_code:
+            school_bonus -= 0.18
+        elif chunk.get("scope") == "system_wide":
+            school_bonus -= 0.04
+    elif primary_school_query:
+        if chunk_school_code == "T04" or any(
             term in normalized_chunk_text for term in _PRIMARY_SCHOOL_STRONG_DOC_TERMS
         ):
             school_bonus += 0.22
         elif "an ninh nhan dan" in normalized_chunk_text:
             school_bonus += 0.12
 
-        if any(term in normalized_chunk_text for term in _OTHER_SCHOOL_TERMS):
+        if chunk_school_code and chunk_school_code != "T04":
             school_bonus -= 0.18
 
         if school_bonus <= 0 and any(
             term in normalized_chunk_text for term in _SYSTEM_WIDE_DOC_TERMS
         ):
             school_bonus -= 0.10
+
+    scope_bonus = 0.0
+    if system_wide_query and not query_school_code:
+        if chunk.get("scope") == "system_wide" or any(
+            term in normalized_chunk_text for term in _SYSTEM_WIDE_DOC_TERMS
+        ):
+            scope_bonus += 0.18
+        elif chunk.get("scope") == "school_specific":
+            scope_bonus -= 0.12
 
     draft_penalty = (
         -0.08 if any(term in normalized_source for term in _DRAFT_TERMS) else 0.0
@@ -900,6 +969,7 @@ def compute_priority_adjustment(query: Optional[str], chunk: Dict[str, Any]) -> 
         + title_bonus
         + personnel_bonus
         + school_bonus
+        + scope_bonus
         + draft_penalty
     )
     chunk["priority_adjustment"] = round(total_adjustment, 4)

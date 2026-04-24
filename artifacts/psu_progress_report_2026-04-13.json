@@ -1,0 +1,454 @@
+{
+  "metadata": {
+    "report_date": "2026-04-13",
+    "generated_at": "2026-04-13T21:28:33.197575+07:00",
+    "window_days": 30,
+    "backend_url": "https://puschatbot-production.up.railway.app"
+  },
+  "db_metrics": {
+    "window_start": "2026-03-14 21:28:02.723692",
+    "window_end": "2026-04-13 21:28:02.723692",
+    "public": {
+      "page_views_total": 287,
+      "access_sessions_total": 204,
+      "online_now": 0
+    },
+    "window_30d": {
+      "active_session_users": 1636,
+      "unique_conversations": 1634,
+      "messages": 4061
+    },
+    "all_time": {
+      "session_users": 2072,
+      "returning_sessions": 1105,
+      "conversation_users": 2130,
+      "messages": 4810,
+      "cumulative_visits": 4780,
+      "cumulative_questions": 4780
+    },
+    "feedback": {
+      "window": {
+        "total": 168,
+        "positive": 95,
+        "negative": 7,
+        "neutral": 66,
+        "positive_rate": 56.547619047619044,
+        "negative_rate": 4.166666666666666
+      },
+      "all_time": {
+        "total": 183,
+        "positive": 109,
+        "negative": 8,
+        "neutral": 66,
+        "positive_rate": 59.56284153005464,
+        "negative_rate": 4.371584699453552
+      }
+    },
+    "daily": {
+      "users": [
+        [
+          "2026-03-15",
+          1
+        ],
+        [
+          "2026-03-16",
+          2
+        ],
+        [
+          "2026-03-17",
+          1
+        ],
+        [
+          "2026-03-19",
+          42
+        ],
+        [
+          "2026-03-20",
+          9
+        ],
+        [
+          "2026-03-21",
+          38
+        ],
+        [
+          "2026-03-22",
+          37
+        ],
+        [
+          "2026-03-23",
+          14
+        ],
+        [
+          "2026-03-24",
+          21
+        ],
+        [
+          "2026-03-25",
+          9
+        ],
+        [
+          "2026-03-26",
+          11
+        ],
+        [
+          "2026-03-27",
+          6
+        ],
+        [
+          "2026-03-28",
+          5
+        ],
+        [
+          "2026-03-29",
+          38
+        ],
+        [
+          "2026-03-30",
+          10
+        ],
+        [
+          "2026-03-31",
+          254
+        ],
+        [
+          "2026-04-01",
+          496
+        ],
+        [
+          "2026-04-02",
+          126
+        ],
+        [
+          "2026-04-03",
+          109
+        ],
+        [
+          "2026-04-04",
+          50
+        ],
+        [
+          "2026-04-05",
+          37
+        ],
+        [
+          "2026-04-06",
+          60
+        ],
+        [
+          "2026-04-07",
+          43
+        ],
+        [
+          "2026-04-08",
+          47
+        ],
+        [
+          "2026-04-09",
+          40
+        ],
+        [
+          "2026-04-10",
+          60
+        ],
+        [
+          "2026-04-11",
+          30
+        ],
+        [
+          "2026-04-12",
+          25
+        ],
+        [
+          "2026-04-13",
+          15
+        ]
+      ],
+      "messages": [
+        [
+          "2026-03-15",
+          2
+        ],
+        [
+          "2026-03-16",
+          2
+        ],
+        [
+          "2026-03-17",
+          1
+        ],
+        [
+          "2026-03-19",
+          85
+        ],
+        [
+          "2026-03-20",
+          13
+        ],
+        [
+          "2026-03-21",
+          130
+        ],
+        [
+          "2026-03-22",
+          169
+        ],
+        [
+          "2026-03-23",
+          62
+        ],
+        [
+          "2026-03-24",
+          89
+        ],
+        [
+          "2026-03-25",
+          35
+        ],
+        [
+          "2026-03-26",
+          45
+        ],
+        [
+          "2026-03-27",
+          14
+        ],
+        [
+          "2026-03-28",
+          20
+        ],
+        [
+          "2026-03-29",
+          122
+        ],
+        [
+          "2026-03-30",
+          25
+        ],
+        [
+          "2026-03-31",
+          511
+        ],
+        [
+          "2026-04-01",
+          1068
+        ],
+        [
+          "2026-04-02",
+          318
+        ],
+        [
+          "2026-04-03",
+          306
+        ],
+        [
+          "2026-04-04",
+          127
+        ],
+        [
+          "2026-04-05",
+          116
+        ],
+        [
+          "2026-04-06",
+          156
+        ],
+        [
+          "2026-04-07",
+          80
+        ],
+        [
+          "2026-04-08",
+          119
+        ],
+        [
+          "2026-04-09",
+          94
+        ],
+        [
+          "2026-04-10",
+          193
+        ],
+        [
+          "2026-04-11",
+          64
+        ],
+        [
+          "2026-04-12",
+          60
+        ],
+        [
+          "2026-04-13",
+          35
+        ]
+      ],
+      "avg_users": 56.41379310344828,
+      "avg_messages": 140.0344827586207
+    },
+    "popular_questions": [
+      {
+        "question": "Chỉ tiêu tuyển sinh vào Trường Đại học An Ninh Nhân Dân?",
+        "count": 454,
+        "last_asked": "2026-04-13 14:12:05.224294"
+      },
+      {
+        "question": "Các phương thức tuyển sinh?",
+        "count": 201,
+        "last_asked": "2026-04-13 14:09:57.117601"
+      },
+      {
+        "question": "Hồ sơ sơ tuyển cần chuẩn bị những gì?",
+        "count": 105,
+        "last_asked": "2026-04-13 08:54:49.809680"
+      },
+      {
+        "question": "Điều kiện sơ tuyển vào Trường Đại học An Ninh Nhân Dân là gì?",
+        "count": 92,
+        "last_asked": "2026-04-13 12:28:11.294521"
+      },
+      {
+        "question": "Tôi muốn biết mốc thời gian đăng ký và xác nhận nhập học",
+        "count": 70,
+        "last_asked": "2026-04-13 14:10:44.442714"
+      },
+      {
+        "question": "Tôi muốn biết điều kiện áp dụng của từng phương thức xét tuyển",
+        "count": 63,
+        "last_asked": "2026-04-13 08:55:47.356845"
+      },
+      {
+        "question": "Tôi muốn biết hồ sơ cần chuẩn bị cho phương thức này",
+        "count": 41,
+        "last_asked": "2026-04-12 22:46:31.770567"
+      },
+      {
+        "question": "Phương thức 3 tính điểm xét tuyển ra sao?",
+        "count": 40,
+        "last_asked": "2026-04-11 19:20:36.134380"
+      },
+      {
+        "question": "Tôi muốn biết tổ hợp xét tuyển và chỉ tiêu của từng ngành",
+        "count": 35,
+        "last_asked": "2026-04-10 07:41:09.768193"
+      },
+      {
+        "question": "Tỷ lệ kiến thức lớp 10, 11, 12 được phân bố ra sao?",
+        "count": 34,
+        "last_asked": "2026-04-11 05:36:22.794056"
+      }
+    ],
+    "feedback_examples": {
+      "positive": [
+        {
+          "created_at": "2026-04-03 12:08:37.875135",
+          "query": "Tôi muốn biết mốc thời gian đăng ký và xác nhận nhập học",
+          "comment": "Chatbot nhanh, trả lời ổn, 9 điểm"
+        },
+        {
+          "created_at": "2026-04-03 11:53:09.379469",
+          "query": "Tỷ lệ kiến thức lớp 10, 11, 12 được phân bố ra sao?",
+          "comment": "nice"
+        },
+        {
+          "created_at": "2026-04-03 11:48:29.498326",
+          "query": "Năm ngoái",
+          "comment": "Ok"
+        },
+        {
+          "created_at": "2026-04-03 11:37:55.927355",
+          "query": "Tôi muốn học tiếng trung, trường có dạy không",
+          "comment": "ổn á"
+        },
+        {
+          "created_at": "2026-04-03 11:29:55.772238",
+          "query": "Tôi muốn biết hạn đăng ký, hạn nộp hồ sơ hoặc hạn xác nhận nhập học",
+          "comment": "Good"
+        }
+      ],
+      "negative": [
+        {
+          "created_at": "2026-04-06 14:52:05.133481",
+          "query": "tôi ko đạo . Ba,bà nội hai em có đạo ông nội ko đạo mẹ ko đạo nhà ngoại ko đạo ông ngoại cựu chiến binh lý lịch được k?",
+          "comment": "lan man"
+        },
+        {
+          "created_at": "2026-04-03 11:57:48.970519",
+          "query": "Tôi muốn biết hồ sơ cần chuẩn bị cho phương thức này",
+          "comment": "Chưa tốt"
+        },
+        {
+          "created_at": "2026-04-03 09:07:28.820620",
+          "query": "Các yêu cầu của phương thức 1",
+          "comment": "Chưa giải quyết được trọng tâm yêu cầu của câu hỏi"
+        },
+        {
+          "created_at": "2026-04-02 13:27:56.926268",
+          "query": "tiền thân đại học an ninh nhân dân",
+          "comment": "cần phát triển thêm data , nguồn data còn hạn chế , hỏi những câu hỏi liên quan tới trường còn chưa trả lời đc nhiều lắm , thay vì để trống và là ko thể trả lời câu hỏi , bạn dev nên thêm API từ AI khác để trả lời cụ thể hơn , còn vấn đề bảo mật bạn có thể ngắt và chia 2 luồng phân tầng firewall ."
+        },
+        {
+          "created_at": "2026-04-02 08:48:07.125178",
+          "query": "sao toàn đưa mã trường không z mã ngành đâu bro",
+          "comment": "khả năng retrieval dữ liệu chưa rõ khi hỏi giữa mã ngành và lẫn sang mã trường"
+        }
+      ]
+    }
+  },
+  "endpoint_checks": {
+    "traffic_summary": {
+      "online_now": 0,
+      "today_views": 0,
+      "month_views": 9,
+      "total_views": 287,
+      "last_updated_at": "2026-04-13T21:28:29.157459+07:00",
+      "data_source": "access_logs"
+    },
+    "chat_history_overview": {
+      "total_conversations": 2130,
+      "total_messages": 4810,
+      "today_conversations": 15,
+      "active_conversations": 4,
+      "avg_confidence": 0.84,
+      "avg_processing_time": 0.0,
+      "popular_topics": [
+        {
+          "topic": "Khác",
+          "count": 3423
+        },
+        {
+          "topic": "Tuyển sinh",
+          "count": 1240
+        },
+        {
+          "topic": "Đào tạo",
+          "count": 122
+        },
+        {
+          "topic": "Học phí",
+          "count": 16
+        },
+        {
+          "topic": "Việc làm",
+          "count": 6
+        }
+      ]
+    },
+    "feedback_30d": {
+      "total_feedback": 168,
+      "positive_count": 95,
+      "negative_count": 7,
+      "neutral_count": 66,
+      "positive_rate": 56.55,
+      "negative_rate": 4.17,
+      "avg_response_quality": 0.76
+    },
+    "feedback_all_time": {
+      "total_feedback": 183,
+      "positive_count": 109,
+      "negative_count": 8,
+      "neutral_count": 66,
+      "positive_rate": 59.56,
+      "negative_rate": 4.37,
+      "avg_response_quality": 0.78
+    }
+  }
+}
