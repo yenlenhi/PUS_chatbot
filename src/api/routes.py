@@ -126,6 +126,44 @@ def get_attachment_service() -> AttachmentService:
     return attachment_service
 
 
+def _find_local_document_path(safe_filename: str) -> Optional[Path]:
+    """Locate a PDF document in DATA_DIR and its subdirectories."""
+    from config.settings import DATA_DIR
+
+    data_dir = Path(DATA_DIR)
+    for pdf_file in data_dir.rglob("*.pdf"):
+        if pdf_file.name != safe_filename:
+            continue
+        if "backup" in str(pdf_file.parent).lower():
+            continue
+        return pdf_file
+    return None
+
+
+def _count_pdf_pages_from_bytes(file_bytes: bytes) -> Optional[int]:
+    """Best-effort PDF page count for files served from Supabase."""
+    try:
+        import fitz  # PyMuPDF
+
+        with fitz.open(stream=file_bytes, filetype="pdf") as doc:
+            return len(doc)
+    except ImportError:
+        log.debug("PyMuPDF not available for PDF page counting")
+    except Exception as e:
+        log.warning(f"Could not get PDF page count via PyMuPDF: {e}")
+
+    try:
+        import io
+        import PyPDF2
+
+        with io.BytesIO(file_bytes) as pdf_buffer:
+            return len(PyPDF2.PdfReader(pdf_buffer).pages)
+    except Exception as e:
+        log.warning(f"Could not get PDF page count via PyPDF2: {e}")
+
+    return None
+
+
 async def _refresh_async_retrieval_state(reason: str) -> None:
     """Refresh async chat retrieval state after corpus mutations."""
     async_rag = peek_async_rag_service()
@@ -542,9 +580,8 @@ async def get_document(request: Request, filename: str, page: int = None):
     Returns:
         PDF file response
     """
-    from pathlib import Path
-    from config.settings import DATA_DIR
     import urllib.parse
+    from urllib.parse import quote
 
     try:
         # Decode URL-encoded filename
@@ -553,51 +590,47 @@ async def get_document(request: Request, filename: str, page: int = None):
         # Sanitize filename to prevent directory traversal
         safe_filename = Path(decoded_filename).name
 
-        # Search for the file in DATA_DIR and subdirectories
-        data_dir = Path(DATA_DIR)
-        file_path = None
-
-        for pdf_file in data_dir.rglob("*.pdf"):
-            if pdf_file.name == safe_filename:
-                # Skip backup folders
-                if "backup" in str(pdf_file.parent).lower():
-                    continue
-                file_path = pdf_file
-                break
-
-        if not file_path or not file_path.exists():
-            log.warning(f"Document not found: {safe_filename}")
-            raise HTTPException(
-                status_code=404, detail=f"Document not found: {safe_filename}"
-            )
-
-        # Security check: ensure the resolved path is within DATA_DIR
-        if not file_path.resolve().is_relative_to(data_dir.resolve()):
-            log.warning(f"Directory traversal attempt: {filename}")
-            raise HTTPException(status_code=403, detail="Access denied")
-
-        if not file_path.suffix.lower() == ".pdf":
-            raise HTTPException(status_code=400, detail="Only PDF files are supported")
+        file_path = _find_local_document_path(safe_filename)
+        encoded_filename = quote(safe_filename)
 
         log.info(
             f"Serving document: {safe_filename}" + (f" (page {page})" if page else "")
         )
 
-        # Encode filename for Content-Disposition header (handle Unicode)
-        from urllib.parse import quote
+        if file_path and file_path.exists():
+            if not file_path.suffix.lower() == ".pdf":
+                raise HTTPException(status_code=400, detail="Only PDF files are supported")
 
-        encoded_filename = quote(safe_filename)
+            return FileResponse(
+                path=str(file_path),
+                media_type="application/pdf",
+                filename=safe_filename,
+                headers={
+                    "Content-Disposition": f"inline; filename*=UTF-8''{encoded_filename}",
+                    "X-Page-Number": str(page) if page else "1",
+                },
+            )
 
-        # Return the PDF file
-        return FileResponse(
-            path=str(file_path),
-            media_type="application/pdf",
-            filename=safe_filename,
-            headers={
-                "Content-Disposition": f"inline; filename*=UTF-8''{encoded_filename}",
-                "X-Page-Number": str(page) if page else "1",
-            },
+        storage_service = get_supabase_storage_service()
+        success, message, file_bytes, content_type = storage_service.download_file(
+            safe_filename
         )
+        if success and file_bytes:
+            log.info(f"Serving document from Supabase Storage: {safe_filename}")
+            return StreamingResponse(
+                iter([file_bytes]),
+                media_type=content_type or "application/pdf",
+                headers={
+                    "Content-Disposition": f"inline; filename*=UTF-8''{encoded_filename}",
+                    "X-Page-Number": str(page) if page else "1",
+                    "Content-Length": str(len(file_bytes)),
+                },
+            )
+
+        log.warning(
+            f"Document not found locally or in Supabase: {safe_filename}. Detail: {message}"
+        )
+        raise HTTPException(status_code=404, detail=f"Document not found: {safe_filename}")
 
     except HTTPException:
         raise
@@ -612,48 +645,64 @@ async def get_document_info(request: Request, filename: str):
     """
     Get metadata about a PDF document
     """
-    from pathlib import Path
-    from config.settings import DATA_DIR
     import urllib.parse
+    import time
+    from email.utils import parsedate_to_datetime
 
     try:
         decoded_filename = urllib.parse.unquote(filename)
         safe_filename = Path(decoded_filename).name
 
-        # Search for the file in DATA_DIR and subdirectories
-        data_dir = Path(DATA_DIR)
-        file_path = None
+        file_path = _find_local_document_path(safe_filename)
 
-        for pdf_file in data_dir.rglob("*.pdf"):
-            if pdf_file.name == safe_filename:
-                # Skip backup folders
-                if "backup" in str(pdf_file.parent).lower():
-                    continue
-                file_path = pdf_file
-                break
+        if file_path and file_path.exists():
+            stat = file_path.stat()
 
-        if not file_path or not file_path.exists():
+            # Try to get page count using PyMuPDF if available
+            page_count = None
+            try:
+                import fitz  # PyMuPDF
+
+                with fitz.open(str(file_path)) as doc:
+                    page_count = len(doc)
+            except ImportError:
+                log.debug("PyMuPDF not available for page count")
+            except Exception as e:
+                log.warning(f"Could not get page count: {e}")
+
+            return {
+                "filename": safe_filename,
+                "size_bytes": stat.st_size,
+                "modified_at": stat.st_mtime,
+                "page_count": page_count,
+                "download_url": f"/api/v1/documents/{filename}",
+            }
+
+        storage_service = get_supabase_storage_service()
+        meta_success, _, metadata = storage_service.get_file_metadata(safe_filename)
+        download_success, _, file_bytes, _ = storage_service.download_file(safe_filename)
+
+        if not download_success or not file_bytes:
             raise HTTPException(status_code=404, detail="Document not found")
 
-        stat = file_path.stat()
-
-        # Try to get page count using PyMuPDF if available
-        page_count = None
-        try:
-            import fitz  # PyMuPDF
-
-            with fitz.open(str(file_path)) as doc:
-                page_count = len(doc)
-        except ImportError:
-            log.debug("PyMuPDF not available for page count")
-        except Exception as e:
-            log.warning(f"Could not get page count: {e}")
+        modified_at = time.time()
+        if meta_success and metadata and metadata.get("last_modified"):
+            try:
+                modified_at = parsedate_to_datetime(
+                    metadata["last_modified"]
+                ).timestamp()
+            except Exception:
+                pass
 
         return {
             "filename": safe_filename,
-            "size_bytes": stat.st_size,
-            "modified_at": stat.st_mtime,
-            "page_count": page_count,
+            "size_bytes": (
+                metadata.get("size_bytes")
+                if meta_success and metadata and metadata.get("size_bytes")
+                else len(file_bytes)
+            ),
+            "modified_at": modified_at,
+            "page_count": _count_pdf_pages_from_bytes(file_bytes),
             "download_url": f"/api/v1/documents/{filename}",
         }
 

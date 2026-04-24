@@ -1,14 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import {
-  Book,
-  ChevronDown,
-  ChevronUp,
-  ExternalLink,
-  FileText,
-  Hash,
-} from 'lucide-react';
+import { Book, ChevronDown, ChevronUp, FileText, Hash } from 'lucide-react';
 import type { SourceReference } from '@/types';
 import { getDocumentDisplayName } from '@/lib/documentNames';
 
@@ -52,7 +45,7 @@ const SourceReferences: React.FC<SourceReferencesProps> = ({
         <div className="mb-3 flex items-center justify-between">
           <p className="flex items-center gap-1 text-xs font-semibold text-gray-500">
             <Book className="h-3.5 w-3.5" />
-            Nguon tham khao ({sourceReferences.length})
+            Nguồn tham khảo ({sourceReferences.length})
           </p>
         </div>
 
@@ -78,7 +71,7 @@ const SourceReferences: React.FC<SourceReferencesProps> = ({
                     <span
                       className={`rounded-full px-2 py-0.5 text-xs ${getScoreColor(ref.relevance_score)}`}
                     >
-                      {formatScore(ref.relevance_score)}% phu hop
+                      {formatScore(ref.relevance_score)}% phù hợp
                     </span>
                   </div>
 
@@ -94,21 +87,17 @@ const SourceReferences: React.FC<SourceReferencesProps> = ({
                         • {ref.heading}
                       </span>
                     )}
-                    {ref.document_year && (
-                      <span>Nam {ref.document_year}</span>
-                    )}
+                    {ref.document_year && <span>Năm {ref.document_year}</span>}
                   </div>
 
-                  <p className="mt-2 line-clamp-2 text-xs text-gray-600">
-                    {ref.content_snippet}
-                  </p>
+                  <p className="mt-2 line-clamp-2 text-xs text-gray-600">{ref.content_snippet}</p>
                 </div>
 
                 <div className="flex flex-shrink-0 items-center gap-2">
                   <button
                     onClick={(event) => toggleExpand(index, event)}
                     className="rounded p-1 transition-colors hover:bg-gray-200"
-                    title={expandedIndex === index ? 'Thu gon' : 'Xem them'}
+                    title={expandedIndex === index ? 'Thu gọn' : 'Xem thêm'}
                   >
                     {expandedIndex === index ? (
                       <ChevronUp className="h-4 w-4 text-gray-500" />
@@ -116,41 +105,21 @@ const SourceReferences: React.FC<SourceReferencesProps> = ({
                       <ChevronDown className="h-4 w-4 text-gray-500" />
                     )}
                   </button>
-                  {ref.source_url ? (
-                    <a
-                      href={ref.source_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="rounded p-1 transition-colors hover:bg-gray-200"
-                      onClick={(event) => event.stopPropagation()}
-                      title="Nguon chinh thuc"
-                    >
-                      <ExternalLink className="h-4 w-4 text-gray-400" />
-                    </a>
-                  ) : (
-                    <ExternalLink className="h-4 w-4 text-gray-400" />
-                  )}
                 </div>
               </div>
 
               {expandedIndex === index && (
                 <div className="border-t border-gray-100 px-3 pb-3 pt-0">
                   <div className="mt-2 rounded bg-gray-50 p-3">
-                    <p className="mb-2 text-xs font-medium text-gray-500">
-                      Trich doan lien quan:
-                    </p>
+                    <p className="mb-2 text-xs font-medium text-gray-500">Trích đoạn liên quan:</p>
                     <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-700">
                       {ref.content_snippet}
                     </p>
                   </div>
 
                   <div className="mt-3 flex gap-4 text-xs text-gray-500">
-                    {ref.dense_score !== null && (
-                      <span>Dense: {formatScore(ref.dense_score)}%</span>
-                    )}
-                    {ref.sparse_score !== null && (
-                      <span>Sparse: {formatScore(ref.sparse_score)}%</span>
-                    )}
+                    {ref.dense_score !== null && <span>Dense: {formatScore(ref.dense_score)}%</span>}
+                    {ref.sparse_score !== null && <span>Sparse: {formatScore(ref.sparse_score)}%</span>}
                   </div>
                 </div>
               )}

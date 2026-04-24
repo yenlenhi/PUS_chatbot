@@ -1,12 +1,11 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   FileText,
   ChevronRight,
   ChevronLeft,
   Eye,
-  ExternalLink,
   Copy,
   Check,
   X,
@@ -39,45 +38,50 @@ const DocumentSidebar: React.FC<DocumentSidebarProps> = ({
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
-  // Deduplicate by filename — keep highest-score chunk, collect all page numbers
   const deduped = useMemo((): MergedRef[] => {
     const map = new Map<string, MergedRef>();
-    sourceReferences.forEach(ref => {
+
+    sourceReferences.forEach((ref) => {
       const existing = map.get(ref.filename);
       if (!existing) {
         map.set(ref.filename, { ...ref, all_pages: [ref.page_number] });
-      } else if (ref.relevance_score > existing.relevance_score) {
+        return;
+      }
+
+      if (ref.relevance_score > existing.relevance_score) {
         map.set(ref.filename, {
           ...existing,
           ...ref,
           document_year: ref.document_year ?? existing.document_year,
-          source_url: ref.source_url ?? existing.source_url,
           display_name: ref.display_name ?? existing.display_name,
           all_pages: Array.from(new Set([...existing.all_pages, ref.page_number])),
         });
-      } else {
-        if (!existing.all_pages.includes(ref.page_number)) {
-          existing.all_pages.push(ref.page_number);
-        }
-        if (!existing.document_year && ref.document_year) {
-          existing.document_year = ref.document_year;
-        }
-        if (!existing.source_url && ref.source_url) {
-          existing.source_url = ref.source_url;
-        }
-        if (!existing.display_name && ref.display_name) {
-          existing.display_name = ref.display_name;
-        }
+        return;
+      }
+
+      if (!existing.all_pages.includes(ref.page_number)) {
+        existing.all_pages.push(ref.page_number);
+      }
+      if (!existing.document_year && ref.document_year) {
+        existing.document_year = ref.document_year;
+      }
+      if (!existing.display_name && ref.display_name) {
+        existing.display_name = ref.display_name;
       }
     });
+
     return Array.from(map.values());
   }, [sourceReferences]);
 
   const formatScore = (score: number) => Math.round(score * 100);
 
   const getScoreStyle = (score: number): { bar: string; text: string; bg: string } => {
-    if (score >= 0.7) return { bar: 'bg-emerald-500', text: 'text-emerald-700', bg: 'bg-emerald-50' };
-    if (score >= 0.5) return { bar: 'bg-amber-400', text: 'text-amber-700', bg: 'bg-amber-50' };
+    if (score >= 0.7) {
+      return { bar: 'bg-emerald-500', text: 'text-emerald-700', bg: 'bg-emerald-50' };
+    }
+    if (score >= 0.5) {
+      return { bar: 'bg-amber-400', text: 'text-amber-700', bg: 'bg-amber-50' };
+    }
     return { bar: 'bg-slate-400', text: 'text-slate-600', bg: 'bg-slate-50' };
   };
 
@@ -89,12 +93,13 @@ const DocumentSidebar: React.FC<DocumentSidebarProps> = ({
     const pageStr = pages.length > 0 ? `, trang ${pages.join(', ')}` : '';
     const yearStr = ref.document_year ? `, năm ${ref.document_year}` : '';
     const citation = `${getResolvedDisplayName(ref)}${yearStr}${pageStr}`;
+
     try {
       await navigator.clipboard.writeText(citation);
       setCopiedIndex(index);
       setTimeout(() => setCopiedIndex(null), 2000);
     } catch {
-      // clipboard unavailable
+      // Ignore clipboard errors in unsupported browsers.
     }
   };
 
@@ -106,17 +111,13 @@ const DocumentSidebar: React.FC<DocumentSidebarProps> = ({
 
   return (
     <>
-      {/* Toggle button */}
       <button
         onClick={onToggle}
         className={`fixed top-1/2 -translate-y-1/2 z-40 flex flex-col items-center justify-center bg-red-600 text-white rounded-l-xl shadow-xl hover:bg-red-700 active:scale-95 transition-all duration-300 w-7 py-5 ${
-          isOpen
-            ? 'right-[calc(100vw-2rem)] sm:right-80 md:right-96'
-            : 'right-0'
+          isOpen ? 'right-[calc(100vw-2rem)] sm:right-80 md:right-96' : 'right-0'
         }`}
         title={isOpen ? 'Ẩn tài liệu' : 'Hiện tài liệu'}
       >
-        {/* Rotated label */}
         <span className="text-[10px] font-semibold tracking-widest rotate-90 whitespace-nowrap mb-1 select-none">
           TL
         </span>
@@ -132,13 +133,11 @@ const DocumentSidebar: React.FC<DocumentSidebarProps> = ({
         )}
       </button>
 
-      {/* Sidebar panel */}
       <div
         className={`fixed top-14 sm:top-16 md:top-20 right-0 h-[calc(100vh-3.5rem)] sm:h-[calc(100vh-4rem)] md:h-[calc(100vh-5rem)] bg-white z-30 flex flex-col transition-transform duration-300 ease-in-out shadow-2xl border-l border-gray-200 ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         } w-[calc(100vw-2rem)] max-w-sm sm:w-80 md:w-96`}
       >
-        {/* Header */}
         <div className="flex-shrink-0 bg-white border-b border-gray-100 px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -164,14 +163,11 @@ const DocumentSidebar: React.FC<DocumentSidebarProps> = ({
           </div>
         </div>
 
-        {/* Content */}
         <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2">
           {deduped.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-gray-300 py-16">
               <FileSearch className="w-10 h-10 mb-3" />
-              <p className="text-sm text-center text-gray-400">
-                Chưa có tài liệu tham khảo.
-              </p>
+              <p className="text-sm text-center text-gray-400">Chưa có tài liệu tham khảo.</p>
               <p className="text-xs text-center text-gray-300 mt-1">
                 Hãy đặt câu hỏi để xem nguồn tài liệu.
               </p>
@@ -181,17 +177,18 @@ const DocumentSidebar: React.FC<DocumentSidebarProps> = ({
               const scoreStyle = getScoreStyle(ref.relevance_score);
               const isExpanded = expandedIndex === index;
               const isCopied = copiedIndex === index;
-              const pages = ref.all_pages.filter((p): p is number => p !== null);
+              const pages = ref.all_pages.filter((page): page is number => page !== null);
 
               return (
                 <div
                   key={ref.filename}
                   className="group bg-white border border-gray-200 rounded-xl overflow-hidden hover:border-gray-300 hover:shadow-sm transition-all duration-200"
                 >
-                  {/* Relevance bar */}
-                  <div className={`h-0.5 ${scoreStyle.bar}`} style={{ width: `${formatScore(ref.relevance_score)}%` }} />
+                  <div
+                    className={`h-0.5 ${scoreStyle.bar}`}
+                    style={{ width: `${formatScore(ref.relevance_score)}%` }}
+                  />
 
-                  {/* Card body */}
                   <div className="p-3">
                     <div className="flex items-start gap-2.5">
                       <div className={`flex-shrink-0 rounded-lg p-1.5 mt-0.5 ${scoreStyle.bg}`}>
@@ -207,7 +204,9 @@ const DocumentSidebar: React.FC<DocumentSidebarProps> = ({
                         </p>
 
                         <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                          <span className={`inline-flex items-center text-xs font-medium px-1.5 py-0.5 rounded-md ${scoreStyle.bg} ${scoreStyle.text}`}>
+                          <span
+                            className={`inline-flex items-center text-xs font-medium px-1.5 py-0.5 rounded-md ${scoreStyle.bg} ${scoreStyle.text}`}
+                          >
                             {formatScore(ref.relevance_score)}%
                           </span>
                           {ref.document_year && (
@@ -215,18 +214,18 @@ const DocumentSidebar: React.FC<DocumentSidebarProps> = ({
                               Năm {ref.document_year}
                             </span>
                           )}
-                          {pages.length > 0 && pages.map(pg => (
-                            <span
-                              key={pg}
-                              className="inline-flex items-center text-xs text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded-md border border-gray-100"
-                            >
-                              Tr.{pg}
-                            </span>
-                          ))}
+                          {pages.length > 0 &&
+                            pages.map((page) => (
+                              <span
+                                key={page}
+                                className="inline-flex items-center text-xs text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded-md border border-gray-100"
+                              >
+                                Tr.{page}
+                              </span>
+                            ))}
                         </div>
                       </div>
 
-                      {/* Quick actions */}
                       <div className="flex-shrink-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
                           onClick={() => onOpenDocument(ref.filename, pages[0])}
@@ -246,29 +245,16 @@ const DocumentSidebar: React.FC<DocumentSidebarProps> = ({
                             <Copy className="w-3.5 h-3.5" />
                           )}
                         </button>
-                        {ref.source_url && (
-                          <a
-                            href={ref.source_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="p-1.5 rounded-md text-gray-400 hover:text-sky-600 hover:bg-sky-50 transition-colors"
-                            title="Mở nguồn chính thức"
-                          >
-                            <ExternalLink className="w-3.5 h-3.5" />
-                          </a>
-                        )}
                       </div>
                     </div>
 
-                    {/* Snippet */}
                     {ref.content_snippet && (
                       <p className="text-xs text-gray-500 mt-2 leading-relaxed line-clamp-2">
                         {normalizeSnippetForDisplay(ref.content_snippet)}
                       </p>
                     )}
 
-                    {/* Expand toggle */}
-                    {(ref.content_snippet || ref.heading || ref.document_year || ref.source_url) && (
+                    {(ref.content_snippet || ref.heading || ref.document_year) && (
                       <button
                         onClick={() => toggleExpand(index)}
                         className="mt-2 flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 transition-colors"
@@ -288,7 +274,6 @@ const DocumentSidebar: React.FC<DocumentSidebarProps> = ({
                     )}
                   </div>
 
-                  {/* Expanded content */}
                   {isExpanded && (
                     <div className="border-t border-gray-100 bg-gray-50 px-3 py-3">
                       {ref.heading && (
@@ -296,30 +281,16 @@ const DocumentSidebar: React.FC<DocumentSidebarProps> = ({
                           Mục: <span className="text-gray-700">{ref.heading}</span>
                         </p>
                       )}
-                      {(ref.document_year || ref.source_url) && (
+                      {ref.document_year && (
                         <div className="mb-2 space-y-1">
-                          {ref.document_year && (
-                            <p className="text-xs text-gray-500">
-                              Năm tài liệu: <span className="text-gray-700">{ref.document_year}</span>
-                            </p>
-                          )}
-                          {ref.source_url && (
-                            <a
-                              href={ref.source_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 text-xs text-sky-700 hover:text-sky-800 hover:underline"
-                            >
-                              <ExternalLink className="w-3 h-3" />
-                              Nguồn chính thức
-                            </a>
-                          )}
+                          <p className="text-xs text-gray-500">
+                            Năm tài liệu: <span className="text-gray-700">{ref.document_year}</span>
+                          </p>
                         </div>
                       )}
                       <p className="text-xs text-gray-600 leading-relaxed max-h-36 overflow-y-auto whitespace-pre-wrap">
                         {normalizeSnippetForDisplay(ref.content_snippet, true)}
                       </p>
-                      {/* Action row inside expanded */}
                       <div className="flex items-center gap-2 mt-3">
                         <button
                           onClick={() => onOpenDocument(ref.filename, pages[0])}
@@ -353,7 +324,6 @@ const DocumentSidebar: React.FC<DocumentSidebarProps> = ({
           )}
         </div>
 
-        {/* Footer */}
         {deduped.length > 0 && (
           <div className="flex-shrink-0 px-3 py-3 border-t border-gray-100 bg-white">
             <button
@@ -367,7 +337,6 @@ const DocumentSidebar: React.FC<DocumentSidebarProps> = ({
         )}
       </div>
 
-      {/* Mobile overlay */}
       {isOpen && (
         <div
           className="fixed inset-0 top-14 sm:top-16 md:top-20 bg-black/20 backdrop-blur-[1px] z-20 md:hidden"
@@ -379,4 +348,3 @@ const DocumentSidebar: React.FC<DocumentSidebarProps> = ({
 };
 
 export default DocumentSidebar;
-

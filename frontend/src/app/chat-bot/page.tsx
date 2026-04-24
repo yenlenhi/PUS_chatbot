@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import dynamic from 'next/dynamic';
 import { Send, FolderOpen, Book, Copy, Check, RefreshCw, Volume2, VolumeX, Pause, Play, X, ImagePlus, Home, ArrowLeft, ZoomIn, ZoomOut, RotateCw, Download, Maximize2, ChevronUp, ChevronDown, Sparkles } from 'lucide-react';
 import type { Message, SourceReference, ChartData, ImageData, FileAttachment, PerformanceMetrics } from '@/types';
 import ReactMarkdown from 'react-markdown';
@@ -10,7 +11,6 @@ import rehypeKatex from 'rehype-katex';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/cjs/styles/prism';
 import Image from 'next/image';
-import PDFViewerModal from '@/components/PDFViewerModal';
 import DocumentSidebar from '@/components/DocumentSidebar';
 import DocumentRepository from '@/components/DocumentRepository';
 import FeedbackButtons from '@/components/FeedbackButtons';
@@ -27,6 +27,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 const SOURCE_REFERENCE_DISPLAY_THRESHOLD = 0.65;
 const FORCED_FEEDBACK_STORAGE_KEY = 'psu-forced-feedback-submitted-v1';
 const FORCED_FEEDBACK_TRIGGER_COUNT = 3;
+const PDFViewerModal = dynamic(() => import('@/components/PDFViewerModal'), { ssr: false });
 
 const sortSourceReferences = (sourceReferences: SourceReference[] = []) =>
   [...sourceReferences].sort((a, b) => (b.relevance_score || 0) - (a.relevance_score || 0));
@@ -1119,6 +1120,14 @@ const ChatBotPage = () => {
     }
   }, []);
 
+  const isDesktopViewport = useCallback(() => {
+    if (typeof window === 'undefined') {
+      return true;
+    }
+
+    return window.innerWidth >= 1024;
+  }, []);
+
   // View sources in sidebar
   const handleViewSources = useCallback((sources: SourceReference[]) => {
     setCurrentSourceReferences(sources);
@@ -1133,6 +1142,7 @@ const ChatBotPage = () => {
     const textToSend = messageToSend || inputMessage;
     if (!textToSend.trim() && uploadedImages.length === 0) return;
 
+    const shouldAutoOpenSources = isDesktopViewport();
     const currentQuery = textToSend; // Store before clearing
     const currentImages = [...uploadedImages]; // Store before clearing
     const userMessageCountAfterSend =
@@ -1219,7 +1229,9 @@ const ChatBotPage = () => {
 
           if (sourceReferences.length > 0) {
             setCurrentSourceReferences(sourceReferences);
-            setSidebarOpen(true);
+            if (shouldAutoOpenSources) {
+              setSidebarOpen(true);
+            }
           }
 
           setMessages(prev => prev.map(msg =>
@@ -1326,7 +1338,9 @@ const ChatBotPage = () => {
 
                 if (streamedSources.length > 0) {
                   setCurrentSourceReferences(streamedSources);
-                  setSidebarOpen(true);
+                  if (shouldAutoOpenSources) {
+                    setSidebarOpen(true);
+                  }
                 }
               } else if (chunk.type === 'answer_chunk') {
                 streamedContent += chunk.content || '';
