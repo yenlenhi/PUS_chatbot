@@ -10,7 +10,7 @@ This service handles:
 import logging
 import re
 import unicodedata
-from typing import Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 import requests
 
@@ -154,6 +154,117 @@ class SupabaseStorageService:
             Public URL for the file
         """
         return f"{self.supabase_url}/storage/v1/object/public/{self.bucket_name}/{filename}"
+
+    def get_private_object_url(self, filename: str) -> str:
+        """
+        Get the authenticated object URL for a file in Supabase Storage.
+
+        Args:
+            filename: The filename in storage (already normalized)
+
+        Returns:
+            Authenticated object URL for the file
+        """
+        return f"{self.supabase_url}/storage/v1/object/{self.bucket_name}/{filename}"
+
+    def _get_auth_headers(self) -> Dict[str, str]:
+        """Build auth headers for authenticated Supabase Storage requests."""
+        headers: Dict[str, str] = {}
+        if self.service_key:
+            headers["Authorization"] = f"Bearer {self.service_key}"
+            headers["apikey"] = self.service_key
+        return headers
+
+    def download_file(
+        self, filename: str, timeout: int = 120
+    ) -> Tuple[bool, str, Optional[bytes], Optional[str]]:
+        """
+        Download a file from Supabase Storage without exposing the public URL.
+
+        Returns:
+            Tuple of (success, message, content_bytes, content_type)
+        """
+        if not self.supabase_url or not self.bucket_name:
+            return (False, "Supabase Storage not configured", None, None)
+
+        safe_filename = self.normalize_filename(filename)
+        attempts = [
+            (self.get_private_object_url(safe_filename), self._get_auth_headers()),
+            (self.get_public_url(safe_filename), {}),
+        ]
+
+        last_error = f"File not found in Supabase Storage: {safe_filename}"
+
+        for url, headers in attempts:
+            try:
+                response = requests.get(url, headers=headers, timeout=timeout)
+                if response.status_code == 200:
+                    content_type = response.headers.get("Content-Type")
+                    return (
+                        True,
+                        f"Downloaded from Supabase Storage: {safe_filename}",
+                        response.content,
+                        content_type,
+                    )
+
+                last_error = (
+                    f"Supabase download failed ({response.status_code}): "
+                    f"{response.text[:200]}"
+                )
+            except Exception as e:
+                last_error = str(e)
+
+        log.warning(f"Could not download {safe_filename} from Supabase: {last_error}")
+        return (False, last_error, None, None)
+
+    def get_file_metadata(
+        self, filename: str, timeout: int = 30
+    ) -> Tuple[bool, str, Optional[Dict[str, Any]]]:
+        """
+        Retrieve metadata for a file stored in Supabase Storage.
+
+        Returns:
+            Tuple of (success, message, metadata dict)
+        """
+        if not self.supabase_url or not self.bucket_name:
+            return (False, "Supabase Storage not configured", None)
+
+        safe_filename = self.normalize_filename(filename)
+        attempts = [
+            (self.get_private_object_url(safe_filename), self._get_auth_headers()),
+            (self.get_public_url(safe_filename), {}),
+        ]
+
+        last_error = f"File metadata not found in Supabase Storage: {safe_filename}"
+
+        for url, headers in attempts:
+            try:
+                response = requests.head(url, headers=headers, timeout=timeout)
+                if response.status_code == 200:
+                    return (
+                        True,
+                        f"Metadata retrieved from Supabase Storage: {safe_filename}",
+                        {
+                            "filename": safe_filename,
+                            "size_bytes": int(response.headers.get("Content-Length", 0)),
+                            "content_type": response.headers.get(
+                                "Content-Type", "application/pdf"
+                            ),
+                            "last_modified": response.headers.get("Last-Modified"),
+                        },
+                    )
+
+                last_error = (
+                    f"Supabase metadata failed ({response.status_code}): "
+                    f"{response.text[:200]}"
+                )
+            except Exception as e:
+                last_error = str(e)
+
+        log.warning(
+            f"Could not retrieve metadata for {safe_filename} from Supabase: {last_error}"
+        )
+        return (False, last_error, None)
 
     def delete_file(self, filename: str) -> Tuple[bool, str]:
         """
